@@ -42,7 +42,7 @@ set -o noclobber  # prevent overwritting redirection
 
 function usage () {
     cat << EOF
-header less: Read a file keeping the header line
+hview: Read a file keeping the header line
     -h, --help print this help message and exit
     -n, --num number of header line to keep (default: 1)
 EOF
