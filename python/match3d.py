@@ -48,7 +48,6 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-t', '--target', help='mobile pdb structure file to transfer sequence on', type=str)
     parser.add_argument('-r', '--ref', help='reference pdb structure file with sequence to transfer', type=str)
-    parser.add_argument('-s', '--sel', help='selection for the reference (default: all)', type=str, default='all')
     args = parser.parse_args()
 
     env = modeller.environ()
