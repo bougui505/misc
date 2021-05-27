@@ -76,6 +76,15 @@ if __name__ == '__main__':
     mdl.transfer_xyz(aln)
     # Get the remaining undefined coordinates from internal coordinates:
     mdl.build(initialize_xyz=False, build_method='INTERNAL_COORDINATES')
+
+    # transfer residue numbers and chain ids from ref to target
+    # ref first
+    # mdl last
+    aln = modeller.alignment(env)
+    aln.append_model(ref, align_codes=ref_name)
+    aln.append_model(mdl, align_codes='model')
+    mdl.res_num_from(ref, aln)
+
     mdl.write(file=f'{target_name}_{ref_name}.pdb')
 
     # env = modeller.environ()
