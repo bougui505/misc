@@ -3,6 +3,8 @@
 # Script to download files from RCSB http file download services.
 # Use the -h switch to get help on usage.
 
+# See: https://www.rcsb.org/docs/programmatic-access/batch-downloads-with-shell-script
+
 if ! command -v curl &> /dev/null
 then
     echo "'curl' could not be found. You need to install 'curl' for this script to work."
