@@ -38,6 +38,7 @@
 
 
 import modeller
+import os
 
 
 if __name__ == '__main__':
@@ -57,11 +58,11 @@ if __name__ == '__main__':
     aln = modeller.alignment(env)
 
     target = modeller.model(env, file=args.target)
-    target_name = args.target.split('.')[0]
+    target_name = os.path.basename(args.target).split('.')[0]
     aln.append_model(target, align_codes=target_name)
 
     ref = modeller.model(env, file=args.ref)
-    ref_name = args.ref.split('.')[0]
+    ref_name = os.path.basename(args.ref).split('.')[0]
     aln.append_model(ref, align_codes=ref_name)
 
     aln.align()
