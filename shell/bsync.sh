@@ -81,6 +81,14 @@ function _rsync_ () {
     fi
 }
 
+if [[ $DELETE -eq 1 ]]; then
+    read "?--delete option. Files present in $DIR2 but not in $DIR1 will be moved to a bkp directory. Are you sure ? (Y-y/N-n) " REPLY
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        exit 1
+    fi
+fi
+
 echo "Syncing: $DIR1 -> $DIR2"
 _rsync_ $DIR1 $DIR2
 echo "Syncing: $DIR1 <- $DIR2"
