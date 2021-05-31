@@ -46,9 +46,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-m', '--mol2')
+    parser.add_argument('-o', '--out', help='output filename (default: inputname w/o extension + pdbqt extension)')
     args = parser.parse_args()
 
     uni = mda.Universe(args.mol2)
     ag = uni.select_atoms('all')
-    outname = os.path.splitext(args.mol2)[0]
-    ag.write(f'{outname}.pdbqt')
+    if args.out is None:
+        outname = os.path.splitext(args.mol2)[0]
+        outname = f'{outname}.pdbqt'
+    else:
+        outname = args.out
+    ag.write(outname)
