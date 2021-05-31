@@ -45,8 +45,11 @@ function usage () {
 bsync help
 bsync -- bidirectional sync -- uses rsync to sync directories in both direction
     -h, --help print this help message and exit
+    -d1, --dir1 source directory
+    -d2, --dir2 secondary directory
+    --delete delete files in dir2 not present in dir1
 Usage:
-    bsync dir1 dir2
+    bsync -d1 dir1 -d2 dir2
 This command will run 
     rsync dir1 dir2 
 and then 
@@ -59,17 +62,23 @@ if [[ "$#" -eq 0 ]]; then
     exit 1
 fi
 
-DIR1="$1"
-DIR2="$2"
+DELETE=0
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) usage; exit 0 ;;
+        -d1|--dir1) DIR1="$2"; shift ;;
+        -d2|--dir2) DIR2="$2"; shift ;;
+        --delete) DELETE=1 ;;
     esac
     shift
 done
 
 function _rsync_ () {
-    rsync -a -zz --update --info=progress2 -h $1 $2
+    if [[ $DELETE -eq 1 ]]; then
+        rsync -a -zz --update --info=progress2 -h --delete --backup --backup-dir bkp/$(date +%Y%m%d_%H:%M:%S:%N) --exclude bkp --exclude .git $1 $2
+    else
+        rsync -a -zz --update --info=progress2 -h --exclude .git $1 $2
+    fi
 }
 
 echo "Syncing: $DIR1 -> $DIR2"
