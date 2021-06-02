@@ -75,9 +75,9 @@ done
 
 function _rsync_ () {
     if [[ $DELETE -eq 1 ]]; then
-        rsync -a -zz --update --info=progress2 -h --delete --backup --backup-dir bkp/$(date +%Y%m%d_%H:%M:%S:%N) --exclude bkp --exclude .git $1 $2
+        rsync -a -zz --update --info=progress2 -h --delete --backup --backup-dir bkp/$(date +%Y%m%d_%H:%M:%S:%N) --exclude bkp --exclude .git --exclude .history.dir.rec $1 $2
     else
-        rsync -a -zz --update --info=progress2 -h --exclude .git $1 $2
+        rsync -a -zz --update --info=progress2 -h --exclude .git --exclude .history.dir.rec $1 $2
     fi
 }
 
