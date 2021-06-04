@@ -58,15 +58,21 @@ if __name__ == '__main__':
 
     cmd.load(args.pdb, 'inpdb')
     coords = cmd.get_coords('inpdb')
-    coords -= coords.mean(axis=0)
+    center = coords.mean(axis=0)
+    coords -= center
 
-    angles = np.linspace(0, 2 * np.pi, args.nframes // 3)
+    if not args.random:
+        angles = np.linspace(0, 2 * np.pi, args.nframes // 3)
+        axes = [np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])]
+    else:
+        angles = np.random.uniform(low=0, high=2 * np.pi, size=int(np.sqrt(args.nframes)))
+        axes = [np.random.choice([0, 1], size=3) for _ in range(int(np.sqrt(args.nframes)))]
     i = 0
-    for vec in [np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])]:
+    for vec in axes:
         for alpha in angles:
             i += 1
             r = R.from_rotvec(alpha * vec).as_matrix()
-            coords_rot = (r.dot(coords.T)).T
+            coords_rot = (r.dot(coords.T)).T + center
             cmd.create('out', 'inpdb', 1, i)
             cmd.load_coords(coords_rot, 'out', state=i)
     outname = f'{os.path.splitext(args.pdb)[0]}.dcd'
