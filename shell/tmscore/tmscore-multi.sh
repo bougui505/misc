@@ -70,13 +70,5 @@ done
 (test -z $NATIVES) && (usage; exit 1)
 (test -z $OUT) && (usage; exit 1)
 
-N=$(wc -l $NATIVES)
-I=0
-for NATIVE in $(sort -u $NATIVES); do
-    (( i+=1 ))
-    for MODEL in $(sort -u $MODELS); do
-        # ./tmscore_format.sh $MODEL $NATIVE
-        echo "$MODEL $NATIVE"
-    done
-done\
+join -j 2 =(sort -u $MODELS) =(sort -u $NATIVES) | sed 's/^ //' \
     | (parallel --bar -k -j $NJOBS --colsep ' ' $DIRSCRIPT/tmscore_format.sh {1} {2}) > $OUT
