@@ -61,7 +61,8 @@ if __name__ == '__main__':
     cmd.remove('hydro and trajin')
     nref = len(args.refs)
     rmsds_all = []
-    for frameref in [nframes + i for i in range(1, nref + 1)]:
+    for ind, frameref in enumerate([nframes + i for i in range(1, nref + 1)]):
+        print(f'Computing RMSD for {args.refs[ind]}')
         rmsds = cmd.intra_fit(f'trajin and {args.sel}', state=frameref)[:nframes]
         rmsds_all.append(rmsds)
     rmsds_all = np.asarray(rmsds_all, dtype=object).T
