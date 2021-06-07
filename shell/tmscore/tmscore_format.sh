@@ -45,9 +45,10 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 MODEL=$1
 NATIVE=$2
+OUT=$3
 SCORE=$(TMscore $MODEL $NATIVE | awk '/TM-score    =/{print $3}')
 (test -z $SCORE) && SCORE=0.
-echo "model: $MODEL"
-echo "native: $NATIVE"
-echo "tmscore: $SCORE"
-echo ""
+echo "model: $MODEL" > $OUT
+echo "native: $NATIVE" >> $OUT
+echo "tmscore: $SCORE" >> $OUT
+echo "" >> $OUT

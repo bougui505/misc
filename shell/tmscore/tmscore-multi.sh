@@ -70,5 +70,22 @@ done
 (test -z $NATIVES) && (usage; exit 1)
 (test -z $OUT) && (usage; exit 1)
 
-join -j 2 =(sort -u $MODELS) =(sort -u $NATIVES) | sed 's/^ //' \
-    | (parallel --bar -k -j $NJOBS --colsep ' ' $DIRSCRIPT/tmscore_format.sh {1} {2}) > $OUT
+(test -f $OUT) && echo "file exists: $OUT" && exit 1
+
+(test -d tmscore_out) && rm -r tmscore_out
+mkdir tmscore_out
+
+tsp -C
+tsp -S $NJOBS
+
+i=1000000
+for NATIVE in $(cat $NATIVES); do
+    for MODEL in $(cat $MODELS); do
+        (( i+=1 ))
+        tsp $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE tmscore_out/$i.out
+    done
+done
+
+tsp -w  # Wait for the last job
+
+cat tmscore_out/* > $OUT && rm -r tmscore_out
