@@ -79,8 +79,8 @@ tsp -C
 tsp -S $NJOBS
 
 i=1000000
-for NATIVE in $(cat $NATIVES); do
-    for MODEL in $(cat $MODELS); do
+for NATIVE in $(sort -u $NATIVES); do
+    for MODEL in $(sort -u $MODELS); do
         (( i+=1 ))
         tsp $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE tmscore_out/$i.out
     done
