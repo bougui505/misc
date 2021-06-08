@@ -80,15 +80,19 @@ tsp -C
 tsp -S $NJOBS
 
 i=1000000
+PROGRESS=0
+TOTAL=$(wc -l $NATIVES)
 for NATIVE in $(sort -u $NATIVES); do
+    (( PROGRESS += 1 ))
     for MODEL in $(sort -u $MODELS); do
         (( i+=1 ))
-        tsp $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE $OUTDIR/$i.out
+        tsp -n $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE $OUTDIR/$i.out
     done
-    echo 'Concatening partial results ...'
+    echo -ne "$PROGRESS/$TOTAL           \r"
     tsp -w  # Wait for the last job
+    sleep .2
     find $OUTDIR -type f -exec cat {} + >> $OUT && rm -r $OUTDIR  && mkdir $OUTDIR  # Handle long list of files to concatenate
-    echo 'Done'
 done
+echo ""
 
 rmdir $OUTDIR
