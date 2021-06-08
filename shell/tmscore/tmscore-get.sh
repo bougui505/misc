@@ -49,6 +49,7 @@ Get all the tmscores for the given system
     -m, --model get all the tmscores for the given model
     -n, --native get all the tmscores for the given native
     -i, --inp input recfile with tmscores as produced by tmscore-multi
+    -o, --out optional output rec file to store the results
     --max only print the maximum value
     -h, --help print this help message and exit
 EOF
@@ -61,6 +62,7 @@ while [[ "$#" -gt 0 ]]; do
         -n|--native) NATIVE="$2"; shift ;;
         --max) MAX=1 ;;
         -i|--inp) RECFILE="$2"; shift ;;
+        -o|--out) OUT="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -68,6 +70,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # columns header: "model","native","tmscore"
+TMSCORE=$(
 if (test ! -z $MODEL); then
     rec2csv $RECFILE \
         | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
@@ -79,4 +82,17 @@ if (test ! -z $NATIVE); then
         | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
         | awk -F"," -v"NATIVE=$NATIVE" '{if ($2==NATIVE){print $3}}' \
         | ((test $MAX -eq 1) && awk 'BEGIN{MAX=0}{if ($1>MAX){MAX=$1}}END{print MAX}' || cat)
+fi
+)
+
+(test ! -z $MODEL) && KEY='model'
+(test ! -z $NATIVE) && KEY='native'
+
+(test -z $OUT) && echo $TMSCORE || touch $OUT
+if (test -f $OUT); then
+    flock $OUT cat << EOF >> $OUT
+${KEY}: $MODEL
+tmscore: $TMSCORE
+
+EOF
 fi
