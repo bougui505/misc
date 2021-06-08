@@ -71,9 +71,10 @@ done
 (test -z $OUT) && (usage; exit 1)
 
 (test -f $OUT) && echo "file exists: $OUT" && exit 1
+touch $OUT
 
-(test -d tmscore_out) && rm -r tmscore_out
-mkdir tmscore_out
+OUTDIR=$(date +%s)
+mkdir $OUTDIR
 
 tsp -C
 tsp -S $NJOBS
@@ -82,11 +83,12 @@ i=1000000
 for NATIVE in $(sort -u $NATIVES); do
     for MODEL in $(sort -u $MODELS); do
         (( i+=1 ))
-        tsp $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE tmscore_out/$i.out
+        tsp $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE $OUTDIR/$i.out
     done
+    echo 'Concatening partial results ...'
+    tsp -w  # Wait for the last job
+    find $OUTDIR -type f -exec cat {} + >> $OUT && rm -r $OUTDIR  && mkdir $OUTDIR  # Handle long list of files to concatenate
+    echo 'Done'
 done
 
-tsp -w  # Wait for the last job
-
-find tmscore_out -type f -exec cat {} + > $OUT && rm -r tmscore_out  # Handle long list of files to concatenate
-# cat tmscore_out/* > $OUT && rm -r tmscore_out
+rmdir $OUTDIR

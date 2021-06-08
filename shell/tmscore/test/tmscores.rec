@@ -1,42 +1,18 @@
-model: dbd5/5JMO/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.3627
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
 tmscore: 0.3615
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.1447
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.5417
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.3695
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.3704
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.3704
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.6883
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.6891
+tmscore: 0.3627
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
@@ -46,77 +22,77 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
 tmscore: 0.1252
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.2050
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.2013
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.1463
+tmscore: 0.3423
 
 model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.1475
+tmscore: 0.0975
 
-model: dbd5/2OOB/receptor_u.pdb
+model: dbd5/5CBA/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.
+tmscore: 0.5155
 
-model: dbd5/2OOB/receptor_b.pdb
+model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.
+tmscore: 0.3451
 
 model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.0975
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.3451
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.1447
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/5JMO/receptor_b.pdb
+model: dbd5/BP57/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2118
+tmscore: 0.1091
 
-model: dbd5/5JMO/receptor_u.pdb
+model: dbd5/9QFW/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2112
+tmscore: 0.2038
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/2OOB/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
 tmscore: 0.1658
 
+model: dbd5/3AAD/receptor_u.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
+tmscore: 0.0000
+
 model: dbd5/5CBA/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.4911
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2797
+tmscore: 0.2228
 
 model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2270
+tmscore: 0.2038
 
-model: dbd5/9QFW/receptor_b.pdb
+model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2270
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.9876
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.9911
+tmscore: 0.0000
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
@@ -126,37 +102,45 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
 tmscore: 0.1282
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2044
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.2039
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.1562
+tmscore: 0.2072
 
 model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.1554
+tmscore: 0.1090
 
-model: dbd5/2OOB/receptor_u.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-H.pdb
+tmscore: 0.6311
 
-model: dbd5/3AAD/receptor_u.pdb
+model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
-tmscore: 0.
+tmscore: 0.2112
+
+model: dbd5/5JMO/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
+tmscore: 0.2118
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
+tmscore: 0.3338
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
@@ -166,117 +150,117 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
 tmscore: 0.2060
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.2014
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.2146
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.1809
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.1907
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.1907
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.2206
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.2165
+tmscore: 0.1375
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
 tmscore: 0.1414
 
-model: dbd5/2AJF/receptor_b.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.1375
+tmscore: 0.0714
 
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.2116
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/5/c/8/15c8-LH-P01837-P01869-L.pdb
+tmscore: 0.3316
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.1750
+tmscore: 0.1397
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.0001
+tmscore: 0.1749
 
-model: dbd5/BP57/receptor_u.pdb
+model: dbd5/5CBA/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.0001
+tmscore: 0.2140
 
-model: dbd5/2OOB/receptor_u.pdb
+model: dbd5/5X0T/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.
+tmscore: 0.1389
 
-model: dbd5/2OOB/receptor_b.pdb
+model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.
+tmscore: 0.1899
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.2076
 
 model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.0714
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.1899
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.2162
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.2014
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/5JMO/receptor_b.pdb
+model: dbd5/BP57/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1201
+tmscore: 0.0447
 
-model: dbd5/5JMO/receptor_u.pdb
+model: dbd5/3SE8/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1186
+tmscore: 0.1658
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/9QFW/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.
+tmscore: 0.1154
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
 tmscore: 0.1539
 
+model: dbd5/3AAD/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
+tmscore: 0.0000
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
+tmscore: 0.1438
+
 model: dbd5/5CBA/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1211
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1352
+tmscore: 0.1041
 
 model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1293
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1293
+tmscore: 0.1154
 
 model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.2214
+tmscore: 0.1649
 
-model: dbd5/3SE8/receptor_u.pdb
+model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.2233
+tmscore: 0.0000
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
@@ -286,37 +270,97 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
 tmscore: 0.2297
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1540
+tmscore: 0.0541
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
+tmscore: 0.1283
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.1521
+tmscore: 0.1444
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.0555
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.0548
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
+model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.
+tmscore: 0.1186
+
+model: dbd5/5JMO/receptor_b.pdb
+native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
+tmscore: 0.1201
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/0/n/1a0n-AB-P27986-P06241-B.pdb
-tmscore: 0.
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1973
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1493
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1707
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1795
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1807
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1702
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1493
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1661
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1606
+
+model: dbd5/5X0T/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1604
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1625
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1473
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.1756
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
@@ -326,197 +370,137 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
 tmscore: 0.1581
 
-model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1973
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1961
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1935
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1918
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1918
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1911
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1917
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1756
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.1473
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.2054
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.2061
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.2246
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.2260
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.
-
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
-tmscore: 0.
-
-model: dbd5/5JMO/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/5JMO/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-A.pdb
+tmscore: 0.0000
 
-model: dbd5/1H1V/receptor_b.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.1963
+tmscore: 0.0000
 
-model: dbd5/5CBA/receptor_b.pdb
+model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.2806
 
 model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.1902
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.1911
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.1900
+tmscore: 0.0000
 
 model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
 tmscore: 0.1887
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.3091
+tmscore: 0.1900
 
-model: dbd5/5X0T/receptor_b.pdb
+model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.3032
+tmscore: 0.0000
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/5JMO/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1270
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.1963
 
-model: dbd5/5JMO/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1276
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.1390
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.1358
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.0000
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/0/o/1a0o-AB-P0AE67-P07363-B.pdb
+tmscore: 0.2859
+
+model: dbd5/2OOB/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
 tmscore: 0.1550
 
-model: dbd5/5CBA/receptor_b.pdb
+model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1484
+tmscore: 0.0000
 
-model: dbd5/5CBA/receptor_u.pdb
+model: dbd5/BP57/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1452
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1345
+tmscore: 0.0728
 
 model: dbd5/9QFW/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.1345
+tmscore: 0.1165
 
 model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.2420
+tmscore: 0.1723
 
-model: dbd5/3SE8/receptor_u.pdb
+model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.2401
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
+tmscore: 0.1157
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
+tmscore: 0.1165
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
+tmscore: 0.1292
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
+tmscore: 0.0730
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
@@ -526,37 +510,85 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
 tmscore: 0.1796
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.2120
+tmscore: 0.1276
 
-model: dbd5/5X0T/receptor_b.pdb
+model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.2115
+tmscore: 0.1270
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.0881
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.0875
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.1700
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-A.pdb
-tmscore: 0.
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2338
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2397
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2457
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2444
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2059
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2124
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2397
+
+model: dbd5/5X0T/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2252
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2031
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2105
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2371
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
+tmscore: 0.2414
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
@@ -566,77 +598,69 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
 tmscore: 0.2465
 
-model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.1700
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2330
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2033
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2399
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2399
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2446
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2458
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2414
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2371
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2126
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2254
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2347
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.2127
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.
-
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1626
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/1/r/1a1r-AC-P27958-O39914-C.pdb
-tmscore: 0.
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0956
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0993
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1232
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1239
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0888
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0993
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1342
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1622
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1621
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.0950
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
@@ -646,117 +670,29 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
 tmscore: 0.1075
 
-model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1626
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1340
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1655
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1409
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1409
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1642
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1630
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1621
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1622
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1752
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1726
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1379
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.1392
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.
-
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
-tmscore: 0.
-
-model: dbd5/5JMO/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2085
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
 tmscore: 0.2071
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.1403
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2333
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2568
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2378
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2378
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2352
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2359
+tmscore: 0.2085
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
@@ -766,77 +702,93 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
 tmscore: 0.1146
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2108
+tmscore: 0.2170
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.2115
+tmscore: 0.1909
 
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.1933
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-A.pdb
+tmscore: 0.1208
 
-model: dbd5/BP57/receptor_u.pdb
+model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.1976
+tmscore: 0.2160
 
-model: dbd5/2OOB/receptor_u.pdb
+model: dbd5/5X0T/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.
+tmscore: 0.1911
 
-model: dbd5/2OOB/receptor_b.pdb
+model: dbd5/5CBA/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.
+tmscore: 0.2098
 
 model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.2140
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.2146
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.2160
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.1391
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/5JMO/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1518
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.1403
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/6/z/1a6z-AB-Q30201-P61769-B.pdb
+tmscore: 0.1414
 
 model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
 tmscore: 0.1510
 
+model: dbd5/5JMO/receptor_b.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1518
+
 model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/1H1V/receptor_b.pdb
+model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1238
+tmscore: 0.0000
 
-model: dbd5/5CBA/receptor_b.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1817
+tmscore: 0.1376
 
 model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1802
+tmscore: 0.1511
 
-model: dbd5/9QFW/receptor_u.pdb
+model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1727
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1727
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1722
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1722
+tmscore: 0.2023
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
@@ -846,37 +798,77 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
 tmscore: 0.1352
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.2092
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.2093
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1842
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.1820
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.
+tmscore: 0.1532
 
 model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.2020
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1531
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1330
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1238
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1372
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1492
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/b/t/1abt-AB-P60615-P02710-A.pdb
+tmscore: 0.1330
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1494
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1493
+
+model: dbd5/5X0T/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1467
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1381
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1054
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
@@ -886,117 +878,85 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
 tmscore: 0.1242
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/BP57/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.
+tmscore: 0.1049
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1257
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1389
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
 tmscore: 0.1713
 
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1475
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1716
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1521
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1521
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1984
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1987
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1493
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1494
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.2186
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.2194
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1352
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.1349
-
 model: dbd5/2OOB/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/5JMO/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1151
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1056
 
-model: dbd5/5JMO/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1151
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1257
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.1321
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-A.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.
+tmscore: 0.1122
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.1012
+
+model: dbd5/3AAD/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
 tmscore: 0.1523
 
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1547
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1634
-
 model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1563
+tmscore: 0.1122
 
-model: dbd5/9QFW/receptor_b.pdb
+model: dbd5/5X0T/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1563
+tmscore: 0.1457
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.1266
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.0000
 
 model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.2773
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.2797
+tmscore: 0.1611
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
@@ -1006,77 +966,81 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
 tmscore: 0.1826
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.2086
+tmscore: 0.1120
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.2113
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1459
+tmscore: 0.1446
 
 model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.1455
+tmscore: 0.1014
 
-model: dbd5/2OOB/receptor_u.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
-tmscore: 0.
-
-model: dbd5/5JMO/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1001
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1006
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.1151
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/5JMO/receptor_b.pdb
+native: HD-database/1/a/h/j/1ahj-AB-P13448-P13449-B.pdb
+tmscore: 0.1151
+
+model: dbd5/3SE8/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.
+tmscore: 0.1368
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0933
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0936
+
+model: dbd5/3AAD/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
 tmscore: 0.1473
 
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1317
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1443
-
 model: dbd5/9QFW/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1398
+tmscore: 0.0933
 
-model: dbd5/9QFW/receptor_b.pdb
+model: dbd5/5X0T/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1398
+tmscore: 0.1559
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0923
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
+tmscore: 0.0000
 
 model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.2033
+tmscore: 0.1332
 
-model: dbd5/3SE8/receptor_u.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.2032
+tmscore: 0.0940
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
@@ -1086,117 +1050,125 @@ model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
 tmscore: 0.1882
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.2418
+tmscore: 0.1011
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.2384
+tmscore: 0.1580
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1220
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.1234
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/2OOB/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/3AAD/receptor_b.pdb
+model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.
+tmscore: 0.1006
 
-model: dbd5/3AAD/receptor_u.pdb
+model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-A.pdb
-tmscore: 0.
+tmscore: 0.1001
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
 tmscore: 0.1838
 
-model: dbd5/1H1V/receptor_b.pdb
+model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.1285
+tmscore: 0.0000
 
 model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
 tmscore: 0.1283
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.1285
 
-model: dbd5/5X0T/receptor_b.pdb
+model: dbd5/3SE8/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_b.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/m/4/1am4-AD-Q07960-P60953-D.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1088
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.0957
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1388
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1386
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
@@ -1206,77 +1178,125 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
 tmscore: 0.1009
 
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.0000
+
 model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/1H1V/receptor_b.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1658
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1374
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1502
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1464
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1464
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1882
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1878
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1386
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1388
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.2245
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.2239
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1522
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.1517
+tmscore: 0.1652
 
 model: dbd5/2OOB/receptor_u.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
-tmscore: 0.
+tmscore: 0.0000
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.0966
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1036
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1230
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1194
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1013
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-E.pdb
+tmscore: 0.1036
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1547
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1740
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.2292
+
+model: dbd5/3AAD/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1603
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1547
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1664
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0984
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1771
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.2230
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.2222
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.2284
+
+model: dbd5/5X0T/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1021
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.1626
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_u.pdb
+native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
@@ -1286,77 +1306,57 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
 tmscore: 0.1602
 
-model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1603
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1613
 
 model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.2033
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1693
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1634
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1634
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1826
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1795
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.2222
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.2230
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1595
 
 model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1051
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.1066
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.2417
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.2409
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1345
 
 model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1628
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1613
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1627
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1336
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/n/1/1an1-EI-P00761-P80424-I.pdb
-tmscore: 0.
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.1503
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.0000
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
@@ -1366,77 +1366,69 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
 tmscore: 0.1688
 
-model: dbd5/1H1V/receptor_u.pdb
+model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.1503
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2227
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2236
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2231
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2231
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2240
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2249
+tmscore: 0.2026
 
 model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
 tmscore: 0.2002
 
-model: dbd5/2AJF/receptor_b.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.2026
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.1630
+tmscore: 0.1333
 
 model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.1612
+tmscore: 0.1326
 
-model: dbd5/BP57/receptor_b.pdb
+model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.1824
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.1818
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.
+tmscore: 0.1513
 
 model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.0000
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1631
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1550
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1596
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1268
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-A.pdb
-tmscore: 0.
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1592
+
+model: dbd5/2OOB/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.0000
+
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1550
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1627
+
+model: dbd5/BP57/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.1361
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
@@ -1446,77 +1438,105 @@ model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
 tmscore: 0.1626
 
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
+tmscore: 0.0000
+
 model: dbd5/1H1V/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.
+tmscore: 0.0000
 
-model: dbd5/1H1V/receptor_b.pdb
+model: dbd5/5X0T/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1592
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2224
+tmscore: 0.1262
 
 model: dbd5/5CBA/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2270
+tmscore: 0.1527
 
-model: dbd5/9QFW/receptor_u.pdb
+model: dbd5/BP57/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2210
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2210
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2242
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.2248
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1965
+tmscore: 0.1362
 
 model: dbd5/2AJF/receptor_b.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
 tmscore: 0.1988
 
-model: dbd5/5X0T/receptor_u.pdb
+model: dbd5/2AJF/receptor_u.pdb
 native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1598
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1581
+tmscore: 0.1965
 
 model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1800
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1782
 
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.1792
+model: dbd5/9QFW/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1558
+
+model: dbd5/3SE8/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1762
+
+model: dbd5/1H1V/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1991
 
 model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.0000
 
 model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/o/k/1aok-AB-P04084-P14420-B.pdb
-tmscore: 0.
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.0000
+
+model: dbd5/5CBA/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1693
+
+model: dbd5/5X0T/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1437
+
+model: dbd5/9QFW/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1558
+
+model: dbd5/3SE8/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1767
+
+model: dbd5/3AAD/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.0000
+
+model: dbd5/2AJF/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1376
+
+model: dbd5/2AJF/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1349
+
+model: dbd5/BP57/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1801
+
+model: dbd5/5X0T/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1449
+
+model: dbd5/5CBA/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.1666
+
+model: dbd5/2OOB/receptor_b.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.0000
+
+model: dbd5/1H1V/receptor_u.pdb
+native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
+tmscore: 0.0000
 
 model: dbd5/5JMO/receptor_b.pdb
 native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
@@ -1525,76 +1545,4 @@ tmscore: 0.1635
 model: dbd5/5JMO/receptor_u.pdb
 native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
 tmscore: 0.1656
-
-model: dbd5/1H1V/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.
-
-model: dbd5/1H1V/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.1991
-
-model: dbd5/5CBA/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2234
-
-model: dbd5/5CBA/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2256
-
-model: dbd5/9QFW/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2034
-
-model: dbd5/9QFW/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2034
-
-model: dbd5/3SE8/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2257
-
-model: dbd5/3SE8/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2276
-
-model: dbd5/2AJF/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.1349
-
-model: dbd5/2AJF/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.1376
-
-model: dbd5/5X0T/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.1607
-
-model: dbd5/5X0T/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.1609
-
-model: dbd5/BP57/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2234
-
-model: dbd5/BP57/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.2236
-
-model: dbd5/2OOB/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.
-
-model: dbd5/2OOB/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_b.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.
-
-model: dbd5/3AAD/receptor_u.pdb
-native: HD-database/1/a/o/t/1aot-FP-P06241-P03079-F.pdb
-tmscore: 0.
 
