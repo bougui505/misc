@@ -48,7 +48,9 @@ NATIVE=$2
 OUT=$3
 SCORE=$(TMscore $MODEL $NATIVE | awk '/TM-score    =/{print $3}')
 (test -z $SCORE) && SCORE=0.
-echo "model: $MODEL" > $OUT
-echo "native: $NATIVE" >> $OUT
-echo "tmscore: $SCORE" >> $OUT
-echo "" >> $OUT
+flock $OUT cat << EOF >> $OUT
+model: $MODEL
+native: $NATIVE
+tmscore: $SCORE
+
+EOF

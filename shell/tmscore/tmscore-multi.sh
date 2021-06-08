@@ -73,9 +73,6 @@ done
 (test -f $OUT) && echo "file exists: $OUT" && exit 1
 touch $OUT
 
-OUTDIR=$(date +%s)
-mkdir $OUTDIR
-
 tsp -C
 tsp -S $NJOBS
 
@@ -86,13 +83,9 @@ for NATIVE in $(sort -u $NATIVES); do
     (( PROGRESS += 1 ))
     for MODEL in $(sort -u $MODELS); do
         (( i+=1 ))
-        tsp -n $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE $OUTDIR/$i.out
+        tsp -n $DIRSCRIPT/tmscore_format.sh $MODEL $NATIVE $OUT
     done
     echo -ne "$PROGRESS/$TOTAL           \r"
-    tsp -w  # Wait for the last job
-    sleep .2
-    find $OUTDIR -type f -exec cat {} + >> $OUT && rm -r $OUTDIR  && mkdir $OUTDIR  # Handle long list of files to concatenate
 done
 echo ""
 
-rmdir $OUTDIR
