@@ -68,12 +68,21 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+tsp -C
+tsp -S $NJOBS
+
+(test -f $OUT) && echo "file exists: $OUT" && exit 1
 LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && recsel -CP 'native' || recsel -CP 'model'))
+N=$(echo $LIST | wc -l)
+I=0
 for KEY in $(echo $LIST); do
-    echo $KEY
+    (( I+=1 ))
+    echo -ne "$I/$N      \r"
     if (test $DONATIVE -eq 1); then
-        $DIRSCRIPT/tmscore-get.sh -i $RECFILE -n $KEY --max
+        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -n $KEY --max --out $OUT
     else
-        $DIRSCRIPT/tmscore-get.sh -i $RECFILE -m $KEY --max
+        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -m $KEY --max --out $OUT
     fi
 done
+tsp -w
+echo ""
