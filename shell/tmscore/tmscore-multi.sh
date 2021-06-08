@@ -88,4 +88,5 @@ done
 
 tsp -w  # Wait for the last job
 
-cat tmscore_out/* > $OUT && rm -r tmscore_out
+find tmscore_out -type f -exec cat {} + > $OUT && rm -r tmscore_out  # Handle long list of files to concatenate
+# cat tmscore_out/* > $OUT && rm -r tmscore_out
