@@ -71,17 +71,19 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+function rec2csv_awk () {
+    awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1
+}
+
 # columns header: "model","native","tmscore"
 TMSCORE=$(
 if (test "$MODEL" != "None"); then
-    rec2csv $RECFILE \
-        | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
+    rec2csv_awk $RECFILE \
         | awk -F"," -v"MODEL=$MODEL" '{if ($1==MODEL){print $3}}' \
         | ((test $MAX -eq 1) && awk 'BEGIN{MAX=0}{if ($1>MAX){MAX=$1}}END{print MAX}' || cat)
 fi
 if (test "$NATIVE" != "None"); then
-    rec2csv $RECFILE \
-        | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
+    rec2csv_awk $RECFILE \
         | awk -F"," -v"NATIVE=$NATIVE" '{if ($2==NATIVE){print $3}}' \
         | ((test $MAX -eq 1) && awk 'BEGIN{MAX=0}{if ($1>MAX){MAX=$1}}END{print MAX}' || cat)
 fi
