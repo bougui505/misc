@@ -53,6 +53,7 @@ EOF
 }
 
 DONATIVE=0
+OUT="None"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -i|--inp) RECFILE="$2"; shift ;;
@@ -64,6 +65,9 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+(test $OUT = "None") && (usage; exit 1)
+(test $OUT != "None" -a -f $OUT) && (echo "file exists: $OUT"; exit 1)
+
 function csv2rec_awk () {
     awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1
 }
@@ -74,9 +78,30 @@ else
     KEY="model"
 fi
 
+OUTPUT=$(
 csv2rec_awk $RECFILE \
     | $DIRSCRIPT/np.py -d',' "
 A=pd.DataFrame(A[:, :-1], columns=['#model', '#native', '#tmscore'])
 A=A.groupby(['#$KEY']).max()
 print(A.to_string())
-"
+")
+
+if (test $DONATIVE -eq 1); then
+    echo $OUTPUT \
+        | grep -v "#" \
+        | awk '{
+            print("model: "$2)
+            print("native: "$1)
+            print("tmscore: "$3)
+            print("")
+        }' > $OUT
+else
+    echo $OUTPUT \
+        | grep -v "#" \
+        | awk '{
+            print("model: "$1)
+            print("native: "$2)
+            print("tmscore: "$3)
+            print("")
+        }' > $OUT
+fi
