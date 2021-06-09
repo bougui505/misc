@@ -49,6 +49,7 @@ Get all the tmscores for the given system
     -n, --native get all the tmscores for the given native
     -i, --inp input recfile with tmscores as produced by tmscore-multi
     -o, --out optional output rec file to store the results
+    -t, --tmp temporary output file to speedup multiple calculation
     --max only print the maximum value
     -h, --help print this help message and exit
 EOF
@@ -58,6 +59,7 @@ MAX=0
 MODEL="None"
 NATIVE="None"
 OUT="None"
+TMPOUT="None"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -m|--model) MODEL="$2"; shift ;;
@@ -65,6 +67,7 @@ while [[ "$#" -gt 0 ]]; do
         --max) MAX=1 ;;
         -i|--inp) RECFILE="$2"; shift ;;
         -o|--out) OUT="$2"; shift ;;
+        -t|--tmp) TMPOUT="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -72,7 +75,19 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 function rec2csv_awk () {
-    awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1
+    if (test -f $TMPOUT -a "$TMPOUT" != "None"); then
+        echo '1'
+        cat $TMPOUT
+    else
+        echo '2'
+        CSVOUT=$(awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1)
+        if (test "$TMPOUT" != "None"); then
+            echo $CSVOUT > $TMPOUT
+            cat $TMPOUT
+        else
+            echo $CSVOUT
+        fi
+    fi
 }
 
 # columns header: "model","native","tmscore"

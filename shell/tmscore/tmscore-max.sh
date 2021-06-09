@@ -74,13 +74,14 @@ tsp -S $NJOBS
 LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && awk '/^native:/{print $2}' || awk '/^model:/{print $2}') | sort -u)
 N=$(echo $LIST | wc -l)
 I=0
+TMPCSV=$(date +%s%N)
 for KEY in $(echo $LIST); do
     (( I+=1 ))
     echo -ne "$I/$N      \r"
     if (test $DONATIVE -eq 1); then
-        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -n $KEY --max --out $OUT
+        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -n $KEY --max --out $OUT --tmp $TMPCSV
     else
-        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -m $KEY --max --out $OUT
+        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -m $KEY --max --out $OUT --tmp $TMPCSV
     fi
 done
 tsp -w
