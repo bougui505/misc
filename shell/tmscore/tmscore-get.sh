@@ -55,6 +55,9 @@ EOF
 }
 
 MAX=0
+MODEL="None"
+NATIVE="None"
+OUT="None"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -m|--model) MODEL="$2"; shift ;;
@@ -70,13 +73,13 @@ done
 
 # columns header: "model","native","tmscore"
 TMSCORE=$(
-if (test ! -z $MODEL); then
+if (test "$MODEL" != "None"); then
     rec2csv $RECFILE \
         | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
         | awk -F"," -v"MODEL=$MODEL" '{if ($1==MODEL){print $3}}' \
         | ((test $MAX -eq 1) && awk 'BEGIN{MAX=0}{if ($1>MAX){MAX=$1}}END{print MAX}' || cat)
 fi
-if (test ! -z $NATIVE); then
+if (test "$NATIVE" != "None"); then
     rec2csv $RECFILE \
         | sed 's/^"//' | sed 's/"$//' | sed 's/","/,/g' \
         | awk -F"," -v"NATIVE=$NATIVE" '{if ($2==NATIVE){print $3}}' \
@@ -84,13 +87,23 @@ if (test ! -z $NATIVE); then
 fi
 )
 
-(test ! -z $MODEL) && KEY='model'
-(test ! -z $NATIVE) && KEY='native'
+if (test "$NATIVE" != "None"); then
+    KEY='native'
+    VALUE=$NATIVE
+else
+    KEY='model'
+    VALUE=$MODEL
+fi
 
-(test -z $OUT) && echo $TMSCORE || touch $OUT
-if (test -f $OUT); then
+if (test "$OUT" = "None") then
+    echo $TMSCORE 
+else
+    touch $OUT
+fi
+
+if (test "$OUT" != "None"); then
     flock $OUT cat << EOF >> $OUT
-${KEY}: $MODEL
+${KEY}: $VALUE
 tmscore: $TMSCORE
 
 EOF
