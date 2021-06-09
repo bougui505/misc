@@ -71,7 +71,7 @@ tsp -C
 tsp -S $NJOBS
 
 (test -f $OUT) && echo "file exists: $OUT" && exit 1
-LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && recsel -CP 'native' || recsel -CP 'model'))
+LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && recsel -CP 'native' || recsel -CP 'model') | sort -u)
 N=$(echo $LIST | wc -l)
 I=0
 for KEY in $(echo $LIST); do
