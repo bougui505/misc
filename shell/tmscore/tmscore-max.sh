@@ -75,6 +75,7 @@ LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && awk '/^native:/{print $2}' || a
 N=$(echo $LIST | wc -l)
 I=0
 TMPCSV=$(date +%s%N)
+awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $RECFILE > $TMPCSV
 for KEY in $(echo $LIST); do
     (( I+=1 ))
     echo -ne "$I/$N      \r"
