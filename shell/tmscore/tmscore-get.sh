@@ -76,10 +76,8 @@ done
 
 function rec2csv_awk () {
     if (test -f $TMPOUT -a "$TMPOUT" != "None"); then
-        echo '1'
         cat $TMPOUT
     else
-        echo '2'
         CSVOUT=$(awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1)
         if (test "$TMPOUT" != "None"); then
             echo $CSVOUT > $TMPOUT
