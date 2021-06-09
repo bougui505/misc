@@ -53,37 +53,31 @@ Get the max tmscore for each model (default) or native
 EOF
 }
 
-NJOBS=100  # Default value
 DONATIVE=0
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -i|--inp) RECFILE="$2"; shift ;;
         -o|--out) OUT="$2"; shift ;;
         --native) DONATIVE=1 ;;
-        -n|--njobs) NJOBS="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
     shift
 done
 
-tsp -C
-tsp -S $NJOBS
+function csv2rec_awk () {
+    awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $1
+}
 
-(test -f $OUT) && echo "file exists: $OUT" && exit 1
-LIST=$(cat $RECFILE | ((test $DONATIVE -eq 1) && awk '/^native:/{print $2}' || awk '/^model:/{print $2}') | sort -u)
-N=$(echo $LIST | wc -l)
-I=0
-TMPCSV=$(date +%s%N)
-awk '/^model:/{printf $2","};/^native:/{printf $2","};/^tmscore:/{printf $2","};/^\s*$/{print}' $RECFILE > $TMPCSV
-for KEY in $(echo $LIST); do
-    (( I+=1 ))
-    echo -ne "$I/$N      \r"
-    if (test $DONATIVE -eq 1); then
-        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -n $KEY --max --out $OUT --tmp $TMPCSV
-    else
-        tsp -n $DIRSCRIPT/tmscore-get.sh -i $RECFILE -m $KEY --max --out $OUT --tmp $TMPCSV
-    fi
-done
-tsp -w
-echo ""
+if (test $DONATIVE -eq 1); then
+    KEY="native"
+else
+    KEY="model"
+fi
+
+csv2rec_awk $RECFILE \
+    | np -d',' "
+A=pd.DataFrame(A[:, :-1], columns=['#model', '#native', '#tmscore'])
+A=A.groupby(['#$KEY']).max()
+print(A.to_string())
+"
