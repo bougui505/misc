@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     for i in range(npdbs - 1):
         for j in range(i + 1, npdbs):
-            rmsd = cmd.align(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}')[3]
+            rmsd = cmd.align(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', cycles=0)[3]
             print(f'pdb1: {args.pdbs[i]}')
             print(f'pdb2: {args.pdbs[j]}')
             print(f'rmsd: {rmsd:.4f}')
