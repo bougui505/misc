@@ -46,11 +46,14 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MODEL=$1
 NATIVE=$2
 OUT=$3
-SCORE=$(TMscore $MODEL $NATIVE | awk '/TM-score    =/{print $3}')
+TMSCOREOUT=$(TMscore $MODEL $NATIVE)
+SCORE=$(echo $TMSCOREOUT | awk '/TM-score    =/{print $3}')
+RMSD=$(echo $TMSCOREOUT | awk '/RMSD of  the common residues=/{print $6}')
 (test -z $SCORE) && SCORE=0.
 flock $OUT cat << EOF >> $OUT
 model: $MODEL
 native: $NATIVE
 tmscore: $SCORE
+rmsd: $RMSD
 
 EOF
