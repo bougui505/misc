@@ -95,7 +95,6 @@ if __name__ == '__main__':
     import argparse
     import pandas as pd
     import os
-    import subprocess
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
@@ -115,4 +114,6 @@ if __name__ == '__main__':
         with open(args.script, 'r') as script:
             cmd = script.read()
         exec(cmd)
-        print(rec.to_string())
+        if rec.index.name is None:
+            rec.index.name = 'recid'
+        print(rec.to_csv())
