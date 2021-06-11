@@ -85,6 +85,8 @@ def load(recfilename):
             else:
                 key, val = get_item(line)
                 pyrec[-1] = add_item(key, val, pyrec[-1])
+        if len(pyrec[-1]) == 0:
+            pyrec.pop()
     return pyrec
 
 
