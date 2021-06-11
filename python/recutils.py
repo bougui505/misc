@@ -91,10 +91,28 @@ def load(recfilename):
 
 
 if __name__ == '__main__':
+    from IPython.terminal.embed import InteractiveShellEmbed
     import argparse
+    import pandas as pd
+    import os
+    import subprocess
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-i', '--inp', help='Input recfile', required=True)
+    parser.add_argument('-s', '--script', help='Script file to run or to create', required=True)
     args = parser.parse_args()
 
+    global rec
+    rec = load(args.inp)
+    rec = pd.DataFrame(rec)
+    if not os.path.exists(args.script):
+        ipshell = InteractiveShellEmbed()
+        print('rec file data stored in recfile')
+        ipshell.magic(f"%logstart {args.script}")
+        ipshell()
+    else:
+        with open(args.script, 'r') as script:
+            cmd = script.read()
+        exec(cmd)
+        print(rec.to_string())
