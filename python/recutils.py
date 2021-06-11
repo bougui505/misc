@@ -116,4 +116,4 @@ if __name__ == '__main__':
         exec(cmd)
         if rec.index.name is None:
             rec.index.name = 'recid'
-        print(rec.to_csv())
+    print(rec.to_csv(float_format='%.4g'))
