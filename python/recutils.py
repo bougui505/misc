@@ -90,6 +90,10 @@ def load(recfilename):
     return pyrec
 
 
+def print_(df):
+    print(df.to_csv(float_format='%.4g'))
+
+
 if __name__ == '__main__':
     from IPython.terminal.embed import InteractiveShellEmbed
     import argparse
@@ -116,4 +120,3 @@ if __name__ == '__main__':
         exec(cmd)
         if rec.index.name is None:
             rec.index.name = 'recid'
-    print(rec.to_csv(float_format='%.4g'))
