@@ -54,6 +54,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-r', '--rec', help='Rec file with TM-score and RMSD results as given by tmscore-multi', required=True)
     parser.add_argument('--rmsd', help='Plot the RMSD instead of the TM-score', action='store_true')
+    parser.add_argument('--annot', help='Annotate the plot with the values', action='store_true')
     args = parser.parse_args()
 
     rec = recutils.load(args.rec)
@@ -70,5 +71,5 @@ if __name__ == '__main__':
     order = hierarchy.leaves_list(Z)
     order = list(pmat.columns.values[order])
     pmat = pmat.reindex(order)[order]
-    sns.heatmap(pmat, annot=True, cbar_kws={'label': cmap_label})
+    sns.heatmap(pmat, annot=args.annot, cbar_kws={'label': cmap_label})
     plt.show()
