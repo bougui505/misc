@@ -62,12 +62,13 @@ if __name__ == '__main__':
     if args.rmsd:
         pmat = rec.pivot(index='native', columns='model', values='rmsd')
         cmap_label = 'RMSD (Å)'
+        Z = hierarchy.ward(pmat.values)
     else:
         pmat = rec.pivot(index='native', columns='model', values='tmscore')
         cmap_label = 'TM-score'
+        Z = hierarchy.ward(1. - pmat.values)
     pmat.rename(columns={e: os.path.splitext(os.path.basename(e))[0] for e in pmat.columns.values}, inplace=True)
     pmat.rename(index={e: os.path.splitext(os.path.basename(e))[0] for e in pmat.index.values}, inplace=True)
-    Z = hierarchy.ward(pmat.values)
     order = hierarchy.leaves_list(Z)
     order = list(pmat.columns.values[order])
     pmat = pmat.reindex(order)[order]
