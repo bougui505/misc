@@ -1,0 +1,21 @@
+generate_README.sh
+.gitignore
+python/hierarchical_sort_pairwise_matrix.py
+python/match3d.py
+python/mol2topdbqt.py
+python/multiprocessing_lock_file.py
+python/pairwise-rmsds.py
+python/protein_roll.py
+python/recutils.py
+python/rmsd_traj_multiref.py
+python/splitmol2.py
+python/struct_align.py
+shell/bsync.sh
+shell/hview.sh
+shell/pdb_batch_download.sh
+shell/tmscore/np.py
+shell/tmscore/tmscore_cluster.py
+shell/tmscore/tmscore_format.sh
+shell/tmscore/tmscore-max.sh
+shell/tmscore/tmscore-multi.sh Compute TM-score on multiple PDB files
+shell/tmscore/tmscore_plot.py

@@ -40,4 +40,4 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
-join -j1 =(git ls-files | sort) =(cat README) | sponge README
+join -a1 -j1 =(git ls-files | sort) README | sponge README
