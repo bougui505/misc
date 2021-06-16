@@ -53,7 +53,7 @@ if __name__ == '__main__':
     cmd.load(args.ref, 'ref')
     for i, mob in enumerate(args.pdb):
         mobname = f'mob{i}'
-        outname = f'{os.path.splitext(mob)[0]}_aligned.pdb'
+        outname = f'{os.path.splitext(mob)[0]}{args.suffix}.pdb'
         cmd.load(mob, mobname)
         cmd.align(mobname, 'ref')
         cmd.save(outname, mobname)
