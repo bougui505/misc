@@ -1,21 +1,21 @@
-generate_README.sh
-.gitignore
-python/hierarchical_sort_pairwise_matrix.py
-python/match3d.py
-python/mol2topdbqt.py
-python/multiprocessing_lock_file.py
-python/pairwise-rmsds.py
-python/protein_roll.py
-python/recutils.py
-python/rmsd_traj_multiref.py
-python/splitmol2.py
-python/struct_align.py
-shell/bsync.sh
-shell/hview.sh
-shell/pdb_batch_download.sh
-shell/tmscore/np.py
-shell/tmscore/tmscore_cluster.py
-shell/tmscore/tmscore_format.sh
-shell/tmscore/tmscore-max.sh
+generate_README.sh Helper to generate this beautiful README file
+.gitignore Self explained !
+python/hierarchical_sort_pairwise_matrix.py Sort hierarchicaly a pairwise --distance-- matrix
+python/match3d.py Use MODELLER to transfer coordinates from one PDB to the other keeping sequence and numbering
+python/mol2topdbqt.py Convert a mol2 to a pdbqt file
+python/multiprocessing_lock_file.py Using lock files for multiprocess in python
+python/pairwise-rmsds.py Compute RMSD pairwisely between pdb files
+python/protein_roll.py Apply rotation to a protein and save a dcd trajectory file
+python/recutils.py Python utility to handle recfiles
+python/rmsd_traj_multiref.py Compute the RMSD between a traj and multiple external reference PDB files
+python/splitmol2.py Split mol2 file in multiple mol2
+python/struct_align.py Align protein structures
+shell/bsync.sh Bidirectional directory sync based on rsync 
+shell/hview.sh Keep the first line visible (using vim)
+shell/pdb_batch_download.sh Download batch of PDB files
+shell/tmscore/np.py Helper function for tmscore utilities
+shell/tmscore/tmscore_cluster.py Cluster PDB files based on TMscore or RMSD
+shell/tmscore/tmscore_format.sh Helper script for shell/tmscore/tmscore-multi.sh
+shell/tmscore/tmscore-max.sh Find the maximum TMscore for each entry
 shell/tmscore/tmscore-multi.sh Compute TM-score on multiple PDB files
-shell/tmscore/tmscore_plot.py
+shell/tmscore/tmscore_plot.py Plot TMscore pairwise matrix
