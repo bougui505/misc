@@ -49,16 +49,18 @@ def read_wrl(wrlfilename):
             a = re.findall("[-0-9]{1,3}.[0-9]{6}", lines)
             if len(a) == 3:
                 data.append(a)
-    data = np.asarray(data)
+    data = np.asarray(data, dtype=float)
     return data
 
 
 def pdb_to_surf(pdbfilename):
-    cmd.load(pdbfilename)
+    cmd.load(pdbfilename, 'tosurf')
+    coords = cmd.get_coords('tosurf')
     cmd.show_as('surface')
     outwrl = f"{os.path.splitext(pdbfilename)[0]}.wrl"
     cmd.save(outwrl)
     pts = read_wrl(outwrl)
+    pts += coords.mean(axis=0)
     return pts
 
 
@@ -72,5 +74,6 @@ if __name__ == '__main__':
 
     pts = pdb_to_surf(args.pdb)
     print(f"n_surface_pts: {pts.shape}")
-    outnpy = f"{os.path.splitext(args.pdb)[0]}.surf.npy"
-    np.save(outnpy, pts)
+    outbasename = f"{os.path.splitext(args.pdb)[0]}.surf"
+    np.save(f'{outbasename}.npy', pts)
+    np.savetxt(f'{outbasename}.xyz', np.c_[['n', ] * len(pts), np.asarray(pts, dtype=object)], fmt=['%s', '%.4f', '%.4f', '%.4f'])
