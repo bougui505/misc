@@ -6,6 +6,7 @@ python/mol2topdbqt.py Convert a mol2 to a pdbqt file
 python/multiprocessing_lock_file.py Using lock files for multiprocess in python
 python/pairwise-rmsds.py Compute RMSD pairwisely between pdb files
 python/pdbs_to_dcd.py Convert a set of PDB files to a DCD trajectory file
+python/pdbsurf.py Generate surface points from a PDB file
 python/protein_roll.py Apply rotation to a protein and save a dcd trajectory file
 python/recutils.py Python utility to handle recfiles
 python/rmsd_traj_multiref.py Compute the RMSD between a traj and multiple external reference PDB files
