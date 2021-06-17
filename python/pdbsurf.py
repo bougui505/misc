@@ -57,6 +57,7 @@ def read_wrl(wrlfilename):
 
 
 def pdb_to_surf(pdbfilename):
+    cmd.reinitialize()
     cmd.load(pdbfilename, 'tosurf')
     coords = cmd.get_coords('tosurf')
     cmd.show_as('surface')
