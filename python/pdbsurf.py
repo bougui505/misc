@@ -46,7 +46,7 @@ def read_wrl(wrlfilename):
     data = []
     with open(wrlfilename, "r") as wrl:
         for lines in wrl:
-            a = re.findall("[-0-9]{1,3}.[0-9]{6}", lines)
+            a = re.findall("[-0-9]+.[0-9]+", lines)
             if len(a) == 3:
                 data.append(a)
     data = np.asarray(data, dtype=float)
