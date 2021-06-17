@@ -11,6 +11,7 @@ python/recutils.py Python utility to handle recfiles
 python/rmsd_traj_multiref.py Compute the RMSD between a traj and multiple external reference PDB files
 python/splitmol2.py Split mol2 file in multiple mol2
 python/struct_align.py Align protein structures
+python/struct_distance.py Compute distance in a trajectory file
 README
 shell/bsync.sh Bidirectional directory sync based on rsync 
 shell/hview.sh Keep the first line visible (using vim)
