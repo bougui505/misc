@@ -88,6 +88,7 @@ if __name__ == '__main__':
     coords2 = cmd.get_coords(f'pdb2 and {args.sel2}')
     R, t = rigid_body_fit(coords1, coords2)
     print(R)
-    coords_aligned = (R.dot(coords1.T)).T + t
-    cmd.load_coords(coords_aligned, f'pdb1 and {args.sel1}')
+    toalign = cmd.get_coords('pdb1')
+    coords_aligned = (R.dot(toalign.T)).T + t
+    cmd.load_coords(coords_aligned, f'pdb1')
     cmd.save('aligned.pdb', 'pdb1')
