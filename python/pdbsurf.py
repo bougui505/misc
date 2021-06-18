@@ -56,11 +56,12 @@ def read_wrl(wrlfilename):
     return data
 
 
-def pdb_to_surf(pdbfilename):
+def pdb_to_surf(pdbfilename, sel):
     cmd.reinitialize()
     cmd.load(pdbfilename, 'tosurf')
-    coords = cmd.get_coords('tosurf')
-    cmd.show_as('surface')
+    selection = f'tosurf and {sel}'
+    coords = cmd.get_coords(selection)
+    cmd.show_as('surface', selection)
     outwrl = f"{os.path.splitext(pdbfilename)[0]}.wrl"
     cmd.save(outwrl)
     pts = read_wrl(outwrl)
@@ -74,9 +75,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert a pdb file to surface points')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
+    parser.add_argument('-s', '--sel', help='Selection ot atoms to compute the surface on (default: all)', default='all')
     args = parser.parse_args()
 
-    pts = pdb_to_surf(args.pdb)
+    pts = pdb_to_surf(args.pdb, args.sel)
     print(f"n_surface_pts: {pts.shape}")
     outbasename = f"{os.path.splitext(args.pdb)[0]}.surf"
     np.save(f'{outbasename}.npy', pts)
