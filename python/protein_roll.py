@@ -51,6 +51,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('--random', action='store_true', help='Random rotations')
+    parser.add_argument('--translate', action='store_true', help='Random translations')
     parser.add_argument('--nframes', type=int, default=1000)
     args = parser.parse_args()
 
@@ -73,7 +74,12 @@ if __name__ == '__main__':
             i += 1
             r = R.from_rotvec(alpha * vec).as_matrix()
             coords_rot = (r.dot(coords.T)).T + center
+            if args.translate:
+                coords_rot += np.random.uniform(low=-5, high=5)
             cmd.create('out', 'inpdb', 1, i)
             cmd.load_coords(coords_rot, 'out', state=i)
-    outname = f'{os.path.splitext(args.pdb)[0]}.dcd'
-    cmd.save_traj(outname, 'out')
+    outname = f'{os.path.splitext(args.pdb)[0]}'
+    if args.nframes > 1:
+        cmd.save_traj(f'{outname}.dcd', 'out')
+    else:
+        cmd.save(f'{outname}_roll.pdb', 'out')
