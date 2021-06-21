@@ -40,23 +40,52 @@ from sklearn.decomposition import PCA
 import numpy as np
 
 
-def stereographic_projection(X):
+def stereographic(X):
     """
     X: (n, 3) coordinates to project
     see: https://en.wikipedia.org/wiki/Stereographic_projection
     """
     pca = PCA(n_components=3)
     X = pca.fit_transform(X)
-    z, x, y = X.T
+    x, y, z = X.T
     proj = np.c_[x / (1. - z), y / (1. - z)]
     return proj
 
 
+class Miller(object):
+    def __init__(self):
+        self.pca = PCA(n_components=3)
+
+    def fit_transform(self, X):
+        """
+        see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
+        """
+        X = self.pca.fit_transform(X)
+        # X -= X.mean(axis=0)
+        r = np.linalg.norm(X, axis=1).max()
+        X = (r / np.linalg.norm(X, axis=1))[:, None] * X
+        r = np.linalg.norm(X, axis=1)
+        lat = np.arctan(X[:, 2] / r)
+        lon = np.arctan(X[:, 1] / X[:, 0])
+        xp = lon
+        yp = (5 / 4) * np.log(np.tan(np.pi / 4 + (2 / 5) * lat))
+        xy = np.c_[xp, yp]
+        return xy
+
+
 if __name__ == '__main__':
+    import pdbsurf
+    import matplotlib.pyplot as plt
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-p', '--pdb')
+    parser.add_argument('-s', '--sel')
     args = parser.parse_args()
 
+    surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
+    miller = Miller()
+    proj = miller.fit_transform(surfpts)
+    plt.scatter(proj[:, 0], proj[:, 1], s=8)
+    plt.show()
