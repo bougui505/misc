@@ -37,6 +37,7 @@
 #############################################################################
 
 from sklearn.decomposition import PCA
+import numpy as np
 
 
 def stereographic_projection(X):
@@ -46,7 +47,8 @@ def stereographic_projection(X):
     """
     pca = PCA(n_components=3)
     X = pca.fit_transform(X)
-    proj = X[:, :2] / (1 - X[:, 2][:, None])
+    z, x, y = X.T
+    proj = np.c_[x / (1. - z), y / (1. - z)]
     return proj
 
 
