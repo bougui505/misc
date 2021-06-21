@@ -9,6 +9,7 @@ python/pdbs_to_dcd.py Convert a set of PDB files to a DCD trajectory file
 python/pdbsurf.py Generate surface points from a PDB file
 python/protein_roll.py Apply rotation to a protein and save a dcd trajectory file
 python/recutils.py Python utility to handle recfiles
+python/rigid_body_fit.py Kabsch algorithm for protein structural alignment
 python/rmsd_traj_multiref.py Compute the RMSD between a traj and multiple external reference PDB files
 python/splitmol2.py Split mol2 file in multiple mol2
 python/struct_align.py Align protein structures
