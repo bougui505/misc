@@ -60,6 +60,7 @@ def pdb_to_surf(pdbfilename, sel):
     cmd.reinitialize()
     cmd.load(pdbfilename, 'tosurf')
     selection = f'tosurf and {sel}'
+    cmd.remove(f'not {sel}')
     coords = cmd.get_coords(selection)
     cmd.hide('everything')
     cmd.show_as('surface', selection)

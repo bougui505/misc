@@ -60,8 +60,11 @@ class Miller(object):
         """
         see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
         """
-        X = self.pca.fit_transform(X)
-        # X -= X.mean(axis=0)
+        self.pca.fit(X)
+        return self.transform(X)
+
+    def transform(self, X):
+        X = self.pca.transform(X)
         r = np.linalg.norm(X, axis=1).max()
         X = (r / np.linalg.norm(X, axis=1))[:, None] * X
         r = np.linalg.norm(X, axis=1)
@@ -76,16 +79,27 @@ class Miller(object):
 if __name__ == '__main__':
     import pdbsurf
     import matplotlib.pyplot as plt
+    import recutils
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('-s', '--sel')
+    parser.add_argument('-c', '--caption')
     args = parser.parse_args()
 
     surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     miller = Miller()
     proj = miller.fit_transform(surfpts)
-    plt.scatter(proj[:, 0], proj[:, 1], s=8)
+    plt.scatter(proj[:, 0], proj[:, 1], s=8, color='gray')
+    if args.caption is not None:
+        captions = recutils.load(args.caption)
+        for caption in captions:
+            sel = caption['sel']
+            color = caption['color']
+            print(f'{color}: {sel}')
+            surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
+            proj_ = miller.transform(surfpts)
+            plt.scatter(proj_[:, 0], proj_[:, 1], s=8, color=color)
     plt.show()
