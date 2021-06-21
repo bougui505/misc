@@ -61,14 +61,13 @@ class Miller(object):
         see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
         """
         self.pca.fit(X)
+        self.r = np.linalg.norm(X, axis=1).max()
         return self.transform(X)
 
     def transform(self, X):
         X = self.pca.transform(X)
-        r = np.linalg.norm(X, axis=1).max()
-        X = (r / np.linalg.norm(X, axis=1))[:, None] * X
-        r = np.linalg.norm(X, axis=1)
-        lat = np.arctan(X[:, 2] / r)
+        X = self.r * X / np.linalg.norm(X, axis=1)[:, None]
+        lat = np.arctan(X[:, 2] / self.r)
         lon = np.arctan(X[:, 1] / X[:, 0])
         xp = lon
         yp = (5 / 4) * np.log(np.tan(np.pi / 4 + (2 / 5) * lat))
