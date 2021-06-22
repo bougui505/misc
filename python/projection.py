@@ -128,6 +128,12 @@ class Miller(object):
         xy = self.__proj__(np.concatenate(lcs))
         return xy
 
+    @property
+    def longitude_circles(self):
+        lcs = longitude_circles(self.r, 10, np.zeros(3))
+        xy = self.__proj__(np.concatenate(lcs))
+        return xy
+
 
 def circle(p, r, v1, v2, npts=1000):
     """
@@ -152,6 +158,18 @@ def latitude_circles(R, num, c):
         v2 = np.asarray([0, 1, 0])
         latcirc.append(circle(p, r, v1, v2))
     return latcirc
+
+
+def longitude_circles(R, num, c):
+    xs = np.linspace(-R, R, num=num)
+    loncirc = []
+    for x in xs:
+        r = np.sqrt(R**2 - x**2)
+        p = c + np.asarray([x, 0, 0])
+        v1 = np.asarray([0, 1, 0])
+        v2 = np.asarray([0, 0, 1])
+        loncirc.append(circle(p, r, v1, v2))
+    return loncirc
 
 
 if __name__ == '__main__':
@@ -192,4 +210,5 @@ if __name__ == '__main__':
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     plt.scatter(*miller.latitude_circles.T, s=.5)
+    plt.scatter(*miller.longitude_circles.T, s=.5)
     plt.show()
