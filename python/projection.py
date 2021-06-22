@@ -107,16 +107,51 @@ class Miller(object):
         self.fit(X)
         return self.transform(X)
 
-    def transform(self, X):
-        X = self.view.transform(X)
-        self.alt = np.linalg.norm(X, axis=1)
-        X = self.r * X / self.alt[:, None]
+    def __proj__(self, X):
         lat = np.arctan(X[:, 2] / self.r)
         lon = np.arctan(X[:, 1] / X[:, 0])
         xp = lon
         yp = (5 / 4) * np.log(np.tan(np.pi / 4 + (2 / 5) * lat))
         xy = np.c_[xp, yp]
         return xy
+
+    def transform(self, X):
+        X = self.view.transform(X)
+        self.alt = np.linalg.norm(X, axis=1)
+        X = self.r * X / self.alt[:, None]
+        xy = self.__proj__(X)
+        return xy
+
+    @property
+    def latitude_circles(self):
+        lcs = latitude_circles(self.r, 10, np.zeros(3))
+        xy = self.__proj__(np.concatenate(lcs))
+        return xy
+
+
+def circle(p, r, v1, v2, npts=1000):
+    """
+    see: https://math.stackexchange.com/a/1184089/192193
+    - p: point in 3D
+    - v1, v2: orthogonal unit vectors
+    - r: scalar
+    circle with center p and radius r lying in the plane parallel to v1 and v2
+    """
+    t = np.linspace(0, 2 * np.pi, num=npts)[:, None]
+    pts = p[None, :] + r * np.cos(t) * v1[None, :] + r * np.sin(t) * v2[None, :]
+    return pts
+
+
+def latitude_circles(R, num, c):
+    zs = np.linspace(-R, R, num=num)
+    latcirc = []
+    for z in zs:
+        r = np.sqrt(R**2 - z**2)
+        p = c + np.asarray([0, 0, z])
+        v1 = np.asarray([1, 0, 0])
+        v2 = np.asarray([0, 1, 0])
+        latcirc.append(circle(p, r, v1, v2))
+    return latcirc
 
 
 if __name__ == '__main__':
@@ -156,4 +191,5 @@ if __name__ == '__main__':
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+    plt.scatter(*miller.latitude_circles.T, s=.5)
     plt.show()
