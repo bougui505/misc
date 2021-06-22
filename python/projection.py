@@ -212,6 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('--center', help='Center the projection on the given selection')
     parser.add_argument('--atomic', help='Project atomic coordinates for selection in caption instead of surface', action='store_true')
     parser.add_argument('--spheric', help='Project the protein surface on a sphere', action='store_true')
+    parser.add_argument('--geom', help='Project the geometric center of the caption selections', action='store_true')
     args = parser.parse_args()
 
     if args.center is not None:
@@ -238,6 +239,8 @@ if __name__ == '__main__':
                 cmd.reinitialize()
             else:
                 toproj = pdbsurf.pdb_to_surf(args.pdb, sel)
+            if args.geom:
+                toproj = toproj.mean(axis=0)[None, :]
             proj_ = miller.transform(toproj)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     miller.grid()
