@@ -236,7 +236,10 @@ if __name__ == '__main__':
                 filename = caption['file']
             else:
                 filename = args.pdb
-            print(colored(f'    • {filename} and {sel}', color))
+            try:
+                print(colored(f'    • {filename} and {sel}', color))
+            except KeyError:
+                print(f'    • {filename} and {sel} -> {color}')
             cmd.load(filename, '_inp_')
             nstates = cmd.count_states('_inp_')
             if nstates > 1:
