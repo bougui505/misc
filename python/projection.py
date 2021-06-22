@@ -92,6 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--pdb')
     parser.add_argument('-s', '--sel')
     parser.add_argument('-c', '--caption')
+    parser.add_argument('--size', type=float, help='Size of the dots for the scatter plot (default=1.)', default=1.)
+    parser.add_argument('--levels', type=int, help='Number of levels in the contour plot (default=10)', default=10)
     args = parser.parse_args()
 
     miller = Miller()
@@ -99,7 +101,7 @@ if __name__ == '__main__':
     proj = miller.fit_transform(surfpts)
     # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
     X, Y, Z = grid(proj[:, 0], proj[:, 1], miller.alt)
-    plt.contourf(X, Y, Z, cmap='coolwarm')
+    plt.contourf(X, Y, Z, cmap='coolwarm', levels=args.levels)
     plt.colorbar()
     if args.caption is not None:
         captions = recutils.load(args.caption)
@@ -109,5 +111,5 @@ if __name__ == '__main__':
             print(f'{color}: {sel}')
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
-            plt.scatter(proj_[:, 0], proj_[:, 1], s=1, color=color)
+            plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     plt.show()
