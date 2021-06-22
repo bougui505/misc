@@ -227,7 +227,7 @@ if __name__ == '__main__':
         for caption in captions:
             sel = caption['sel']
             color = caption['color']
-            print(colored(f'{sel}', color))
+            print(colored(f'    • {sel}', color))
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
