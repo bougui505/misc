@@ -230,6 +230,7 @@ if __name__ == '__main__':
     clb.set_label('z (Å)')
     if args.caption is not None:
         captions = recutils.load(args.caption)
+        print("    ---------------------------------------------------------------")
         for caption in captions:
             sel = caption['sel']
             color = caption['color']
@@ -260,6 +261,7 @@ if __name__ == '__main__':
             for toproj in toproj_list:
                 proj_ = miller.transform(toproj)
                 plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+        print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
     plt.show()
