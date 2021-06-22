@@ -200,6 +200,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import recutils
     from termcolor import colored
+    import glob
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
@@ -240,7 +241,9 @@ if __name__ == '__main__':
                 print(colored(f'    • {filename} and {sel}', color))
             except KeyError:
                 print(f'    • {filename} and {sel} -> {color}')
-            cmd.load(filename, '_inp_')
+            filenames = glob.glob(filename)
+            for filename in filenames:
+                cmd.load(filename, '_inp_')
             nstates = cmd.count_states('_inp_')
             if nstates > 1:
                 args.atomic = True
