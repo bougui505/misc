@@ -101,7 +101,6 @@ class Miller(object):
     def fit(self, X):
         self.view.fit(X)
         X = self.view.transform(X)
-        print(X.mean(axis=0))
         self.r = np.linalg.norm(X, axis=1).max()
 
     def fit_transform(self, X):
