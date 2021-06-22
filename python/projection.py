@@ -122,17 +122,21 @@ class Miller(object):
         xy = self.__proj__(X)
         return xy
 
-    @property
     def latitude_circles(self):
-        lcs = latitude_circles(self.r, 10, np.zeros(3))
+        lcs = latitude_circles(self.r, 12, np.zeros(3))
         xy = self.__proj__(np.concatenate(lcs))
         return xy
 
-    @property
     def longitude_circles(self):
-        lcs = longitude_circles(self.r, 10, np.zeros(3))
+        lcs = longitude_circles(self.r, 12, np.zeros(3))
         xy = self.__proj__(np.concatenate(lcs))
         return xy
+
+    def grid(self):
+        latc = self.latitude_circles()
+        lonc = self.longitude_circles()
+        plt.scatter(*latc.T, s=.05, c='gray')
+        plt.scatter(*lonc.T, s=.05, c='gray')
 
 
 def circle(p, r, v1, v2, npts=1000):
@@ -209,6 +213,6 @@ if __name__ == '__main__':
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
-    plt.scatter(*miller.latitude_circles.T, s=.5)
-    plt.scatter(*miller.longitude_circles.T, s=.5)
+    miller.grid()
+    # plt.axis('off')
     plt.show()
