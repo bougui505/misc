@@ -38,18 +38,19 @@
 
 from sklearn.decomposition import PCA
 import numpy as np
+from scipy.interpolate import griddata
+# from scipy.stats import binned_statistic_2d
 
 
-def stereographic(X):
-    """
-    X: (n, 3) coordinates to project
-    see: https://en.wikipedia.org/wiki/Stereographic_projection
-    """
-    pca = PCA(n_components=3)
-    X = pca.fit_transform(X)
-    x, y, z = X.T
-    proj = np.c_[x / (1. - z), y / (1. - z)]
-    return proj
+def grid(x, y, z, resX=100, resY=100):
+    "Convert 3 column data to matplotlib grid"
+    xi = np.linspace(min(x), max(x), resX)
+    yi = np.linspace(min(y), max(y), resY)
+    X, Y = np.meshgrid(xi, yi)
+    Z = griddata(np.c_[x, y], z, (X, Y), method='linear')
+    # Z, xi, yi, _ = binned_statistic_2d(x, y, z, bins=(100, 100), statistic='max')
+    # X, Y = np.meshgrid(xi[:-1], yi[:-1])
+    return X, Y, Z
 
 
 class Miller(object):
@@ -61,7 +62,8 @@ class Miller(object):
         see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
         """
         self.pca.fit(X)
-        self.r = np.linalg.norm(X, axis=1).max()
+        self.alt = np.linalg.norm(X, axis=1)
+        self.r = self.alt.max()
         return self.transform(X)
 
     def transform(self, X):
@@ -91,7 +93,10 @@ if __name__ == '__main__':
     surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     miller = Miller()
     proj = miller.fit_transform(surfpts)
-    plt.scatter(proj[:, 0], proj[:, 1], s=8, color='gray')
+    # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
+    X, Y, Z = grid(proj[:, 0], proj[:, 1], miller.alt)
+    plt.contourf(X, Y, Z, cmap='coolwarm')
+    plt.colorbar()
     if args.caption is not None:
         captions = recutils.load(args.caption)
         for caption in captions:
@@ -100,5 +105,5 @@ if __name__ == '__main__':
             print(f'{color}: {sel}')
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
-            plt.scatter(proj_[:, 0], proj_[:, 1], s=8, color=color)
+            plt.scatter(proj_[:, 0], proj_[:, 1], s=1, color=color)
     plt.show()
