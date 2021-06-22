@@ -54,21 +54,25 @@ def grid(x, y, z, resX=100, resY=100):
 
 
 class Miller(object):
+    """
+    see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
+    """
     def __init__(self):
         self.pca = PCA(n_components=3)
 
-    def fit_transform(self, X):
-        """
-        see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
-        """
+    def fit(self, X):
         self.pca.fit(X)
-        self.alt = np.linalg.norm(X, axis=1)
-        self.r = self.alt.max()
+        X = self.pca.transform(X)
+        self.r = np.linalg.norm(X, axis=1).max()
+
+    def fit_transform(self, X):
+        self.fit(X)
         return self.transform(X)
 
     def transform(self, X):
         X = self.pca.transform(X)
-        X = self.r * X / np.linalg.norm(X, axis=1)[:, None]
+        self.alt = np.linalg.norm(X, axis=1)
+        X = self.r * X / self.alt[:, None]
         lat = np.arctan(X[:, 2] / self.r)
         lon = np.arctan(X[:, 1] / X[:, 0])
         xp = lon
@@ -90,8 +94,8 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--caption')
     args = parser.parse_args()
 
-    surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     miller = Miller()
+    surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     proj = miller.fit_transform(surfpts)
     # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
     X, Y, Z = grid(proj[:, 0], proj[:, 1], miller.alt)
