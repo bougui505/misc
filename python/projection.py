@@ -237,16 +237,23 @@ if __name__ == '__main__':
             else:
                 filename = args.pdb
             print(colored(f'    • {filename} and {sel}', color))
+            cmd.load(filename, '_inp_')
+            nstates = cmd.count_states('_inp_')
+            if nstates > 1:
+                args.atomic = True
             if args.atomic:
-                cmd.load(filename, '_inp_')
-                toproj = cmd.get_coords(f'_inp_ and {sel}')
+                toproj_list = []
+                for i in range(nstates):
+                    toproj_list.append(cmd.get_coords(f'_inp_ and {sel}', state=i + 1))
                 cmd.reinitialize()
             else:
-                toproj = pdbsurf.pdb_to_surf(filename, sel)
+                # TODO: not yet implemented for multistate pdb
+                toproj_list = [pdbsurf.pdb_to_surf(filename, sel), ]
             if args.geom:
-                toproj = toproj.mean(axis=0)[None, :]
-            proj_ = miller.transform(toproj)
-            plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+                toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
+            for toproj in toproj_list:
+                proj_ = miller.transform(toproj)
+                plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     miller.grid()
     plt.axis('off')
     plt.show()
