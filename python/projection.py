@@ -95,7 +95,8 @@ class Miller(object):
     """
     see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
     """
-    def __init__(self, center=None):
+    def __init__(self, center=None, spheric=True):
+        self.spheric = spheric
         self.view = View(dopca=True, center=center)
         self.n_circles = 13
 
@@ -119,7 +120,8 @@ class Miller(object):
     def transform(self, X):
         X = self.view.transform(X)
         self.alt = np.linalg.norm(X, axis=1)
-        X = self.r * X / self.alt[:, None]
+        if self.spheric:
+            X = self.r * X / self.alt[:, None]
         xy = self.__proj__(X)
         return xy
 
@@ -209,13 +211,14 @@ if __name__ == '__main__':
     parser.add_argument('--levels', type=int, help='Number of levels in the contour plot (default=10)', default=10)
     parser.add_argument('--center', help='Center the projection on the given selection')
     parser.add_argument('--atomic', help='Project atomic coordinates for selection in caption instead of surface', action='store_true')
+    parser.add_argument('--spheric', help='Project the protein surface on a sphere', action='store_true')
     args = parser.parse_args()
 
     if args.center is not None:
         cmd.load(args.pdb)
         args.center = cmd.get_coords(args.center)
         cmd.reinitialize()
-    miller = Miller(center=args.center)
+    miller = Miller(center=args.center, spheric=args.spheric)
     surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     proj = miller.fit_transform(surfpts)
     # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
