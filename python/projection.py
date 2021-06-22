@@ -208,6 +208,7 @@ if __name__ == '__main__':
     parser.add_argument('--size', type=float, help='Size of the dots for the scatter plot (default=1.)', default=1.)
     parser.add_argument('--levels', type=int, help='Number of levels in the contour plot (default=10)', default=10)
     parser.add_argument('--center', help='Center the projection on the given selection')
+    parser.add_argument('--atomic', help='Project atomic coordinates for selection in caption instead of surface', action='store_true')
     args = parser.parse_args()
 
     if args.center is not None:
@@ -228,8 +229,13 @@ if __name__ == '__main__':
             sel = caption['sel']
             color = caption['color']
             print(colored(f'    • {sel}', color))
-            surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
-            proj_ = miller.transform(surfpts)
+            if args.atomic:
+                cmd.load(args.pdb, '_inp_')
+                toproj = cmd.get_coords(f'_inp_ and {sel}')
+                cmd.reinitialize()
+            else:
+                toproj = pdbsurf.pdb_to_surf(args.pdb, sel)
+            proj_ = miller.transform(toproj)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     miller.grid()
     plt.axis('off')
