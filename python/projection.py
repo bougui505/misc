@@ -197,6 +197,7 @@ if __name__ == '__main__':
     from pymol import cmd
     import matplotlib.pyplot as plt
     import recutils
+    from termcolor import colored
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
@@ -226,7 +227,7 @@ if __name__ == '__main__':
         for caption in captions:
             sel = caption['sel']
             color = caption['color']
-            print(f'{color}: {sel}')
+            print(colored(f'{sel}', color))
             surfpts = pdbsurf.pdb_to_surf(args.pdb, sel)
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
