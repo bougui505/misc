@@ -97,6 +97,7 @@ class Miller(object):
     """
     def __init__(self, center=None):
         self.view = View(dopca=True, center=center)
+        self.n_circles = 13
 
     def fit(self, X):
         self.view.fit(X)
@@ -123,12 +124,12 @@ class Miller(object):
         return xy
 
     def latitude_circles(self):
-        lcs = latitude_circles(self.r, 12, np.zeros(3))
+        lcs = latitude_circles(self.r, self.n_circles, np.zeros(3))
         xy = self.__proj__(np.concatenate(lcs))
         return xy
 
     def longitude_circles(self):
-        lcs = longitude_circles(self.r, 12, np.zeros(3))
+        lcs = longitude_circles(self.r, self.n_circles, np.zeros(3))
         xy = self.__proj__(np.concatenate(lcs))
         return xy
 
@@ -137,9 +138,23 @@ class Miller(object):
         lonc = self.longitude_circles()
         plt.scatter(*latc.T, s=.05, c='gray')
         plt.scatter(*lonc.T, s=.05, c='gray')
+        xmax = np.nanmax(latc, axis=0)[0]
+        sel = (latc[:, 0] == xmax)
+        xmax = latc[:, 0][sel]
+        ymax = latc[:, 1][sel]
+        xticklabel = -self.r / 2 + 0.5 * self.r / self.n_circles
+        for i, (xl, yl) in enumerate(zip(xmax, ymax)):
+            xticklabel += self.r / self.n_circles
+            plt.annotate(f'{xticklabel:.2f}', (xl, yl), size=10., va='center',
+                         xytext=(xl + 0.05, yl), color='gray')
+            if i == self.n_circles // 2 - 1:
+                plt.annotate(f'latitude (Å)', (xl, yl), size=10.,
+                             xytext=(xl + 0.4, yl), rotation='vertical',
+                             rotation_mode=None, ha='center', va='center',
+                             color='gray')
 
 
-def circle(p, r, v1, v2, npts=1000):
+def circle(p, r, v1, v2, npts=1000, amin=0., amax=2 * np.pi):
     """
     see: https://math.stackexchange.com/a/1184089/192193
     - p: point in 3D
@@ -147,7 +162,7 @@ def circle(p, r, v1, v2, npts=1000):
     - r: scalar
     circle with center p and radius r lying in the plane parallel to v1 and v2
     """
-    t = np.linspace(0, 2 * np.pi, num=npts)[:, None]
+    t = np.linspace(amin, amax, num=npts)[:, None]
     pts = p[None, :] + r * np.cos(t) * v1[None, :] + r * np.sin(t) * v2[None, :]
     return pts
 
@@ -165,14 +180,15 @@ def latitude_circles(R, num, c):
 
 
 def longitude_circles(R, num, c):
-    xs = np.linspace(-R, R, num=num)
+    ys = np.linspace(-R, R, num=num)
     loncirc = []
-    for x in xs:
-        r = np.sqrt(R**2 - x**2)
-        p = c + np.asarray([x, 0, 0])
-        v1 = np.asarray([0, 1, 0])
+    for y in ys:
+        r = np.sqrt(R**2 - y**2)
+        p = c + np.asarray([0, y, 0])
+        v1 = np.asarray([1, 0, 0])
         v2 = np.asarray([0, 0, 1])
-        loncirc.append(circle(p, r, v1, v2))
+        da = 0.9 * 2 * np.pi / 3
+        loncirc.append(circle(p, r, v1, v2, amin=da, amax=2 * np.pi - da))
     return loncirc
 
 
@@ -203,7 +219,8 @@ if __name__ == '__main__':
     # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
     X, Y, Z = grid(proj[:, 0], proj[:, 1], miller.alt)
     plt.contourf(X, Y, Z, cmap='coolwarm', levels=args.levels)
-    plt.colorbar()
+    clb = plt.colorbar()
+    clb.set_label('z (Å)')
     if args.caption is not None:
         captions = recutils.load(args.caption)
         for caption in captions:
@@ -214,5 +231,5 @@ if __name__ == '__main__':
             proj_ = miller.transform(surfpts)
             plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
     miller.grid()
-    # plt.axis('off')
+    plt.axis('off')
     plt.show()
