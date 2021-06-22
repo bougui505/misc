@@ -234,17 +234,17 @@ if __name__ == '__main__':
         for caption in captions:
             sel = caption['sel']
             color = caption['color']
-            if 'file' in caption:
-                filename = caption['file']
+            if 'pdb' in caption:
+                pdbfilename = caption['pdb']
             else:
-                filename = args.pdb
+                pdbfilename = args.pdb
             try:
-                print(colored(f'    • {filename} and {sel}', color))
+                print(colored(f'    • {pdbfilename} and {sel}', color))
             except KeyError:
-                print(f'    • {filename} and {sel} -> {color}')
-            filenames = glob.glob(filename)
-            for filename in filenames:
-                cmd.load(filename, '_inp_')
+                print(f'    • {pdbfilename} and {sel} -> {color}')
+            pdbfilenames = glob.glob(pdbfilename)
+            for pdbfilename in pdbfilenames:
+                cmd.load(pdbfilename, '_inp_')
             nstates = cmd.count_states('_inp_')
             if nstates > 1:
                 args.atomic = True
@@ -255,7 +255,7 @@ if __name__ == '__main__':
                 cmd.reinitialize()
             else:
                 # TODO: not yet implemented for multistate pdb
-                toproj_list = [pdbsurf.pdb_to_surf(filename, sel), ]
+                toproj_list = [pdbsurf.pdb_to_surf(pdbfilename, sel), ]
             if args.geom:
                 toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
             for toproj in toproj_list:
