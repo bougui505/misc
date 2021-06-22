@@ -39,6 +39,7 @@
 from sklearn.decomposition import PCA
 import numpy as np
 from scipy.interpolate import griddata
+import kabsch
 # from scipy.stats import binned_statistic_2d
 
 
@@ -53,16 +54,54 @@ def grid(x, y, z, resX=100, resY=100):
     return X, Y, Z
 
 
+class View(object):
+    """
+    Center the frame of the protein for projection
+    """
+    def __init__(self, dopca=True, center=None):
+        """
+        If dopca is True, compute PCA to center the view (the default)
+        if center is a set of coordinates, align the center of mass of the coordinates with the x-axis
+        """
+        self.dopca = dopca
+        self.center = center
+        if self.center is not None:
+            self.dopca = False
+            self.center = np.mean(center, axis=0)
+        self.pca = PCA(n_components=3)
+
+    def fit(self, X):
+        if self.dopca:
+            self.pca.fit(X)
+        if self.center is not None:
+            self.mu = np.mean(X, axis=0)
+            center_c = self.center - self.mu
+            r = np.linalg.norm(center_c)
+            mob = np.stack((np.asarray([0, 0, 0]), center_c))
+            target = np.asarray([[0, 0, 0], [r, 0, 0]])
+            # print(mob.shape, target.shape)
+            self.R, self.t = kabsch.rigid_body_fit(mob, target)
+            # print(self.R, self.t)
+
+    def transform(self, X):
+        if self.dopca:
+            return self.pca.transform(X)
+        if self.center is not None:
+            X_c = X - self.mu
+            return (self.R.dot(X_c.T)).T + self.t
+
+
 class Miller(object):
     """
     see: https://bmcstructbiol.biomedcentral.com/articles/10.1186/s12900-016-0055-7#Sec1
     """
-    def __init__(self):
-        self.pca = PCA(n_components=3)
+    def __init__(self, center=None):
+        self.view = View(dopca=True, center=center)
 
     def fit(self, X):
-        self.pca.fit(X)
-        X = self.pca.transform(X)
+        self.view.fit(X)
+        X = self.view.transform(X)
+        print(X.mean(axis=0))
         self.r = np.linalg.norm(X, axis=1).max()
 
     def fit_transform(self, X):
@@ -70,7 +109,7 @@ class Miller(object):
         return self.transform(X)
 
     def transform(self, X):
-        X = self.pca.transform(X)
+        X = self.view.transform(X)
         self.alt = np.linalg.norm(X, axis=1)
         X = self.r * X / self.alt[:, None]
         lat = np.arctan(X[:, 2] / self.r)
@@ -83,6 +122,7 @@ class Miller(object):
 
 if __name__ == '__main__':
     import pdbsurf
+    from pymol import cmd
     import matplotlib.pyplot as plt
     import recutils
     import argparse
@@ -94,9 +134,14 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--caption')
     parser.add_argument('--size', type=float, help='Size of the dots for the scatter plot (default=1.)', default=1.)
     parser.add_argument('--levels', type=int, help='Number of levels in the contour plot (default=10)', default=10)
+    parser.add_argument('--center', help='Center the projection on the given selection')
     args = parser.parse_args()
 
-    miller = Miller()
+    if args.center is not None:
+        cmd.load(args.pdb)
+        args.center = cmd.get_coords(args.center)
+        cmd.reinitialize()
+    miller = Miller(center=args.center)
     surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     proj = miller.fit_transform(surfpts)
     # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
