@@ -232,13 +232,17 @@ if __name__ == '__main__':
         for caption in captions:
             sel = caption['sel']
             color = caption['color']
-            print(colored(f'    • {sel}', color))
+            if 'file' in caption:
+                filename = caption['file']
+            else:
+                filename = args.pdb
+            print(colored(f'    • {filename} and {sel}', color))
             if args.atomic:
-                cmd.load(args.pdb, '_inp_')
+                cmd.load(filename, '_inp_')
                 toproj = cmd.get_coords(f'_inp_ and {sel}')
                 cmd.reinitialize()
             else:
-                toproj = pdbsurf.pdb_to_surf(args.pdb, sel)
+                toproj = pdbsurf.pdb_to_surf(filename, sel)
             if args.geom:
                 toproj = toproj.mean(axis=0)[None, :]
             proj_ = miller.transform(toproj)
