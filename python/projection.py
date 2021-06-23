@@ -258,6 +258,10 @@ if __name__ == '__main__':
                 assert len(project) == nstates
             else:
                 project = None
+            if 'label' in caption:  # label of the colorbar for the data projected
+                clb_proj_label = caption['label']
+            else:
+                clb_proj_label = None
             if 'sort' in caption:  # Sort the data based on the 'project' field
                 dosort = caption['sort']  # 1: sort | -1: reverse sort
             else:
@@ -289,6 +293,9 @@ if __name__ == '__main__':
                         sorter = sorter[::-1]
                     xyz = xyz[sorter]
                 plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
+                clb_proj = plt.colorbar()
+                if clb_proj_label is not None:
+                    clb_proj.set_label(clb_proj_label)
         print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
