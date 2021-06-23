@@ -202,6 +202,7 @@ if __name__ == '__main__':
     from termcolor import colored
     import glob
     import argparse
+    cmd.feedback('disable', 'all', 'everything')
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
@@ -233,7 +234,10 @@ if __name__ == '__main__':
         print("    ---------------------------------------------------------------")
         for caption in captions:
             sel = caption['sel']
-            color = caption['color']
+            if 'color' in caption:
+                color = caption['color']
+            else:
+                color = None
             if 'pdb' in caption:
                 pdbfilename = caption['pdb']
             else:
@@ -267,6 +271,10 @@ if __name__ == '__main__':
                 dosort = caption['sort']  # 1: sort | -1: reverse sort
             else:
                 dosort = None
+            if 'first' in caption:  # Plot only the n-first states
+                first = caption['first']
+            else:
+                first = None
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
@@ -293,10 +301,15 @@ if __name__ == '__main__':
                     if dosort == -1:
                         sorter = sorter[::-1]
                     xyz = xyz[sorter]
-                plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
-                clb_proj = plt.colorbar()
-                if clb_proj_label is not None:
-                    clb_proj.set_label(clb_proj_label)
+                    if first is not None:
+                        xyz = xyz[:first]
+                if color is None:
+                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
+                    clb_proj = plt.colorbar()
+                    if clb_proj_label is not None:
+                        clb_proj.set_label(clb_proj_label)
+                else:
+                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color)
         print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
