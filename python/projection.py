@@ -214,6 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--atomic', help='Project atomic coordinates for selection in caption instead of surface', action='store_true')
     parser.add_argument('--spheric', help='Project the protein surface on a sphere', action='store_true')
     parser.add_argument('--geom', help='Project the geometric center of the caption selections', action='store_true')
+    parser.add_argument('--save', help='Save as a figure')
     args = parser.parse_args()
 
     if args.center is not None:
@@ -299,4 +300,7 @@ if __name__ == '__main__':
         print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
-    plt.show()
+    if args.save is None:
+        plt.show()
+    else:
+        plt.savefig(args.save)
