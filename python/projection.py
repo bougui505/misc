@@ -238,6 +238,10 @@ if __name__ == '__main__':
                 pdbfilename = caption['pdb']
             else:
                 pdbfilename = args.pdb
+            if 'traj' in caption:
+                trajfilename = caption['traj']
+            else:
+                trajfilename = None
             try:
                 print(colored(f'    • {pdbfilename} and {sel}', color))
             except KeyError:
@@ -245,6 +249,8 @@ if __name__ == '__main__':
             pdbfilenames = glob.glob(pdbfilename)
             for pdbfilename in pdbfilenames:
                 cmd.load(pdbfilename, '_inp_')
+            if trajfilename is not None:
+                cmd.load_traj(trajfilename, '_inp_', state=1)
             nstates = cmd.count_states('_inp_')
             if nstates > 1:
                 args.atomic = True
