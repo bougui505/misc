@@ -202,6 +202,7 @@ if __name__ == '__main__':
     from termcolor import colored
     import glob
     import argparse
+    import sys
     cmd.feedback('disable', 'all', 'everything')
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
@@ -289,11 +290,14 @@ if __name__ == '__main__':
                 toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
             xyz = []
             for i, toproj in enumerate(toproj_list):
+                sys.stdout.write(f'{i+1}/{len(toproj_list)}\r')
+                sys.stdout.flush()
                 proj_ = miller.transform(toproj)
                 if project is None:
                     plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
                 else:
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
+            print()
             if project is not None:
                 xyz = np.asarray(xyz)
                 if dosort is not None:
