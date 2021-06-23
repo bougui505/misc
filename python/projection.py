@@ -223,7 +223,6 @@ if __name__ == '__main__':
     miller = Miller(center=args.center, spheric=args.spheric)
     surfpts = pdbsurf.pdb_to_surf(args.pdb, args.sel)
     proj = miller.fit_transform(surfpts)
-    # plt.scatter(proj[:, 0], proj[:, 1], s=8, c=miller.alt, cmap='gist_gray')
     X, Y, Z = grid(proj[:, 0], proj[:, 1], miller.alt)
     plt.contourf(X, Y, Z, cmap='coolwarm', levels=args.levels)
     clb = plt.colorbar()
@@ -252,6 +251,13 @@ if __name__ == '__main__':
             if trajfilename is not None:
                 cmd.load_traj(trajfilename, '_inp_', state=1)
             nstates = cmd.count_states('_inp_')
+            if 'project' in caption:  # Projection on scattered dots
+                project = np.genfromtxt(caption['project'])
+                args.atomic = True
+                args.geom = True
+                assert len(project) == nstates
+            else:
+                project = None
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
@@ -264,9 +270,16 @@ if __name__ == '__main__':
                 toproj_list = [pdbsurf.pdb_to_surf(pdbfilename, sel), ]
             if args.geom:
                 toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
-            for toproj in toproj_list:
+            xyz = []
+            for i, toproj in enumerate(toproj_list):
                 proj_ = miller.transform(toproj)
-                plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+                if project is None:
+                    plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+                else:
+                    xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
+            if project is not None:
+                xyz = np.asarray(xyz)
+                plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
         print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
