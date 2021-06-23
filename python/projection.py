@@ -295,12 +295,14 @@ if __name__ == '__main__':
                 sys.stdout.flush()
                 proj_ = miller.transform(toproj)
                 if project is None:
-                    plt.scatter(proj_[:, 0], proj_[:, 1], s=args.size, color=color)
+                    xyz.append([proj_[:, 0], proj_[:, 1]])
                 else:
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
             print()
-            if project is not None:
-                xyz = np.asarray(xyz)
+            xyz = np.asarray(xyz)
+            if project is None:
+                plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color)
+            else:
                 if dosort is not None:
                     sorter = np.argsort(xyz[:, 2])
                     if dosort == -1:
