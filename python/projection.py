@@ -290,6 +290,7 @@ if __name__ == '__main__':
                 toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
             xyz = []
             for i, toproj in enumerate(toproj_list):
+                # TODO: remove the loop: project in 1-shot
                 sys.stdout.write(f'{i+1}/{len(toproj_list)}\r')
                 sys.stdout.flush()
                 proj_ = miller.transform(toproj)
