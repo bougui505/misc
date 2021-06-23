@@ -258,6 +258,10 @@ if __name__ == '__main__':
                 assert len(project) == nstates
             else:
                 project = None
+            if 'sort' in caption:  # Sort the data based on the 'project' field
+                dosort = caption['sort']  # 1: sort | -1: reverse sort
+            else:
+                dosort = None
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
@@ -279,6 +283,11 @@ if __name__ == '__main__':
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
             if project is not None:
                 xyz = np.asarray(xyz)
+                if dosort is not None:
+                    sorter = np.argsort(xyz[:, 2])
+                    if dosort == -1:
+                        sorter = sorter[::-1]
+                    xyz = xyz[sorter]
                 plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
         print("    ---------------------------------------------------------------")
     miller.grid()
