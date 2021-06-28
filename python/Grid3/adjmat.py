@@ -125,16 +125,16 @@ def flood(A, source, level):
     adj.data = -np.log(adj.data)
     adj.data -= adj.data.min()
     start = np.ravel_multi_index(source, A.shape)
-    D = scipy.sparse.csgraph.dijkstra(adj)
     cell = start
     visited_cell = set([cell, ])
     for i in range(level):
-        D_ = D[list(visited_cell)]
-        D_shape = D_.shape
-        D_ = D_.flatten()
-        cell = np.argmin(D_)
+        D = scipy.sparse.csgraph.dijkstra(adj, indices=list(visited_cell), min_only=True)
+        D = np.atleast_2d(D)
+        D[:, tuple(visited_cell)] = np.inf
+        D_shape = D.shape
+        D = D.flatten()
+        cell = np.argmin(D)
         cell = np.unravel_index(cell, D_shape)[1]
-        D[:, cell] = np.inf
         visited_cell.add(cell)
     blob = np.zeros_like(A)
     blob = blob.flatten()
@@ -154,9 +154,10 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     args = parser.parse_args()
 
-    shape = (10, 10, 10)
+    shape = (30, 20, 22)
     A = gaussian_grid3.random(ncenters=10, scale=5, shape=shape)
     # A = np.random.uniform(0, 1, size=(10, 10, 10))
+    source = tuple(np.asarray(shape) // 2)
     blob = flood(A, source=(5, 5, 5), level=150)
     mrc.save_density(blob, 'blob.mrc')
     # plt.matshow(D)
