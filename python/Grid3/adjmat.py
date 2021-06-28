@@ -132,9 +132,8 @@ def flood(A, source, level):
         D_ = D[list(visited_cell)]
         D_shape = D_.shape
         D_ = D_.flatten()
-        nodes = np.argsort(D_)
-        nodes = np.unravel_index(nodes, D_shape)[1]
-        cell = nodes[0]
+        cell = np.argmin(D_)
+        cell = np.unravel_index(cell, D_shape)[1]
         D[:, cell] = np.inf
         visited_cell.add(cell)
     blob = np.zeros_like(A)
