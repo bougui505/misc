@@ -50,7 +50,15 @@ def get(locs, scale, shape):
 
     A[tuple(zip(locs.T))] = 0.
     A = morphology.distance_transform_edt(A)
-    return np.exp(-A**2) / (2 * scale**2)
+    return np.exp(-A**2 / (2 * scale**2))
+
+
+def random(ncenters, scale, shape):
+    locs = np.stack((np.random.randint(low=0, high=shape[0], size=ncenters),
+                     np.random.randint(low=0, high=shape[1], size=ncenters),
+                     np.random.randint(low=0, high=shape[2], size=ncenters)), axis=1)
+    A = get(locs, scale, shape)
+    return A
 
 
 if __name__ == '__main__':
@@ -65,8 +73,5 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--out', default='gauss.mrc')
     args = parser.parse_args()
 
-    locs = np.stack((np.random.randint(low=0, high=args.shape[0], size=args.ncenters),
-                     np.random.randint(low=0, high=args.shape[1], size=args.ncenters),
-                     np.random.randint(low=0, high=args.shape[2], size=args.ncenters)), axis=1)
-    A = get(locs, args.scale, args.shape)
+    A = random(args.ncenters, args.scale, args.shape)
     mrc.save_density(A, args.out)
