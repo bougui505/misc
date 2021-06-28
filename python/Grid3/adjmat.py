@@ -36,6 +36,7 @@
 #                                                                           #
 #############################################################################
 
+import sys
 import numpy as np
 import scipy
 
@@ -120,25 +121,25 @@ def flood(A, source, level):
         delta = y - x
         delta[delta < 0] = np.inf
         return delta
-    adj = get(A, normalize=False, beta=1, func=adjfunc)
+    adj = get(A, beta=50)
+    adj.data = -np.log(adj.data)
+    adj.data -= adj.data.min()
     start = np.ravel_multi_index(source, A.shape)
-    D, preds = scipy.sparse.csgraph.dijkstra(adj, return_predecessors=True, directed=False)
-    # plt.matshow(D)
-    # plt.colorbar()
-    # plt.show()
+    D = scipy.sparse.csgraph.dijkstra(adj)
     cell = start
-    visited = set([cell])
+    visited_cell = set([cell, ])
     for i in range(level):
-        preds_ = preds[cell]
-        preds_ = preds_[preds_ > 0]
-        sorter = np.argsort(D[cell, preds_])
-        cells = np.arange(A.size)[sorter]
-        cell = cells[~np.isin(cells, list(visited))][0]
-        visited.add(cell)
-        print(np.unravel_index(cell, A.shape))
+        D_ = D[list(visited_cell)]
+        D_shape = D_.shape
+        D_ = D_.flatten()
+        nodes = np.argsort(D_)
+        nodes = np.unravel_index(nodes, D_shape)[1]
+        sel = ~np.isin(nodes, list(visited_cell))
+        cell = nodes[sel][0]
+        visited_cell.add(cell)
     blob = np.zeros_like(A)
     blob = blob.flatten()
-    blob[list(visited)] = 1.
+    blob[list(visited_cell)] = 1.
     blob = blob.reshape(A.shape)
     return blob
 
@@ -155,7 +156,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     shape = (10, 10, 10)
-    A = gaussian_grid3.random(ncenters=10, scale=10, shape=shape)
+    A = gaussian_grid3.random(ncenters=10, scale=5, shape=shape)
+    # A = np.random.uniform(0, 1, size=(10, 10, 10))
     blob = flood(A, source=(5, 5, 5), level=150)
     mrc.save_density(blob, 'blob.mrc')
     # plt.matshow(D)
