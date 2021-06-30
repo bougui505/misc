@@ -39,6 +39,7 @@
 import sys
 import numpy as np
 import scipy
+import time
 
 
 def get(dmap, beta=50., func=lambda x, dmap, beta: np.exp(-beta * (dmap - x)), normalize=True):
@@ -113,20 +114,20 @@ def move(M, direction):
     return M
 
 
-def flood(A, source, level):
+def flood(A, source, level, timing=False):
     """
     Flood a bassin from the given source (i, j, k) until the given level
     """
-    def adjfunc(x, y, beta):
-        delta = y - x
-        delta[delta < 0] = np.inf
-        return delta
-    adj = get(A, beta=50)
-    adj.data = -np.log(adj.data)
-    adj.data -= adj.data.min()
+    t0 = time.perf_counter()
+    adj = get(A, beta=1.)
+    if timing:
+        print(f'Adjmat: {time.perf_counter() - t0}')
+    # adj.data = -np.log(adj.data)
+    # adj.data -= adj.data.min()
     start = np.ravel_multi_index(source, A.shape)
     cell = start
     visited_cell = set([cell, ])
+    t0 = time.perf_counter()
     for i in range(level):
         D = scipy.sparse.csgraph.dijkstra(adj, indices=list(visited_cell), min_only=True)
         D = np.atleast_2d(D)
@@ -136,6 +137,8 @@ def flood(A, source, level):
         cell = np.argmin(D)
         cell = np.unravel_index(cell, D_shape)[1]
         visited_cell.add(cell)
+    if timing:
+        print(f'Flooding: {time.perf_counter() - t0}')
     blob = np.zeros_like(A)
     blob = blob.flatten()
     blob[list(visited_cell)] = 1.
