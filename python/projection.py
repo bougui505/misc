@@ -276,6 +276,8 @@ if __name__ == '__main__':
                 first = caption['first']
             else:
                 first = None
+            if 'size' in caption:  # size of the scatter dots
+                args.size = caption['size']
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
