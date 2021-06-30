@@ -278,6 +278,10 @@ if __name__ == '__main__':
                 first = None
             if 'size' in caption:  # size of the scatter dots
                 args.size = caption['size']
+            if 'alpha' in caption:  # transparency of the scatter dots
+                alpha = caption['alpha']
+            else:
+                alpha = 1.
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
@@ -303,7 +307,7 @@ if __name__ == '__main__':
             print()
             xyz = np.asarray(xyz)
             if project is None:
-                plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color)
+                plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color, alpha=alpha)
             else:
                 if dosort is not None:
                     sorter = np.argsort(xyz[:, 2])
@@ -313,12 +317,12 @@ if __name__ == '__main__':
                     if first is not None:
                         xyz = xyz[:first]
                 if color is None:
-                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2])
+                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, c=xyz[:, 2], alpha=alpha)
                     clb_proj = plt.colorbar()
                     if clb_proj_label is not None:
                         clb_proj.set_label(clb_proj_label)
                 else:
-                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color)
+                    plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color, alpha=alpha)
         print("    ---------------------------------------------------------------")
     miller.grid()
     plt.axis('off')
