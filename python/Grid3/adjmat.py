@@ -128,8 +128,13 @@ def flood(A, source, level, timing=False):
     cell = start
     visited_cell = set([cell, ])
     t0 = time.perf_counter()
+    D = scipy.sparse.csgraph.dijkstra(adj, indices=list(visited_cell), min_only=True)
+    if len(D) < level + 1:
+        limit = np.inf
+    else:
+        limit = np.sort(D)[level + 1]
     for i in range(level):
-        D = scipy.sparse.csgraph.dijkstra(adj, indices=list(visited_cell), min_only=True)
+        D = scipy.sparse.csgraph.dijkstra(adj, indices=list(visited_cell), min_only=True, limit=limit)
         D = np.atleast_2d(D)
         D[:, tuple(visited_cell)] = np.inf
         D_shape = D.shape
