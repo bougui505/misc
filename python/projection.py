@@ -323,8 +323,9 @@ if __name__ == '__main__':
                         else:
                             unit = 'value'
                         val_mean = z[label_sel].mean()
+                        val_std = z[label_sel].std()
                         cluster_inf += f'Population for cluster {label}: {label_sel.sum()}\n'
-                        cluster_inf += f'Mean {unit} for cluster {label}: {val_mean:.4g}\n'
+                        cluster_inf += f'Mean {unit} for cluster {label}: {val_mean:.4g} +- {val_std:.4g}\n'
                     print(cluster_inf)
                 project = True
                 xyz = np.concatenate((xyz[:, :2], labels[:, None]), axis=1)
