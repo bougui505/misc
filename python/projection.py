@@ -117,13 +117,17 @@ class Miller(object):
         xy = np.c_[xp, yp]
         return xy
 
-    def transform(self, X):
+    def transform(self, X, return_alt=False):
         X = self.view.transform(X)
-        self.alt = np.linalg.norm(X, axis=1)
+        alt = np.linalg.norm(X, axis=1)
+        self.alt = alt
         if self.spheric:
             X = self.r * X / self.alt[:, None]
         xy = self.__proj__(X)
-        return xy
+        if return_alt:
+            return xy, alt
+        else:
+            return xy
 
     def latitude_circles(self):
         lcs = latitude_circles(self.r, self.n_circles, np.zeros(3))
@@ -299,20 +303,24 @@ if __name__ == '__main__':
                 toproj_list = [pdbsurf.pdb_to_surf(pdbfilename, sel), ]
             if args.geom:
                 toproj_list = [e.mean(axis=0)[None, :] for e in toproj_list]
-            xyz = []
+            xyz = []  # Store x, y and projected value
+            alt = []  # Store the altitude
             for i, toproj in enumerate(toproj_list):
                 # TODO: remove the loop: project in 1-shot
                 sys.stdout.write(f'{i+1}/{len(toproj_list)}\r')
                 sys.stdout.flush()
-                proj_ = miller.transform(toproj)
+                proj_, alt_ = miller.transform(toproj, return_alt=True)
+                alt.append(alt_)
                 if project is None:
                     xyz.append([proj_[:, 0], proj_[:, 1]])
                 else:
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
             print()
             xyz = np.asarray(xyz)
+            alt = np.squeeze(np.asarray(alt))
             if n_clusters is not None:  # Kmeans clustering
-                labels = misc.Clustering.Kmeans(xyz, n_clusters=n_clusters)
+                xyzalt = np.concatenate((xyz, alt[:, None]), axis=1)  # Clustering of points based on lat., long., projected value and altitude
+                labels = misc.Clustering.Kmeans(xyzalt, n_clusters=n_clusters)
                 cluster_inf = ''
                 if xyz.shape[1] == 3:
                     z = xyz[:, 2]
