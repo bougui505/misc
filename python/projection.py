@@ -316,7 +316,7 @@ if __name__ == '__main__':
                 else:
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
             print()
-            xyz = np.asarray(xyz)
+            xyz = np.squeeze(np.asarray(xyz))
             alt = np.squeeze(np.asarray(alt))
             if n_clusters is not None:  # Kmeans clustering
                 xyzalt = np.concatenate((xyz, alt[:, None]), axis=1)  # Clustering of points based on lat., long., projected value and altitude
@@ -324,17 +324,18 @@ if __name__ == '__main__':
                 cluster_inf = ''
                 if xyz.shape[1] == 3:
                     z = xyz[:, 2]
-                    for label in set(labels):
-                        label_sel = (labels == label)
-                        if clb_proj_label is not None:
-                            unit = clb_proj_label
-                        else:
-                            unit = 'value'
+                for label in set(labels):
+                    label_sel = (labels == label)
+                    if clb_proj_label is not None:
+                        unit = clb_proj_label
+                    else:
+                        unit = 'value'
+                    if xyz.shape[1] == 3:
                         val_mean = z[label_sel].mean()
                         val_std = z[label_sel].std()
-                        cluster_inf += f'Population for cluster {label}: {label_sel.sum()}\n'
                         cluster_inf += f'Mean {unit} for cluster {label}: {val_mean:.4g} +- {val_std:.4g}\n'
-                    print(cluster_inf)
+                    cluster_inf += f'Population for cluster {label}: {label_sel.sum()}\n'
+                print(cluster_inf)
                 project = True
                 xyz = np.concatenate((xyz[:, :2], labels[:, None]), axis=1)
                 clb_proj_label = "Clusters"
