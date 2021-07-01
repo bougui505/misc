@@ -37,11 +37,12 @@
 #############################################################################
 
 from sklearn.cluster import DBSCAN
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn import metrics
 
 
-def cluster(X):
+def DBscan(X):
     X = StandardScaler().fit_transform(X)
     db = DBSCAN(eps=0.3, min_samples=10).fit(X)
     labels = db.labels_
@@ -53,6 +54,14 @@ def cluster(X):
     print('Estimated number of noise points: %d' % n_noise_)
     print(f"Silhouette Coefficient: {metrics.silhouette_score(X, labels)}")
     return n_clusters_, labels, core_samples
+
+
+def Kmeans(X, n_clusters):
+    X = StandardScaler().fit_transform(X)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(X)
+    labels = kmeans.labels_
+    print(f"Silhouette Coefficient: {metrics.silhouette_score(X, labels)}")
+    return labels
 
 
 if __name__ == '__main__':
@@ -72,7 +81,7 @@ if __name__ == '__main__':
     X, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
                                 random_state=0)
     # #############################################################################
-    n_clusters, labels, core_samples = cluster(X)
+    n_clusters, labels, core_samples = DBscan(X)
     core_samples_mask = np.zeros_like(labels, dtype=bool)
     core_samples_mask[core_samples] = True
 

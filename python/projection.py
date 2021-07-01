@@ -198,7 +198,8 @@ if __name__ == '__main__':
     import pdbsurf
     from pymol import cmd
     import matplotlib.pyplot as plt
-    import recutils
+    import misc.recutils as recutils
+    import misc.Clustering
     from termcolor import colored
     import glob
     import argparse
@@ -282,6 +283,10 @@ if __name__ == '__main__':
                 alpha = caption['alpha']
             else:
                 alpha = 1.
+            if 'clusters' in caption:
+                n_clusters = caption['clusters']
+            else:
+                n_clusters = None
             if nstates > 1:
                 args.atomic = True
             if args.atomic:
@@ -306,6 +311,12 @@ if __name__ == '__main__':
                     xyz.append([proj_[:, 0], proj_[:, 1], project[i]])
             print()
             xyz = np.asarray(xyz)
+            if n_clusters is not None:  # Kmeans clustering
+                labels = misc.Clustering.Kmeans(xyz, n_clusters=n_clusters)
+                project = True
+                xyz = np.concatenate((xyz[:, :2], labels[:, None]), axis=1)
+                clb_proj_label = "Clusters"
+                np.savetxt('miller_clusters.txt', labels, fmt="%d")
             if project is None:
                 plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color, alpha=alpha)
             else:
