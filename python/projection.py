@@ -313,10 +313,23 @@ if __name__ == '__main__':
             xyz = np.asarray(xyz)
             if n_clusters is not None:  # Kmeans clustering
                 labels = misc.Clustering.Kmeans(xyz, n_clusters=n_clusters)
+                cluster_inf = ''
+                if xyz.shape[1] == 3:
+                    z = xyz[:, 2]
+                    for label in set(labels):
+                        label_sel = (labels == label)
+                        if clb_proj_label is not None:
+                            unit = clb_proj_label
+                        else:
+                            unit = 'value'
+                        val_mean = z[label_sel].mean()
+                        cluster_inf += f'Population for cluster {label}: {label_sel.sum()}\n'
+                        cluster_inf += f'Mean {unit} for cluster {label}: {val_mean:.4g}\n'
+                    print(cluster_inf)
                 project = True
                 xyz = np.concatenate((xyz[:, :2], labels[:, None]), axis=1)
                 clb_proj_label = "Clusters"
-                np.savetxt('miller_clusters.txt', labels, fmt="%d")
+                np.savetxt('miller_clusters.txt', labels, fmt="%d", header=cluster_inf)
             if project is None:
                 plt.scatter(xyz[:, 0], xyz[:, 1], s=args.size, color=color, alpha=alpha)
             else:
