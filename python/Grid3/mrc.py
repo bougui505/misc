@@ -38,6 +38,7 @@
 
 import mrcfile
 import numpy as np
+import sys
 
 
 def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
@@ -54,6 +55,13 @@ def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
         mrc.update_header_from_data()
         mrc.update_header_stats()
 
+def mrc2txt(mrcfilename):
+    """
+    Print the MRC values on stdout
+    """
+    with mrcfile.open(mrcfilename) as mrc:
+        np.savetxt(sys.stdout, mrc.data.flatten())
+
 
 if __name__ == '__main__':
     import argparse
@@ -64,7 +72,11 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--origin', type=float, nargs='+', default=[0, 0, 0])  # 10. 20. 30.
     parser.add_argument('-s', '--spacing', type=float, default=1)  # 1.
     parser.add_argument('--out')  # 10. 20. 30.
+    parser.add_argument('--mrc')
     args = parser.parse_args()
 
-    data = np.load(args.tensor)
-    save_density(data, args.out, args.spacing, args.origin, 0)
+    if args.tensor is not None:
+        data = np.load(args.tensor)
+        save_density(data, args.out, args.spacing, args.origin, 0)
+    if args.mrc is not None:
+        mrc2txt(args.mrc)
