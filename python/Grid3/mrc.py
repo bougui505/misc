@@ -66,7 +66,8 @@ def mrc_to_array(mrcfilename):
         y0 = mrc.header['origin']['y']
         z0 = mrc.header['origin']['z']
         origin = np.asarray([x0, y0, z0])
-        return mrc.data, origin
+        spacing = mrc.voxel_size
+        return mrc.data, origin, spacing
 
 
 def filter_by_condition(grid, condition):
@@ -89,9 +90,11 @@ def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
     """
     Create a pdb file from the given mrcfilename
     """
-    grid, origin = mrc_to_array(mrcfilename)[::stride, ::stride, ::stride]
+    grid, origin, spacing = mrc_to_array(mrcfilename)
+    grid = grid[::stride, ::stride, ::stride]
     n = grid.size
     coords, distrib = filter_by_condition(grid, grid > threshold)
+    coords = coords + origin
     for resi, (x, y, z) in enumerate(coords):
         sys.stdout.write(f'Saving grid-point: {resi+1}/{n}          \r')
         sys.stdout.flush()
@@ -119,7 +122,7 @@ if __name__ == '__main__':
         data = np.load(args.npy)
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
-        data, origin = mrc_to_array(args.mrc)
+        data, origin, spacing = mrc_to_array(args.mrc)
         if args.outpdb is None:
             np.savetxt(sys.stdout, data.flatten())
         else:
