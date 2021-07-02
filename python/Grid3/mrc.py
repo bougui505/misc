@@ -55,6 +55,7 @@ def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
         mrc.update_header_from_data()
         mrc.update_header_stats()
 
+
 def mrc_to_array(mrcfilename):
     """
     Print the MRC values on stdout
