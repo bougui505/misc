@@ -55,12 +55,12 @@ def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
         mrc.update_header_from_data()
         mrc.update_header_stats()
 
-def mrc2txt(mrcfilename):
+def mrc_to_array(mrcfilename):
     """
     Print the MRC values on stdout
     """
     with mrcfile.open(mrcfilename) as mrc:
-        np.savetxt(sys.stdout, mrc.data.flatten())
+        return mrc.data
 
 
 if __name__ == '__main__':
@@ -79,4 +79,5 @@ if __name__ == '__main__':
         data = np.load(args.tensor)
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
-        mrc2txt(args.mrc)
+        data = mrc_to_array(args.mrc)
+        np.savetxt(sys.stdout, data.flatten())
