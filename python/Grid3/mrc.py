@@ -37,6 +37,7 @@
 #############################################################################
 
 import mrcfile
+from pymol import cmd
 import numpy as np
 import sys
 
@@ -64,6 +65,37 @@ def mrc_to_array(mrcfilename):
         return mrc.data
 
 
+def filter_by_condition(grid, condition):
+    """
+    takes a grid and returns the coordinates of the non_zero elements corresponding to a condition
+     as well as the associated values
+    :param grid:
+    :param condition: something like grid >0 : a numpy array of booleans and same size that grid
+    :return:
+    """
+    zeroed = grid * condition
+    coords = np.argwhere(zeroed)
+    distrib = grid[condition]
+    # Additional filtering
+    distrib = distrib[distrib > 0]
+    return coords, distrib
+
+
+def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
+    """
+    Create a pdb file from the given mrcfilename
+    """
+    grid = mrc_to_array(mrcfilename)[::stride, ::stride, ::stride]
+    n = grid.size
+    coords, distrib = filter_by_condition(grid, grid > threshold)
+    for resi, (x, y, z) in enumerate(coords):
+        sys.stdout.write(f'Saving grid-point: {resi+1}/{n}          \r')
+        sys.stdout.flush()
+        cmd.pseudoatom(pos=(x, y, z), object='out', state=1, resi=resi + 1, chain="Z", name="H",
+                       elem="H", b=distrib[resi])
+    cmd.save(outpdb, 'out')
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -73,7 +105,10 @@ if __name__ == '__main__':
     parser.add_argument('--origin', type=float, nargs='+', default=[0, 0, 0], help='Origin for the MRC file')  # 10. 20. 30.
     parser.add_argument('--spacing', type=float, default=1, help='Spacing for the MRC file')  # 1.
     parser.add_argument('--out', help='Out MRC file name (see: --npy)')  # 10. 20. 30.
-    parser.add_argument('--mrc', help='Read the given MRC and print the flatten data to stdout')
+    parser.add_argument('--mrc', help='Read the given MRC and print the flatten data to stdout if --outpdb not given')
+    parser.add_argument('--outpdb', help='Convert the given mrc file (--mrc) to pdb')
+    parser.add_argument('--threshold', help='Threshold the MRC to save to pdb (--outpdb)', default=0.)
+    parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
     args = parser.parse_args()
 
     if args.npy is not None:
@@ -81,4 +116,7 @@ if __name__ == '__main__':
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
         data = mrc_to_array(args.mrc)
-        np.savetxt(sys.stdout, data.flatten())
+        if args.outpdb is None:
+            np.savetxt(sys.stdout, data.flatten())
+        else:
+            mrc_to_pdb(args.mrc, args.threshold, args.outpdb, stride=args.stride)
