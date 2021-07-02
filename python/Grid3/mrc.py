@@ -92,8 +92,8 @@ def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
     """
     grid, origin, spacing = mrc_to_array(mrcfilename)
     grid = grid[::stride, ::stride, ::stride].T
-    n = grid.size
     coords, distrib = filter_by_condition(grid, grid > threshold)
+    n = coords.shape[0]
     coords = coords * stride
     coords = coords + origin
     for resi, (x, y, z) in enumerate(coords):
