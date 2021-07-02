@@ -91,7 +91,7 @@ def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
     Create a pdb file from the given mrcfilename
     """
     grid, origin, spacing = mrc_to_array(mrcfilename)
-    grid = grid[::stride, ::stride, ::stride]
+    grid = grid[::stride, ::stride, ::stride].T
     n = grid.size
     coords, distrib = filter_by_condition(grid, grid > threshold)
     coords = coords * stride
