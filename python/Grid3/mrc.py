@@ -94,6 +94,7 @@ def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
     grid = grid[::stride, ::stride, ::stride]
     n = grid.size
     coords, distrib = filter_by_condition(grid, grid > threshold)
+    coords = coords * stride
     coords = coords + origin
     for resi, (x, y, z) in enumerate(coords):
         sys.stdout.write(f'Saving grid-point: {resi+1}/{n}          \r')
