@@ -9,6 +9,7 @@ python/inflate_mol.py Build a 3D structure from a flat mol file or from a SMILES
 python/kabsch.py Kabsch algorithm for rigid body structure alignment
 python/match3d.py Use MODELLER to transfer coordinates from one PDB to the other keeping sequence and numbering
 python/mol2topdbqt.py Convert a mol2 to a pdbqt file
+python/mols/splitmol2.py Split mol2 file in multiple mol2
 python/multiprocessing_lock_file.py Using lock files for multiprocess in python
 python/pairwise-rmsds.py Compute RMSD pairwisely between pdb files
 python/pdbs_to_dcd.py Convert a set of PDB files to a DCD trajectory file
@@ -17,7 +18,6 @@ python/projection.py Miller projection of protein surfaces
 python/protein_roll.py Apply rotation to a protein and save a dcd trajectory file
 python/recutils.py Python utility to handle recfiles
 python/rmsd_traj_multiref.py Compute the RMSD between a traj and multiple external reference PDB files
-python/splitmol2.py Split mol2 file in multiple mol2
 python/struct_align.py Align protein structures
 python/struct_distance.py Compute distance in a trajectory file
 README
