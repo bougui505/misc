@@ -38,17 +38,19 @@
 
 from pymol import cmd
 import os
+import glob
 
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='General format conversion for molecular structure files using PyMol')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-i', '--inp', help='Input file', required=True)
+    parser.add_argument('-i', '--inp', help='Input file. Can read multiple files and globbing', required=True, nargs='+')
     parser.add_argument('-o', '--out', help='Output FORMAT (given as EXTENSION). The output filename will be the same filename with the given extension', required=True)
     args = parser.parse_args()
 
-    cmd.load(args.inp, 'inpmol')
-    bn, ext = os.path.splitext(args.inp)
-    outputfilename = f'{bn}.{args.out}'
-    cmd.save(outputfilename, 'inpmol')
+    for i, inp in enumerate(args.inp):
+        cmd.load(inp, f'inpmol{i}')
+        bn, ext = os.path.splitext(inp)
+        outputfilename = f'{bn}.{args.out}'
+        cmd.save(outputfilename, f'inpmol{i}')
