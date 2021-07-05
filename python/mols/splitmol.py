@@ -45,13 +45,19 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-m', '--mol2')
-    parser.add_argument('--outdir', help='output directory to write output mol2 files (default: outmol2)', default='outmol2')
+    parser.add_argument('-i', '--inp', help='input file', required=True)
+    parser.add_argument('--outdir', help='output directory to write output mol2 files (default: outmols)', default='outmols')
+    parser.add_argument('--format', help='output molecular file format. Default: same as the input format')
     args = parser.parse_args()
 
-    cmd.load(args.mol2, 'inmol2')
-    cmd.split_states('inmol2')
-    cmd.remove('inmol2')
+    cmd.load(args.inp, 'inmol')
+    cmd.split_states('inmol')
+    cmd.remove('inmol')
+    basename = os.path.basename(os.path.splitext(args.inp)[0])
+    if args.format is None:
+        outfmt = os.path.splitext(args.inp)[1][1:]
+    else:
+        outfmt = args.format
     all_objects = cmd.get_object_list()
     try:
         os.mkdir(args.outdir)
@@ -59,7 +65,7 @@ if __name__ == '__main__':
         pass
     for i, obj in enumerate(all_objects):
         sys.stdout.write(f'{i+1}/{len(all_objects)} saving {obj}\r')
-        cmd.save(f'{args.outdir}/{obj}.mol2', obj)
+        cmd.save(f'{args.outdir}/{basename}_{i:04d}.{outfmt}', obj)
         sys.stdout.flush()
     print()
-    print(f'{len(all_objects)} mol2 files saved in {args.outdir} directory')
+    print(f'{len(all_objects)} {outfmt} files saved in {args.outdir} directory')
