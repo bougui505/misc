@@ -86,13 +86,14 @@ def filter_by_condition(grid, condition):
     return coords, distrib
 
 
-def mrc_to_pdb(mrcfilename, threshold, outpdb, stride=1):
+def mrc_to_pdb(mrcfilename, outpdb, minthr=-np.inf, maxthr=np.inf, stride=1):
     """
     Create a pdb file from the given mrcfilename
     """
     grid, origin, spacing = mrc_to_array(mrcfilename)
     grid = grid[::stride, ::stride, ::stride].T
-    coords, distrib = filter_by_condition(grid, grid > threshold)
+    selection = np.logical_and(grid > minthr, grid <= maxthr)
+    coords, distrib = filter_by_condition(grid, selection)
     n = coords.shape[0]
     coords = coords * stride
     coords = coords + origin
@@ -115,7 +116,8 @@ if __name__ == '__main__':
     parser.add_argument('--out', help='Out MRC file name (see: --npy)')  # 10. 20. 30.
     parser.add_argument('--mrc', help='Read the given MRC and print the flatten data to stdout if --outpdb not given')
     parser.add_argument('--outpdb', help='Convert the given mrc file (--mrc) to pdb')
-    parser.add_argument('--threshold', help='Threshold the MRC to save to pdb (--outpdb)', default=0., type=float)
+    parser.add_argument('--minthr', help='Minimum threshold the MRC to save to pdb (--outpdb)', default=-np.inf, type=float)
+    parser.add_argument('--maxthr', help='Maximum threshold the MRC to save to pdb (--outpdb)', default=np.inf, type=float)
     parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
     args = parser.parse_args()
 
@@ -127,4 +129,6 @@ if __name__ == '__main__':
         if args.outpdb is None:
             np.savetxt(sys.stdout, data.flatten())
         else:
-            mrc_to_pdb(args.mrc, args.threshold, args.outpdb, stride=args.stride)
+            mrc_to_pdb(args.mrc, args.outpdb,
+                       minthr=args.minthr, maxthr=args.maxthr,
+                       stride=args.stride)
