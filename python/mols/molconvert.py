@@ -38,7 +38,6 @@
 
 from pymol import cmd
 import os
-import glob
 
 if __name__ == '__main__':
     import argparse
@@ -54,3 +53,4 @@ if __name__ == '__main__':
         bn, ext = os.path.splitext(inp)
         outputfilename = f'{bn}.{args.out}'
         cmd.save(outputfilename, f'inpmol{i}')
+        cmd.delete(f'inpmol{i}')
