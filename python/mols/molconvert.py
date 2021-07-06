@@ -46,10 +46,16 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-i', '--inp', help='Input file. Can read multiple files and globbing', required=True, nargs='+')
     parser.add_argument('-o', '--out', help='Output FORMAT (given as EXTENSION). The output filename will be the same filename with the given extension', required=True)
+    parser.add_argument('--hetatm', help='force all the atom to be defined as HETATM type. The HETATM atom have CONECT defined by default.', action='store_true')
+    parser.add_argument('--addh', help='Add hydrogens', action='store_true')
     args = parser.parse_args()
 
     for i, inp in enumerate(args.inp):
         cmd.load(inp, f'inpmol{i}')
+        if args.addh:
+            cmd.h_add('all')
+        if args.hetatm:
+            cmd.alter('all', 'type="HETATM"')
         bn, ext = os.path.splitext(inp)
         outputfilename = f'{bn}.{args.out}'
         cmd.save(outputfilename, f'inpmol{i}')
