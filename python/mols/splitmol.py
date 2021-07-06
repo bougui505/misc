@@ -49,9 +49,12 @@ if __name__ == '__main__':
     parser.add_argument('--outdir', help='output directory to write output mol2 files (default: outmols)', default='outmols')
     parser.add_argument('--format', help='output molecular file format. Default: same as the input format')
     parser.add_argument('--hetatm', help='force all the atom to be defined as HETATM type. The HETATM atom have CONECT defined by default.', action='store_true')
+    parser.add_argument('--addh', help='Add hydrogens', action='store_true')
     args = parser.parse_args()
 
     cmd.load(args.inp, 'inmol')
+    if args.addh:
+        cmd.h_add('all')
     if args.hetatm:
         cmd.alter('all', 'type="HETATM"')
     cmd.split_states('inmol')
