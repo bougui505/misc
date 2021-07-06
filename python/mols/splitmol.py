@@ -50,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--format', help='output molecular file format. Default: same as the input format')
     parser.add_argument('--hetatm', help='force all the atom to be defined as HETATM type. The HETATM atom have CONECT defined by default.', action='store_true')
     parser.add_argument('--addh', help='Add hydrogens', action='store_true')
+    parser.add_argument('--select', help='Keep only the selected atoms', default='all')
     args = parser.parse_args()
 
     cmd.load(args.inp, 'inmol')
@@ -71,7 +72,7 @@ if __name__ == '__main__':
         pass
     for i, obj in enumerate(all_objects):
         sys.stdout.write(f'{i+1}/{len(all_objects)} saving {obj}\r')
-        cmd.save(f'{args.outdir}/{basename}_{i:04d}.{outfmt}', obj)
+        cmd.save(f'{args.outdir}/{basename}_{i:04d}.{outfmt}', f'{obj} and {args.select}')
         sys.stdout.flush()
     print()
     print(f'{len(all_objects)} {outfmt} files saved in {args.outdir} directory')
