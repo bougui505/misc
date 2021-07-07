@@ -45,4 +45,4 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 unset PYTHONPATH
 source ~/anaconda3/bin/activate rdkit
-$DIRSCRIPT/inflate_mol.py $@
+$DIRSCRIPT/rdkit_fix.py $@
