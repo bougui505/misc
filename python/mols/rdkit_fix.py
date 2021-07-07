@@ -13,15 +13,15 @@ import sys
 
 
 def fixmol(mol, constrain=None, template=None):
-    if constrain is not None:
-        # print(f"Constrain conformer from {mol}")
-        mol = AllChem.ConstrainedEmbed(mol, constrain)
     if template is not None:
         # print(f"Assign Bonds from {template}")
         mol = AllChem.AssignBondOrdersFromTemplate(template, mol)
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol)
+        # mol = Chem.AddHs(mol)
+        # AllChem.EmbedMolecule(mol)
         # AllChem.MMFFOptimizeMolecule(mol)
+    if constrain is not None:
+        # print(f"Constrain conformer from {mol}")
+        mol = AllChem.ConstrainedEmbed(mol, constrain)
     if all(elem is None for elem in [constrain, template]):
         mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol)
