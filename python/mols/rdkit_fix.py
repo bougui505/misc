@@ -24,8 +24,8 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-m', '--mol', 'input mol file to fix')
-    parser.add_argument('-s', '--smiles', 'input smiles file to convert in 3D and fix')
+    parser.add_argument('-m', '--mol', help='input mol file to fix')
+    parser.add_argument('-s', '--smiles', help='input smiles file to convert in 3D and fix')
     parser.add_argument('-t', '--tautomers', help='generate all tautomers', action='store_true')
     args = parser.parse_args()
 
