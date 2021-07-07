@@ -12,13 +12,19 @@ import os
 import sys
 
 
-def fixmol(mol, constrain=None):
-    mol = Chem.AddHs(mol)
-    if constrain is None:
+def fixmol(mol, constrain=None, template=None):
+    if constrain is not None:
+        # print(f"Constrain conformer from {mol}")
+        AllChem.ConstrainedEmbed(mol, constrain)
+    if template is not None:
+        # print(f"Assign Bonds from {template}")
+        AllChem.AssignBondOrdersFromTemplate(template, mol)
+        # AllChem.EmbedMolecule(mol)
+        # AllChem.MMFFOptimizeMolecule(mol)
+    if all(elem is None for elem in [constrain, template]):
+        mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol)
         AllChem.MMFFOptimizeMolecule(mol)
-    else:
-        AllChem.ConstrainedEmbed(mol, constrain)
     return mol
 
 
@@ -29,6 +35,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-m', '--mol', help='input mol file to fix. Multiple mol files can be given.', nargs='+')
     parser.add_argument('--constrain', help='Constrained the molecule to get this conformation')
+    parser.add_argument('--template', help='Template smiles file to assign bond orders to the molecule (--mol) based on the bond orders in this template molecule')
     parser.add_argument('-s', '--smiles', help='input smiles file to convert in 3D and fix. Multiple smiles can be given.', nargs='+')
     parser.add_argument('-t', '--tautomers', help='generate all tautomers', action='store_true')
     args = parser.parse_args()
@@ -37,6 +44,10 @@ if __name__ == '__main__':
         constrain = AllChem.MolFromMolFile(args.constrain)
     else:
         constrain = None
+    if args.template is not None:
+        template = AllChem.MolFromSmiles(args.template)
+    else:
+        template = None
     mlist = []
     outnames = []
     if args.mol is not None:
@@ -60,14 +71,14 @@ if __name__ == '__main__':
             tauts = enumerator.Enumerate(m)
             w = Chem.SDWriter(outname)
             for i, taut in enumerate(tauts):
-                taut = fixmol(taut, constrain=constrain)
+                taut = fixmol(taut, constrain=constrain, template=template)
                 w.write(taut)
         print()
         sys.exit(0)
     for i, (m, outname) in enumerate(zip(mlist, outnames)):
         sys.stdout.write(f'Fixing mol {i+1}/{n}\r')
         sys.stdout.flush()
-        m = fixmol(m, constrain=constrain)
+        m = fixmol(m, constrain=constrain, template=template)
         w = Chem.SDWriter(outname)
         w.write(m)
     print()
