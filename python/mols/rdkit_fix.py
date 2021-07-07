@@ -37,6 +37,7 @@ if __name__ == '__main__':
             outname = os.path.splitext(mol)[0] + ".sdf"
             mlist.append(m)
             outnames.append(outname)
+    n = len(mlist)
     if args.smiles is not None:
         for smiles in args.smiles:
             m = Chem.MolFromSmiles(smiles)
@@ -44,15 +45,21 @@ if __name__ == '__main__':
             mlist.append(m)
             outnames.append(outname)
     if args.tautomers:
-        for m, outname in zip(mlist, outnames):
+        for i, (m, outname) in enumerate(zip(mlist, outnames)):
+            sys.stdout.write(f'Fixing mol {i+1}/{n}\r')
+            sys.stdout.flush()
             enumerator = rdMolStandardize.TautomerEnumerator()
             tauts = enumerator.Enumerate(m)
             w = Chem.SDWriter(outname)
             for i, taut in enumerate(tauts):
                 taut = fixmol(taut)
                 w.write(taut)
+        print()
         sys.exit(0)
-    for m, outname in zip(mlist, outnames):
+    for i, (m, outname) in enumerate(zip(mlist, outnames)):
+        sys.stdout.write(f'Fixing mol {i+1}/{n}\r')
+        sys.stdout.flush()
         m = fixmol(m)
         w = Chem.SDWriter(outname)
         w.write(m)
+    print()
