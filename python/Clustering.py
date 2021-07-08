@@ -71,8 +71,12 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--kmeans', help='KMeans clustering algorithm')
+    parser.add_argument('--kmeans', help='KMeans clustering algorithm. Take the number of clusters (k) as argument.', type=int)
     parser.add_argument('--delimiter', help='delimiter to use (default: spaces)')
     args = parser.parse_args()
 
     data = np.genfromtxt(sys.stdin, delimiter=args.delimiter, invalid_raise=False)
+    if args.kmeans is not None:
+        labels = Kmeans(data, n_clusters=args.kmeans)
+    out = np.concatenate((data, labels[:, None]), axis=1)
+    np.savetxt(sys.stdout, out)
