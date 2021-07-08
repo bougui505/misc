@@ -65,40 +65,14 @@ def Kmeans(X, n_clusters):
 
 
 if __name__ == '__main__':
-    from sklearn.datasets import make_blobs
-    import matplotlib.pyplot as plt
-    import numpy as np
     import argparse
+    import sys
+    import numpy as np
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--kmeans', help='KMeans clustering algorithm')
+    parser.add_argument('--delimiter', help='delimiter to use (default: spaces)')
     args = parser.parse_args()
 
-    # #############################################################################
-    # Generate sample data
-    centers = [[1, 1], [-1, -1], [1, -1]]
-    X, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
-                                random_state=0)
-    # #############################################################################
-    n_clusters, labels, core_samples = DBscan(X)
-    core_samples_mask = np.zeros_like(labels, dtype=bool)
-    core_samples_mask[core_samples] = True
-
-    # Plot result
-    unique_labels = set(labels)
-    colors = [plt.cm.Spectral(each)
-              for each in np.linspace(0, 1, len(unique_labels))]
-    for k, col in zip(unique_labels, colors):
-        if k == -1:
-            # Black used for noise.
-            col = [0, 0, 0, 1]
-        class_member_mask = (labels == k)
-        xy = X[class_member_mask & core_samples_mask]
-        plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-                 markeredgecolor='k', markersize=14)
-        xy = X[class_member_mask & ~core_samples_mask]
-        plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-                 markeredgecolor='k', markersize=6)
-    plt.title('Estimated number of clusters: %d' % n_clusters)
-    plt.show()
+    data = np.genfromtxt(sys.stdin, delimiter=args.delimiter, invalid_raise=False)
