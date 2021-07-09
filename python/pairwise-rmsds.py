@@ -37,6 +37,7 @@
 #############################################################################
 
 from pymol import cmd
+from psico import fullinit
 
 if __name__ == '__main__':
     import argparse
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdbs', help='List of PDBs to process', nargs='+', required=True)
     parser.add_argument('-s', '--select', help='Selection for the RMSD calculation', default='all')
+    parser.add_argument('--tmscore', help='Compute the TM-Score instead of the RMSD', action='store_true')
     args = parser.parse_args()
 
     npdbs = len(args.pdbs)
@@ -54,8 +56,14 @@ if __name__ == '__main__':
 
     for i in range(npdbs - 1):
         for j in range(i + 1, npdbs):
-            rmsd = cmd.align(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', cycles=0)[3]
+            if args.tmscore:
+                tmscore = cmd.tmalign(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', quiet=1)
+            else:
+                rmsd = cmd.align(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', cycles=0)[3]
             print(f'pdb1: {args.pdbs[i]}')
             print(f'pdb2: {args.pdbs[j]}')
-            print(f'rmsd: {rmsd:.4f}')
+            if args.tmscore:
+                print(f'tmscore: {tmscore:.4f}')
+            else:
+                print(f'rmsd: {rmsd:.4f}')
             print()
