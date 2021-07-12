@@ -42,17 +42,26 @@ import matplotlib.pyplot as plt
 
 
 class KDE(object):
+    """
+    Kernel Density Estimation and plotting of distributions
+    """
     def __init__(self):
         self.X = None
         self.density = None
 
     def fit(self, X):
+        """
+        Data X to fit with a Gaussian Kernel for distribution estimation
+        X: np.array
+        """
         self.X = np.asarray(X)
         self.density = gaussian_kde(X)
 
     def transform(self, x=None, npts=200):
         '''
-        x: array to apply self.density on. If None, takes the linspace(self.X.min(), self.X.max(), npts)
+        Transform the data x to density
+        x: np.array to apply self.density on. If None, takes the linspace(self.X.min(), self.X.max(), npts)
+        npts: number of points in x if x is None
         '''
         if x is None:
             self.x = np.linspace(self.X.min(), self.X.max(), npts)
@@ -62,10 +71,19 @@ class KDE(object):
         return self.y
 
     def fit_transform(self, X, x=None, npts=200):
+        """
+        Apply fit on X, then transform on x
+        """
         self.fit(X)
         return self.transform(x=x, npts=npts)
 
     def plot(self, fill=False, color=None, label=None):
+        """
+        Plot the KDE
+        fill: if True, fill the area under the curve
+        color: Color of the plot
+        label: label of the plot (for legend)
+        """
         plt.plot(self.x, self.y, color=color, label=label)
         if fill:
             plt.fill_between(self.x, self.y, alpha=.25, color=color)
