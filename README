@@ -6,6 +6,7 @@ python/Grid3/gaussian_grid3.py Generate a random 3D grid filled with Gaussians
 python/Grid3/mrc.py Save a 3D grid as a mrc density file
 python/hierarchical_sort_pairwise_matrix.py Sort hierarchicaly a pairwise --distance-- matrix
 python/kabsch.py Kabsch algorithm for rigid body structure alignment
+python/kde.py Kernel Density Estimation
 python/match3d.py Use MODELLER to transfer coordinates from one PDB to the other keeping sequence and numbering
 python/mols/mol2topdbqt.py Convert a mol2 to a pdbqt file
 python/mols/molconvert.py Convert between molecular file formats using PyMol
