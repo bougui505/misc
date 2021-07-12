@@ -65,8 +65,10 @@ class KDE(object):
         self.fit(X)
         return self.transform(x=x, npts=npts)
 
-    def plot(self):
-        plt.plot(self.x, self.y)
+    def plot(self, fill=False, color=None, label=None):
+        plt.plot(self.x, self.y, color=color, label=label)
+        if fill:
+            plt.fill_between(self.x, self.y, alpha=.25, color=color)
 
 
 if __name__ == '__main__':
