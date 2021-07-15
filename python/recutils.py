@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 
+import pandas as pd
+
 
 def newrec(line):
     """
@@ -74,7 +76,11 @@ def add_item(key, val, indict):
     return indict
 
 
-def load(recfilename):
+def load(recfilename, df=False):
+    """
+    Load the given recfilename.
+    df: if True, returns a pandas dataframe instead of a dictionary
+    """
     with open(recfilename, 'r') as recfile:
         pyrec = [dict(), ]
         for i, line in enumerate(recfile):
@@ -88,6 +94,8 @@ def load(recfilename):
                     pyrec[-1] = add_item(key, val, pyrec[-1])
         if len(pyrec[-1]) == 0:
             pyrec.pop()
+    if df:
+        pyrec = pd.DataFrame(pyrec)
     return pyrec
 
 
@@ -98,7 +106,6 @@ def print_(df):
 if __name__ == '__main__':
     from IPython.terminal.embed import InteractiveShellEmbed
     import argparse
-    import pandas as pd
     import os
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
@@ -108,8 +115,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     global rec
-    rec = load(args.inp)
-    rec = pd.DataFrame(rec)
+    rec = load(args.inp, df=True)
     if not os.path.exists(args.script):
         ipshell = InteractiveShellEmbed()
         print('rec file data stored in recfile')
