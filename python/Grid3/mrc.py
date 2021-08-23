@@ -57,7 +57,7 @@ def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
         mrc.update_header_stats()
 
 
-def mrc_to_array(mrcfilename):
+def mrc_to_array(mrcfilename, normalize=False):
     """
     Print the MRC values on stdout
     """
@@ -67,7 +67,11 @@ def mrc_to_array(mrcfilename):
         z0 = mrc.header['origin']['z']
         origin = np.asarray([x0, y0, z0])
         spacing = mrc.voxel_size
-        return mrc.data, origin, spacing
+        data = mrc.data.copy()
+        if normalize:
+            data -= data.min()
+            data /= data.max()
+        return data, origin, spacing
 
 
 def filter_by_condition(grid, condition):
@@ -86,11 +90,11 @@ def filter_by_condition(grid, condition):
     return coords, distrib
 
 
-def mrc_to_pdb(mrcfilename, outpdb, minthr=-np.inf, maxthr=np.inf, stride=1):
+def mrc_to_pdb(mrcfilename, outpdb, minthr=-np.inf, maxthr=np.inf, stride=1, normalize=False):
     """
     Create a pdb file from the given mrcfilename
     """
-    grid, origin, spacing = mrc_to_array(mrcfilename)
+    grid, origin, spacing = mrc_to_array(mrcfilename, normalize=normalize)
     grid = grid[::stride, ::stride, ::stride].T
     selection = np.logical_and(grid > minthr, grid <= maxthr)
     coords, distrib = filter_by_condition(grid, selection)
@@ -120,18 +124,20 @@ if __name__ == '__main__':
     parser.add_argument('--minthr', help='Minimum threshold the MRC to save to pdb (--outpdb)', default=-np.inf, type=float)
     parser.add_argument('--maxthr', help='Maximum threshold the MRC to save to pdb (--outpdb)', default=np.inf, type=float)
     parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
+    parser.add_argument('--normalize', help='Normalize the density between 0 and 1', action='store_true')
     args = parser.parse_args()
 
     if args.npy is not None:
         data = np.load(args.npy)
+    if args.out is not None:
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
-        data, origin, spacing = mrc_to_array(args.mrc)
+        data, origin, spacing = mrc_to_array(args.mrc, normalize=args.normalize)
         if args.outpdb is None and args.outnpy is None:
             np.savetxt(sys.stdout, data.flatten())
         if args.outpdb is not None:
             mrc_to_pdb(args.mrc, args.outpdb,
                        minthr=args.minthr, maxthr=args.maxthr,
-                       stride=args.stride)
+                       stride=args.stride, normalize=args.normalize)
         if args.outnpy is not None:
             np.save(args.outnpy, data)
