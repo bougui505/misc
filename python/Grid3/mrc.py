@@ -116,6 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--out', help='Out MRC file name (see: --npy)')  # 10. 20. 30.
     parser.add_argument('--mrc', help='Read the given MRC and print the flatten data to stdout if --outpdb not given')
     parser.add_argument('--outpdb', help='Convert the given mrc file (--mrc) to pdb')
+    parser.add_argument('--outnpy', help='Convert the given mrc file (--mrc) to npy file')
     parser.add_argument('--minthr', help='Minimum threshold the MRC to save to pdb (--outpdb)', default=-np.inf, type=float)
     parser.add_argument('--maxthr', help='Maximum threshold the MRC to save to pdb (--outpdb)', default=np.inf, type=float)
     parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
@@ -126,9 +127,11 @@ if __name__ == '__main__':
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
         data, origin, spacing = mrc_to_array(args.mrc)
-        if args.outpdb is None:
+        if args.outpdb is None and args.outnpy is None:
             np.savetxt(sys.stdout, data.flatten())
-        else:
+        if args.outpdb is not None:
             mrc_to_pdb(args.mrc, args.outpdb,
                        minthr=args.minthr, maxthr=args.maxthr,
                        stride=args.stride)
+        if args.outnpy is not None:
+            np.save(args.outnpy, data)
