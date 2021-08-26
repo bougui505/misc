@@ -59,7 +59,7 @@ def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0, t
         mrc.update_header_stats()
 
 
-def mrc_to_array(mrcfilename, normalize=False):
+def mrc_to_array(mrcfilename, normalize=False, padding=0):
     """
     Print the MRC values on stdout
     """
@@ -73,6 +73,9 @@ def mrc_to_array(mrcfilename, normalize=False):
         if normalize:
             data -= data.min()
             data /= data.max()
+        if padding > 0:
+            data = np.pad(data, pad_width=padding)
+            origin -= padding
         spacing = str(spacing).replace('(', '').replace(')', '').split(',')
         spacing = np.asarray(spacing, dtype=float)
         assert (spacing == spacing[0]).all()
@@ -139,7 +142,7 @@ if __name__ == '__main__':
         data = np.load(args.npy)
         transpose = True
     if args.mrc is not None:
-        data, args.origin, args.spacing = mrc_to_array(args.mrc, normalize=args.normalize)
+        data, args.origin, args.spacing = mrc_to_array(args.mrc, normalize=args.normalize, padding=args.padding)
         transpose = False
     if args.info:
         nx, ny, nz = data.shape
@@ -155,9 +158,7 @@ if __name__ == '__main__':
         mrc_to_pdb(args.mrc, args.outpdb,
                    minthr=args.minthr, maxthr=args.maxthr,
                    stride=args.stride, normalize=args.normalize)
-    if args.padding > 0:
-        data = np.pad(data, pad_width=args.padding)
     if args.outnpy is not None:
         np.save(args.outnpy, data)
     if args.out is not None:
-        save_density(data, args.out, args.spacing, args.origin, args.padding, transpose=transpose)
+        save_density(data, args.out, args.spacing, args.origin, 0, transpose=transpose)
