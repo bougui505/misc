@@ -139,6 +139,9 @@ if __name__ == '__main__':
             print(f"shape: {data.shape}")
             print(f"origin: {origin}")
             print(f"spacing: {spacing}")
+            print(f"min_density: {data.min():.6g}")
+            print(f"max_density: {data.max():.6g}")
+            print(f"mean_density: {data.mean():.6g}")
             sys.exit(0)
         if args.outpdb is None and args.outnpy is None:
             np.savetxt(sys.stdout, data.flatten())
