@@ -42,17 +42,19 @@ import numpy as np
 import sys
 
 
-def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0):
+def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0, transpose=True):
     """
     Save the density file as mrc for the given atomname
     """
     density = density.astype('float32')
     with mrcfile.new(outfilename, overwrite=True) as mrc:
-        mrc.set_data(density.T)
+        if transpose:
+            density = density.T
+        mrc.set_data(density)
         mrc.voxel_size = spacing
-        mrc.header['origin']['x'] = origin[0] - padding + .5 * spacing
-        mrc.header['origin']['y'] = origin[1] - padding + .5 * spacing
-        mrc.header['origin']['z'] = origin[2] - padding + .5 * spacing
+        mrc.header['origin']['x'] = origin[0] - padding
+        mrc.header['origin']['y'] = origin[1] - padding
+        mrc.header['origin']['z'] = origin[2] - padding
         mrc.update_header_from_data()
         mrc.update_header_stats()
 
@@ -135,8 +137,10 @@ if __name__ == '__main__':
 
     if args.npy is not None:
         data = np.load(args.npy)
+        transpose = True
     if args.mrc is not None:
         data, args.origin, args.spacing = mrc_to_array(args.mrc, normalize=args.normalize)
+        transpose = False
     if args.info:
         nx, ny, nz = data.shape
         print(f"shape: {data.shape}")
@@ -145,13 +149,15 @@ if __name__ == '__main__':
         print(f"min_density: {data.min():.6g}")
         print(f"max_density: {data.max():.6g}")
         print(f"mean_density: {data.mean():.6g}")
-    if args.outpdb is None and args.outnpy is None and not args.info:
+    if args.outpdb is None and args.outnpy is None and args.out is None and not args.info:
         np.savetxt(sys.stdout, data.flatten())
     if args.outpdb is not None:
         mrc_to_pdb(args.mrc, args.outpdb,
                    minthr=args.minthr, maxthr=args.maxthr,
                    stride=args.stride, normalize=args.normalize)
+    if args.padding > 0:
+        data = np.pad(data, pad_width=args.padding)
     if args.outnpy is not None:
         np.save(args.outnpy, data)
     if args.out is not None:
-        save_density(data, args.out, args.spacing, args.origin, args.padding)
+        save_density(data, args.out, args.spacing, args.origin, args.padding, transpose=transpose)
