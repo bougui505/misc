@@ -71,6 +71,10 @@ def mrc_to_array(mrcfilename, normalize=False):
         if normalize:
             data -= data.min()
             data /= data.max()
+        spacing = str(spacing).replace('(', '').replace(')', '').split(',')
+        spacing = np.asarray(spacing, dtype=float)
+        assert (spacing == spacing[0]).all()
+        spacing = spacing[0]
         return data, origin, spacing
 
 
@@ -126,28 +130,28 @@ if __name__ == '__main__':
     parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
     parser.add_argument('--normalize', help='Normalize the density between 0 and 1', action='store_true')
     parser.add_argument('--info', help='Print informations about the given mrc (see --mrc)', action='store_true')
+    parser.add_argument('--padding', help='Add a padding to the given map', type=int, default=0)
     args = parser.parse_args()
 
     if args.npy is not None:
         data = np.load(args.npy)
-    if args.out is not None:
-        save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
-        data, origin, spacing = mrc_to_array(args.mrc, normalize=args.normalize)
-        if args.info:
-            nx, ny, nz = data.shape
-            print(f"shape: {data.shape}")
-            print(f"origin: {origin}")
-            print(f"spacing: {spacing}")
-            print(f"min_density: {data.min():.6g}")
-            print(f"max_density: {data.max():.6g}")
-            print(f"mean_density: {data.mean():.6g}")
-            sys.exit(0)
-        if args.outpdb is None and args.outnpy is None:
-            np.savetxt(sys.stdout, data.flatten())
-        if args.outpdb is not None:
-            mrc_to_pdb(args.mrc, args.outpdb,
-                       minthr=args.minthr, maxthr=args.maxthr,
-                       stride=args.stride, normalize=args.normalize)
-        if args.outnpy is not None:
-            np.save(args.outnpy, data)
+        data, args.origin, args.spacing = mrc_to_array(args.mrc, normalize=args.normalize)
+    if args.info:
+        nx, ny, nz = data.shape
+        print(f"shape: {data.shape}")
+        print(f"origin: {args.origin}")
+        print(f"spacing: {args.spacing}")
+        print(f"min_density: {data.min():.6g}")
+        print(f"max_density: {data.max():.6g}")
+        print(f"mean_density: {data.mean():.6g}")
+    if args.outpdb is None and args.outnpy is None and not args.info:
+        np.savetxt(sys.stdout, data.flatten())
+    if args.outpdb is not None:
+        mrc_to_pdb(args.mrc, args.outpdb,
+                   minthr=args.minthr, maxthr=args.maxthr,
+                   stride=args.stride, normalize=args.normalize)
+    if args.outnpy is not None:
+        np.save(args.outnpy, data)
+    if args.out is not None:
+        save_density(data, args.out, args.spacing, args.origin, args.padding)
