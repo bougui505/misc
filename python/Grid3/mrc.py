@@ -125,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('--maxthr', help='Maximum threshold the MRC to save to pdb (--outpdb)', default=np.inf, type=float)
     parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
     parser.add_argument('--normalize', help='Normalize the density between 0 and 1', action='store_true')
+    parser.add_argument('--info', help='Print informations about the given mrc (see --mrc)', action='store_true')
     args = parser.parse_args()
 
     if args.npy is not None:
@@ -133,6 +134,12 @@ if __name__ == '__main__':
         save_density(data, args.out, args.spacing, args.origin, 0)
     if args.mrc is not None:
         data, origin, spacing = mrc_to_array(args.mrc, normalize=args.normalize)
+        if args.info:
+            nx, ny, nz = data.shape
+            print(f"shape: {data.shape}")
+            print(f"origin: {origin}")
+            print(f"spacing: {spacing}")
+            sys.exit(0)
         if args.outpdb is None and args.outnpy is None:
             np.savetxt(sys.stdout, data.flatten())
         if args.outpdb is not None:
