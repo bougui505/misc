@@ -114,6 +114,27 @@ def move(M, direction):
     return M
 
 
+def shortest_path(dmap, start, stop):
+    """
+    Get the shortest path from cell start to cell stop for the given adjacency
+    matrix adj
+    """
+    adj = get(dmap)
+    start = np.ravel_multi_index(start, dmap.shape)
+    stop = np.ravel_multi_index(stop, dmap.shape)
+    dist_matrix, predecessors = scipy.sparse.csgraph.shortest_path(csgraph=adj, indices=stop, return_predecessors=True)
+    cell = start
+    path = [cell, ]
+    print(start, stop)
+    while True:
+        cell = predecessors[cell]
+        if cell == -9999:
+            break
+        path.append(cell)
+    path = np.unravel_index(path, dmap.shape)
+    return path
+
+
 def flood(A, source, level, timing=False):
     """
     Flood a bassin from the given source (i, j, k) until the given level
@@ -164,10 +185,12 @@ if __name__ == '__main__':
 
     shape = (30, 20, 22)
     A = gaussian_grid3.random(ncenters=10, scale=5, shape=shape)
+    path = shortest_path(A, (1, 5, 3), (23, 16, 20))
+    print(path)
     # A = np.random.uniform(0, 1, size=(10, 10, 10))
-    source = tuple(np.asarray(shape) // 2)
-    blob = flood(A, source=(5, 5, 5), level=150)
-    mrc.save_density(blob, 'blob.mrc')
+    # source = tuple(np.asarray(shape) // 2)
+    # blob = flood(A, source=(5, 5, 5), level=150)
+    # mrc.save_density(blob, 'blob.mrc')
     # plt.matshow(D)
     # plt.colorbar()
     # plt.show()
