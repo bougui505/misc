@@ -79,6 +79,7 @@ def get(dmap, beta=50., func=lambda x, dmap, beta: np.exp(-beta * (dmap - x)), n
         sq = np.squeeze(np.asarray(1 / transition_matrix.sum(axis=0)))
         diagsparse = scipy.sparse.csr_matrix((sq, (np.arange(n), np.arange(n))), shape=(n, n))
         transition_matrix = transition_matrix.dot(diagsparse)
+    transition_matrix.data[np.isnan(transition_matrix.data)] = np.inf
     return transition_matrix
 
 
