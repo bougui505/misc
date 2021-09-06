@@ -50,6 +50,8 @@ def get(p0, p1, spacing=1):
     p1 = p1[..., None]
     pts = (p1 - p0) * tvals + p0
     pts = np.int_(pts.T)
+    if (pts[-1] != p1).any():
+        pts = np.r_[pts, np.squeeze(p1)[None, :]]
     return pts
 
 
@@ -71,7 +73,9 @@ if __name__ == '__main__':
     p1 = np.asarray([5, 6, 5])
     p2 = np.asarray([8, 7, 6])
     pts = np.c_[p0, p1, p2]
+    print('imput:')
     print(pts)
+    print('______')
     lines = interpolate(pts)
     print(lines)
     G[tuple(lines.T)] = 1.
