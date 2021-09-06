@@ -74,13 +74,21 @@ class Gradient(object):
     def grad(self, grid=None, return_adj=False):
         """
         Compute the gradient with the 26 neighbors in a 3D grid.
-        Input: 3D grid of shape (n, p, q)
-        Returns: ndarray with shape (26, n, p, q)
-        If return_adj is True, returns the gradient as an adjacency matrix of
+        - Input: 3D grid of shape (n, p, q)
+            - If input is a 4D grid of shape (26, n, p, q) (as the output)
+            return_adj is set to True and return an adjacency matrix from the given gradient
+        - Returns: ndarray with shape (26, n, p, q)
+            - If return_adj is True, returns the gradient as an adjacency matrix of
         shape (n*p*q, n*p*q)
         """
+        grad_to_adj = False
         if grid is None:
             grid = self.grid
+        else:
+            if grid.ndim == 4:
+                assert grid.shape[0] == 26
+                return_adj = True
+                grad_to_adj = True
         if return_adj:
             data = []
             rows = []
@@ -90,11 +98,18 @@ class Gradient(object):
         n, p, q = self.shape
         for action in range(26):
             neighbors = np.asarray(get_indices(action, self.indices))
-            diff = (grid[tuple(neighbors.T)] - grid[tuple(self.indices.T)]).reshape((n - 2, p - 2, q - 2))
+            if not grad_to_adj:
+                diff = (grid[tuple(neighbors.T)] - grid[tuple(self.indices.T)]).reshape((n - 2, p - 2, q - 2))
+            else:
+                inds = np.c_[[action, ] * len(self.indices), self.indices]
+                vals = grid[tuple(inds.T)]
             if return_adj:
                 i_inds = np.ravel_multi_index(tuple(neighbors.T), self.shape)
                 j_inds = np.ravel_multi_index(tuple(self.indices.T), self.shape)
-                data.extend(list(diff.flatten()))
+                if not grad_to_adj:
+                    data.extend(list(diff.flatten()))
+                else:
+                    data.extend(list(vals))
                 rows.extend(list(i_inds))
                 cols.extend(list(j_inds))
             else:
@@ -126,3 +141,6 @@ if __name__ == '__main__':
     print(grad.shape)
     adj = gradfactory.grad(return_adj=True)
     print(adj.shape)
+    adj2 = gradfactory.grad(grad)
+    print(adj2.shape)
+    print((adj2.todense() == adj.todense()).all())
