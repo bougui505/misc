@@ -38,6 +38,7 @@
 
 
 import numpy as np
+import scipy.sparse
 
 
 def get_indices(action, pos):
@@ -59,26 +60,56 @@ class Gradient(object):
         mask = np.logical_or(mask, indices[:, 2] == q - 1)
         self.indices = indices[~mask]
 
-    def grad(self, grid=None):
+    def _init_adj(self):
+        """
+        Initialize an empty adjacency matrix
+        """
+        n, p, q = self.shape
+        adj = scipy.sparse.coo_matrix((np.prod(self.shape),) * 2)
+        adj.data = np.zeros(n * p * q * 26)
+        adj.row = np.zeros(n * p * q * 26, dtype=int)
+        adj.col = np.zeros(n * p * q * 26, dtype=int)
+        return adj
+
+    def grad(self, grid=None, return_adj=False):
         """
         Compute the gradient with the 26 neighbors in a 3D grid.
         Input: 3D grid of shape (n, p, q)
         Returns: ndarray with shape (26, n, p, q)
+        If return_adj is True, returns the gradient as an adjacency matrix of
+        shape (n*p*q, n*p*q)
         """
         if grid is None:
             grid = self.grid
-        grad = []
+        if return_adj:
+            data = []
+            rows = []
+            cols = []
+        else:
+            grad = []
         n, p, q = self.shape
         for action in range(26):
             neighbors = np.asarray(get_indices(action, self.indices))
-            grad_ = np.zeros_like(grid)
             diff = (grid[tuple(neighbors.T)] - grid[tuple(self.indices.T)]).reshape((n - 2, p - 2, q - 2))
-            grad_[1:-1, 1:-1, 1:-1] = diff
-            grad.append(grad_)
-        grad = np.asarray(grad)
-        grad[np.isinf(grad)] = np.inf
-        grad[np.isnan(grad)] = np.inf
-        return grad
+            if return_adj:
+                i_inds = np.ravel_multi_index(tuple(neighbors.T), self.shape)
+                j_inds = np.ravel_multi_index(tuple(self.indices.T), self.shape)
+                data.extend(list(diff.flatten()))
+                rows.extend(list(i_inds))
+                cols.extend(list(j_inds))
+            else:
+                grad_ = np.zeros_like(grid)
+                grad_[1:-1, 1:-1, 1:-1] = diff
+                grad.append(grad_)
+        if return_adj:
+            adj = scipy.sparse.coo_matrix((data, (rows, cols)), shape=(n * p * q, n * p * q))
+            adj = adj.tocsr()
+            return adj
+        else:
+            grad = np.asarray(grad)
+            grad[np.isinf(grad)] = np.inf
+            grad[np.isnan(grad)] = np.inf
+            return grad
 
 
 if __name__ == '__main__':
@@ -93,3 +124,5 @@ if __name__ == '__main__':
     gradfactory = Gradient(A)
     grad = gradfactory.grad()
     print(grad.shape)
+    adj = gradfactory.grad(return_adj=True)
+    print(adj.shape)
