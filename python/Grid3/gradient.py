@@ -66,8 +66,10 @@ class Gradient(object):
         n, p, q = self.shape
         for action in range(26):
             neighbors = np.asarray(get_indices(action, self.indices))
+            grad_ = np.zeros_like(grid)
             diff = (grid[tuple(neighbors.T)] - grid[tuple(self.indices.T)]).reshape((n - 2, p - 2, q - 2))
-            grad.append(diff)
+            grad_[1:-1, 1:-1, 1:-1] = diff
+            grad.append(grad_)
         grad = np.asarray(grad)
         grad[np.isinf(grad)] = np.inf
         grad[np.isnan(grad)] = np.inf
