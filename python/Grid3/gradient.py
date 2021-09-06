@@ -60,6 +60,11 @@ class Gradient(object):
         self.indices = indices[~mask]
 
     def grad(self, grid=None):
+        """
+        Compute the gradient with the 26 neighbors in a 3D grid.
+        Input: 3D grid of shape (n, p, q)
+        Returns: ndarray with shape (26, n, p, q)
+        """
         if grid is None:
             grid = self.grid
         grad = []
@@ -84,3 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     args = parser.parse_args()
 
+    A = np.random.uniform(size=(10, 11, 12))
+    gradfactory = Gradient(A)
+    grad = gradfactory.grad()
+    print(grad.shape)
