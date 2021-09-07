@@ -98,14 +98,21 @@ class Gradient(object):
         n, p, q = self.shape
         for action in range(26):
             neighbors = np.asarray(get_indices(action, self.indices))
+            mask = None
             if not grad_to_adj:
                 diff = (grid[tuple(neighbors.T)] - grid[tuple(self.indices.T)]).reshape((n - 2, p - 2, q - 2))
             else:
                 inds = np.c_[[action, ] * len(self.indices), self.indices]
                 vals = grid[tuple(inds.T)]
+                mask = np.logical_or(np.isinf(vals), np.isnan(vals))
+                inds = inds[~mask]
+                vals = vals[~mask]
             if return_adj:
                 i_inds = np.ravel_multi_index(tuple(neighbors.T), self.shape)
                 j_inds = np.ravel_multi_index(tuple(self.indices.T), self.shape)
+                if mask is not None:
+                    i_inds = i_inds[~mask]
+                    j_inds = j_inds[~mask]
                 if not grad_to_adj:
                     data.extend(list(diff.flatten()))
                 else:
