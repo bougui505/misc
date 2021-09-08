@@ -144,6 +144,30 @@ def gradtoadj(grad):
     return adj
 
 
+def adjtograd(adj, shape):
+    """
+    Convert a 3D grid adjacency matrix to a gradient
+    adj: csr sparse matrix of shape (n*p*q, n*p*q)
+    shape: shape of the 3D grid (n, p, q)
+    returns: grad with shape (26, n, p, q)
+    """
+    n, p, q = shape
+    assert n * p * q == adj.shape[0]
+    gradfactory = Gradient(np.zeros((n, p, q)))
+    indices = gradfactory.indices
+    grad = []
+    for action in range(26):
+        neighbors = np.asarray(get_indices(action, indices))
+        rows = np.ravel_multi_index(tuple(neighbors.T), shape)
+        cols = np.ravel_multi_index(tuple(indices.T), shape)
+        data = adj[(rows, cols)]
+        grad_ = np.zeros((n, p, q))
+        grad_[tuple(indices.T)] = data
+        grad.append(grad_)
+    grad = np.asarray(grad)
+    return grad
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -163,3 +187,5 @@ if __name__ == '__main__':
     print((adj2.todense() == adj.todense()).all())
     adj3 = gradtoadj(grad)
     print((adj3.todense() == adj.todense()).all())
+    grad2 = adjtograd(adj, A.shape)
+    print((grad2 == grad).all())
