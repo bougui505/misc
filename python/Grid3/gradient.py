@@ -134,6 +134,16 @@ class Gradient(object):
             return grad
 
 
+def gradtoadj(grad):
+    """
+    Convert a 3D-gradient to an adjacency matrix
+    grad: gradient with shape (26, n, p, q)
+    """
+    gradfactory = Gradient(grad[0])
+    adj = gradfactory.grad(grad)
+    return adj
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -151,3 +161,5 @@ if __name__ == '__main__':
     adj2 = gradfactory.grad(grad)
     print(adj2.shape)
     print((adj2.todense() == adj.todense()).all())
+    adj3 = gradtoadj(grad)
+    print((adj3.todense() == adj.todense()).all())
