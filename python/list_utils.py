@@ -47,8 +47,8 @@ def merge_lists(list1, list2):
     but keeping the original order of list1 and list2
 
     Args:
-        path1: list of tuples (e.g. [(1, 1, 1), (2, 2, 2)])
-        path2: list of tuples (e.g. [(0, 0, 0), (1, 1, 1), (2, 2, 2), (3, 3, 3)])
+        path1: list of tuples (e.g. [(1, 1, 1), (2, 2, 2)]) or list of values
+        path2: list of tuples (e.g. [(0, 0, 0), (1, 1, 1), (2, 2, 2), (3, 3, 3)]) or list of values
     Returns:
 
     >>> merge_lists([1, 3, 5], [0, 1, 2, 4])
@@ -99,9 +99,5 @@ def merge_lists(list1, list2):
 
 
 if __name__ == '__main__':
-    import argparse
-    # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
-    # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    args = parser.parse_args()
+    import doctest
+    doctest.testmod()
