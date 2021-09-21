@@ -66,6 +66,8 @@ def merge_lists(list1, list2):
     """
     if len(list1) > len(list2):
         list1, list2 = list2, list1
+    if len(list1) == 0:
+        return list2
     list1 = list1[::-1]
     list2 = list2[::-1]
     arr1 = np.asarray(list1)
