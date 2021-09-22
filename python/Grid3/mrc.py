@@ -37,7 +37,11 @@
 #############################################################################
 
 import mrcfile
-from pymol import cmd
+try:
+    from pymol import cmd
+except ImportError:
+    print("pymol not imported some features will be missing")
+    pass
 import numpy as np
 import sys
 

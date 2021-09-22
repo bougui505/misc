@@ -36,6 +36,7 @@
 #                                                                           #
 #############################################################################
 
+import sys
 import numpy as np
 import scipy.signal as signal
 import mrc
@@ -51,6 +52,11 @@ def find_origin(density1, density2, origin2):
 
     Returns:
         origin: origin (numpy array) of density1 to be aligned on density2
+
+    >>> density1, origin1, spacing1 = mrc.mrc_to_array("data/1igd_translate.mrc")
+    >>> density2, origin2, spacing2 = mrc.mrc_to_array("data/1igd.mrc")
+    >>> find_origin(density1, density2, origin2)
+    array([-10.,  -6.,  -5.])
 
     """
     conv = signal.fftconvolve(density2,
@@ -69,7 +75,16 @@ if __name__ == '__main__':
     parser.add_argument('--mrc1', help='First mrc file (mobile)')
     parser.add_argument('--mrc2', help='Second mrc file (reference)')
     parser.add_argument('--out', help='output mrc filename')
+    parser.add_argument(
+        '--test',
+        help='Test the module using data/1igd_translate.mrc and data/1igd.mrc',
+        action='store_true')
     args = parser.parse_args()
+
+    if args.test:
+        import doctest
+        doctest.testmod()
+        sys.exit()
 
     density1, origin1, spacing1 = mrc.mrc_to_array(args.mrc1)
     density2, origin2, spacing2 = mrc.mrc_to_array(args.mrc2)
