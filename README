@@ -2,6 +2,7 @@ generate_README.sh Helper to generate this beautiful README file
 .gitignore Self explained !
 python/Clustering.py
 python/Grid3/adjmat.py Adjacency matrix of a 3D grid and flooding algorithm using Dijkstra
+python/Grid3/align.py Align by translation density mrc files using 3D convolution.
 python/Grid3/gaussian_grid3.py Generate a random 3D grid filled with Gaussians
 python/Grid3/gradient.py
 python/Grid3/line.py
