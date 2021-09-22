@@ -68,6 +68,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--mrc1', help='First mrc file (mobile)')
     parser.add_argument('--mrc2', help='Second mrc file (reference)')
+    parser.add_argument('--out', help='output mrc filename')
     args = parser.parse_args()
 
     density1, origin1, spacing1 = mrc.mrc_to_array(args.mrc1)
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     origin = find_origin(density1, density2, origin2)
     print('origin_new:', origin)
     mrc.save_density(density1,
-                     'test.mrc',
+                     args.out,
                      spacing=spacing1,
                      origin=origin,
                      transpose=True)
