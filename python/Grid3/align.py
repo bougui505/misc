@@ -42,6 +42,17 @@ import mrc
 
 
 def find_origin(density1, density2, origin2):
+    """
+
+    Args:
+        density1: density to translate (numpy array)
+        density2: reference density
+        origin2: origin of the reference density
+
+    Returns:
+        origin: origin (numpy array) of density1 to be aligned on density2
+
+    """
     conv = signal.fftconvolve(density2,
                               density1[::-1, ::-1, ::-1],
                               mode='full')
