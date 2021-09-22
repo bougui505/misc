@@ -77,6 +77,8 @@ def merge_lists(list1, list2):
         arr1 = arr1[:, None]
         arr2 = arr2[:, None]
     dmat = distance.cdist(arr1, arr2)
+    if dmat.min() > 0:  # No identical elements between list1 and list2
+        return list2[::-1]  # then returns the longest list (list2)
     row_inds, col_inds = optimize.linear_sum_assignment(dmat)
     out = []
     while len(list1) > 0 or len(list2) > 0:
@@ -92,9 +94,14 @@ def merge_lists(list1, list2):
                 list1.pop()
             else:
                 e1, e2 = list1.pop(), list2.pop()
-                if e2 > e1:
-                    e1, e2 = e2, e1
-                out.extend([e2, e1])
+                if len(out) > 0:
+                    d1 = np.linalg.norm(
+                        np.atleast_2d(e1) - np.atleast_2d(out[-1]))
+                    d2 = np.linalg.norm(
+                        np.atleast_2d(e2) - np.atleast_2d(out[-1]))
+                    if d1 > d2:
+                        e1, e2 = e2, e1
+                out.extend([e1, e2])
     out = np.squeeze(np.asarray(out))
     out = [tuple(e) if hasattr(e, '__iter__') else e for e in out]
     return out
