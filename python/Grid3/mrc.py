@@ -42,7 +42,12 @@ import numpy as np
 import sys
 
 
-def save_density(density, outfilename, spacing=1, origin=[0, 0, 0], padding=0, transpose=True):
+def save_density(density,
+                 outfilename,
+                 spacing=1,
+                 origin=[0, 0, 0],
+                 padding=0,
+                 transpose=True):
     """
     Save the density file as mrc for the given atomname
     """
@@ -99,7 +104,12 @@ def filter_by_condition(grid, condition):
     return coords, distrib
 
 
-def mrc_to_pdb(mrcfilename, outpdb, minthr=-np.inf, maxthr=np.inf, stride=1, normalize=False):
+def mrc_to_pdb(mrcfilename,
+               outpdb,
+               minthr=-np.inf,
+               maxthr=np.inf,
+               stride=1,
+               normalize=False):
     """
     Create a pdb file from the given mrcfilename
     """
@@ -113,8 +123,14 @@ def mrc_to_pdb(mrcfilename, outpdb, minthr=-np.inf, maxthr=np.inf, stride=1, nor
     for resi, (x, y, z) in enumerate(coords):
         sys.stdout.write(f'Saving grid-point: {resi+1}/{n}          \r')
         sys.stdout.flush()
-        cmd.pseudoatom(pos=(x, y, z), object='out', state=1, resi=resi + 1, chain="Z", name="H",
-                       elem="H", b=distrib[resi])
+        cmd.pseudoatom(pos=(x, y, z),
+                       object='out',
+                       state=1,
+                       resi=resi + 1,
+                       chain="Z",
+                       name="H",
+                       elem="H",
+                       b=distrib[resi])
     cmd.save(outpdb, 'out')
 
 
@@ -123,26 +139,65 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--npy', help='Read a npy file and create a MRC file (see: --out)')
-    parser.add_argument('--origin', type=float, nargs='+', default=[0, 0, 0], help='Origin for the MRC file')  # 10. 20. 30.
-    parser.add_argument('--spacing', type=float, default=1, help='Spacing for the MRC file')  # 1.
-    parser.add_argument('--out', help='Out MRC file name (see: --npy)')  # 10. 20. 30.
-    parser.add_argument('--mrc', help='Read the given MRC and print the flatten data to stdout if --outpdb not given')
-    parser.add_argument('--outpdb', help='Convert the given mrc file (--mrc) to pdb')
-    parser.add_argument('--outnpy', help='Convert the given mrc file (--mrc) to npy file')
-    parser.add_argument('--minthr', help='Minimum threshold the MRC to save to pdb (--outpdb)', default=-np.inf, type=float)
-    parser.add_argument('--maxthr', help='Maximum threshold the MRC to save to pdb (--outpdb)', default=np.inf, type=float)
-    parser.add_argument('--stride', help='Stride for the grid to save to pdb (--outpdb), default=1', default=1, type=int)
-    parser.add_argument('--normalize', help='Normalize the density between 0 and 1', action='store_true')
-    parser.add_argument('--info', help='Print informations about the given mrc (see --mrc)', action='store_true')
-    parser.add_argument('--padding', help='Add a padding to the given map', type=int, default=0)
+    parser.add_argument(
+        '--npy', help='Read a npy file and create a MRC file (see: --out)')
+    parser.add_argument('--origin',
+                        type=float,
+                        nargs='+',
+                        default=None,
+                        help='Origin for the MRC file')  # 10. 20. 30.
+    parser.add_argument('--spacing',
+                        type=float,
+                        default=1,
+                        help='Spacing for the MRC file')  # 1.
+    parser.add_argument('--out',
+                        help='Out MRC file name (see: --npy)')  # 10. 20. 30.
+    parser.add_argument(
+        '--mrc',
+        help=
+        'Read the given MRC and print the flatten data to stdout if --outpdb not given'
+    )
+    parser.add_argument('--outpdb',
+                        help='Convert the given mrc file (--mrc) to pdb')
+    parser.add_argument('--outnpy',
+                        help='Convert the given mrc file (--mrc) to npy file')
+    parser.add_argument(
+        '--minthr',
+        help='Minimum threshold the MRC to save to pdb (--outpdb)',
+        default=-np.inf,
+        type=float)
+    parser.add_argument(
+        '--maxthr',
+        help='Maximum threshold the MRC to save to pdb (--outpdb)',
+        default=np.inf,
+        type=float)
+    parser.add_argument(
+        '--stride',
+        help='Stride for the grid to save to pdb (--outpdb), default=1',
+        default=1,
+        type=int)
+    parser.add_argument('--normalize',
+                        help='Normalize the density between 0 and 1',
+                        action='store_true')
+    parser.add_argument(
+        '--info',
+        help='Print informations about the given mrc (see --mrc)',
+        action='store_true')
+    parser.add_argument('--padding',
+                        help='Add a padding to the given map',
+                        type=int,
+                        default=0)
     args = parser.parse_args()
 
     if args.npy is not None:
         data = np.load(args.npy)
         transpose = True
     if args.mrc is not None:
-        data, args.origin, args.spacing = mrc_to_array(args.mrc, normalize=args.normalize, padding=args.padding)
+        data, origin_in, args.spacing = mrc_to_array(args.mrc,
+                                                     normalize=args.normalize,
+                                                     padding=args.padding)
+        if args.origin is None:
+            args.origin = origin_in
         transpose = False
     if args.info:
         nx, ny, nz = data.shape
@@ -155,10 +210,18 @@ if __name__ == '__main__':
     if args.outpdb is None and args.outnpy is None and args.out is None and not args.info:
         np.savetxt(sys.stdout, data.flatten())
     if args.outpdb is not None:
-        mrc_to_pdb(args.mrc, args.outpdb,
-                   minthr=args.minthr, maxthr=args.maxthr,
-                   stride=args.stride, normalize=args.normalize)
+        mrc_to_pdb(args.mrc,
+                   args.outpdb,
+                   minthr=args.minthr,
+                   maxthr=args.maxthr,
+                   stride=args.stride,
+                   normalize=args.normalize)
     if args.outnpy is not None:
         np.save(args.outnpy, data)
     if args.out is not None:
-        save_density(data, args.out, args.spacing, args.origin, 0, transpose=transpose)
+        save_density(data,
+                     args.out,
+                     args.spacing,
+                     args.origin,
+                     0,
+                     transpose=transpose)
