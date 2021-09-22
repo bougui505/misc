@@ -66,7 +66,18 @@ def save_density(density,
 
 def mrc_to_array(mrcfilename, normalize=False, padding=0):
     """
-    Print the MRC values on stdout
+    Read a mrc file into a numpy array
+
+    Args:
+        mrcfilename:
+        normalize:
+        padding:
+
+    Returns:
+        data
+        origin
+        spacing
+
     """
     with mrcfile.open(mrcfilename) as mrc:
         x0 = mrc.header['origin']['x']
