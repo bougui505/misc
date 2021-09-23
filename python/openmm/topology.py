@@ -38,23 +38,32 @@
 
 from openmm.app.topology import Topology
 from openmm.app.element import Element
+from openmm.app.modeller import Modeller
+import numpy as np
 
 
 class System(Topology):
     def __init__(self):
         super().__init__()
         self.chain = None
+        self.modeller = Modeller(super(), [])
 
     def add_chain(self, chainid):
         self.chain = super().addChain(id=chainid)
 
-    def add_GLY(self):
+    def add_GLY(self, coords=np.zeros((4, 3))):
         residue = super().addResidue('GLY', self.chain)
         super().addAtom('N', Element.getByAtomicNumber(7), residue)
         super().addAtom('CA', Element.getByAtomicNumber(6), residue)
         super().addAtom('C', Element.getByAtomicNumber(6), residue)
         super().addAtom('O', Element.getByAtomicNumber(8), residue)
         super().createStandardBonds()
+        if len(self.modeller.positions) > 0:
+            self.modeller.positions = np.concatenate(
+                (self.modeller.positions, coords))
+        else:
+            self.modeller.positions = coords
+        assert super().getNumAtoms() == len(self.modeller.getPositions())
 
 
 if __name__ == '__main__':
