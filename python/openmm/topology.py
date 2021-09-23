@@ -40,9 +40,12 @@ from openmm.app.topology import Topology
 from openmm.app.element import Element
 
 
-class Chain(Topology):
-    def __init__(self, chainid='A'):
+class System(Topology):
+    def __init__(self):
         super().__init__()
+        self.chain = None
+
+    def add_chain(self, chainid):
         self.chain = super().addChain(id=chainid)
 
     def add_GLY(self):
@@ -62,13 +65,14 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     args = parser.parse_args()
 
-    chain = Chain()
-    chain.add_GLY()
-    print(chain.getNumAtoms())
-    print(chain.getNumBonds())
-    chain.add_GLY()
-    print(chain.getNumAtoms())
-    print(chain.getNumBonds())
+    system = System()
+    system.add_chain('A')
+    system.add_GLY()
+    print(system.getNumAtoms())
+    print(system.getNumBonds())
+    system.add_GLY()
+    print(system.getNumAtoms())
+    print(system.getNumBonds())
     # topology = Topology()
     # chain = topology.addChain(id="A")
     # build_GLY(topology, chain)
