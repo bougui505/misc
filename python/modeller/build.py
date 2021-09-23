@@ -75,8 +75,12 @@ class System():
         >>> system.add_residue('D')
         >>> system.build()
         Model containing 1 chain, 2 residues, and 14 atoms
-        >>> system.energy
-        40331.953125
+        >>> system.energy[0]
+        2.6328744888305664
+        >>> system.minimize()
+        >>> system.energy[0]
+        0.0
+        >>> # system.mdl.write('test.pdb')
         """
         self.mdl = modeller.Model(env)
         self.sequence = ''
@@ -90,10 +94,7 @@ class System():
 
         """
         self.sequence += resname
-        aln = modeller.Alignment(env)
-        aln.append_sequence(self.sequence)
-        self.mdl.clear_topology()
-        self.mdl.generate_topology(aln[0])
+        self.mdl.build_sequence(self.sequence)
 
     def build(self):
         """
@@ -110,8 +111,8 @@ class System():
     @property
     def energy(self):
         atmsel = modeller.Selection(self.mdl)
-        energy, terms = atmsel.energy(output='NO_REPORT', file='energy.log')
-        return energy
+        energy, terms = atmsel.energy(output='NO_REPORT')
+        return energy, terms
 
     def minimize(self):
         cg = ConjugateGradients()
