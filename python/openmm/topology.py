@@ -37,21 +37,29 @@
 #############################################################################
 
 from openmm.app.topology import Topology
+from openmm.app.forcefield import ForceField
 from openmm.app.element import Element
 from openmm.app.modeller import Modeller
+from openmm.app.simulation import Simulation
+from openmm import LangevinIntegrator
+import simtk.unit as unit
 import numpy as np
 
 
-class System(Topology):
-    def __init__(self):
+class MetaSystem(Topology):
+    def __init__(self, xmlff='amber14-all.xml'):
         super().__init__()
         self.chain = None
         self.modeller = Modeller(super(), [])
+        self.forcefield = ForceField(xmlff)
+        self.integrator = LangevinIntegrator(300 * unit.kelvin,
+                                             1 / unit.picosecond,
+                                             0.004 * unit.picoseconds)
 
     def add_chain(self, chainid):
         self.chain = super().addChain(id=chainid)
 
-    def add_GLY(self, coords=np.zeros((4, 3))):
+    def add_GLY(self, coords=np.random.uniform(low=0., high=1., size=(4, 3))):
         residue = super().addResidue('GLY', self.chain)
         super().addAtom('N', Element.getByAtomicNumber(7), residue)
         super().addAtom('CA', Element.getByAtomicNumber(6), residue)
@@ -65,6 +73,27 @@ class System(Topology):
             self.modeller.positions = coords
         assert super().getNumAtoms() == len(self.modeller.getPositions())
 
+    def add_OXT(self, coords=np.random.uniform(low=0., high=1., size=(1, 3))):
+        residue = list(self.modeller.topology.residues())[-1]
+        super().addAtom('OXT', Element.getByAtomicNumber(8), residue)
+        super().createStandardBonds()
+        self.modeller.positions = np.concatenate(
+            (self.modeller.positions, coords))
+        assert super().getNumAtoms() == len(self.modeller.getPositions())
+
+    def createSystem(self):
+        self.add_OXT()
+        self.modeller.positions = unit.Quantity(self.modeller.positions,
+                                                unit.nanometer)
+        self.modeller.addHydrogens(self.forcefield)
+        self.system = self.forcefield.createSystem(self.modeller.topology)
+        return self.system
+
+    def minimize(self):
+        simulation = Simulation(super(), self.system, self.integrator)
+        simulation.context.setPositions(self.modeller.positions)
+        simulation.minimizeEnergy()
+
 
 if __name__ == '__main__':
     import argparse
@@ -74,16 +103,13 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     args = parser.parse_args()
 
-    system = System()
-    system.add_chain('A')
-    system.add_GLY()
-    print(system.getNumAtoms())
-    print(system.getNumBonds())
-    system.add_GLY()
-    print(system.getNumAtoms())
-    print(system.getNumBonds())
-    # topology = Topology()
-    # chain = topology.addChain(id="A")
-    # build_GLY(topology, chain)
-    # print(topology.getNumAtoms())
-    # print(topology.getNumBonds())
+    metasystem = MetaSystem()
+    metasystem.add_chain('A')
+    metasystem.add_GLY()
+    print(metasystem.getNumAtoms())
+    print(metasystem.getNumBonds())
+    metasystem.add_GLY()
+    print(metasystem.getNumAtoms())
+    print(metasystem.getNumBonds())
+    system = metasystem.createSystem()
+    metasystem.minimize()
