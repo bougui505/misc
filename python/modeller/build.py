@@ -85,7 +85,10 @@ class System():
         self.mdl = modeller.Model(env)
         self.sequence = ''
 
-    def add_residue(self, resname):
+    def add_residue(self,
+                    resname,
+                    patch_default=True,
+                    blank_single_chain=False):
         """
         Add the given residue (given by resname) to the system
 
@@ -94,7 +97,12 @@ class System():
 
         """
         self.sequence += resname
-        self.mdl.build_sequence(self.sequence)
+        aln = modeller.Alignment(env)
+        aln.append_sequence(self.sequence, blank_single_chain)
+        self.mdl.clear_topology()
+        self.mdl.generate_topology(aln[0],
+                                   patch_default=patch_default,
+                                   blank_single_chain=blank_single_chain)
 
     def build(self):
         """
@@ -105,7 +113,7 @@ class System():
 
         """
         self.mdl.build(build_method='INTERNAL_COORDINATES',
-                       initialize_xyz=False)
+                       initialize_xyz=True)
         return self.mdl
 
     @property
