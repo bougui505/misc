@@ -71,22 +71,37 @@ class System():
     def __init__(self):
         """
         >>> system = System()
-        >>> system.add_residue('A')
-        >>> system.add_residue('D')
+        >>> system.add_residue('G')
+        >>> system.add_residue('G')
+        >>> list(system.atoms())
+        [<Atom N:1:A>, <Atom CA:1:A>, <Atom C:1:A>, <Atom O:1:A>, <Atom N:2:A>, <Atom CA:2:A>, <Atom C:2:A>, <Atom O:2:A>, <Atom OXT:2:A>]
+        >>> list(system.atoms_defined())
+        [<Atom N:1:A>, <Atom CA:1:A>, <Atom C:1:A>, <Atom O:1:A>, <Atom N:2:A>, <Atom CA:2:A>, <Atom C:2:A>, <Atom O:2:A>, <Atom OXT:2:A>]
         >>> system.build()
-        Model containing 1 chain, 2 residues, and 14 atoms
+        Model containing 1 chain, 2 residues, and 9 atoms
         >>> system.energy[0]
-        2.6328744888305664
+        1.2566540241241455
+        >>> system.mdl.write('test.pdb')
+        >>> system = System()
+        >>> system.add_residue('G', ca_coords=(0., 0., 0.))
+        >>> system.add_residue('G', ca_coords=(3.8, 0., 0.))
+        >>> system.build()
+        Model containing 1 chain, 2 residues, and 9 atoms
+        >>> system.energy[0]
+        353.2043762207031
         >>> system.minimize()
         >>> system.energy[0]
-        0.0
-        >>> # system.mdl.write('test.pdb')
+        11.27558422088623
+        >>> system.mdl.write('test2.pdb')
         """
         self.mdl = modeller.Model(env)
         self.sequence = ''
+        self.initialize_xyz = True
+        self.ca_coords = []
 
     def add_residue(self,
                     resname,
+                    ca_coords=None,
                     patch_default=True,
                     blank_single_chain=False):
         """
@@ -103,6 +118,23 @@ class System():
         self.mdl.generate_topology(aln[0],
                                    patch_default=patch_default,
                                    blank_single_chain=blank_single_chain)
+        self.ca_coords.append(ca_coords)
+        if ca_coords is not None:
+            self.set_ca_coords()
+            self.initialize_xyz = False
+
+    def set_ca_coords(self):
+        """
+        Unset the coordinates of the non CA atoms
+        """
+        resid = 0
+        for atom in self.mdl.atoms:
+            if atom.name != 'CA':
+                atom.x, atom.y, atom.z = -999.0, -999.0, -999.0
+            else:
+                if self.ca_coords[resid] is not None:
+                    atom.x, atom.y, atom.z = self.ca_coords[resid]
+                resid += 1
 
     def build(self):
         """
@@ -113,7 +145,13 @@ class System():
 
         """
         self.mdl.build(build_method='INTERNAL_COORDINATES',
-                       initialize_xyz=True)
+                       initialize_xyz=self.initialize_xyz)
+        atmsel = modeller.Selection(self.mdl)
+        # This will setup the stereochemical energy (bonds, angles, dihedrals, impropers)
+        # see: https://salilab.org/modeller/9.21/manual/node256.html
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='stereo',
+                                 spline_on_site=False)
         return self.mdl
 
     @property
@@ -121,6 +159,17 @@ class System():
         atmsel = modeller.Selection(self.mdl)
         energy, terms = atmsel.energy(output='NO_REPORT')
         return energy, terms
+
+    def atoms(self):
+        return self.mdl.atoms
+
+    def atoms_defined(self):
+        """
+        List atoms with defined coordinates
+
+        """
+        selector = modeller.Selection(self.mdl)
+        return selector.only_defined()
 
     def minimize(self):
         cg = ConjugateGradients()
