@@ -70,29 +70,34 @@ class System():
     """
     def __init__(self):
         """
+        >>> # Build a first system
         >>> system = System()
+        >>> # with 2 glycine
         >>> system.add_residue('G')
         >>> system.add_residue('G')
-        >>> list(system.atoms())
-        [<Atom N:1:A>, <Atom CA:1:A>, <Atom C:1:A>, <Atom O:1:A>, <Atom N:2:A>, <Atom CA:2:A>, <Atom C:2:A>, <Atom O:2:A>, <Atom OXT:2:A>]
-        >>> list(system.atoms_defined())
-        [<Atom N:1:A>, <Atom CA:1:A>, <Atom C:1:A>, <Atom O:1:A>, <Atom N:2:A>, <Atom CA:2:A>, <Atom C:2:A>, <Atom O:2:A>, <Atom OXT:2:A>]
+        >>> # The following command create coordinates from internal coordinate system
         >>> system.build()
         Model containing 1 chain, 2 residues, and 9 atoms
+        >>> # and evaluate its energy
         >>> system.energy[0]
         1.2566540241241455
-        >>> system.mdl.write('test.pdb')
+        >>> # system.mdl.write('test.pdb')
+        >>> # Try an other system
         >>> system = System()
+        >>> # Still with 2 glycine, but specifying the position of the CA
         >>> system.add_residue('G', ca_coords=(0., 0., 0.))
         >>> system.add_residue('G', ca_coords=(3.8, 0., 0.))
         >>> system.build()
         Model containing 1 chain, 2 residues, and 9 atoms
+        >>> # The energy is much higher as not optimal geometry due the the
+        >>> # given CA position:
         >>> system.energy[0]
         353.2043762207031
+        >>> # A quick energy minimization can quickly fix the geometry
         >>> system.minimize()
         >>> system.energy[0]
         11.27558422088623
-        >>> system.mdl.write('test2.pdb')
+        >>> # system.mdl.write('test2.pdb')
         """
         self.mdl = modeller.Model(env)
         self.sequence = ''
