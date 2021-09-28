@@ -36,4 +36,24 @@
 #                                                                           #
 #############################################################################
 
-from .echo import echo
+import sys
+import numpy as np
+
+
+def echo(arr):
+    """
+
+    Args:
+        arr: np array to write on stdout
+
+    """
+    np.savetxt(sys.stdout, arr)
+
+
+if __name__ == '__main__':
+    import argparse
+    # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
+    parser = argparse.ArgumentParser(description='')
+    # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument('-a', '--arg1')
+    args = parser.parse_args()
