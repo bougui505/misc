@@ -36,12 +36,14 @@
 #                                                                           #
 #############################################################################
 
-import sys
 import numpy as np
 
 
 def echo(arr):
     """
+    To use with xonsh and pipe a python np array or list to a shell program:
+    echo @(misc.echo(A))
+
 
     Args:
         arr: np array to write on stdout
