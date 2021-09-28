@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env xonsh
 # -*- coding: UTF8 -*-
 
 #############################################################################
@@ -47,7 +47,17 @@ def echo(arr):
         arr: np array to write on stdout
 
     """
-    np.savetxt(sys.stdout, arr)
+    strout = ""
+    arr = np.atleast_2d(arr)
+    n, p = arr.shape
+    for i, line in enumerate(arr):
+        for j, e in enumerate(line):
+            strout += str(e)
+            if j < p - 1:
+                strout += ' '
+        if i < n - 1:
+            strout += '\n'
+    return strout
 
 
 if __name__ == '__main__':
