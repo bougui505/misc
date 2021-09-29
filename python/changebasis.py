@@ -40,6 +40,18 @@ import numpy as np
 
 
 class Basis():
+    """
+    Change basis for coordinates
+
+    Attributes:
+        u
+        A: transition matrix from new to old basis
+        A_inv: transition matrix from old to new basis
+        v
+        w
+        dim: dimension of the space
+
+    """
     def __init__(self, u, v, w):
         """
 
