@@ -1,6 +1,10 @@
 generate_README.sh Helper to generate this beautiful README file
 .gitignore Self explained !
+latex/tikz/amino_acid.tex Simple amino acid drawing in LaTeX TikZ
+latex/tikz/phenylalanine_channels.tex Drawing grid and skewed grids with perspective in TikZ
+latex/tikz/phenylalanine.tex Phe drawing in LaTeX TikZ
 python/Clustering.py
+python/echo.py
 python/Grid3/adjmat.py Adjacency matrix of a 3D grid and flooding algorithm using Dijkstra
 python/Grid3/align.py Align by translation density mrc files using 3D convolution.
 python/Grid3/data/1igd.mrc
