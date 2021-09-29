@@ -59,12 +59,16 @@ class Basis():
                [ 6,  7,  8],
                [ 9, 10, 11],
                [12, 13, 14]])
-        >>> basis.change(coords)
+        >>> coords_new = basis.change(coords)
+        >>> coords_new
         array([[ 1.,  2.,  0.],
                [ 4.,  5.,  3.],
                [ 7.,  8.,  6.],
                [10., 11.,  9.],
                [13., 14., 12.]])
+        >>> coords_back = basis.back(coords_new)
+        >>> (coords_back == coords).all()
+        True
 
         """
         self.dim = len(u)
@@ -82,6 +86,16 @@ class Basis():
 
         """
         coords_new = self.A_inv.dot(coords.T).T
+        return coords_new
+
+    def back(self, coords):
+        """
+
+        Args:
+            coords: Coordinates of points in the old basis (shape: (n, self.dim))
+
+        """
+        coords_new = self.A.dot(coords.T).T
         return coords_new
 
 
