@@ -44,11 +44,13 @@ class Basis():
     Change basis for coordinates
 
     Attributes:
+        origin
+        origin_new
         u
-        A: transition matrix from new to old basis
-        A_inv: transition matrix from old to new basis
         v
         w
+        A: transition matrix from new to old basis
+        A_inv: transition matrix from old to new basis
         dim: dimension of the space
 
     """
