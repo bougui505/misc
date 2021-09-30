@@ -130,7 +130,10 @@ class Basis():
         self.dim = len(self.u)
         self.A = np.c_[self.u, self.v, self.w]  # transition matrix
         assert np.allclose(
-            self.A.T.dot(self.A), np.identity(self.dim)
+            self.A.T.dot(self.A),
+            np.identity(self.dim),
+            rtol=1e-04,
+            atol=1e-07
         ), f"(u, v, w) is not an orthonormal basis: {self.A.T.dot(self.A)}"
         self.A_inv = np.linalg.inv(self.A)
         self.origin = np.asarray(self.origin)[None, ...]
