@@ -37,6 +37,8 @@
 #############################################################################
 
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class Basis():
@@ -86,6 +88,8 @@ class Basis():
         >>> coords_back = basis.back(coords_new)
         >>> (coords_back == coords).all()
         True
+        >>> # Optional plot
+        >>> # basis.show()
 
         """
         self.dim = len(u)
@@ -123,6 +127,19 @@ class Basis():
         coords = self.A.dot(coords_new.T).T
         self.coords = coords
         return coords
+
+    def show(self):
+        if self.dim == 3:
+            ax = plt.axes(projection='3d')
+            ax.scatter3D(self.coords[:, 0], self.coords[:, 1], self.coords[:,
+                                                                           2])
+            # ax.quiver(self.origin[0, 0], self.origin[0, 1], self.origin[0, 2],
+            #           self.u, self.v, self.w)
+            for v in [self.u, self.v, self.w]:
+                ax.plot3D([self.origin[0, 0], self.origin[0, 0] + v[0]],
+                          [self.origin[0, 1], self.origin[0, 1] + v[1]],
+                          [self.origin[0, 2], self.origin[0, 2] + v[2]])
+            plt.show()
 
 
 if __name__ == '__main__':
