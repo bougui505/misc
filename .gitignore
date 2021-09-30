@@ -148,3 +148,5 @@ Thumbs.db
 
 ### OTHER ###
 shell/tmscore/test
+python/pymol/data/
+python/pymol/internal_ca_coords.txt
