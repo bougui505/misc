@@ -99,6 +99,11 @@ class Basis():
         array([[-1.49354183, -3.50237831,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [ 3.83994401,  0.        ,  0.        ]])
+        >>> # Get spherical coordinates in the new basis
+        >>> basis.spherical
+        array([[3.80753477, 1.57079633, 1.16770961],
+               [0.        , 1.57079633, 0.        ],
+               [3.83994401, 1.57079633, 0.        ]])
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
         True
@@ -112,6 +117,8 @@ class Basis():
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
         True
+        >>> basis.spherical
+        array([[15.32764936,  2.09776165,  0.53913806]])
 
         """
         self.u, self.v, self.w = u, v, w
@@ -136,6 +143,20 @@ class Basis():
         if coords.ndim == 1:
             coords = coords[None, ...]
         return coords
+
+    @property
+    def spherical(self):
+        """
+        Get the spherical coordinates in the basis
+
+        """
+        x, y, z = self.coords_new.T
+        r = np.linalg.norm(self.coords_new, axis=1)
+        theta = np.arccos(np.divide(z, r, out=np.zeros_like(r),
+                                    where=(r != 0)))
+        phi = np.arctan(np.divide(y, x, out=np.zeros_like(y), where=(x != 0)))
+        spherical_coords = np.c_[r, theta, phi]
+        return spherical_coords
 
     def change(self, coords):
         """
