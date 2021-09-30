@@ -102,6 +102,8 @@ class Basis():
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
         True
+        >>> # Optional plot
+        >>> # basis.plot()
 
         """
         self.u, self.v, self.w = u, v, w
