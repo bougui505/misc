@@ -96,14 +96,14 @@ class Basis():
         >>> basis.build(coords)
         >>> coords_new = basis.change(coords)
         >>> coords_new
-        array([[-1.49354183, -3.50237831,  0.        ],
-               [ 0.        ,  0.        ,  0.        ],
-               [ 3.83994401,  0.        ,  0.        ]])
+        array([[-5.33348584, -3.50237831,  0.        ],
+               [-3.83994401,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ]])
         >>> # Get spherical coordinates in the new basis
         >>> basis.spherical
-        array([[3.80753477, 1.57079633, 1.16770961],
-               [0.        , 1.57079633, 0.        ],
-               [3.83994401, 1.57079633, 0.        ]])
+        array([[ 6.3806524 ,  1.57079633,  0.58105487],
+               [ 3.83994401,  1.57079633, -0.        ],
+               [ 0.        ,  1.57079633,  0.        ]])
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
         True
@@ -113,12 +113,12 @@ class Basis():
         >>> coords = [5.217, 9.211, 11.085]
         >>> coords_new = basis.change(coords)
         >>> coords_new
-        array([[ 5.67187254,  0.24012572, -3.3196734 ]])
+        array([[ 1.83192853,  0.24012572, -3.3196734 ]])
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
         True
         >>> basis.spherical
-        array([[15.32764936,  2.09776165,  0.53913806]])
+        array([[3.79919123, 2.63372654, 0.13033504]])
 
         """
         self.u, self.v, self.w = u, v, w
@@ -142,7 +142,7 @@ class Basis():
         self.coords_new = None  # Coords in the new basis
 
     def _set_coords(self, coords):
-        coords = np.asarray(coords)
+        coords = np.asarray(coords).copy()
         if coords.ndim == 1:
             coords = coords[None, ...]
         return coords
@@ -199,7 +199,7 @@ class Basis():
         a = coords[1] - coords[0]
         b = coords[2] - coords[1]
         assert np.linalg.norm(np.cross(a, b)) != 0
-        self.origin = coords[1]
+        self.origin = coords[2]
         u = b.copy()
         u /= np.linalg.norm(u)
         w = np.cross(a, b)
