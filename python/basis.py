@@ -58,7 +58,7 @@ class Basis():
         coords_new: coordinates in the new basis
 
     """
-    def __init__(self, u, v, w, origin=np.zeros(3)):
+    def __init__(self, u=None, v=None, w=None, origin=np.zeros(3)):
         """
 
         Args:
@@ -90,15 +90,33 @@ class Basis():
         True
         >>> # Optional plot
         >>> # basis.plot()
+        >>> # Build a basis from 3 points in 3D
+        >>> basis = Basis()
+        >>> coords = np.asarray([[1.504, 3.440, 5.674], [0.874, 7.070, 6.635], [4.095, 8.990, 7.462]])
+        >>> basis.build(coords)
+        >>> coords_new = basis.change(coords)
+        >>> coords_new
+        array([[-1.49354183, -3.50237831,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [ 3.83994401,  0.        ,  0.        ]])
+        >>> coords_back = basis.back(coords_new)
+        >>> np.allclose(coords_back, coords)
+        True
 
         """
-        self.dim = len(u)
         self.u, self.v, self.w = u, v, w
+        self.origin = origin
+        if self.u is not None and self.v is not None and self.w is not None:
+            self._set()
+
+    def _set(self):
+        self.dim = len(self.u)
         self.A = np.c_[self.u, self.v, self.w]  # transition matrix
-        assert (self.A.T.dot(self.A) == np.identity(
-            self.dim)).all(), "u, v, w are not an orthonormal basis"
+        assert np.allclose(
+            self.A.T.dot(self.A), np.identity(self.dim)
+        ), f"(u, v, w) is not an orthonormal basis: {self.A.T.dot(self.A)}"
         self.A_inv = np.linalg.inv(self.A)
-        self.origin = np.asarray(origin)[None, ...]
+        self.origin = np.asarray(self.origin)[None, ...]
         self.origin_new = self.A_inv.dot(self.origin.T).T
         self.coords = None  # Coords in the first basis
         self.coords_new = None  # Coords in the new basis
@@ -127,6 +145,29 @@ class Basis():
         coords = self.A.dot(coords_new.T).T
         self.coords = coords
         return coords
+
+    def build(self, coords):
+        """Build a basis from 3 points (only in 3D)
+
+        Args:
+            coords: np array with shape (3, 3).
+                    The first dimension is for the number of points,
+                    the second for the dimension of the space.
+
+        """
+        assert coords.shape == (3, 3)
+        a = coords[1] - coords[0]
+        b = coords[2] - coords[1]
+        assert np.linalg.norm(np.cross(a, b)) != 0
+        self.origin = coords[1]
+        u = b.copy()
+        u /= np.linalg.norm(u)
+        w = np.cross(a, b)
+        w /= np.linalg.norm(w)
+        v = np.cross(u, w)
+        v /= np.linalg.norm(v)
+        self.u, self.v, self.w = u, v, w
+        self._set()
 
     def plot(self):
         if self.dim == 3:
