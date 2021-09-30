@@ -104,6 +104,14 @@ class Basis():
         True
         >>> # Optional plot
         >>> # basis.plot()
+        >>> # Try for a new point outside of the plan
+        >>> coords = [5.217, 9.211, 11.085]
+        >>> coords_new = basis.change(coords)
+        >>> coords_new
+        array([[ 5.67187254,  0.24012572, -3.3196734 ]])
+        >>> coords_back = basis.back(coords_new)
+        >>> np.allclose(coords_back, coords)
+        True
 
         """
         self.u, self.v, self.w = u, v, w
@@ -123,6 +131,12 @@ class Basis():
         self.coords = None  # Coords in the first basis
         self.coords_new = None  # Coords in the new basis
 
+    def _set_coords(self, coords):
+        coords = np.asarray(coords)
+        if coords.ndim == 1:
+            coords = coords[None, ...]
+        return coords
+
     def change(self, coords):
         """
 
@@ -130,8 +144,8 @@ class Basis():
             coords: Coordinates of points in the old basis (shape: (n, self.dim))
 
         """
-        self.coords = coords
-        coords_new = self.A_inv.dot(coords.T).T - self.origin_new
+        self.coords = self._set_coords(coords)
+        coords_new = self.A_inv.dot(self.coords.T).T - self.origin_new
         self.coords_new = coords_new
         return coords_new
 
@@ -142,7 +156,7 @@ class Basis():
             coords_new: Coordinates of points in the new basis (shape: (n, self.dim))
 
         """
-        self.coords_new = coords_new
+        self.coords_new = self._set_coords(coords_new)
         coords_new += self.origin_new
         coords = self.A.dot(coords_new.T).T
         self.coords = coords
