@@ -52,6 +52,8 @@ class Basis():
         A: transition matrix from new to old basis
         A_inv: transition matrix from old to new basis
         dim: dimension of the space
+        coords: coordinates in the basis of origin
+        coords_new: coordinates in the new basis
 
     """
     def __init__(self, u, v, w, origin=np.zeros(3)):
@@ -94,6 +96,8 @@ class Basis():
         self.A_inv = np.linalg.inv(self.A)
         self.origin = np.asarray(origin)[None, ...]
         self.origin_new = self.A_inv.dot(self.origin.T).T
+        self.coords = None  # Coords in the first basis
+        self.coords_new = None  # Coords in the new basis
 
     def change(self, coords):
         """
