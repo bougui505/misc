@@ -89,7 +89,7 @@ class Basis():
         >>> (coords_back == coords).all()
         True
         >>> # Optional plot
-        >>> # basis.show()
+        >>> # basis.plot()
 
         """
         self.dim = len(u)
@@ -128,7 +128,7 @@ class Basis():
         self.coords = coords
         return coords
 
-    def show(self):
+    def plot(self):
         if self.dim == 3:
             ax = plt.axes(projection='3d')
             ax.scatter3D(self.coords[:, 0], self.coords[:, 1], self.coords[:,
