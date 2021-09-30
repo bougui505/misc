@@ -35,38 +35,55 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
-"""
-Get internal spherical coordinates of a protein C-alpha trace
-"""
 import numpy as np
 from pymol import cmd
 from misc.basis import Basis
 
 
-def internal_coords(coords):
+class Internal(object):
     """
+    Get internal spherical coordinates of a protein C-alpha trace
 
-    Args:
-        coords:
+    Attributes:
+        spherical_coords: spherical internal coordinates
+        initcoords: first cartesian atomic coordinates to initialize the internal coordinate system
+        coords: Input cartesian coords
+        inds: Index of internal coordinates
 
     """
-    n = len(coords)
-    r, theta, phi = [], [], []
-    inds = []
-    for i in range(n - 3):
-        window = coords[i:i + 4]
-        basis = Basis()
-        basis.build(window[:3])
-        if i == 0:
-            initcoords = window[:3]
-        basis.change(window[3])
-        rthetaphi = basis.spherical
-        r.extend(rthetaphi[:, 0])
-        theta.extend(rthetaphi[:, 1])
-        phi.extend(rthetaphi[:, 2])
-        inds.append(i + 3)
-    spherical_coords = np.c_[r, theta, phi]
-    return spherical_coords, inds, initcoords
+    def __init__(self, coords):
+        self.coords = coords
+        self._set()
+
+    def _set(self):
+        n = len(self.coords)
+        r, theta, phi = [], [], []
+        inds = []
+        for i in range(n - 3):
+            window = self.coords[i:i + 4]
+            basis = Basis()
+            basis.build(window[:3])
+            if i == 0:
+                initcoords = window[:3]
+            basis.change(window[3])
+            rthetaphi = basis.spherical
+            r.extend(rthetaphi[:, 0])
+            theta.extend(rthetaphi[:, 1])
+            phi.extend(rthetaphi[:, 2])
+            inds.append(i + 3)
+        self.spherical_coords = np.c_[r, theta, phi]
+        self.inds = inds
+        self.initcoords = initcoords
+
+    def write(self, outputfilename):
+        out = np.c_[self.inds, self.spherical_coords]
+        headerinit = ' # '.join(
+            [f'{e:.3f}' for e in self.initcoords.flatten()])
+        np.savetxt('internal_ca_coords.txt',
+                   out,
+                   header=f'# {headerinit}\n#ind #r #theta #phi',
+                   fmt='%d %.3f %.3f %.3f',
+                   comments='')
 
 
 if __name__ == '__main__':
@@ -79,11 +96,5 @@ if __name__ == '__main__':
 
     cmd.load(args.pdb, object='inp')
     coords = cmd.get_coords(selection='name CA')
-    spherical_coords, inds, initcoords = internal_coords(coords)
-    out = np.c_[inds, spherical_coords]
-    headerinit = ' # '.join([f'{e:.4f}' for e in initcoords.flatten()])
-    np.savetxt('internal_ca_coords.txt',
-               out,
-               header=f'# {headerinit}\n#ind #r #theta #phi',
-               fmt='%d %.4f %.4f %.4f',
-               comments='')
+    internal = Internal(coords)
+    internal.write('internal_ca_coords.txt')
