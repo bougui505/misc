@@ -105,16 +105,16 @@ class Basis():
         coords_new = self.A_inv.dot(coords.T).T - self.origin_new
         return coords_new
 
-    def back(self, coords):
+    def back(self, coords_new):
         """
 
         Args:
-            coords: Coordinates of points in the new basis (shape: (n, self.dim))
+            coords_new: Coordinates of points in the new basis (shape: (n, self.dim))
 
         """
-        coords += self.origin_new
-        coords_new = self.A.dot(coords.T).T
-        return coords_new
+        coords_new += self.origin_new
+        coords = self.A.dot(coords_new.T).T
+        return coords
 
 
 if __name__ == '__main__':
