@@ -52,17 +52,21 @@ def internal_coords(coords):
     """
     n = len(coords)
     r, theta, phi = [], [], []
+    inds = []
     for i in range(n - 3):
         window = coords[i:i + 4]
         basis = Basis()
         basis.build(window[:3])
+        if i == 0:
+            initcoords = window[:3]
         basis.change(window[3])
         rthetaphi = basis.spherical
         r.extend(rthetaphi[:, 0])
         theta.extend(rthetaphi[:, 1])
         phi.extend(rthetaphi[:, 2])
+        inds.append(i + 3)
     spherical_coords = np.c_[r, theta, phi]
-    return spherical_coords
+    return spherical_coords, inds, initcoords
 
 
 if __name__ == '__main__':
@@ -75,9 +79,11 @@ if __name__ == '__main__':
 
     cmd.load(args.pdb, object='inp')
     coords = cmd.get_coords(selection='name CA')
-    spherical_coords = internal_coords(coords)
+    spherical_coords, inds, initcoords = internal_coords(coords)
+    out = np.c_[inds, spherical_coords]
+    headerinit = ' # '.join([f'{e:.4f}' for e in initcoords.flatten()])
     np.savetxt('internal_ca_coords.txt',
-               spherical_coords,
-               header='#r #theta #phi',
-               fmt='%.4f',
+               out,
+               header=f'# {headerinit}\n#ind #r #theta #phi',
+               fmt='%d %.4f %.4f %.4f',
                comments='')
