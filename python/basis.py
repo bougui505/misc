@@ -106,7 +106,9 @@ class Basis():
             coords: Coordinates of points in the old basis (shape: (n, self.dim))
 
         """
+        self.coords = coords
         coords_new = self.A_inv.dot(coords.T).T - self.origin_new
+        self.coords_new = coords_new
         return coords_new
 
     def back(self, coords_new):
@@ -116,8 +118,10 @@ class Basis():
             coords_new: Coordinates of points in the new basis (shape: (n, self.dim))
 
         """
+        self.coords_new = coords_new
         coords_new += self.origin_new
         coords = self.A.dot(coords_new.T).T
+        self.coords = coords
         return coords
 
 
