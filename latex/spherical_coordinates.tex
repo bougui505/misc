@@ -1,0 +1,17 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\begin{document}
+Conversion from Cartesian coordinates to spherical coordinates:
+
+\begin{align*}
+r &= \sqrt{x^2 + y^2 + z^2} \\
+\theta &= \arccos\frac{z}{\sqrt{x^2 + y^2 + z^2}} = \arccos\frac{z}{r}=\arctan\frac{\sqrt{x^2+y^2}}{z} \\
+\varphi &=
+\begin{cases}
+    \operatorname{arctan}(y/x) & \text{if } x \geq 0 \\
+    \operatorname{arctan}(y/x) + \pi & \text{if } x < 0
+\end{cases}
+\end{align*}
+
+\end{document}
