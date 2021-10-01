@@ -114,7 +114,6 @@ class Internal(object):
         self.inds = inds
 
     def write(self, outputfilename):
-        print(len(self.inds), len(self.spherical))
         out = np.c_[self.inds, self.spherical]
         np.savetxt('internal_ca_coords.txt',
                    out,
