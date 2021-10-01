@@ -39,6 +39,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import copy
 
 
 class Basis():
@@ -56,6 +57,7 @@ class Basis():
         dim: dimension of the space
         coords: coordinates in the basis of origin
         coords_new: coordinates in the new basis
+        spherical_coords: spherical coordinates in the new basis
 
     """
     def __init__(self, u=None, v=None, w=None, origin=np.zeros(3)):
@@ -100,7 +102,8 @@ class Basis():
                [-3.83994401,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
         >>> # Get spherical coordinates in the new basis
-        >>> basis.spherical
+        >>> spherical_coords = basis.spherical
+        >>> spherical_coords
         array([[ 6.3806524 ,  1.57079633,  0.58105487],
                [ 3.83994401,  1.57079633, -0.        ],
                [ 0.        ,  1.57079633,  0.        ]])
@@ -119,6 +122,12 @@ class Basis():
         True
         >>> basis.spherical
         array([[3.79919123, 2.63372654, 0.13033504]])
+        >>> basis.set_spherical(basis.spherical)
+        >>> # Test if back calculated cartesian coordinates from spherical in new basis match the original
+        >>> np.allclose(basis.coords_new, coords_new)
+        True
+        >>> np.allclose(basis.coords, coords)
+        True
 
         """
         self.u, self.v, self.w = u, v, w
@@ -140,12 +149,13 @@ class Basis():
         self.origin_new = self.A_inv.dot(self.origin.T).T
         self.coords = None  # Coords in the first basis
         self.coords_new = None  # Coords in the new basis
+        self.spherical_coords = None  # Spherical coordinates in the new basis
 
     def _set_coords(self, coords):
-        coords = np.asarray(coords).copy()
-        if coords.ndim == 1:
-            coords = coords[None, ...]
-        return coords
+        out = np.asarray(coords).copy()
+        if out.ndim == 1:
+            out = out[None, ...]
+        return out
 
     @property
     def spherical(self):
@@ -159,7 +169,28 @@ class Basis():
                                     where=(r != 0)))
         phi = np.arctan(np.divide(y, x, out=np.zeros_like(y), where=(x != 0)))
         spherical_coords = np.c_[r, theta, phi]
+        self.spherical_coords = spherical_coords
         return spherical_coords
+
+    def set_spherical(self, spherical_coords):
+        """
+        Set the spherical coords in the basis and compute the corresponding
+        cartesian coordinates in the basis (self.coords_new) and in the
+        original basis (self.coords)
+
+        Args:
+            spherical_coords: ndarray with (r, theta, phi)
+
+        """
+        self.spherical_coords = self._set_coords(spherical_coords)
+        r, theta, phi = self.spherical_coords.T
+        assert (theta >= 0).all() and (theta <= np.pi).all()
+        assert (phi >= 0).all() and (phi <= 2 * np.pi).all()
+        x = r * np.cos(phi) * np.sin(theta)
+        y = r * np.sin(phi) * np.sin(theta)
+        z = r * np.cos(theta)
+        self.coords_new = self._set_coords(np.c_[x, y, z])
+        self.back(self.coords_new)
 
     def change(self, coords):
         """
@@ -170,7 +201,7 @@ class Basis():
         """
         self.coords = self._set_coords(coords)
         coords_new = self.A_inv.dot(self.coords.T).T - self.origin_new
-        self.coords_new = coords_new
+        self.coords_new = self._set_coords(coords_new)
         return coords_new
 
     def back(self, coords_new):
@@ -180,10 +211,11 @@ class Basis():
             coords_new: Coordinates of points in the new basis (shape: (n, self.dim))
 
         """
-        self.coords_new = self._set_coords(coords_new)
-        coords_new += self.origin_new
-        coords = self.A.dot(coords_new.T).T
-        self.coords = coords
+        incoords = coords_new.copy()
+        self.coords_new = self._set_coords(incoords)
+        incoords += self.origin_new
+        coords = self.A.dot(incoords.T).T
+        self.coords = self._set_coords(coords)
         return coords
 
     def build(self, coords):
