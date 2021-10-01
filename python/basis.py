@@ -104,11 +104,14 @@ class Basis():
         >>> # Get spherical coordinates in the new basis
         >>> spherical_coords = basis.spherical
         >>> spherical_coords
-        array([[ 6.3806524 ,  1.57079633,  0.58105487],
-               [ 3.83994401,  1.57079633, -0.        ],
-               [ 0.        ,  1.57079633,  0.        ]])
+        array([[6.3806524 , 1.57079633, 3.72264752],
+               [3.83994401, 1.57079633, 3.14159265],
+               [0.        , 1.57079633, 0.        ]])
         >>> coords_back = basis.back(coords_new)
         >>> np.allclose(coords_back, coords)
+        True
+        >>> basis.set_spherical(spherical_coords)
+        >>> np.allclose(basis.coords_new, coords_new)
         True
         >>> # Optional plot
         >>> # basis.plot()
@@ -168,6 +171,8 @@ class Basis():
         theta = np.arccos(np.divide(z, r, out=np.zeros_like(r),
                                     where=(r != 0)))
         phi = np.arctan(np.divide(y, x, out=np.zeros_like(y), where=(x != 0)))
+        # see: https://www.antenna-theory.com/definitions/sphericalCoordinates.php
+        phi[x < 0] += np.pi
         spherical_coords = np.c_[r, theta, phi]
         self.spherical_coords = spherical_coords
         return spherical_coords
