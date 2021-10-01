@@ -173,6 +173,7 @@ class Basis():
         phi = np.arctan(np.divide(y, x, out=np.zeros_like(y), where=(x != 0)))
         # see: https://www.antenna-theory.com/definitions/sphericalCoordinates.php
         phi[x < 0] += np.pi
+        phi[phi < 0] += 2 * np.pi
         spherical_coords = np.c_[r, theta, phi]
         self.spherical_coords = spherical_coords
         return spherical_coords
@@ -190,7 +191,8 @@ class Basis():
         self.spherical_coords = self._set_coords(spherical_coords)
         r, theta, phi = self.spherical_coords.T
         assert (theta >= 0).all() and (theta <= np.pi).all()
-        assert (phi >= 0).all() and (phi <= 2 * np.pi).all()
+        assert (phi >= 0).all() and (phi <= 2 * np.pi).all(
+        ), f"phi={phi} is not bounded 0 <= phi <= {2 * np.pi}"
         x = r * np.cos(phi) * np.sin(theta)
         y = r * np.sin(phi) * np.sin(theta)
         z = r * np.cos(theta)
