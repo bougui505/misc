@@ -64,7 +64,12 @@ class Internal(object):
             basis = Basis()
             basis.build(window[:3])
             if i == 0:
-                initcoords = window[:3]
+                basis.change(window[:3])
+                init_coords = basis.spherical
+                r.extend(init_coords[:, 0])
+                theta.extend(init_coords[:, 1])
+                phi.extend(init_coords[:, 2])
+                inds.extend(range(3))
             basis.change(window[3])
             rthetaphi = basis.spherical
             r.extend(rthetaphi[:, 0])
@@ -73,15 +78,12 @@ class Internal(object):
             inds.append(i + 3)
         self.spherical_coords = np.c_[r, theta, phi]
         self.inds = inds
-        self.initcoords = initcoords
 
     def write(self, outputfilename):
         out = np.c_[self.inds, self.spherical_coords]
-        headerinit = ' # '.join(
-            [f'{e:.3f}' for e in self.initcoords.flatten()])
         np.savetxt('internal_ca_coords.txt',
                    out,
-                   header=f'# {headerinit}\n#ind #r #theta #phi',
+                   header='#ind #r #theta #phi',
                    fmt='%d %.3f %.3f %.3f',
                    comments='')
 
