@@ -47,16 +47,20 @@ class Internal(object):
     Attributes:
         coords: Input cartesian coords
         spherical: spherical internal coordinates
-        inds: Index of internal coordinates
+        resids: Index of internal coordinates
 
     """
     def __init__(self, coords=None, spherical=None):
         self.coords = coords
         self.spherical = spherical
+        self.resids = []
         if self.coords is not None:
             self._set()
         elif self.spherical is not None:
             self._back()
+
+    def init_coords(self):
+        pass
 
     def _set(self):
         """
@@ -65,7 +69,6 @@ class Internal(object):
         """
         n = len(self.coords)
         r, theta, phi = [], [], []
-        inds = []
         for i in range(n - 3):
             window = self.coords[i:i + 4]
             basis = Basis()
@@ -76,15 +79,14 @@ class Internal(object):
                 r.extend(init_coords[:, 0])
                 theta.extend(init_coords[:, 1])
                 phi.extend(init_coords[:, 2])
-                inds.extend(range(3))
+                self.resids.extend(range(3))
             basis.change(window[3])
             rthetaphi = basis.spherical
             r.extend(rthetaphi[:, 0])
             theta.extend(rthetaphi[:, 1])
             phi.extend(rthetaphi[:, 2])
-            inds.append(i + 3)
+            self.resids.append(i + 3)
         self.spherical = np.c_[r, theta, phi]
-        self.inds = inds
 
     def _back(self):
         """
@@ -93,7 +95,6 @@ class Internal(object):
         """
         n = len(self.spherical)
         x, y, z = [], [], []
-        inds = []
         for i in range(n - 3):
             window = self.spherical[i:i + 4]
             if i == 0:
@@ -109,12 +110,11 @@ class Internal(object):
             x.extend(basis.coords[:, 0])
             y.extend(basis.coords[:, 1])
             z.extend(basis.coords[:, 2])
-            inds.append(i + 3)
+            self.resids.append(i + 3)
         self.coords = np.c_[x, y, z]
-        self.inds = inds
 
     def write(self, outputfilename):
-        out = np.c_[self.inds, self.spherical]
+        out = np.c_[self.resids, self.spherical]
         np.savetxt('internal_ca_coords.txt',
                    out,
                    header='#ind #r #theta #phi',
