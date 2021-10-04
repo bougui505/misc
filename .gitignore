@@ -151,3 +151,6 @@ shell/tmscore/test
 python/pymol/data/
 python/pymol/internal_ca_coords.txt
 python/pymol/trace.pdb
+python/protein/internal_ca_coords.txt
+python/protein/trace.pdb
+python/protein/trace_icp.pdb
