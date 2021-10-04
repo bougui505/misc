@@ -168,6 +168,24 @@ class System():
         self.mdl.restraints.make(atmsel,
                                  restraint_type='stereo',
                                  spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='SPHERE14',
+                                 spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='LJ14',
+                                 spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='COULOMB14',
+                                 spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='SPHERE',
+                                 spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='LJ',
+                                 spline_on_site=False)
+        self.mdl.restraints.make(atmsel,
+                                 restraint_type='COULOMB',
+                                 spline_on_site=False)
         return self.mdl
 
     @property

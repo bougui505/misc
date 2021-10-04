@@ -84,7 +84,7 @@ class Internal(object):
         self.resids.extend(range(3))
         if self.system is not None:
             for ca_coord in coords:
-                self.system.add_residue('G', ca_coords=ca_coord)
+                self.system.add_residue('A', ca_coords=ca_coord)
             self.system.build()
         return rthetaphi
 
@@ -144,7 +144,7 @@ class Internal(object):
         self._coords.extend(list(basis.coords))
         self.resids.append(resid + 1)
         if self.system is not None:
-            self.system.add_residue('G', ca_coords=internal.coords[-1])
+            self.system.add_residue('A', ca_coords=internal.coords[-1])
             self.system.build()
 
     def _back(self):
@@ -208,6 +208,7 @@ if __name__ == '__main__':
         internal.write_pdb('trace.pdb')
     if args.plot:
         import matplotlib.pyplot as plt
+        from matplotlib.colors import LogNorm
         init_ca = np.asarray([[1.504, 3.440, 5.674], [0.874, 7.070, 6.635],
                               [4.095, 8.990, 7.462]])
         n = 50
@@ -219,7 +220,7 @@ if __name__ == '__main__':
                 internal.add_spherical([3.8, theta, phi])
                 internal.system.minimize()
                 emap[i, j] = internal.system.energy[0]
-        im = plt.matshow(np.log(emap), origin='lower', extent=[0, 360, 0, 180])
+        im = plt.matshow(emap, origin='lower', extent=[0, 360, 0, 180])
         plt.colorbar()
         plt.xlabel('φ (deg.)')
         plt.ylabel('θ (deg.)')
