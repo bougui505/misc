@@ -51,10 +51,10 @@ class Internal(object):
 
     """
     def __init__(self, coords=None, spherical=None):
-        self.coords = coords
+        self._coords = coords
         self._spherical = spherical
         self.resids = []
-        if self.coords is not None:
+        if self._coords is not None:
             self._set()
         elif self._spherical is not None:
             self._back()
@@ -75,6 +75,13 @@ class Internal(object):
         return rthetaphi
 
     def add_coords(self, coords):
+        """
+        Add a point to the set of internal coordinates
+
+        Args:
+            coords:
+
+        """
         basis = Basis()
         resid = self.resids[-1]
         basis.build(self.coords[resid - 2:resid + 1])
@@ -98,30 +105,40 @@ class Internal(object):
     def spherical(self):
         return np.asarray(self._spherical)
 
+    @property
+    def coords(self):
+        return np.asarray(self._coords)
+
+    def init_spherical(self, rthetaphi):
+        """
+
+        Args:
+            coords: spherical coordinates to initialize the coordinate system (3 CA)
+
+        """
+        basis = Basis(u=[1, 0, 0], v=[0, 1, 0], w=[0, 0, 1])
+        basis.set_spherical(rthetaphi)
+        self._coords.extend([list(e) for e in basis.coords])
+        self.resids.extend(range(3))
+
+    def add_spherical(self, rthetaphi):
+        basis = Basis()
+        resid = self.resids[-1]
+        basis.build(self.coords[resid - 2:resid + 1])
+        basis.set_spherical(rthetaphi)
+        self._coords.extend(list(basis.coords))
+        self.resids.append(resid + 1)
+
     def _back(self):
         """
         Compute Cartesian coordinates (self.coords) from spherical internal coordinates (self.spherical)
 
         """
         n = len(self.spherical)
-        x, y, z = [], [], []
-        for i in range(n - 3):
-            window = self.spherical[i:i + 4]
-            if i == 0:
-                basis = Basis(u=[1, 0, 0], v=[0, 1, 0], w=[0, 0, 1])
-                basis.set_spherical(window[:3])
-                x.extend(basis.coords[:, 0])
-                y.extend(basis.coords[:, 1])
-                z.extend(basis.coords[:, 2])
-            basis = Basis()
-            coords = np.c_[x[-3:], y[-3:], z[-3:]]
-            basis.build(coords[:3])
-            basis.set_spherical(window[3])
-            x.extend(basis.coords[:, 0])
-            y.extend(basis.coords[:, 1])
-            z.extend(basis.coords[:, 2])
-            self.resids.append(i + 3)
-        self.coords = np.c_[x, y, z]
+        self._coords = []
+        self.init_spherical(self.spherical[:3])
+        for i in range(3, n):
+            self.add_spherical(self.spherical[i])
 
     def write(self, outputfilename):
         out = np.c_[self.resids, self.spherical]
