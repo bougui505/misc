@@ -208,13 +208,12 @@ if __name__ == '__main__':
         internal.write_pdb('trace.pdb')
     if args.plot:
         import matplotlib.pyplot as plt
-        from matplotlib.colors import LogNorm
         init_ca = np.asarray([[1.504, 3.440, 5.674], [0.874, 7.070, 6.635],
                               [4.095, 8.990, 7.462]])
-        n = 50
-        emap = np.zeros((2 * n, n))
-        for i, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):
-            for j, theta in enumerate(np.linspace(0, np.pi, num=n)):
+        n = 25
+        emap = np.zeros((n, 2 * n))
+        for i, theta in enumerate(np.linspace(0, np.pi, num=n)):
+            for j, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):
                 internal = Internal(modeller=True)
                 internal.init_coords(init_ca)
                 internal.add_spherical([3.8, theta, phi])
