@@ -50,7 +50,12 @@ class Internal(object):
         resids: Index of internal coordinates
 
     """
-    def __init__(self, coords=None, spherical=None):
+    def __init__(self, coords=None, spherical=None, modeller=False):
+        if modeller:
+            from misc.modeller.build import System
+            self.system = System()
+        else:
+            self.system = None
         self._coords = coords
         self._spherical = spherical
         self.resids = []
@@ -59,22 +64,31 @@ class Internal(object):
         elif self._spherical is not None:
             self._back()
 
-    def init_coords(self, coords):
+    def init_coords(self, coords, add=True):
         """
 
         Args:
             coords: coordinates to initialize the internal coordinate system (3 CA)
 
         """
+        if add:
+            self._coords = []
+            self._coords.extend([list(e) for e in coords])
+        self._spherical = []
         basis = Basis()
+        coords = np.asarray(coords)
         basis.build(coords)
         basis.change(coords)
         rthetaphi = basis.spherical
         self._spherical.extend([list(e) for e in rthetaphi])
         self.resids.extend(range(3))
+        if self.system is not None:
+            for ca_coord in coords:
+                self.system.add_residue('G', ca_coords=ca_coord)
+            self.system.build()
         return rthetaphi
 
-    def add_coords(self, coords):
+    def add_coords(self, coords, add=True):
         """
         Add a point to the set of internal coordinates
 
@@ -82,6 +96,8 @@ class Internal(object):
             coords:
 
         """
+        if add:
+            self._coords.append([list(coords)])
         basis = Basis()
         resid = self.resids[-1]
         basis.build(self.coords[resid - 2:resid + 1])
@@ -96,10 +112,9 @@ class Internal(object):
 
         """
         n = len(self.coords)
-        self._spherical = []
-        self.init_coords(self.coords[:3])
+        self.init_coords(self.coords[:3], add=False)
         for i in range(3, n):
-            self.add_coords(self.coords[i])
+            self.add_coords(self.coords[i], add=False)
 
     @property
     def spherical(self):
@@ -128,6 +143,9 @@ class Internal(object):
         basis.set_spherical(rthetaphi)
         self._coords.extend(list(basis.coords))
         self.resids.append(resid + 1)
+        if self.system is not None:
+            self.system.add_residue('G', ca_coords=internal.coords[-1])
+            self.system.build()
 
     def _back(self):
         """
@@ -174,6 +192,9 @@ if __name__ == '__main__':
     parser.add_argument('--pdb', help='pdb protein structure file name')
     parser.add_argument('--internal',
                         help='Internal coordinates to convert to Cartesian')
+    parser.add_argument('--plot',
+                        help='Plot energy diagram for spherical coordinates',
+                        action='store_true')
     args = parser.parse_args()
 
     if args.pdb is not None:
@@ -185,3 +206,21 @@ if __name__ == '__main__':
         spherical_coords = np.genfromtxt(args.internal, usecols=(1, 2, 3))
         internal = Internal(spherical=spherical_coords)
         internal.write_pdb('trace.pdb')
+    if args.plot:
+        import matplotlib.pyplot as plt
+        init_ca = np.asarray([[1.504, 3.440, 5.674], [0.874, 7.070, 6.635],
+                              [4.095, 8.990, 7.462]])
+        n = 50
+        emap = np.zeros((2 * n, n))
+        for i, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):
+            for j, theta in enumerate(np.linspace(0, np.pi, num=n)):
+                internal = Internal(modeller=True)
+                internal.init_coords(init_ca)
+                internal.add_spherical([3.8, theta, phi])
+                internal.system.minimize()
+                emap[i, j] = internal.system.energy[0]
+        im = plt.matshow(np.log(emap), origin='lower', extent=[0, 360, 0, 180])
+        plt.colorbar()
+        plt.xlabel('φ (deg.)')
+        plt.ylabel('θ (deg.)')
+        plt.show()
