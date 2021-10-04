@@ -52,15 +52,36 @@ class Internal(object):
     """
     def __init__(self, coords=None, spherical=None):
         self.coords = coords
-        self.spherical = spherical
+        self._spherical = spherical
         self.resids = []
         if self.coords is not None:
             self._set()
-        elif self.spherical is not None:
+        elif self._spherical is not None:
             self._back()
 
-    def init_coords(self):
-        pass
+    def init_coords(self, coords):
+        """
+
+        Args:
+            coords: coordinates to initialize the internal coordinate system (3 CA)
+
+        """
+        basis = Basis()
+        basis.build(coords)
+        basis.change(coords)
+        rthetaphi = basis.spherical
+        self._spherical.extend([list(e) for e in rthetaphi])
+        self.resids.extend(range(3))
+        return rthetaphi
+
+    def add_coords(self, coords):
+        basis = Basis()
+        resid = self.resids[-1]
+        basis.build(self.coords[resid - 2:resid + 1])
+        basis.change(coords)
+        rthetaphi = basis.spherical
+        self._spherical.extend(list(rthetaphi))
+        self.resids.append(resid + 1)
 
     def _set(self):
         """
@@ -68,25 +89,14 @@ class Internal(object):
 
         """
         n = len(self.coords)
-        r, theta, phi = [], [], []
-        for i in range(n - 3):
-            window = self.coords[i:i + 4]
-            basis = Basis()
-            basis.build(window[:3])
-            if i == 0:
-                basis.change(window[:3])
-                init_coords = basis.spherical
-                r.extend(init_coords[:, 0])
-                theta.extend(init_coords[:, 1])
-                phi.extend(init_coords[:, 2])
-                self.resids.extend(range(3))
-            basis.change(window[3])
-            rthetaphi = basis.spherical
-            r.extend(rthetaphi[:, 0])
-            theta.extend(rthetaphi[:, 1])
-            phi.extend(rthetaphi[:, 2])
-            self.resids.append(i + 3)
-        self.spherical = np.c_[r, theta, phi]
+        self._spherical = []
+        self.init_coords(self.coords[:3])
+        for i in range(3, n):
+            self.add_coords(self.coords[i])
+
+    @property
+    def spherical(self):
+        return np.asarray(self._spherical)
 
     def _back(self):
         """
