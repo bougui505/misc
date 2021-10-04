@@ -37,6 +37,7 @@
 #############################################################################
 
 import modeller
+import numpy as np
 from modeller.optimizers import ConjugateGradients
 
 lib = '/usr/lib/modeller10.1/modlib'
@@ -81,6 +82,16 @@ class System():
         >>> # and evaluate its energy
         >>> system.energy[0]
         1.2566540241241455
+        >>> system.coords
+        array([[ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
+               [ 1.45529997e+00,  0.00000000e+00,  0.00000000e+00],
+               [ 1.94122541e+00,  1.41604555e+00,  0.00000000e+00],
+               [ 1.14785838e+00,  2.35453606e+00,  1.84466671e-07],
+               [ 3.27375841e+00,  1.61899972e+00, -1.04427713e-07],
+               [ 3.89874721e+00,  2.93403769e+00, -1.33662752e-08],
+               [ 5.38628244e+00,  2.76508021e+00, -2.99142101e-07],
+               [ 5.84848309e+00,  1.59291542e+00, -7.53011818e-07],
+               [ 6.09959221e+00,  3.80372810e+00, -1.68363044e-07]])
         >>> # system.mdl.write('test.pdb')
         >>> # Try an other system
         >>> system = System()
@@ -167,6 +178,16 @@ class System():
 
     def atoms(self):
         return self.mdl.atoms
+
+    @property
+    def coords(self):
+        """
+        Atomic coordinates of the system
+        """
+        out = []
+        for atom in self.atoms():
+            out.append([atom.x, atom.y, atom.z])
+        return np.asarray(out)
 
     def atoms_defined(self):
         """
