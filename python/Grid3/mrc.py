@@ -149,6 +149,15 @@ def mrc_to_pdb(mrcfilename,
     cmd.save(outpdb, 'out')
 
 
+def translate_pdb(pdbfilename, outpdbfilename, translation):
+    cmd.reinitialize()
+    cmd.load(pdbfilename, object='inpdb')
+    coords = cmd.get_coords(selection='inpdb')
+    coords += translation
+    cmd.load_coords(coords, selection='inpdb')
+    cmd.save(outpdbfilename, selection='inpdb')
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -161,6 +170,14 @@ if __name__ == '__main__':
                         nargs='+',
                         default=None,
                         help='Origin for the MRC file')  # 10. 20. 30.
+    parser.add_argument('--center',
+                        help='Set the origin to 0 0 0',
+                        action='store_true')
+    parser.add_argument(
+        '--pdb',
+        help=
+        'PDB file to translate when center option is called in order to align the pdb and the centered grid'
+    )
     parser.add_argument('--spacing',
                         type=float,
                         default=1,
@@ -204,6 +221,8 @@ if __name__ == '__main__':
                         default=0)
     args = parser.parse_args()
 
+    if args.pdb is not None:
+        cmd.load(args.pdb, object='pdbin')
     if args.npy is not None:
         data = np.load(args.npy)
         transpose = True
@@ -211,6 +230,11 @@ if __name__ == '__main__':
         data, origin_in, args.spacing = mrc_to_array(args.mrc,
                                                      normalize=args.normalize,
                                                      padding=args.padding)
+        if args.center:
+            args.origin = np.asarray([0, 0, 0])
+            translation = -origin_in
+            if args.pdb is not None:
+                translate_pdb(args.pdb, 'test.pdb', translation)
         if args.origin is None:
             args.origin = origin_in
         transpose = False
