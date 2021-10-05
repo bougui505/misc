@@ -52,8 +52,9 @@ class Internal(object):
     """
     def __init__(self, coords=None, spherical=None, modeller=False):
         if modeller:
-            from misc.modeller.build import System
-            self.system = System()
+            import misc.modeller.build as build
+            self.system = build.System()
+            self.env = build.env
         else:
             self.system = None
         self._coords = coords
@@ -208,17 +209,33 @@ if __name__ == '__main__':
         internal.write_pdb('trace.pdb')
     if args.plot:
         import matplotlib.pyplot as plt
-        init_ca = np.asarray([[1.504, 3.440, 5.674], [0.874, 7.070, 6.635],
-                              [4.095, 8.990, 7.462]])
+        import modeller
+        init_ca = np.asarray([[8.504, 6.440, 7.674], [7.874, 10.070, 8.635],
+                              [11.095, 11.990, 9.462]])
         n = 25
         emap = np.zeros((n, 2 * n))
+        # Read an EM-density map to compute density energy term
+        internal = Internal(modeller=True)
+        env = internal.env
+        # Weight of the energy terms
+        env.schedule_scale = modeller.physical.Values(em_density=10000)
+        den = modeller.density(env,
+                               file='data/1igd_center.mrc',
+                               resolution=1.5,
+                               em_density_format='CCP4')
+        env.edat.density = den
+        env.edat.dynamic_sphere = True
         for i, theta in enumerate(np.linspace(0, np.pi, num=n)):
             for j, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):
                 internal = Internal(modeller=True)
                 internal.init_coords(init_ca)
                 internal.add_spherical([3.8, theta, phi])
                 internal.system.minimize()
+                em_density_energy = internal.system.energy[1][
+                    modeller.physical.em_density]
+                # emap[i, j] = em_density_energy
                 emap[i, j] = internal.system.energy[0]
+        print(internal.system.energy)
         im = plt.matshow(emap, origin='lower', extent=[0, 360, 0, 180])
         plt.colorbar()
         plt.xlabel('φ (deg.)')
