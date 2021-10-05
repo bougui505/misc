@@ -44,6 +44,7 @@ except ImportError:
     pass
 import numpy as np
 import sys
+import os
 
 
 def save_density(density,
@@ -234,7 +235,8 @@ if __name__ == '__main__':
             args.origin = np.asarray([0, 0, 0])
             translation = -origin_in
             if args.pdb is not None:
-                translate_pdb(args.pdb, 'test.pdb', translation)
+                outpdbname = f'{os.path.splitext(args.out)[0]}.pdb'
+                translate_pdb(args.pdb, outpdbname, translation)
         if args.origin is None:
             args.origin = origin_in
         transpose = False
