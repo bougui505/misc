@@ -50,11 +50,19 @@ class Internal(object):
         resids: Index of internal coordinates
 
     """
-    def __init__(self, coords=None, spherical=None, modeller=False):
+    def __init__(self,
+                 coords=None,
+                 spherical=None,
+                 modeller=False,
+                 density=None):
+        if density is not None:
+            modeller = True
         if modeller:
             import misc.modeller.build as build
             self.system = build.System()
             self.env = build.env
+            if density is not None:
+                self.load_density(density)
         else:
             self.system = None
         self._coords = coords
@@ -65,11 +73,23 @@ class Internal(object):
         elif self._spherical is not None:
             self._back()
 
+    def load_density(self, mrcfile):
+        self.env.schedule_scale = modeller.physical.Values(em_density=10000)
+        den = modeller.density(self.env,
+                               file=mrcfile,
+                               resolution=1.5,
+                               em_density_format='CCP4')
+        self.env.edat.density = den
+        self.env.edat.dynamic_sphere = True
+
     def init_coords(self, coords, add=True):
         """
 
         Args:
             coords: coordinates to initialize the internal coordinate system (3 CA)
+            add: If True, add the coordinates to the list of coordinates and compute
+                 the basis from those coords. If False, only build the basis without
+                 adding the coordinates.
 
         """
         if add:
@@ -215,16 +235,8 @@ if __name__ == '__main__':
         n = 25
         emap = np.zeros((n, 2 * n))
         # Read an EM-density map to compute density energy term
-        internal = Internal(modeller=True)
-        env = internal.env
-        # Weight of the energy terms
-        env.schedule_scale = modeller.physical.Values(em_density=10000)
-        den = modeller.density(env,
-                               file='data/1igd_center.mrc',
-                               resolution=1.5,
-                               em_density_format='CCP4')
-        env.edat.density = den
-        env.edat.dynamic_sphere = True
+        internal = Internal(modeller=True, density='data/1igd_center.mrc')
+        min_energy = np.inf
         for i, theta in enumerate(np.linspace(0, np.pi, num=n)):
             for j, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):
                 internal = Internal(modeller=True)
@@ -234,8 +246,12 @@ if __name__ == '__main__':
                 em_density_energy = internal.system.energy[1][
                     modeller.physical.em_density]
                 # emap[i, j] = em_density_energy
-                emap[i, j] = internal.system.energy[0]
-        print(internal.system.energy)
+                energy = internal.system.energy[0]
+                if energy < min_energy:
+                    min_energy = energy
+                    internal.system.mdl.write('min.pdb')
+                emap[i, j] = energy
+        print(min_energy)
         im = plt.matshow(emap, origin='lower', extent=[0, 360, 0, 180])
         plt.colorbar()
         plt.xlabel('φ (deg.)')
