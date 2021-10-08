@@ -56,9 +56,9 @@ def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
     Args:
         coords:
         rotation_matrix:
-        angle_x:
-        angle_y:
-        angle_z:
+        angle_x: angle around x-axis in radian
+        angle_y: angle around y-axis in radian
+        angle_z: angle around z-axis in radian
 
     Returns:
         out_coords: The rotated 3D coordinates
@@ -70,6 +70,20 @@ def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
         rotation_matrix = get_rotation_matrix(angle_x, angle_y, angle_z)
     out_coords = (rotation_matrix.dot(coords.T)).T + center
     return out_coords
+
+
+def rotate_pdb(pdbin,
+               pdbout,
+               rotation_matrix=None,
+               angle_x=0,
+               angle_y=0,
+               angle_z=0):
+    cmd.reinitialize()
+    cmd.load(pdbin, object='inpdb')
+    coords = coords = cmd.get_coords()
+    coords_rot = rotate(coords, angle_x=alpha, angle_y=beta, angle_z=gamma)
+    cmd.load_coords(coords_rot, 'inpdb')
+    cmd.save(pdbout)
 
 
 if __name__ == '__main__':
@@ -94,11 +108,7 @@ if __name__ == '__main__':
                         default=0.)
     args = parser.parse_args()
 
-    cmd.load(args.pdb, object='inpdb')
-    coords = coords = cmd.get_coords()
     alpha = np.deg2rad(args.alpha)
     beta = np.deg2rad(args.beta)
     gamma = np.deg2rad(args.gamma)
-    coords_rot = rotate(coords, angle_x=alpha, angle_y=beta, angle_z=gamma)
-    cmd.load_coords(coords_rot, 'inpdb')
-    cmd.save(args.out)
+    rotate_pdb(args.pdb, args.out, angle_x=alpha, angle_y=beta, angle_z=gamma)
