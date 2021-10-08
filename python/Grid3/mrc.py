@@ -45,6 +45,9 @@ except ImportError:
 import numpy as np
 import sys
 import os
+from misc.protein.rotate import rotate as rotate_coords
+from misc.protein.rotate import get_rotation_matrix
+from misc.protein.rotate import rotate_pdb
 
 
 def save_density(density,
@@ -159,6 +162,32 @@ def translate_pdb(pdbfilename, outpdbfilename, translation):
     cmd.save(outpdbfilename, selection='inpdb')
 
 
+def rotate(grid, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
+    n, p, q = grid.shape
+    outgrid = np.zeros_like(grid)
+    counts = np.zeros_like(grid)
+    coords, values = filter_by_condition(grid, np.ones_like(grid,
+                                                            dtype=np.bool))
+    coords = np.float_(coords)
+    if rotation_matrix is None:
+        rotation_matrix = get_rotation_matrix(angle_x, angle_y, angle_z)
+    coords_new = rotate_coords(coords, rotation_matrix=rotation_matrix)
+    coords_new = np.int_(np.round(coords_new))
+    sel = np.all(coords_new > 0, axis=1)
+    sel = sel & (coords_new[:, 0] < n)
+    sel = sel & (coords_new[:, 1] < p)
+    sel = sel & (coords_new[:, 2] < q)
+    coords_new = coords_new[sel]
+    values = values[sel]
+    np.add.at(counts, tuple(coords_new.T), 1.)
+    np.add.at(outgrid, tuple(coords_new.T), values)
+    outgrid = np.divide(outgrid,
+                        counts,
+                        where=(counts != 0),
+                        out=np.zeros_like(outgrid))
+    return outgrid
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -174,6 +203,10 @@ if __name__ == '__main__':
     parser.add_argument('--center',
                         help='Set the origin to 0 0 0',
                         action='store_true')
+    parser.add_argument('--rotate',
+                        help='x, y, z angles of rotation in degree',
+                        nargs='+',
+                        type=float)
     parser.add_argument(
         '--pdb',
         help=
@@ -237,6 +270,16 @@ if __name__ == '__main__':
             if args.pdb is not None:
                 outpdbname = f'{os.path.splitext(args.out)[0]}.pdb'
                 translate_pdb(args.pdb, outpdbname, translation)
+        if args.rotate is not None:
+            alpha, beta, gamma = np.deg2rad(args.rotate)
+            data = rotate(data, angle_x=-gamma, angle_y=beta, angle_z=-alpha)
+            if args.pdb is not None:
+                outpdbname = f'{os.path.splitext(args.out)[0]}.pdb'
+                rotate_pdb(args.pdb,
+                           outpdbname,
+                           angle_x=alpha,
+                           angle_y=beta,
+                           angle_z=gamma)
         if args.origin is None:
             args.origin = origin_in
         transpose = False

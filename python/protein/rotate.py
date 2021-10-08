@@ -38,6 +38,7 @@
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from pymol import cmd
 
 
 def get_rotation_matrix(angle_x, angle_y, angle_z):
@@ -81,13 +82,15 @@ def rotate_pdb(pdbin,
     cmd.reinitialize()
     cmd.load(pdbin, object='inpdb')
     coords = coords = cmd.get_coords()
-    coords_rot = rotate(coords, angle_x=alpha, angle_y=beta, angle_z=gamma)
+    coords_rot = rotate(coords,
+                        angle_x=angle_x,
+                        angle_y=angle_y,
+                        angle_z=angle_z)
     cmd.load_coords(coords_rot, 'inpdb')
     cmd.save(pdbout)
 
 
 if __name__ == '__main__':
-    from pymol import cmd
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
