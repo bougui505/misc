@@ -40,6 +40,15 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 
+def get_rotation_matrix(angle_x, angle_y, angle_z):
+    axes = [np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])]
+    rotation_matrix = np.identity(3)
+    for angle, vec in zip([angle_x, angle_y, angle_z], axes):
+        rotation_matrix = rotation_matrix.dot(
+            R.from_rotvec(angle * vec).as_matrix())
+    return rotation_matrix
+
+
 def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
     """
     Rotate 3D coordinates given a rotation matrix or angles for each axis
@@ -57,12 +66,8 @@ def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
     """
     center = coords.mean(axis=0)
     coords -= center
-    axes = [np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])]
     if rotation_matrix is None:
-        rotation_matrix = np.identity(3)
-        for angle, vec in zip([angle_x, angle_y, angle_z], axes):
-            rotation_matrix = rotation_matrix.dot(
-                R.from_rotvec(angle * vec).as_matrix())
+        rotation_matrix = get_rotation_matrix(angle_x, angle_y, angle_z)
     out_coords = (rotation_matrix.dot(coords.T)).T + center
     return out_coords
 
