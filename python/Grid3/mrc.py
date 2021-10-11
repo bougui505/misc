@@ -126,8 +126,8 @@ def filter_by_condition(grid, condition):
 def digitize(coords, data, origin, spacing):
     n, p, q = data.shape
     xbins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
-    ybins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
-    zbins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
+    ybins = np.arange(start=origin[1], stop=p * spacing, step=spacing)
+    zbins = np.arange(start=origin[2], stop=q * spacing, step=spacing)
     coords = np.atleast_2d(coords)
     i = np.digitize(coords[:, 0], xbins)
     j = np.digitize(coords[:, 1], ybins)
