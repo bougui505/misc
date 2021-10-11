@@ -96,11 +96,11 @@ class Internal(object):
             self._coords = []
             self._coords.extend([list(e) for e in coords])
         self._spherical = []
-        basis = Basis()
+        self.basis = Basis()
         coords = np.asarray(coords)
-        basis.build(coords)
-        basis.change(coords)
-        rthetaphi = basis.spherical
+        self.basis.build(coords)
+        self.basis.change(coords)
+        rthetaphi = self.basis.spherical
         self._spherical.extend([list(e) for e in rthetaphi])
         self.resids.extend(range(3))
         if self.system is not None:
@@ -119,11 +119,11 @@ class Internal(object):
         """
         if add:
             self._coords.append([list(coords)])
-        basis = Basis()
+        self.basis = Basis()
         resid = self.resids[-1]
-        basis.build(self.coords[resid - 2:resid + 1])
-        basis.change(coords)
-        rthetaphi = basis.spherical
+        self.basis.build(self.coords[resid - 2:resid + 1])
+        self.basis.change(coords)
+        rthetaphi = self.basis.spherical
         self._spherical.extend(list(rthetaphi))
         self.resids.append(resid + 1)
 
@@ -152,17 +152,17 @@ class Internal(object):
             coords: spherical coordinates to initialize the coordinate system (3 CA)
 
         """
-        basis = Basis(u=[1, 0, 0], v=[0, 1, 0], w=[0, 0, 1])
-        basis.set_spherical(rthetaphi)
-        self._coords.extend([list(e) for e in basis.coords])
+        self.basis = Basis(u=[1, 0, 0], v=[0, 1, 0], w=[0, 0, 1])
+        self.basis.set_spherical(rthetaphi)
+        self._coords.extend([list(e) for e in self.basis.coords])
         self.resids.extend(range(3))
 
     def add_spherical(self, rthetaphi):
-        basis = Basis()
+        self.basis = Basis()
         resid = self.resids[-1]
-        basis.build(self.coords[resid - 2:resid + 1])
-        basis.set_spherical(rthetaphi)
-        self._coords.extend(list(basis.coords))
+        self.basis.build(self.coords[resid - 2:resid + 1])
+        self.basis.set_spherical(rthetaphi)
+        self._coords.extend(list(self.basis.coords))
         self.resids.append(resid + 1)
         if self.system is not None:
             self.system.add_residue('A', ca_coords=internal.coords[-1])
