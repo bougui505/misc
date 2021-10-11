@@ -38,6 +38,7 @@
 import numpy as np
 from pymol import cmd
 from misc.basis import Basis
+import modeller
 
 
 class Internal(object):
@@ -105,6 +106,7 @@ class Internal(object):
         self.resids.extend(range(3))
         if self.system is not None:
             for ca_coord in coords:
+                ca_coord = np.float_(ca_coord)
                 self.system.add_residue('A', ca_coords=ca_coord)
             self.system.build()
         return rthetaphi
@@ -229,7 +231,6 @@ if __name__ == '__main__':
         internal.write_pdb('trace.pdb')
     if args.plot:
         import matplotlib.pyplot as plt
-        import modeller
         init_ca = np.asarray([[8.504, 6.440, 7.674], [7.874, 10.070, 8.635],
                               [11.095, 11.990, 9.462]])
         n = 25
