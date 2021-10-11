@@ -128,6 +128,9 @@ class Internal(object):
         rthetaphi = self.basis.spherical
         self._spherical.extend(list(rthetaphi))
         self.resids.append(resid + 1)
+        if self.system is not None:
+            self.system.add_residue('A', ca_coords=self.coords[-1])
+            self.system.build()
 
     def _set(self):
         """
@@ -167,7 +170,7 @@ class Internal(object):
         self._coords.extend(list(self.basis.coords))
         self.resids.append(resid + 1)
         if self.system is not None:
-            self.system.add_residue('A', ca_coords=internal.coords[-1])
+            self.system.add_residue('A', ca_coords=self.coords[-1])
             self.system.build()
 
     def _back(self):
