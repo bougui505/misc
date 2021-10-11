@@ -123,6 +123,20 @@ def filter_by_condition(grid, condition):
     return coords, distrib
 
 
+def digitize(coords, data, origin, spacing):
+    n, p, q = data.shape
+    xbins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
+    ybins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
+    zbins = np.arange(start=origin[0], stop=n * spacing, step=spacing)
+    coords = np.atleast_2d(coords)
+    i = np.digitize(coords[:, 0], xbins)
+    j = np.digitize(coords[:, 1], ybins)
+    k = np.digitize(coords[:, 2], zbins)
+    inds = np.asarray([i, j, k])
+    inds = np.squeeze(inds)
+    return inds
+
+
 def mrc_to_pdb(mrcfilename,
                outpdb,
                minthr=-np.inf,
