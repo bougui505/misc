@@ -120,7 +120,7 @@ class Internal(object):
 
         """
         if add:
-            self._coords.append([list(coords)])
+            self._coords.append(list(coords))
         self.basis = Basis()
         resid = self.resids[-1]
         self.basis.build(self.coords[resid - 2:resid + 1])
@@ -145,7 +145,7 @@ class Internal(object):
 
     @property
     def coords(self):
-        return np.asarray(self._coords)
+        return np.asarray(self._coords, dtype=np.float)
 
     def init_spherical(self, rthetaphi):
         """
