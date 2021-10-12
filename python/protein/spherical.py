@@ -75,7 +75,7 @@ class Internal(object):
             self._back()
 
     def load_density(self, mrcfile):
-        self.env.schedule_scale = modeller.physical.Values(em_density=10000)
+        self.env.schedule_scale = modeller.physical.Values(em_density=1.)
         den = modeller.density(self.env,
                                file=mrcfile,
                                resolution=1.5,

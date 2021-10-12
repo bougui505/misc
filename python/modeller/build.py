@@ -174,18 +174,18 @@ class System():
         self.mdl.restraints.make(atmsel,
                                  restraint_type='LJ14',
                                  spline_on_site=False)
-        self.mdl.restraints.make(atmsel,
-                                 restraint_type='COULOMB14',
-                                 spline_on_site=False)
+        # self.mdl.restraints.make(atmsel,
+        #                          restraint_type='COULOMB14',
+        #                          spline_on_site=False)
         self.mdl.restraints.make(atmsel,
                                  restraint_type='SPHERE',
                                  spline_on_site=False)
         self.mdl.restraints.make(atmsel,
                                  restraint_type='LJ',
                                  spline_on_site=False)
-        self.mdl.restraints.make(atmsel,
-                                 restraint_type='COULOMB',
-                                 spline_on_site=False)
+        # self.mdl.restraints.make(atmsel,
+        #                          restraint_type='COULOMB',
+        #                          spline_on_site=False)
         return self.mdl
 
     @property
@@ -207,6 +207,17 @@ class System():
             out.append([atom.x, atom.y, atom.z])
         return np.asarray(out)
 
+    @property
+    def ca_coords_min(self):
+        """
+        Atomic coordinates of C-alpha of the system
+        """
+        out = []
+        for atom in self.atoms():
+            if atom.name == 'CA':
+                out.append([atom.x, atom.y, atom.z])
+        return np.asarray(out)
+
     def atoms_defined(self):
         """
         List atoms with defined coordinates
@@ -218,7 +229,7 @@ class System():
     def minimize(self):
         cg = ConjugateGradients()
         atmsel = modeller.Selection(self.mdl)
-        cg.optimize(atmsel, max_iterations=20)
+        cg.optimize(atmsel, max_iterations=100)
 
 
 if __name__ == '__main__':
