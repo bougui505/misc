@@ -55,6 +55,68 @@ class Internal(object):
         env: Modeller environment
         basis: Basis object to store the internal coordinates basis of the step
 
+    >>> internal = Internal(modeller=True)  # doctest:+ELLIPSIS
+    <BLANKLINE>
+                             MODELLER 10.1, 2021/03/12, r12156
+    <BLANKLINE>
+         PROTEIN STRUCTURE MODELLING BY SATISFACTION OF SPATIAL RESTRAINTS
+    <BLANKLINE>
+    <BLANKLINE>
+                         Copyright(c) 1989-2021 Andrej Sali
+                                All Rights Reserved
+    <BLANKLINE>
+                                 Written by A. Sali
+                                   with help from
+                  B. Webb, M.S. Madhusudhan, M-Y. Shen, G.Q. Dong,
+              M.A. Marti-Renom, N. Eswar, F. Alber, M. Topf, B. Oliva,
+                 A. Fiser, R. Sanchez, B. Yerkovich, A. Badretdinov,
+                         F. Melo, J.P. Overington, E. Feyfant
+                     University of California, San Francisco, USA
+                        Rockefeller University, New York, USA
+                          Harvard University, Cambridge, USA
+                       Imperial Cancer Research Fund, London, UK
+                  Birkbeck College, University of London, London, UK
+    <BLANKLINE>
+    <BLANKLINE>
+    Kind, OS, HostName, Kernel, Processor: 4, Linux mantrisse 5.10.0-8-amd64 x86_64
+    Date and time of compilation         : 2021/03/12 00:18:43
+    MODELLER executable type             : x86_64-intel8
+    Job starting time (YY/MM/DD HH:MM:SS): ...
+    <BLANKLINE>
+    read_to_681_> topology.submodel read from topology file:        3
+    >>> internal.add_basis([(8.482, 5.881, 6.315), (8.504, 6.440, 7.674), (8.417, 7.966, 7.566)])
+    >>> internal.system.energy[0]
+    4.497385501861572
+    >>> internal.add_basis([(7.914, 8.587, 8.600), (7.874, 10.070, 8.635), (9.218, 10.455, 9.275)])
+    >>> init_ca = np.asarray([[8.504, 6.440, 7.674], [7.874, 10.070, 8.635], [11.095, 11.990, 9.462]])
+    >>> internal.system.energy[0]
+    13.126262664794922
+    >>> internal.system.minimize()
+    >>> internal.system.energy[0]
+    7.411508083343506
+    >>> # Working with Modeller and EM-density
+    >>> internal = Internal(modeller=True, density='data/1igd_center.mrc', density_weight=100.)  # doctest:+ELLIPSIS
+    >>> # internal = Internal(modeller=True)
+    >>> rthetaphi = internal.init_coords(init_ca)
+    >>> internal.add_spherical([3.8, np.pi/2, np.pi/6])
+    >>> internal.system.minimize()
+    >>> # Check if the EM density is effectively loaded:
+    >>> em_density_energy = internal.system.energy[1][modeller.physical.em_density]
+    >>> print(em_density_energy)
+    -18.308961868286133
+    >>> total_energy = internal.system.energy[0]
+    >>> print(total_energy)
+    27.904043197631836
+    >>> internal.system.minimize()
+    >>> total_energy = internal.system.energy[0]
+    >>> print(total_energy)
+    15.505636215209961
+    >>> internal.coords
+    array([[ 8.504     ,  6.44      ,  7.674     ],
+           [ 7.874     , 10.07      ,  8.635     ],
+           [11.095     , 11.99      ,  9.462     ],
+           [12.83405143, 15.19958501, 10.51758712]])
+
     """
     def __init__(self,
                  coords=None,
@@ -66,11 +128,11 @@ class Internal(object):
             modeller = True
         if modeller:
             import misc.modeller.build as build
-            self.system = build.System()
             self.env = build.env
             if density is not None:
                 self.load_density(mrcfile=density,
                                   density_weight=density_weight)
+            self.system = build.System()
         else:
             self.system = None
         self._coords = coords
@@ -138,6 +200,39 @@ class Internal(object):
         self.resids.append(resid + 1)
         if self.system is not None:
             self.system.add_residue('A', ca_coords=self.coords[-1])
+            self.system.build()
+
+    def add_basis(self, coords, add=True):
+        """
+        Add 3 points defining a new internal basis
+
+        Args:
+            coords: coordinates of 3 points in space (shape: 3,3)
+        """
+        coords = np.asarray(coords)
+        assert coords.shape == (
+            3, 3
+        ), f"3 points required to construct an internal basis (input shape: {coords.shape})"
+        if add:
+            if self._coords is None:
+                self._coords = []
+            self._coords.extend([list(a) for a in coords])
+        self.basis = Basis()
+        if len(self.resids) > 0:
+            resid = self.resids[-1]
+        else:
+            resid = 0
+        self.basis.build(coords, origin='center')
+        self.basis.change(coords)
+        rthetaphi = self.basis.spherical
+        if self._spherical is None:
+            self._spherical = []
+        self._spherical.extend(list(rthetaphi))
+        self.resids.extend([
+            resid + 1,
+        ] * 3)
+        if self.system is not None:
+            self.system.add_residue('A', bb_coords=coords)
             self.system.build()
 
     def _set(self):
@@ -219,6 +314,8 @@ class Internal(object):
 
 
 if __name__ == '__main__':
+    import sys
+    import doctest
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
@@ -229,7 +326,14 @@ if __name__ == '__main__':
     parser.add_argument('--plot',
                         help='Plot energy diagram for spherical coordinates',
                         action='store_true')
+    parser.add_argument('--test',
+                        help='Test System class',
+                        action='store_true')
     args = parser.parse_args()
+
+    if args.test:
+        doctest.testmod()
+        sys.exit()
 
     if args.pdb is not None:
         cmd.load(args.pdb, object='inp')
@@ -259,6 +363,7 @@ if __name__ == '__main__':
                 internal.system.minimize()
                 em_density_energy = internal.system.energy[1][
                     modeller.physical.em_density]
+                print(em_density_energy)
                 # emap[i, j] = em_density_energy
                 energy = internal.system.energy[0]
                 if energy < min_energy:
