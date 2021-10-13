@@ -84,9 +84,11 @@ class Internal(object):
     Job starting time (YY/MM/DD HH:MM:SS): ...
     <BLANKLINE>
     read_to_681_> topology.submodel read from topology file:        3
+    >>> # Adding consecutive N-CA-C atoms
     >>> internal.add_basis([(8.482, 5.881, 6.315), (8.504, 6.440, 7.674), (8.417, 7.966, 7.566)])
     >>> internal.system.energy[0]
     4.497385501861572
+    >>> # Adding new consecutive N-CA-C atoms
     >>> internal.add_basis([(7.914, 8.587, 8.600), (7.874, 10.070, 8.635), (9.218, 10.455, 9.275)])
     >>> init_ca = np.asarray([[8.504, 6.440, 7.674], [7.874, 10.070, 8.635], [11.095, 11.990, 9.462]])
     >>> internal.system.energy[0]
@@ -94,6 +96,13 @@ class Internal(object):
     >>> internal.system.minimize()
     >>> internal.system.energy[0]
     7.411508083343506
+    >>> internal.spherical
+    array([[1.46964145, 1.57079633, 4.39427332],
+           [0.        , 1.57079633, 0.        ],
+           [1.53228881, 1.57079633, 6.28318531],
+           [1.48395216, 1.57079633, 4.47363904],
+           [0.        , 1.57079633, 0.        ],
+           [1.53758284, 1.57079633, 0.        ]])
     >>> # Working with Modeller and EM-density
     >>> internal = Internal(modeller=True, density='data/1igd_center.mrc', density_weight=100.)  # doctest:+ELLIPSIS
     >>> # internal = Internal(modeller=True)
