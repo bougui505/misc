@@ -123,7 +123,7 @@ class System():
         >>> system.minimize()
         >>> system.energy[0]
         5.575639724731445
-        >>> system.mdl.write('test3.pdb')
+        >>> # system.mdl.write('test3.pdb')
         """
         self.mdl = modeller.Model(env)
         self.sequence = ''
