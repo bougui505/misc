@@ -46,16 +46,22 @@ class Internal(object):
     Get internal spherical coordinates of a protein C-alpha trace
 
     Attributes:
+        _coords: internal list to store coordinates
         coords: Input cartesian coords
+        _spherical: internal list to store spherical internal coordinates
         spherical: spherical internal coordinates
         resids: Index of internal coordinates
+        system: sytem (Modeller)
+        env: Modeller environment
+        basis: Basis object to store the internal coordinates basis of the step
 
     """
     def __init__(self,
                  coords=None,
                  spherical=None,
                  modeller=False,
-                 density=None):
+                 density=None,
+                 density_weight=1.):
         if density is not None:
             modeller = True
         if modeller:
@@ -63,7 +69,8 @@ class Internal(object):
             self.system = build.System()
             self.env = build.env
             if density is not None:
-                self.load_density(density)
+                self.load_density(mrcfile=density,
+                                  density_weight=density_weight)
         else:
             self.system = None
         self._coords = coords
@@ -74,8 +81,9 @@ class Internal(object):
         elif self._spherical is not None:
             self._back()
 
-    def load_density(self, mrcfile):
-        self.env.schedule_scale = modeller.physical.Values(em_density=1.)
+    def load_density(self, mrcfile, density_weight=1.):
+        self.env.schedule_scale = modeller.physical.Values(
+            em_density=density_weight)
         den = modeller.density(self.env,
                                file=mrcfile,
                                resolution=1.5,
@@ -239,7 +247,9 @@ if __name__ == '__main__':
         n = 25
         emap = np.zeros((n, 2 * n))
         # Read an EM-density map to compute density energy term
-        internal = Internal(modeller=True, density='data/1igd_center.mrc')
+        internal = Internal(modeller=True,
+                            density='data/1igd_center.mrc',
+                            density_weight=10000.)
         min_energy = np.inf
         for i, theta in enumerate(np.linspace(0, np.pi, num=n)):
             for j, phi in enumerate(np.linspace(0, 2 * np.pi, num=2 * n)):

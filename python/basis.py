@@ -225,20 +225,26 @@ class Basis():
         self.coords = self._set_coords(coords)
         return coords
 
-    def build(self, coords):
+    def build(self, coords, origin='last'):
         """Build a basis from 3 points (only in 3D)
 
         Args:
             coords: np array with shape (3, 3).
                     The first dimension is for the number of points,
                     the second for the dimension of the space.
+            origin: if 'last', the last coordinates is used as origin (default)
+                    if 'center', the second coordinates is used as origin
 
         """
         assert coords.shape == (3, 3)
         a = coords[1] - coords[0]
         b = coords[2] - coords[1]
         assert np.linalg.norm(np.cross(a, b)) != 0
-        self.origin = coords[2]
+        if origin == 'last':
+            self.origin = coords[2]
+        else:  # 'center'
+            assert origin == 'center', f"unknown origin keyword ({origin}). Must be 'last' or 'center'"
+            self.origin = coords[1]
         u = b.copy()
         u /= np.linalg.norm(u)
         w = np.cross(a, b)
