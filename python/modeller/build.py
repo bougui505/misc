@@ -226,13 +226,13 @@ class System():
         selector = modeller.Selection(self.mdl)
         return selector.only_defined()
 
-    def minimize(self, selection=None):
+    def minimize(self, selection=None, max_iterations=20):
         cg = ConjugateGradients()
         if selection is None:
             atmsel = modeller.Selection(self.mdl)
         else:
             atmsel = modeller.Selection(selection)
-        cg.optimize(atmsel, max_iterations=100)
+        cg.optimize(atmsel, max_iterations=max_iterations)
 
 
 if __name__ == '__main__':
