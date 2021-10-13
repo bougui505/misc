@@ -36,6 +36,7 @@
 #                                                                           #
 #############################################################################
 
+import itertools
 import modeller
 import numpy as np
 from modeller.optimizers import ConjugateGradients
@@ -81,7 +82,7 @@ class System():
         Model containing 1 chain, 2 residues, and 9 atoms
         >>> # and evaluate its energy
         >>> system.energy[0]
-        1.2566540241241455
+        1.259577751159668
         >>> system.coords
         array([[ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
                [ 1.45529997e+00,  0.00000000e+00,  0.00000000e+00],
@@ -103,21 +104,37 @@ class System():
         >>> # The energy is much higher as not optimal geometry due the the
         >>> # given CA position:
         >>> system.energy[0]
-        353.2043762207031
+        353.2067565917969
         >>> # A quick energy minimization can quickly fix the geometry
         >>> system.minimize()
         >>> system.energy[0]
-        11.27558422088623
+        11.275080680847168
         >>> # system.mdl.write('test2.pdb')
+        >>> # Try adding backbone coordinates (N-CA-C)
+        >>> system = System()
+        >>> system.add_residue('G', ca_coords=(1.504, 3.440, 5.674))
+        >>> system.add_residue('G', bb_coords=[(0.914, 5.587, 6.600), (0.874, 7.070, 6.635), (2.218, 7.455, 7.275)])
+        >>> system.atoms_defined()
+        Selection of 4 atoms
+        >>> system.build()
+        Model containing 1 chain, 2 residues, and 9 atoms
+        >>> system.energy[0]
+        173.26942443847656
+        >>> system.minimize()
+        >>> system.energy[0]
+        5.575639724731445
+        >>> system.mdl.write('test3.pdb')
         """
         self.mdl = modeller.Model(env)
         self.sequence = ''
         self.initialize_xyz = True
-        self.ca_coords = []
+        self._coords = []
+        self.names = []  # Atom names
 
     def add_residue(self,
                     resname,
                     ca_coords=None,
+                    bb_coords=None,
                     patch_default=True,
                     blank_single_chain=False):
         """
@@ -125,6 +142,10 @@ class System():
 
         Args:
             resname: Residue name to add in 1-letter code (str)
+            ca_coords: Coordinate of the C-alpha
+            bb_coords: Coordinates of the backbone (N-CA-C)
+            patch_default: Modeller argument
+            blank_single_chain: Modeller argument
 
         """
         self.sequence += resname
@@ -134,23 +155,40 @@ class System():
         self.mdl.generate_topology(aln[0],
                                    patch_default=patch_default,
                                    blank_single_chain=blank_single_chain)
-        self.ca_coords.append(ca_coords)
         if ca_coords is not None:
-            self.set_ca_coords()
+            self.set_coords(ca_coords)
+            self.initialize_xyz = False
+        if bb_coords is not None:
+            self.set_coords(bb_coords)
             self.initialize_xyz = False
 
-    def set_ca_coords(self):
+    def set_coords(self, coords):
         """
         Unset the coordinates of the non CA atoms
         """
-        resid = 0
+        coords = np.asarray(coords)
+        if coords.ndim == 1:  # Add only one CA
+            self._coords.append(tuple(coords))
+            self.names.append('CA')
+        else:
+            assert coords.shape == (
+                3, 3
+            ), f"Exactly 3 coordinates must be given for the protein backbone in the order N-CA-C (coords.shape={coords.shape})"
+            self._coords.extend([tuple(a) for a in coords])
+            self.names.extend(['N', 'CA', 'C'])
+        iternames = itertools.chain(self.names)
+        i = 0
+        atomname = iternames.__next__()
         for atom in self.mdl.atoms:
-            if atom.name != 'CA':
+            if atom.name != atomname:
                 atom.x, atom.y, atom.z = -999.0, -999.0, -999.0
             else:
-                if self.ca_coords[resid] is not None:
-                    atom.x, atom.y, atom.z = self.ca_coords[resid]
-                resid += 1
+                atom.x, atom.y, atom.z = self._coords[i]
+                i += 1
+                try:
+                    atomname = iternames.__next__()
+                except StopIteration:
+                    pass
 
     def build(self):
         """
