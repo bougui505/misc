@@ -50,7 +50,12 @@ def get_rotation_matrix(angle_x, angle_y, angle_z):
     return rotation_matrix
 
 
-def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
+def rotate(coords,
+           rotation_matrix=None,
+           angle_x=0,
+           angle_y=0,
+           angle_z=0,
+           center=None):
     """
     Rotate 3D coordinates given a rotation matrix or angles for each axis
 
@@ -60,12 +65,14 @@ def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
         angle_x: angle around x-axis in radian
         angle_y: angle around y-axis in radian
         angle_z: angle around z-axis in radian
+        center: center of the rotation. If None, the geometric center is defined as the origin
 
     Returns:
         out_coords: The rotated 3D coordinates
 
     """
-    center = coords.mean(axis=0)
+    if center is None:
+        center = coords.mean(axis=0)
     coords -= center
     if rotation_matrix is None:
         rotation_matrix = get_rotation_matrix(angle_x, angle_y, angle_z)

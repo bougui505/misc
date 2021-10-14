@@ -176,7 +176,12 @@ def translate_pdb(pdbfilename, outpdbfilename, translation):
     cmd.save(outpdbfilename, selection='inpdb')
 
 
-def rotate(grid, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
+def rotate(grid,
+           rotation_matrix=None,
+           angle_x=0,
+           angle_y=0,
+           angle_z=0,
+           center=None):
     n, p, q = grid.shape
     outgrid = np.zeros_like(grid)
     counts = np.zeros_like(grid)
@@ -185,7 +190,9 @@ def rotate(grid, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0):
     coords = np.float_(coords)
     if rotation_matrix is None:
         rotation_matrix = get_rotation_matrix(angle_x, angle_y, angle_z)
-    coords_new = rotate_coords(coords, rotation_matrix=rotation_matrix)
+    coords_new = rotate_coords(coords,
+                               rotation_matrix=rotation_matrix,
+                               center=center)
     coords_new = np.int_(np.round(coords_new))
     sel = np.all(coords_new > 0, axis=1)
     sel = sel & (coords_new[:, 0] < n)
