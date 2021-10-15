@@ -162,3 +162,5 @@ python/protein/data/1igd.mrc
 python/protein/data/1igd_center.mrc
 python/protein/data/1igd_center.pdb
 python/protein/min.pdb
+X_data
+y_data
