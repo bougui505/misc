@@ -72,7 +72,7 @@ def save_density(density,
         mrc.update_header_stats()
 
 
-def mrc_to_array(mrcfilename, normalize=False, padding=0):
+def mrc_to_array(mrcfilename, normalize=False, padding=0, return_dict=False):
     """
     Read a mrc file into a numpy array
 
@@ -82,9 +82,12 @@ def mrc_to_array(mrcfilename, normalize=False, padding=0):
         padding:
 
     Returns:
-        data
-        origin
-        spacing
+        If not return_dict:
+            data
+            origin
+            spacing
+        else:
+            {'grid': data, 'origin': origin, 'spacing': spacing}
 
     """
     with mrcfile.open(mrcfilename) as mrc:
@@ -104,7 +107,10 @@ def mrc_to_array(mrcfilename, normalize=False, padding=0):
         spacing = np.asarray(spacing, dtype=float)
         assert (spacing == spacing[0]).all()
         spacing = spacing[0]
-        return data, origin, spacing
+        if not return_dict:
+            return data, origin, spacing
+        else:
+            return {'grid': data, 'origin': origin, 'spacing': spacing}
 
 
 def filter_by_condition(grid, condition):
