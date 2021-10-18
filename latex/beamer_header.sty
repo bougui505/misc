@@ -1,0 +1,128 @@
+% Declare that this style file requires at least LaTeX version 2e.
+\NeedsTeXFormat{LaTeX2e}
+
+% see: https://tex.stackexchange.com/a/108/19419
+
+% Provide the name of your page, the date it was last updated, and a comment about what it's used for
+\ProvidesPackage{beamer_header}
+
+% Now paste your code from the preamble here
+%\documentclass[10pt]{beamer}
+\usepackage{tikz}
+\usetikzlibrary{intersections, through, graphs, positioning, quotes, arrows, decorations.pathmorphing, tikzmark, pgfplots.groupplots}
+\usepackage{smartdiagram}
+\usetheme[progressbar=frametitle, numbering=fraction]{metropolis}
+\usepackage{appendixnumberbeamer}
+\setbeamertemplate{frame footer}{\insertshortauthor~(\insertshortinstitute)}
+
+% Redefine Fira font (thanks to: https://tex.stackexchange.com/a/268340/19419)
+\usepackage[sfdefault,light]{FiraSans}
+\usepackage{sfmath}
+\usepackage{mathtools}
+\usepackage{multirow}
+\makeatletter
+\def\bfseries@sf{m}
+\SetSymbolFont{operators}{normal}{\math@encoding}{\math@sfdefault}{l}{n}
+\SetSymbolFont{operators}{bold}{\math@encoding}{\math@sfdefault}{m}{n}
+\DeclareSymbolFont{SFMath}{\math@encoding}{\math@sfdefault}{l}{sl}
+\SetSymbolFont{SFMath}{normal}{\math@encoding}{\math@sfdefault}{l}{sl}
+\SetSymbolFont{SFMath}{bold}{\math@encoding}{\math@sfdefault}{m}{\mathnormal@bold@shape}
+\makeatother
+
+\usepackage{sidecap}
+\usepackage{multimedia}
+
+\usepackage{relsize} % To scale font size relatively
+
+\usepackage{subcaption}
+\usepackage{siunitx} % see: https://tex.stackexchange.com/a/19628/19419
+\usepackage{color}
+
+\usepackage{booktabs}
+\usepackage[scale=2]{ccicons}
+
+\usepackage{pgf}
+\usepackage{xifthen}
+
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfkeys{/pgf/number format/.cd,1000 sep={\,}} % No comma as separators (see: https://tex.stackexchange.com/a/286077/19419)
+\usepgfplotslibrary{dateplot}
+\usepgfplotslibrary{fillbetween}
+
+\usepackage{xspace}
+\newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
+
+\tikzset{ % Make curves appear one by one in one plot in a beamer presentation
+          % e.g. \addplot+[visible on=<1->] coordinates {(0,0) (5,3)};
+          %      \addplot+[visible on=<2->] coordinates {(0,-2) (5,-3)};
+          %      \addplot+[visible on=<3->] coordinates {(0,2) (5,0)};
+          % thanks to: https://tex.stackexchange.com/a/269558/19419
+    invisible/.style={opacity=0},
+    visible on/.style={alt={#1{}{invisible}}},
+    alt/.code args={<#1>#2#3}{%
+  \alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}} % \pgfkeysalso doesn't change the path
+      },
+        }
+
+\newcommand{\sneakylabel}[2]{%PgfPlots with labeled plots extend outside the graph box
+                             % See: https://tex.stackexchange.com/a/63836/19419
+                             % Usage: \sneakylabel{coordinates}{Text}
+    \coordinate (sneakylabel{#2}) at (current plot begin);
+        \pgfplotsset{
+                after end axis/.append code={
+                \node [anchor=south west] at (#1){#2};
+                                            }
+                    }
+                            }
+
+\newcommand{\sneakyimage}[4]{%PgfPlots with labeled plots extend outside the graph box
+                             % See: https://tex.stackexchange.com/a/63836/19419
+                             % Usage: \sneakylabel{coordinates}{width}{path/to/imgfile.png}{<2->}
+                             % for the image to appear from slide 2
+        \pgfplotsset{
+                after end axis/.append code={
+                \node [visible on=#4, anchor=south west, style={inner sep=0,outer sep=0}] at (#1){\includegraphics[width=#2]{#3}};
+                                            }
+                    }
+                        }
+
+\newcommand\helpgrid[3]{ % args: x1 y1, step. The grid starts from (0,0) to (x1,y1) with given step
+    \draw[help lines, color=gray, dashed] (0,0) grid[step={(#3,#3)}] (#1,#2);
+    \foreach \x in {0,1,...,#1}
+        {
+            \node at (\x,0) {\textbf{\x}};
+        }
+    \foreach \y in {0,1,...,#2}
+        {
+            \node at (0,\y) {\textbf{\y}};
+        }
+}
+
+\newcommand\blfootnote[1]{%Footnote without a marker (see: https://tex.stackexchange.com/a/30726/19419)
+\begingroup
+\renewcommand\thefootnote{}\footnote{#1}%
+\addtocounter{footnote}{-1}%
+\endgroup
+}
+
+% tikzmark command, for shading over items. See: https://tex.stackexchange.com/a/107046/19419
+\newcommand{\tikzmarker}[1]{\tikz[overlay,remember picture] \node (#1) {};}
+
+%\title{Automatic building of protein atomic models from cryo-EM maps}
+%\subtitle{DBSC departmental days}
+% \date{\today}
+%\date{}
+\author{Guillaume Bouvier}
+\institute[Institut Pasteur]{Structural Bioinformatics Unit -- Michael Nilges Group. \textbf{Institut Pasteur. Paris, FRANCE}}
+\titlegraphic{\hfill\includegraphics[height=1.cm]{logo_pasteur.pdf}}
+
+% To handle notes
+\usepackage{pgfpages}
+% For notes: To display notes on a second screen along with the presentation; use the command:
+% pdfpc -n bottom filename.pdf
+%\setbeameroption{show notes on second screen=bottom}
+\setbeamertemplate{note page}[plain]
+
+% Finally, we'll use \endinput to indicate that LaTeX can stop reading this file. LaTeX will ignore anything after this line.
+\endinput
