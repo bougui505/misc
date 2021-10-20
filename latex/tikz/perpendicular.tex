@@ -1,0 +1,16 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\begin{document}
+% see: https://tex.stackexchange.com/a/19349/19419
+\begin{tikzpicture}[dot/.style={circle,inner sep=1pt,fill,label={#1},name=#1},
+    extended line/.style={shorten >=-#1,shorten <=-#1}]
+    \node [dot=A] at (0, 0) {};
+    \node [dot=B] at (4, 1) {};
+    \node [dot=P] at (2, 3) {};
+    \draw[extended line=1cm] (A) -- (B);
+    \draw[extended line=1cm] ($(A)!(P)!(B)$) -- (P);  % $(A)!(P)!(B)$ is the projection of P on (AB)
+    \fill [red] ($(A)!(P)!(B)$) circle [radius=2pt];
+\end{tikzpicture}
+\end{document}
