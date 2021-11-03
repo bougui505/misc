@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr
@@ -13,6 +13,7 @@ from modeller import physical
 import os
 import numpy
 
+
 def align_structures(pdb1, pdb2):
     """
     Align pdb2 on pdb1 and save it in outfilename
@@ -25,18 +26,24 @@ def align_structures(pdb1, pdb2):
     aln = modeller.alignment(env)
     aln.append_model(mdl1, pdb1)
     aln.append_model(mdl2, pdb2)
-    aln.malign3d(write_fit=True, write_whole_pdb=True,
+    aln.malign3d(write_fit=True,
+                 write_whole_pdb=True,
                  edit_file_ext=('.pdb', '.pdb'))
 
-def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
+
+def repair_protein(pdbfile,
+                   outpdb="modeller_out.pdb",
                    sequence=None,
                    write_restraint_file=False,
                    restraint_file=None,
                    extra_restraint_file=None,
-                   flex=None, deviation=999.,
+                   flex=None,
+                   deviation=999.,
                    write_psf=False,
-                   emd=None, resolution=None,
-                   alpha=None, strand=None):
+                   emd=None,
+                   resolution=None,
+                   alpha=None,
+                   strand=None):
     """
 
     If sequence is not None, the sequence is read and align to the sequence of
@@ -72,27 +79,28 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
 
     a = mdl.atoms
     n_input_atoms = mdl.natm
-    print "Number of input atoms: %d"%n_input_atoms
+    print("Number of input atoms: %d" % n_input_atoms)
 
     seq = []
     resid = int(mdl.residues[0].num)
     for res in mdl.residues:
-        if int(res.num) - resid > 1: # If not consecutive resids add chain break
+        if int(res.num
+               ) - resid > 1:  # If not consecutive resids add chain break
             seq.append('/')
         resid = int(res.num)
         seq.append(res.code)
     seq = ''.join(seq)
     aln.append_model(mdl, 'input')
-    print seq
+    print(seq)
 
-
-# reading the density
+    # reading the density
     if emd is not None:
-        print "Reading density file"
-        den = modeller.density(env, file=emd,
-                     em_density_format='MRC',
-                     density_type='GAUSS',
-                     resolution=resolution)
+        print("Reading density file")
+        den = modeller.density(env,
+                               file=emd,
+                               em_density_format='MRC',
+                               density_type='GAUSS',
+                               resolution=resolution)
 
         env.edat.density = den
         env.edat.dynamic_sphere = True
@@ -105,11 +113,11 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
     mdl = None
     mdl = modeller.model(env)
 
-# Build a full atom model based on the sequence
+    # Build a full atom model based on the sequence
     if sequence is not None:
         # Read the sequence from the fasta file
         data = numpy.genfromtxt(sequence, skip_header=1, dtype=str)
-        if numpy.size(data.shape) > 0: # multiple lines
+        if numpy.size(data.shape) > 0:  # multiple lines
             seq = ''.join(data)
         else:
             seq = str(data)
@@ -126,19 +134,20 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
         mdl.build_sequence(seq)
         aln.append_model(mdl, 'output')
     mdl.transfer_xyz(aln)
-    mdl.build(build_method='INTERNAL_COORDINATES',
-              initialize_xyz=False)
+    mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False)
     loops = mdl.loops(aln, 0, 9999, 0, 0)
     loop_selection = modeller.selection()
     for loop in loops:
         loop_selection.add(loop)
     if flex is not None:
         for sel_ in flex:
-            loop_selection.add(mdl.residue_range('%s'%sel_[0], '%s'%sel_[1]))
+            loop_selection.add(
+                mdl.residue_range('%s' % sel_[0], '%s' % sel_[1]))
     if len(loops) > 0:
-        loop_selection.randomize_xyz(deviation=deviation) # Add a random number
-                #uniformly distributed in the interval from -deviation to
-                #+deviation angstroms
+        loop_selection.randomize_xyz(
+            deviation=deviation)  # Add a random number
+        #uniformly distributed in the interval from -deviation to
+        #+deviation angstroms
     #set up restraints before computing energy
     rsr = mdl.restraints
     sel = modeller.selection(mdl)
@@ -172,26 +181,34 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
              (6, max_sc_sc_distance, (2, 99999), True,
               physical.sd_sd_distance, sidechain, sidechain, (0.5, 2.0))):
             if len(sel1) > 0 and len(sel2) > 0:
-                rsr.make_distance(sel1, sel2, aln=aln,
+                rsr.make_distance(sel1,
+                                  sel2,
+                                  aln=aln,
                                   spline_on_site=spline_on_site,
                                   distance_rsr_model=dmodel,
                                   restraint_group=rsrgrp,
                                   maximal_distance=maxdis,
                                   residue_span_range=rsrrng,
                                   residue_span_sign=rsrsgn,
-                                  restraint_stdev=stdev, spline_range=4.0,
-                                  spline_dx=0.7, spline_min_points=5)
+                                  restraint_stdev=stdev,
+                                  spline_range=4.0,
+                                  spline_dx=0.7,
+                                  spline_min_points=5)
         if extra_restraint_file is not None:
             rsr.append(extra_restraint_file)
         rsr.condense()
         if write_restraint_file:
-            rsr.write('%s_dist_restraints.rsr'%os.path.splitext(outpdb)[0])
+            rsr.write('%s_dist_restraints.rsr' % os.path.splitext(outpdb)[0])
 
     for typ in ('stereo', 'phi-psi_binormal'):
         rsr.make(sel, restraint_type=typ, aln=aln, spline_on_site=True)
     for typ in ('omega', 'chi1', 'chi2', 'chi3', 'chi4'):
-        rsr.make(sel, restraint_type=typ+'_dihedral', spline_range=4.0,
-                 spline_dx=0.3, spline_min_points=5, aln=aln,
+        rsr.make(sel,
+                 restraint_type=typ + '_dihedral',
+                 spline_range=4.0,
+                 spline_dx=0.3,
+                 spline_min_points=5,
+                 aln=aln,
                  spline_on_site=True)
     if alpha is not None:
         # Add alpha helix restraints
@@ -205,7 +222,7 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
                     mdl.residue_range('%d:'%res_start, '%d:'%res_end)))
     rsr.condense()
     if write_restraint_file:
-        rsr.write('%s_topology.rsr'%os.path.splitext(outpdb)[0])
+        rsr.write('%s_topology.rsr' % os.path.splitext(outpdb)[0])
 
     libsched = autosched.normal
     mysched = libsched.make_for_model(mdl) * env.schedule_scale
@@ -213,13 +230,13 @@ def repair_protein(pdbfile, outpdb = "modeller_out.pdb",
     for step in mysched:
         step.optimize(sel, output='REPORT', max_iterations=200)
     mdl.optimize_output = 'REPORT'
-    refine.very_fast(sel, actions = actions.trace(10))
+    refine.very_fast(sel, actions=actions.trace(10))
     mdl.res_num_from(modeller.model(env, file=pdbfile), aln)
     mdl.write(outpdb)
     #align_structures(pdbfile, outpdb)
     if write_psf:
         basename = os.path.splitext(outpdb)[0]
-        mdl.write_psf('%s.psf'%basename)
+        mdl.write_psf('%s.psf' % basename)
 
 if __name__ == '__main__':
     pdbfile = sys.argv[1]
@@ -227,5 +244,6 @@ if __name__ == '__main__':
         sequence = sys.argv[2]
     else:
         sequence = None
-    repair_protein(pdbfile, sequence=sequence,
-                   outpdb="%s_fixed.pdb"%os.path.splitext(pdbfile)[0])
+    repair_protein(pdbfile,
+                   sequence=sequence,
+                   outpdb="%s_fixed.pdb" % os.path.splitext(pdbfile)[0])
