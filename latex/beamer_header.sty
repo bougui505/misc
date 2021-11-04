@@ -109,6 +109,10 @@
 % tikzmark command, for shading over items. See: https://tex.stackexchange.com/a/107046/19419
 \newcommand{\tikzmarker}[1]{\tikz[overlay,remember picture] \node (#1) {};}
 
+% Multiple references to the same footnote (see: https://tex.stackexchange.com/a/10116/19419)
+\usepackage{cleveref}
+\crefformat{footnote}{#2\footnotemark[#1]#3}
+
 %\title{Automatic building of protein atomic models from cryo-EM maps}
 %\subtitle{DBSC departmental days}
 % \date{\today}
