@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr
@@ -8,6 +8,7 @@
 import modeller as mod
 import os
 import sys
+
 
 def main(pdbs, out=sys.stdout):
     """
@@ -24,13 +25,13 @@ def main(pdbs, out=sys.stdout):
         codes.append(code)
         aln.append_model(mdl, atom_files=code, align_codes=code)
     aln.salign()
-    try: # if outfile is a filename
+    try:  # if outfile is a filename
         with open(out) as outfile:
             aln.write(file=outfile, alignment_format='PAP')
-    except TypeError: # Outfile is already a file object (e.g. sys.stdout)
+    except TypeError:  # Outfile is already a file object (e.g. sys.stdout)
         aln.write(file=out, alignment_format='PAP')
 
 
 if __name__ == '__main__':
-    PDBS = sys.argv[1:] # list of pdb file names
+    PDBS = sys.argv[1:]  # list of pdb file names
     main(PDBS)
