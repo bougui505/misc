@@ -63,4 +63,7 @@ if __name__ == '__main__':
                         default=None)
     args = parser.parse_args()
 
+    print(
+        "If the url has already been shortened you cannot create a second one. A trick is to add a harmless query param '?' at the end of the query url to make it different"
+    )
     shortener(args.url, args.custom)
