@@ -88,11 +88,15 @@ if __name__ == '__main__':
                         help='height of the maze',
                         type=int,
                         default=40)
+    parser.add_argument('--save',
+                        help='save the maze as a npy array',
+                        default=None)
     args = parser.parse_args()
 
-    plt.imshow(maze(args.nx, args.ny),
-               cmap=plt.cm.binary,
-               interpolation='nearest')
+    Z = maze(args.nx, args.ny)
+    if args.save is not None:
+        np.save(args.save, Z)
+    plt.imshow(Z, cmap=plt.cm.binary, interpolation='nearest')
     # plt.xticks([]), plt.yticks([])
     plt.colorbar()
     plt.show()
