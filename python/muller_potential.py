@@ -89,6 +89,7 @@ if __name__ == '__main__':
     xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
     V = muller_potential(xx, yy)
     V = np.ma.masked_array(V, V > 200)
+    print('V shape:', V.shape)
     plt.contourf(V, 40)
     plt.colorbar()
     plt.show()
