@@ -93,11 +93,17 @@ if __name__ == '__main__':
                         default=0,
                         help='Add a padding around the maze')
     parser.add_argument('--save',
-                        help='save the maze as a npy array',
+                        help='save the maze as a npy file',
+                        default=None)
+    parser.add_argument('--load',
+                        help='load the maze from a npy file',
                         default=None)
     args = parser.parse_args()
 
-    Z = maze(args.nx, args.ny)
+    if args.load is None:
+        Z = maze(args.nx, args.ny)
+    else:
+        Z = np.load(args.load)
     if args.padding > 0:
         Z = np.pad(array=Z, pad_width=args.padding)
     if args.save is not None:
