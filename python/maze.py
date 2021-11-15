@@ -88,12 +88,18 @@ if __name__ == '__main__':
                         help='height of the maze',
                         type=int,
                         default=40)
+    parser.add_argument('--padding',
+                        type=int,
+                        default=0,
+                        help='Add a padding around the maze')
     parser.add_argument('--save',
                         help='save the maze as a npy array',
                         default=None)
     args = parser.parse_args()
 
     Z = maze(args.nx, args.ny)
+    if args.padding > 0:
+        Z = np.pad(array=Z, pad_width=args.padding)
     if args.save is not None:
         np.save(args.save, Z)
     plt.imshow(Z, cmap=plt.cm.binary, interpolation='nearest')
