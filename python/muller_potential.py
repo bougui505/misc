@@ -72,10 +72,12 @@ def muller_potential(x, y):
     return value
 
 
-def muller_mat(minx, maxx, miny, maxy, nbins):
+def muller_mat(minx, maxx, miny, maxy, nbins, padding=None):
     grid_width = max(maxx - minx, maxy - miny) / nbins
     xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
     V = muller_potential(xx, yy)
+    if padding is not None:
+        V = np.pad(V, padding)
     return V
 
 
@@ -92,13 +94,14 @@ if __name__ == '__main__':
     parser.add_argument('--matshow',
                         help='use matshow to show the plot',
                         action='store_true')
+    parser.add_argument('--padding', help='zero padding', default=0, type=int)
     args = parser.parse_args()
 
     minx = -1.5
     maxx = 1.2
     miny = -0.2
     maxy = 2
-    V = muller_mat(minx, maxx, miny, maxy, args.nbins)
+    V = muller_mat(minx, maxx, miny, maxy, args.nbins, padding=args.padding)
     V = np.ma.masked_array(V, V > 200)
     print('V shape:', V.shape)
     if args.matshow:
