@@ -72,24 +72,38 @@ def muller_potential(x, y):
     return value
 
 
+def muller_mat(minx, maxx, miny, maxy):
+    grid_width = max(maxx - minx, maxy - miny) / args.nbins
+    xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
+    V = muller_potential(xx, yy)
+    return V
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-n',
+                        '--nbins',
+                        help='number of bins',
+                        type=int,
+                        default=100)
+    parser.add_argument('--matshow',
+                        help='use matshow to show the plot',
+                        action='store_true')
     args = parser.parse_args()
 
     minx = -1.5
     maxx = 1.2
     miny = -0.2
     maxy = 2
-    ax = None
-    grid_width = max(maxx - minx, maxy - miny) / 50.0
-    xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
-    V = muller_potential(xx, yy)
+    V = muller_mat(minx, maxx, miny, maxy)
     V = np.ma.masked_array(V, V > 200)
     print('V shape:', V.shape)
-    plt.contourf(V, 40)
+    if args.matshow:
+        plt.matshow(V)
+    else:
+        plt.contourf(V, 40, extent=(minx, maxx, miny, maxy))
     plt.colorbar()
     plt.show()
