@@ -72,8 +72,8 @@ def muller_potential(x, y):
     return value
 
 
-def muller_mat(minx, maxx, miny, maxy):
-    grid_width = max(maxx - minx, maxy - miny) / args.nbins
+def muller_mat(minx, maxx, miny, maxy, nbins):
+    grid_width = max(maxx - minx, maxy - miny) / nbins
     xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
     V = muller_potential(xx, yy)
     return V
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     maxx = 1.2
     miny = -0.2
     maxy = 2
-    V = muller_mat(minx, maxx, miny, maxy)
+    V = muller_mat(minx, maxx, miny, maxy, args.nbins)
     V = np.ma.masked_array(V, V > 200)
     print('V shape:', V.shape)
     if args.matshow:
