@@ -52,7 +52,7 @@ class MullerEnv(gym.Env):
 
     @property
     def discretized_coords(self):
-        i, j = np.int_(np.round(self.coords))
+        j, i = np.int_(np.round(self.coords))
         return (i, j)
 
     @property
