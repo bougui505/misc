@@ -4,15 +4,6 @@ from misc import muller_potential
 import scipy.spatial.distance as distance
 
 
-def stack(arr):
-    out = np.stack(arrays=[arr, arr, arr], axis=-1)
-    out -= out.min()
-    out /= out.max()
-    out *= 255
-    out = out.astype(np.uint8)
-    return out
-
-
 class MullerEnv(gym.Env):
     def __init__(self, maxiter=600):
         self.traj = []
@@ -29,6 +20,7 @@ class MullerEnv(gym.Env):
                                              maxy,
                                              nbins=100,
                                              padding=self.pad)
+        self.V = self.V.astype(np.float32)
         print('V.shape: ', self.V.shape)
         self.n, self.p = np.asarray(self.V.shape) - np.asarray(
             self.localenvshape)  # (100, 82)
@@ -40,23 +32,23 @@ class MullerEnv(gym.Env):
         high = self.pad + np.asarray([self.n, self.p])
         self.coords_space = gym.spaces.Box(low=low, high=high, shape=(2, ))
         n, p = self.localenvshape
-        self.observation_space = gym.spaces.Box(low=0,
-                                                high=255,
-                                                shape=(n, p, 3),
-                                                dtype=np.uint8)
+        self.observation_space = gym.spaces.Box(low=self.V.min(),
+                                                high=self.V.max(),
+                                                shape=(1, n, p),
+                                                dtype=np.float32)
         # self.j_stop, self.i_stop = np.unravel_index(self.V.argmin(),
         #                                             self.V.shape)
 
     @property
     def localenv(self):
-        localenv = self.V.copy()
-        if len(self.traj) > 0:
-            inds = np.int_(np.round(np.asarray(self.traj)))
-            inds = (inds[:, 0], inds[:, 1])
-            localenv[inds] = 2
+        # localenv = self.V.copy()
+        # if len(self.traj) > 0:
+        #     inds = np.int_(np.round(np.asarray(self.traj)))
+        #     inds = (inds[:, 0], inds[:, 1])
+        #     localenv[inds] = 2
         di, dj = np.asarray(self.localenvshape, dtype=int) // 2
         i, j = self.discretized_coords
-        return localenv[i - di:i + di, j - dj:j + dj]
+        return self.V[i - di:i + di, j - dj:j + dj]
 
     @property
     def discretized_coords(self):
@@ -84,8 +76,8 @@ class MullerEnv(gym.Env):
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        reward = -np.sign(self.V[i1, j1] - self.V[i0, j0])
-        self.state = stack(self.localenv)
+        reward = -(self.V[i1, j1] - self.V[i0, j0])
+        self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
         # if done is None:
@@ -101,12 +93,12 @@ class MullerEnv(gym.Env):
             # print('stop', self.i_stop, self.j_stop)
         # print(self.localenv.shape)
         # reward -= self.excluded_volume
-        return self.state, reward, done, info
+        return self.state, float(reward), done, info
 
     def reset(self):
         # self.coords = self.coords_space.sample()
         self.coords = np.asarray([27., 98.])
-        self.state = stack(self.localenv)
+        self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
         return self.state
