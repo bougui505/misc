@@ -19,7 +19,7 @@ while True:
     action, _states = model.predict(obs, deterministic=False)
     obs, reward, done, info = env.step(action)
     total_reward += reward
-    print(total_reward)
+    print(reward)
     traj.append(env.coords.copy())
     if done:
         obs = env.reset()
