@@ -19,5 +19,5 @@ model = SAC("CnnPolicy",
             train_freq=(1, "episode"),
             ent_coef=0.1,
             policy_kwargs=policy_kwargs)
-model.learn(total_timesteps=400000, log_interval=1)
+model.learn(total_timesteps=200000, log_interval=1)
 model.save("sac_muller")
