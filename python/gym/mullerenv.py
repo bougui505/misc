@@ -76,7 +76,7 @@ class MullerEnv(gym.Env):
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        reward = -self.V[i1, j1]  # -(self.V[i1, j1] - self.V[i0, j0])
+        reward = -(self.V[i1, j1] - self.V[i0, j0])
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
