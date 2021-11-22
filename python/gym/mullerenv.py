@@ -101,8 +101,8 @@ class MullerEnv(gym.Env):
         return self.state, float(reward), done, info
 
     def reset(self):
-        # self.coords = self.coords_space.sample()
-        self.coords = np.asarray([27., 98.])
+        self.coords = self.coords_space.sample()
+        # self.coords = np.asarray([27., 98.])
         self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
