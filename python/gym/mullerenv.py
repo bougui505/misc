@@ -67,7 +67,6 @@ class MullerEnv(gym.Env):
 
     def step(self, action):
         action = 2 * action / np.linalg.norm(action)
-        print(np.linalg.norm(action))
         self.iter += 1
         if self.iter >= self.maxiter:
             done = True
