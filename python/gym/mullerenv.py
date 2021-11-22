@@ -5,7 +5,7 @@ import scipy.spatial.distance as distance
 
 
 class MullerEnv(gym.Env):
-    def __init__(self, maxiter=1000):
+    def __init__(self, maxiter=200):
         self.traj = []
         self.maxiter = maxiter
         self.localenvshape = (36, 36)
