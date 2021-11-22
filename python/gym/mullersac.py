@@ -20,5 +20,5 @@ model = SAC(
     train_freq=(1, "episode"),
     # ent_coef=0.1,
     policy_kwargs=policy_kwargs)
-model.learn(total_timesteps=50000, log_interval=1)
+model.learn(total_timesteps=500000, log_interval=1)
 model.save("sac_muller")
