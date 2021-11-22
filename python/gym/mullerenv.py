@@ -66,7 +66,8 @@ class MullerEnv(gym.Env):
         return out.sum()
 
     def step(self, action):
-        action = action / np.linalg.norm(action)
+        action = 2 * action / np.linalg.norm(action)
+        print(np.linalg.norm(action))
         self.iter += 1
         if self.iter >= self.maxiter:
             done = True
@@ -101,8 +102,8 @@ class MullerEnv(gym.Env):
         return self.state, float(reward), done, info
 
     def reset(self):
-        self.coords = self.coords_space.sample()
-        # self.coords = np.asarray([27., 98.])
+        # self.coords = self.coords_space.sample()
+        self.coords = np.asarray([27., 98.])
         self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
