@@ -5,7 +5,7 @@ import scipy.spatial.distance as distance
 
 
 class MullerEnv(gym.Env):
-    def __init__(self, maxiter=200):
+    def __init__(self, maxiter=1000):
         self.traj = []
         self.maxiter = maxiter
         self.localenvshape = (36, 36)
@@ -30,7 +30,9 @@ class MullerEnv(gym.Env):
                                            shape=(2, ))
         low = self.pad
         high = self.pad + np.asarray([self.n, self.p])
-        self.coords_space = gym.spaces.Box(low=low, high=high, shape=(2, ))
+        self.coords_space = gym.spaces.Box(low=low[::-1],
+                                           high=high[::-1],
+                                           shape=(2, ))
         n, p = self.localenvshape
         self.observation_space = gym.spaces.Box(low=self.V.min(),
                                                 high=self.V.max(),
@@ -74,6 +76,7 @@ class MullerEnv(gym.Env):
         self.coords += action
         if not self.coords_space.contains(self.coords):
             self.coords = coords_prev
+            done = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
