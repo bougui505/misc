@@ -70,15 +70,14 @@ class MullerEnv(gym.Env):
         else:
             done = False
         ind_prev = np.copy(self.discretized_coords)
+        coords_prev = np.copy(self.coords)
         self.coords += action
         if not self.coords_space.contains(self.coords):
-            self.coords -= action
+            self.coords = coords_prev
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        reward = -self.V[
-            i1,
-            j1] - self.excluded_volume  # -(self.V[i1, j1] - self.V[i0, j0])
+        reward = -self.V[i1, j1]  # -(self.V[i1, j1] - self.V[i0, j0])
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
