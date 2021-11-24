@@ -20,10 +20,10 @@ class MullerEnv(gym.Env):
                                              maxy,
                                              nbins=100,
                                              padding=self.pad)
-        self.V[0, :] = self.V.max()
-        self.V[-1, :] = self.V.max()
-        self.V[:, 0] = self.V.max()
-        self.V[:, -1] = self.V.max()
+        self.V[0, :] = self.V.max() * 1000.
+        self.V[-1, :] = self.V.max() * 1000.
+        self.V[:, 0] = self.V.max() * 1000.
+        self.V[:, -1] = self.V.max() * 1000.
         self.V = self.V.astype(np.float32)
         print('V.shape: ', self.V.shape)
         self.n, self.p = np.asarray(self.V.shape) - np.asarray(
