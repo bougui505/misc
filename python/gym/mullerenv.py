@@ -70,6 +70,7 @@ class MullerEnv(gym.Env):
         return out.sum()
 
     def step(self, action):
+        loose = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
         if self.iter >= self.maxiter:
@@ -81,11 +82,15 @@ class MullerEnv(gym.Env):
         self.coords += action
         if not self.coords_space.contains(self.coords):
             self.coords = coords_prev
-            # done = True
+            done = True
+            loose = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        reward = -(self.V[i1, j1] - self.V.min())
+        if not loose:
+            reward = -(self.V[i1, j1] - self.V.min())
+        else:
+            reward = -self.V.max() * self.maxiter
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
