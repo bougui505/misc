@@ -82,12 +82,12 @@ class MullerEnv(gym.Env):
         coords_prev = np.copy(self.coords)
         self.coords += action
         if not self.coords_space.contains(self.coords):
-            self.coords = np.asarray([27., 98.])
+            self.coords = coords_prev
             loose = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        if self.V[i1, j1] == self.V.min():
+        if self.V[i1, j1] <= -130.:
             win = True
             done = True
         reward = -(self.V[i1, j1] - self.V.min())
