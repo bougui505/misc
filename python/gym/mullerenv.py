@@ -91,10 +91,9 @@ class MullerEnv(gym.Env):
         # if self.V[i1, j1] <= -130.:
         #     win = True
         #     done = True
-        if not loose:
-            reward = -(self.V[i1, j1] - self.V.min())
-        else:
-            reward = -self.V.max() * self.maxiter
+        reward = -(self.V[i1, j1] - self.V.min())
+        if loose:
+            reward *= (self.maxiter - self.iter)
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
