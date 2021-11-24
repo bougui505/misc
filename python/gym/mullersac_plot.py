@@ -8,8 +8,8 @@ V = np.load('env.npy')
 traj = np.load('traj.npy')
 
 V = np.ma.masked_array(V, V > 200)
-plt.contourf(V, 40)
+plt.matshow(V, 40)
 
-plt.plot(traj[:, 0], traj[:, 1], color='r')
+plt.plot(traj[:, 1], traj[:, 0], color='r')
 
 plt.show()
