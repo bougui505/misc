@@ -87,13 +87,10 @@ class MullerEnv(gym.Env):
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        if self.V[i1, j1] <= -130.:
-            win = True
-            done = True
-        if not win:
-            reward = -(self.V[i1, j1] - self.V.min())
-        else:
-            reward = 200.
+        # if self.V[i1, j1] <= -130.:
+        #     win = True
+        #     done = True
+        reward = -(self.V[i1, j1] - self.V.min())
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -107,10 +104,10 @@ class MullerEnv(gym.Env):
         if done:
             print('iter:', self.iter)
             print('pos:', i, j)
-            if win:
-                print('win')
-            if loose:
-                print('loose')
+            # if win:
+            #     print('win')
+            # if loose:
+            #     print('loose')
             # print('stop', self.i_stop, self.j_stop)
         # print(self.localenv.shape)
         # reward -= self.excluded_volume
