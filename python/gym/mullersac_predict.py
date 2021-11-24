@@ -12,7 +12,7 @@ env = MullerEnv(maxiter=200)
 model = SAC.load("sac_muller")
 
 obs = env.reset()
-env.coords = np.asarray([27., 98.])
+env.coords = np.asarray([98., 27.])
 traj = []
 total_reward = 0
 while True:
@@ -23,7 +23,7 @@ while True:
     traj.append(env.coords.copy())
     if done:
         obs = env.reset()
-        env.coords = np.asarray([27., 98.])
+        env.coords = np.asarray([98., 27.])
         break
 traj = np.asarray(traj)
 np.save('env.npy', env.V)
