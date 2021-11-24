@@ -20,10 +20,10 @@ class MullerEnv(gym.Env):
                                              maxy,
                                              nbins=100,
                                              padding=self.pad)
-        self.V[0, :] = self.V.max()
-        self.V[-1, :] = self.V.max()
-        self.V[:, 0] = self.V.max()
-        self.V[:, -1] = self.V.max()
+        self.V[:3, :] = self.V.max()
+        self.V[-3:, :] = self.V.max()
+        self.V[:, :3] = self.V.max()
+        self.V[:, -3:] = self.V.max()
         self.V = self.V.astype(np.float32)
         print('V.shape: ', self.V.shape)
         self.n, self.p = np.asarray(self.V.shape) - np.asarray(
@@ -85,7 +85,7 @@ class MullerEnv(gym.Env):
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        reward = -(self.V[i1, j1] - self.V.min() - 100.)
+        reward = -(self.V[i1, j1] - self.V.min())
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
