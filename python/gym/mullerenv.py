@@ -71,6 +71,7 @@ class MullerEnv(gym.Env):
 
     def step(self, action):
         loose = False
+        win = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
         if self.iter >= self.maxiter:
@@ -87,6 +88,9 @@ class MullerEnv(gym.Env):
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
+        if self.V[i1, j1] == self.V.min():
+            win = True
+            done = True
         if not loose:
             reward = -(self.V[i1, j1] - self.V.min())
         else:
