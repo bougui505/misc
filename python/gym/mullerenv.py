@@ -33,7 +33,7 @@ class MullerEnv(gym.Env):
                                            high=np.asarray([1, 1]),
                                            shape=(2, ))
         low = self.pad
-        high = self.pad + np.asarray([self.n, self.p])
+        high = self.pad + np.asarray([self.p, self.n])
         self.coords_space = gym.spaces.Box(low=low[::-1],
                                            high=high[::-1],
                                            shape=(2, ))
@@ -58,7 +58,7 @@ class MullerEnv(gym.Env):
 
     @property
     def discretized_coords(self):
-        j, i = np.int_(np.round(self.coords))
+        i, j = np.int_(np.round(self.coords))
         return (i, j)
 
     @property
@@ -82,8 +82,7 @@ class MullerEnv(gym.Env):
         coords_prev = np.copy(self.coords)
         self.coords += action
         if not self.coords_space.contains(self.coords):
-            self.coords = coords_prev
-            done = True
+            self.coords = np.asarray([27., 98.])
             loose = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
@@ -91,13 +90,7 @@ class MullerEnv(gym.Env):
         if self.V[i1, j1] == self.V.min():
             win = True
             done = True
-        if not win and not loose:
-            reward = -(self.V[i1, j1] - self.V.min())
-        else:
-            if loose:
-                reward = -self.V.max() * self.maxiter
-            if win:
-                reward = 1000.
+        reward = -(self.V[i1, j1] - self.V.min())
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -121,8 +114,8 @@ class MullerEnv(gym.Env):
         return self.state, float(reward), done, info
 
     def reset(self):
-        self.coords = self.coords_space.sample()
-        # self.coords = np.asarray([27., 98.])
+        # self.coords = self.coords_space.sample()
+        self.coords = np.asarray([27., 98.])
         self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
