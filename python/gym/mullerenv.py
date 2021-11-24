@@ -70,7 +70,7 @@ class MullerEnv(gym.Env):
         return out.sum()
 
     def step(self, action):
-        action = 2 * action / np.linalg.norm(action)
+        # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
         if self.iter >= self.maxiter:
             done = True
