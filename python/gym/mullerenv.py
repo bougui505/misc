@@ -89,11 +89,14 @@ class MullerEnv(gym.Env):
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
         # if self.V[i1, j1] <= -130.:
+        # if self.V[i1, j1] == self.V.min():
         #     win = True
         #     done = True
-        reward = -(self.V[i1, j1] - self.V.min())
+        reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
         if loose:
-            reward *= (self.maxiter - self.iter)
+            reward = -1e9
+        # if win:
+        #     reward = self.maxiter
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -117,8 +120,8 @@ class MullerEnv(gym.Env):
         return self.state, float(reward), done, info
 
     def reset(self):
-        self.coords = self.coords_space.sample()
-        # self.coords = np.asarray([98., 27.])
+        # self.coords = self.coords_space.sample()
+        self.coords = np.asarray([98., 27.])
         self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
