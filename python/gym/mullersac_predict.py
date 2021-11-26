@@ -6,7 +6,7 @@ from mullerenv import MullerEnv
 import numpy as np
 # import matplotlib.pyplot as plt
 
-env = MullerEnv(maxiter=800)
+env = MullerEnv(maxiter=200)
 # plt.matshow(env.V)
 
 model = SAC.load("sac_muller")
@@ -21,7 +21,7 @@ while True:
     if env.V[env.discretized_coords] == env.V.min():
         done = True
     total_reward += reward
-    print(reward, env.V[env.discretized_coords])
+    print(total_reward, reward, env.V[env.discretized_coords])
     traj.append(env.coords.copy())
     if done:
         obs = env.reset()
