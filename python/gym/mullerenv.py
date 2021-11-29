@@ -77,10 +77,10 @@ class MullerEnv(gym.Env):
         win = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
-        if self.iter >= self.maxiter:
-            done = True
-        else:
-            done = False
+        # if self.iter >= self.maxiter:
+        #     done = True
+        # else:
+        #     done = False
         ind_prev = np.copy(self.discretized_coords)
         self.coords += action
         # if not self.coords_space.contains(self.coords):

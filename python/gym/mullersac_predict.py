@@ -6,7 +6,7 @@ from mullerenv import MullerEnv
 import numpy as np
 # import matplotlib.pyplot as plt
 
-env = MullerEnv(maxiter=200)
+env = MullerEnv(maxiter=2000)
 # plt.matshow(env.V)
 
 model = SAC.load("sac_muller")
