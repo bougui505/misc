@@ -6,7 +6,7 @@ import scipy.spatial.distance as distance
 
 
 class MullerEnv(gym.Env):
-    def __init__(self, maxiter=200):
+    def __init__(self, maxiter=1000):
         self.traj = []
         self.maxiter = maxiter
         self.localenvshape = (36, 36)
@@ -77,10 +77,10 @@ class MullerEnv(gym.Env):
         win = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
-        # if self.iter >= self.maxiter:
-        #     done = True
-        # else:
-        #     done = False
+        if self.iter >= self.maxiter:
+            done = True
+        else:
+            done = False
         ind_prev = np.copy(self.discretized_coords)
         self.coords += action
         # if not self.coords_space.contains(self.coords):
