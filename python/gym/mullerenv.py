@@ -6,7 +6,7 @@ import scipy.spatial.distance as distance
 
 
 class MullerEnv(gym.Env):
-    def __init__(self, maxiter=1000):
+    def __init__(self, maxiter=200):
         self.traj = []
         self.maxiter = maxiter
         self.localenvshape = (36, 36)
@@ -96,7 +96,7 @@ class MullerEnv(gym.Env):
             # if self.V[i1, j1] == self.V.min():
             win = True
             done = True
-        # reward = -(self.V[i1, j1] - self.V[i0, j0])
+        # reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
         reward = -self.V[i1, j1] / 100.
         if win:
             reward = 1e6 / 100
