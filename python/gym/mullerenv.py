@@ -96,10 +96,10 @@ class MullerEnv(gym.Env):
             # if self.V[i1, j1] == self.V.min():
             win = True
             done = True
-        reward = -(self.V[i1, j1] - self.V[i0, j0])
-        # reward = -(self.V[i1, j1] - self.V.max()) / 100.
-        # if win:
-        #     reward = 1e6 / 100
+        # reward = -(self.V[i1, j1] - self.V[i0, j0])
+        reward = -self.V[i1, j1] / 100.
+        if win:
+            reward = 1e6 / 100
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
