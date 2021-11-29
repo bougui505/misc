@@ -88,11 +88,14 @@ class Box(object):
             coords += self.padding
         assert coords.ndim == self.shape.ndim
         lower_bound = (coords < self.padding)
+        self.bounded = False
         if lower_bound.any():
             coords[lower_bound] = self.padding[lower_bound]
+            self.bounded = True
         upper_bound = (coords >= self.shape - self.padding)
         if upper_bound.any():
             coords[upper_bound] = (self.shape - self.padding)[upper_bound] - 1
+            self.bounded = True
         return coords
 
 
