@@ -43,13 +43,15 @@ class Box(object):
     """
     Encode a box for coordinates
     """
-    def __init__(self, shape, padding=0):
+    def __init__(self, shape, padding=0, padded_shape=False):
         """
         >>> box = Box((10, 12))
         >>> box.bounding_coords((3, 8))
         array([3, 8])
         >>> box.bounding_coords((-3, 15))
         array([ 0, 11])
+        >>> box.bounding_coords((10, 12))
+        array([ 9, 11])
         >>> box = Box((10, 12), padding=5)
         >>> box.shape
         array([20, 22])
@@ -59,6 +61,7 @@ class Box(object):
         array([ 5, 16])
         >>> box.bounding_coords((2, 15), padded=True)
         array([ 5, 15])
+        >>> box.bounding_coords((10, 12), padded=False)
         """
         self.shape = np.asarray(shape)
         self.dim = len(shape)
@@ -68,7 +71,8 @@ class Box(object):
             ] * self.dim)
         else:
             self.padding = padding
-        self.shape += 2 * self.padding
+        if not padded_shape:
+            self.shape += 2 * self.padding
 
     def bounding_coords(self, coords, padded=False):
         """
