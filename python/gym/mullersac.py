@@ -10,7 +10,7 @@ env = MullerEnv()
 
 policy_kwargs = dict(
     features_extractor_class=CustomCNN,
-    features_extractor_kwargs=dict(features_dim=128),
+    features_extractor_kwargs=dict(features_dim=8),
 )
 
 model = SAC(
