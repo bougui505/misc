@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 from misc import muller_potential
+from misc.box.box import Box
 import scipy.spatial.distance as distance
 
 
@@ -20,10 +21,11 @@ class MullerEnv(gym.Env):
                                              maxy,
                                              nbins=100,
                                              padding=self.pad)
-        self.V[0, :] = self.V.max()
-        self.V[-1, :] = self.V.max()
-        self.V[:, 0] = self.V.max()
-        self.V[:, -1] = self.V.max()
+        self.box = Box(self.V.shape, padding=self.pad, padded_shape=True)
+        self.V[self.pad[0], :] = self.V.max()
+        self.V[-(self.pad[0] + 1), :] = self.V.max()
+        self.V[:, self.pad[1]] = self.V.max()
+        self.V[:, -(self.pad[1] + 1)] = self.V.max()
         self.V = self.V.astype(np.float32)
         print('V.shape: ', self.V.shape)
         self.n, self.p = np.asarray(self.V.shape) - np.asarray(
@@ -59,6 +61,7 @@ class MullerEnv(gym.Env):
     @property
     def discretized_coords(self):
         i, j = np.int_(np.round(self.coords))
+        i, j = self.box.bounding_coords((i, j), padded=True)
         return (i, j)
 
     @property
@@ -70,33 +73,30 @@ class MullerEnv(gym.Env):
         return out.sum()
 
     def step(self, action):
-        loose = False
+        done = False
         win = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
-        if self.iter >= self.maxiter:
-            done = True
-        else:
-            done = False
+        # if self.iter >= self.maxiter:
+        #     done = True
+        # else:
+        #     done = False
         ind_prev = np.copy(self.discretized_coords)
-        coords_prev = np.copy(self.coords)
         self.coords += action
-        if not self.coords_space.contains(self.coords):
-            self.coords = coords_prev
-            loose = True
-            done = True
+        # if not self.coords_space.contains(self.coords):
+        #     self.coords = coords_prev
+        #     loose = True
+        #     done = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
+        if self.box.bounded:
+            done = True
         self.traj.append(self.coords)
-        # if self.V[i1, j1] <= -130.:
-        # if self.V[i1, j1] == self.V.min():
-        #     win = True
-        #     done = True
-        reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
-        if loose:
-            reward = -1e9
-        # if win:
-        #     reward = self.maxiter
+        if self.V[i1, j1] <= -130.:
+            # if self.V[i1, j1] == self.V.min():
+            done = True
+        # reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
+        reward = -self.V[i1, j1]
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
