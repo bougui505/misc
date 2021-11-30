@@ -100,7 +100,7 @@ class MullerEnv(gym.Env):
         # reward = np.exp(-0.01 * self.V[i1, j1])
         reward = -np.exp(-4. * (1. - self.V[i1, j1] / self.V.max()))
         if win:
-            reward = 1000.
+            reward = 100.
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
