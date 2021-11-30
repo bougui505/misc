@@ -96,7 +96,7 @@ class MullerEnv(gym.Env):
             # if self.V[i1, j1] == self.V.min():
             done = True
         # reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
-        reward = -self.V[i1, j1]
+        reward = np.exp(-0.01 * self.V[i1, j1])
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)

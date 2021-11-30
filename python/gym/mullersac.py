@@ -22,5 +22,5 @@ model = SAC(
     policy_kwargs=policy_kwargs,
     use_sde=True,
     sde_sample_freq=100)
-model.learn(total_timesteps=1000000, log_interval=1)
+model.learn(total_timesteps=250000, log_interval=1)
 model.save("sac_muller")
