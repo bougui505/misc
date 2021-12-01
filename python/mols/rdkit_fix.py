@@ -12,6 +12,18 @@ import os
 import sys
 
 
+def molfromsmile(smile):
+    m = Chem.MolFromSmiles(smile)
+    m = fixmol(m)
+    return m
+
+
+def coordsfromsmile(smile):
+    m = molfromsmile(smile)
+    coords = get_coords(m)
+    return coords
+
+
 def fixmol(mol, constrain=None, template=None):
     if template is not None:
         # print(f"Assign Bonds from {template}")
@@ -29,16 +41,40 @@ def fixmol(mol, constrain=None, template=None):
     return mol
 
 
+def get_coords(mol):
+    c = mol.GetConformers()[0]
+    coords = c.GetPositions()
+    return coords
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-m', '--mol', help='input mol file to fix. Multiple mol files can be given.', nargs='+')
-    parser.add_argument('--constrain', help='Constrained the molecule to get this conformation')
-    parser.add_argument('--template', help='Template smiles file to assign bond orders to the molecule (--mol) based on the bond orders in this template molecule')
-    parser.add_argument('-s', '--smiles', help='input smiles file to convert in 3D and fix. Multiple smiles can be given.', nargs='+')
-    parser.add_argument('-t', '--tautomers', help='generate all tautomers', action='store_true')
+    parser.add_argument(
+        '-m',
+        '--mol',
+        help='input mol file to fix. Multiple mol files can be given.',
+        nargs='+')
+    parser.add_argument(
+        '--constrain',
+        help='Constrained the molecule to get this conformation')
+    parser.add_argument(
+        '--template',
+        help=
+        'Template smiles file to assign bond orders to the molecule (--mol) based on the bond orders in this template molecule'
+    )
+    parser.add_argument(
+        '-s',
+        '--smiles',
+        help=
+        'input smiles file to convert in 3D and fix. Multiple smiles can be given.',
+        nargs='+')
+    parser.add_argument('-t',
+                        '--tautomers',
+                        help='generate all tautomers',
+                        action='store_true')
     args = parser.parse_args()
 
     if args.constrain is not None:
