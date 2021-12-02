@@ -16,7 +16,7 @@ env.coords = np.asarray([98., 27.])
 traj = []
 total_reward = 0
 while True:
-    action, _states = model.predict(obs, deterministic=False)
+    action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
     if env.V[env.discretized_coords] == env.V.min():
         done = True
