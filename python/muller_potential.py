@@ -94,6 +94,9 @@ if __name__ == '__main__':
     parser.add_argument('--matshow',
                         help='use matshow to show the plot',
                         action='store_true')
+    parser.add_argument('--save',
+                        help='save the muller potential as a npy file',
+                        default=None)
     parser.add_argument('--padding', help='zero padding', default=0, type=int)
     args = parser.parse_args()
 
@@ -102,11 +105,13 @@ if __name__ == '__main__':
     miny = -0.2
     maxy = 2
     V = muller_mat(minx, maxx, miny, maxy, args.nbins, padding=args.padding)
-    V = np.ma.masked_array(V, V > 200)
+    V_masked = np.ma.masked_array(V, V > 200)
     print('V shape:', V.shape)
     if args.matshow:
-        plt.matshow(V)
+        plt.matshow(V_masked)
     else:
-        plt.contourf(V, 40, extent=(minx, maxx, miny, maxy))
+        plt.contourf(V_masked, 40, extent=(minx, maxx, miny, maxy))
     plt.colorbar()
     plt.show()
+    if args.save is not None:
+        np.save(args.save, V)
