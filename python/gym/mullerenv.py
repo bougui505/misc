@@ -3,24 +3,35 @@ import numpy as np
 from misc import muller_potential
 from misc.box.box import Box
 import scipy.spatial.distance as distance
+from misc.gym import dijkstra
+
+
+def get_potential(padding):
+    minx = -1.5
+    maxx = 1.2
+    miny = -0.2
+    maxy = 2
+    V = muller_potential.muller_mat(minx,
+                                    maxx,
+                                    miny,
+                                    maxy,
+                                    nbins=100,
+                                    padding=padding)
+    return V
 
 
 class MullerEnv(gym.Env):
     def __init__(self, maxiter=200):
         self.traj = []
-        self.maxiter = maxiter
         self.localenvshape = (36, 36)
-        minx = -1.5
-        maxx = 1.2
-        miny = -0.2
-        maxy = 2
         self.pad = np.asarray(self.localenvshape) // 2
-        self.V = muller_potential.muller_mat(minx,
-                                             maxx,
-                                             miny,
-                                             maxy,
-                                             nbins=100,
-                                             padding=self.pad)
+        self.V = get_potential(padding=self.pad)
+        start, end = np.unravel_index(self.V.argmin(), self.V.shape), (98, 27)
+        self.rewardmap_init, self.n = dijkstra.discriminator(V=self.V,
+                                                             start=start,
+                                                             end=end)
+        self.rewardmap = self.rewardmap_init.copy()
+        self.maxiter = 2 * self.n
         self.box = Box(self.V.shape, padding=self.pad, padded_shape=True)
         self.V[self.pad[0], :] = self.V.max()
         self.V[-(self.pad[0] + 1), :] = self.V.max()
@@ -77,10 +88,10 @@ class MullerEnv(gym.Env):
         win = False
         # action = 2 * action / np.linalg.norm(action)
         self.iter += 1
-        # if self.iter >= self.maxiter:
-        #     done = True
-        # else:
-        #     done = False
+        if self.iter >= self.maxiter:
+            done = True
+        else:
+            done = False
         ind_prev = np.copy(self.discretized_coords)
         self.coords += action
         # if not self.coords_space.contains(self.coords):
@@ -94,13 +105,12 @@ class MullerEnv(gym.Env):
         self.traj.append(self.coords)
         if self.V[i1, j1] <= -130.:
             # if self.V[i1, j1] == self.V.min():
-            win = True
             done = True
-        # reward = -np.exp(0.01 * (self.V[i1, j1] - self.V[i0, j0]))
-        # reward = np.exp(-0.01 * self.V[i1, j1])
-        reward = -np.exp(-4. * (1. - self.V[i1, j1] / self.V.max()))
+            win = True
+        reward = self.rewardmap[i1, j1]
+        self.rewardmap[i1, j1] = self.rewardmap.min()
         if win:
-            reward = 100.
+            reward = self.n
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -125,6 +135,7 @@ class MullerEnv(gym.Env):
 
     def reset(self):
         # self.coords = self.coords_space.sample()
+        self.rewardmap = self.rewardmap_init.copy()
         self.coords = np.asarray([98., 27.])
         self.state = self.localenv[None, ...]
         self.iter = 0

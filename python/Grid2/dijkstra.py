@@ -40,6 +40,16 @@ import numpy as np
 
 
 def dijkstra(V):
+    """
+
+    Args:
+        V:
+
+    Returns:
+        m: mask
+        P: dictionary of predecessors
+
+    """
     V = np.ma.masked_array(V, np.zeros(V.shape, dtype=bool))
     mask = V.mask
     visit_mask = mask.copy()  # mask visited cells
@@ -70,6 +80,17 @@ def dijkstra(V):
 
 
 def shortestPath(start, end, P):
+    """
+
+    Args:
+        start: starting cell
+        end: ending cell
+        P: dictionary of predecessors
+
+    Returns:
+        Path
+
+    """
     Path = []
     step = end
     while 1:

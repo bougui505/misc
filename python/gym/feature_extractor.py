@@ -17,15 +17,15 @@ class CustomCNN(BaseFeaturesExtractor):
     """
     def __init__(self,
                  observation_space: gym.spaces.Box,
-                 features_dim: int = 8):
+                 features_dim: int = 32):
         super(CustomCNN, self).__init__(observation_space, features_dim)
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 2, kernel_size=8, stride=1, padding=0),
+            nn.Conv2d(n_input_channels, 8, kernel_size=8, stride=1, padding=0),
             nn.ReLU(),
-            nn.Conv2d(2, 4, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(8, 16, kernel_size=4, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten(),
         )
