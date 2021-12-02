@@ -27,9 +27,11 @@ class MullerEnv(gym.Env):
         self.pad = np.asarray(self.localenvshape) // 2
         self.V = get_potential(padding=self.pad)
         start, end = np.unravel_index(self.V.argmin(), self.V.shape), (98, 27)
-        self.rewardmap_init, self.n = dijkstra.discriminator(V=self.V,
-                                                             start=start,
-                                                             end=end)
+        self.rewardmap_init, self.path = dijkstra.discriminator(V=self.V,
+                                                                start=start,
+                                                                end=end)
+        self.path = [tuple(e) for e in self.path]
+        self.n = len(self.path)
         self.rewardmap = self.rewardmap_init.copy()
         self.maxiter = 2 * self.n
         self.box = Box(self.V.shape, padding=self.pad, padded_shape=True)
@@ -83,6 +85,12 @@ class MullerEnv(gym.Env):
         out = np.exp(-cdist**2 / (2 * sigma**2))
         return out.sum()
 
+    def milestones_reward(self):
+        if tuple(self.discretized_coords) in self.path[::10]:
+            return 10.
+        else:
+            return 0.
+
     def step(self, action):
         done = False
         win = False
@@ -107,7 +115,7 @@ class MullerEnv(gym.Env):
             # if self.V[i1, j1] == self.V.min():
             done = True
             win = True
-        reward = self.rewardmap[i1, j1]
+        reward = self.rewardmap[i1, j1] + self.milestones_reward()
         self.rewardmap[i1, j1] = self.rewardmap.min()
         # if win:
         #     reward = self.n
