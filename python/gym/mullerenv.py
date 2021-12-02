@@ -33,7 +33,7 @@ class MullerEnv(gym.Env):
         self.path = [tuple(e) for e in self.path]
         self.n = len(self.path)
         self.rewardmap = self.rewardmap_init.copy()
-        self.maxiter = 2 * self.n
+        self.maxiter = self.n
         self.box = Box(self.V.shape, padding=self.pad, padded_shape=True)
         self.V[self.pad[0], :] = self.V.max()
         self.V[-(self.pad[0] + 1), :] = self.V.max()
@@ -108,13 +108,13 @@ class MullerEnv(gym.Env):
         #     done = True
         i0, j0 = ind_prev
         i1, j1 = self.discretized_coords
-        if self.box.bounded:
-            done = True
+        # if self.box.bounded:
+        #     done = True
         self.traj.append(self.coords)
-        if self.V[i1, j1] <= -130.:
-            # if self.V[i1, j1] == self.V.min():
-            done = True
-            win = True
+        # if self.V[i1, j1] <= -130.:
+        #     # if self.V[i1, j1] == self.V.min():
+        #     done = True
+        #     win = True
         reward = self.rewardmap[i1, j1] + self.milestones_reward()
         self.rewardmap[i1, j1] = self.rewardmap.min()
         # if win:

@@ -22,7 +22,6 @@ model = SAC(
     use_sde=False,
     sde_sample_freq=-1,
     buffer_size=100,
-    batch_size=8
-	)
-model.learn(total_timesteps=500000, log_interval=1)
+    batch_size=8)
+model.learn(total_timesteps=250000, log_interval=1)
 model.save("sac_muller")
