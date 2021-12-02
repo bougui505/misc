@@ -62,6 +62,10 @@ class Box(object):
         >>> box.bounding_coords((2, 15), padded=True)
         array([ 5, 15])
         >>> box.bounding_coords((10, 12), padded=False)
+        array([14, 16])
+        >>> box = Box((20, 22), padding=5, padded_shape=True)
+        >>> box.bounding_coords((8, 15), padded=False)
+        array([13, 16])
         """
         self.shape = np.asarray(shape)
         self.dim = len(shape)
