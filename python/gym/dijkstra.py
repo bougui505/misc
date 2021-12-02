@@ -47,7 +47,7 @@ def discriminator(V, start, end):
     path = dijkstra.shortestPath(start, end, P)
     rewardmap[tuple(path.T)] = 0
     rewardmap = ndimage.distance_transform_edt(rewardmap)
-    rewardmap = 1 - np.exp(0.04 * rewardmap)
+    rewardmap = 1 - np.exp(0.4 * rewardmap)
     # rewardmap[tuple(start)] = len(path)
     return rewardmap, len(path)
 
