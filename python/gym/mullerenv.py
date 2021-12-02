@@ -109,8 +109,8 @@ class MullerEnv(gym.Env):
             win = True
         reward = self.rewardmap[i1, j1]
         self.rewardmap[i1, j1] = self.rewardmap.min()
-        if win:
-            reward = self.n
+        # if win:
+        #     reward = self.n
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -135,8 +135,8 @@ class MullerEnv(gym.Env):
 
     def reset(self):
         # self.coords = self.coords_space.sample()
-        self.rewardmap = self.rewardmap_init.copy()
         self.coords = np.asarray([98., 27.])
+        self.rewardmap = self.rewardmap_init.copy()
         self.state = self.localenv[None, ...]
         self.iter = 0
         self.traj = []
