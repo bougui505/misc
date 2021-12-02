@@ -23,7 +23,7 @@ def get_potential(padding):
 class MullerEnv(gym.Env):
     def __init__(self, maxiter=200):
         self.traj = []
-        self.localenvshape = (12, 12)
+        self.localenvshape = (36, 36)
         self.pad = np.asarray(self.localenvshape) // 2
         self.V = get_potential(padding=self.pad)
         start, end = np.unravel_index(self.V.argmin(), self.V.shape), (98, 27)
