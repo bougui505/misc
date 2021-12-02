@@ -42,12 +42,13 @@ from misc.Grid2 import dijkstra
 
 
 def discriminator(V, start, end):
-    rewardmap = np.ones_like(V)
+    rewardmap = -np.ones_like(V)
     _, P = dijkstra.dijkstra(V)
     path = dijkstra.shortestPath(start, end, P)
     rewardmap[tuple(path.T)] = 0
-    rewardmap = ndimage.distance_transform_edt(rewardmap)
-    rewardmap = 1 - np.exp(0.04 * rewardmap)
+    rewardmap *= 100
+    # rewardmap = ndimage.distance_transform_edt(rewardmap)
+    # rewardmap = 1 - np.exp(0.04 * rewardmap)
     # rewardmap[tuple(start)] = len(path)
     return rewardmap, len(path)
 
