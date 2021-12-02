@@ -20,6 +20,6 @@ model = SAC(
     # ent_coef=0.1,
     policy_kwargs=policy_kwargs,
     use_sde=False,
-    sde_sample_freq=100)
-model.learn(total_timesteps=250000, log_interval=1)
+    sde_sample_freq=-1)
+model.learn(total_timesteps=500000, log_interval=1)
 model.save("sac_muller")
