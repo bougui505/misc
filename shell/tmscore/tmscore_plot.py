@@ -42,35 +42,60 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
 import os
+
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(f'{script_dir}/../../python')
 import recutils
-
 
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-r', '--rec', help='Rec file with TM-score and RMSD results as given by tmscore-multi', required=True)
-    parser.add_argument('--rmsd', help='Plot the RMSD instead of the TM-score', action='store_true')
-    parser.add_argument('--annot', help='Annotate the plot with the values', action='store_true')
+    parser.add_argument(
+        '-r',
+        '--rec',
+        help=
+        'Rec file with TM-score and RMSD results as given by tmscore-multi',
+        required=True)
+    parser.add_argument('--rmsd',
+                        help='Plot the RMSD instead of the TM-score',
+                        action='store_true')
+    parser.add_argument('--noplot',
+                        help='Do not show the plot',
+                        action='store_true')
+    parser.add_argument('--annot',
+                        help='Annotate the plot with the values',
+                        action='store_true')
     args = parser.parse_args()
 
     rec = recutils.load(args.rec)
     rec = pd.DataFrame(rec)
     if args.rmsd:
-        pmat = rec.pivot(index='native', columns='model', values='rmsd')
+        pmat = rec.pivot_table(index='native',
+                               columns='model',
+                               values='rmsd',
+                               fill_value=0)
         cmap_label = 'RMSD (Å)'
         Z = hierarchy.ward(pmat.values)
     else:
         pmat = rec.pivot(index='native', columns='model', values='tmscore')
         cmap_label = 'TM-score'
         Z = hierarchy.ward(1. - pmat.values)
-    pmat.rename(columns={e: os.path.splitext(os.path.basename(e))[0] for e in pmat.columns.values}, inplace=True)
-    pmat.rename(index={e: os.path.splitext(os.path.basename(e))[0] for e in pmat.index.values}, inplace=True)
+    pmat.rename(columns={
+        e: os.path.splitext(os.path.basename(e))[0]
+        for e in pmat.columns.values
+    },
+                inplace=True)
+    pmat.rename(index={
+        e: os.path.splitext(os.path.basename(e))[0]
+        for e in pmat.index.values
+    },
+                inplace=True)
     order = hierarchy.leaves_list(Z)
     order = list(pmat.columns.values[order])
     pmat = pmat.reindex(order)[order]
-    sns.heatmap(pmat, annot=args.annot, cbar_kws={'label': cmap_label})
-    plt.show()
+    print(pmat)
+    if not args.noplot:
+        sns.heatmap(pmat, annot=args.annot, cbar_kws={'label': cmap_label})
+        plt.show()
