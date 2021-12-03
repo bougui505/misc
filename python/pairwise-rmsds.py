@@ -36,30 +36,49 @@
 #                                                                           #
 #############################################################################
 
+import pymol
+import os
 from pymol import cmd
 from psico import fullinit
+
+cmd.set('fetch_path', os.path.expanduser('~/pdb'))
 
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p', '--pdbs', help='List of PDBs to process', nargs='+', required=True)
-    parser.add_argument('-s', '--select', help='Selection for the RMSD calculation', default='all')
-    parser.add_argument('--tmscore', help='Compute the TM-Score instead of the RMSD', action='store_true')
+    parser.add_argument('-p',
+                        '--pdbs',
+                        help='List of PDBs to process',
+                        nargs='+',
+                        required=True)
+    parser.add_argument('-s',
+                        '--select',
+                        help='Selection for the RMSD calculation',
+                        default='all')
+    parser.add_argument('--tmscore',
+                        help='Compute the TM-Score instead of the RMSD',
+                        action='store_true')
     args = parser.parse_args()
 
     npdbs = len(args.pdbs)
 
     for i, pdb in enumerate(args.pdbs):
-        cmd.load(pdb, f'pdb{i}')
+        try:
+            cmd.load(pdb, f'pdb{i}')
+        except pymol.CmdException:
+            cmd.fetch(code=pdb, name=f'pdb{i}')
 
     for i in range(npdbs - 1):
         for j in range(i + 1, npdbs):
             if args.tmscore:
-                tmscore = cmd.tmalign(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', quiet=1)
+                tmscore = cmd.tmalign(f'pdb{i} and {args.select}',
+                                      f'pdb{j} and {args.select}',
+                                      quiet=1)
             else:
-                rmsd = cmd.align(f'pdb{i} and {args.select}', f'pdb{j} and {args.select}', cycles=0)[3]
+                rmsd = cmd.align(f'pdb{i} and {args.select}',
+                                 f'pdb{j} and {args.select}')[0]
             print(f'pdb1: {args.pdbs[i]}')
             print(f'pdb2: {args.pdbs[j]}')
             if args.tmscore:
