@@ -48,13 +48,14 @@ done
 [[ $FASTA != None ]] && SEQ=$(grep -v '^>' $FASTA | sed '/^$/d' | tr -d '\n')
 echo "input_sequence: $SEQ"
 
+PDBCODESFILE=$(mktemp)
 http https://search.rcsb.org/rcsbsearch/v1/query\?json\="{\"query\": {\"type\": \"terminal\",    \"service\": \"sequence\",    \"parameters\": {      \"evalue_cutoff\": 1,      \"identity_cutoff\": $ID,      \"target\": \"pdb_protein_sequence\",      \"value\": \"$SEQ\"  }  },  \"request_options\": {    \"scoring_strategy\": \"sequence\", \"pager\": {  \"start\": 0, \"rows\": $N}  },  \"return_type\": \"polymer_entity\"}" \
-    | jq -r '.result_set[] | .identifier + " " + (.services[].nodes[].match_context[].sequence_identity|tostring)' \
-    | awk -F'[_ ]' '{print $1,$3}' | sort -k2,2gr -k1,1 | tee "${PDBCODESFILE:=$(mktemp)}"
+    | jq -r '.result_set[] | .identifier + " " + (.services[].nodes[].match_context[].sequence_identity|tostring) + " " + (.services[].nodes[].match_context[].subject_aligned_seq|tostring)' \
+    | awk -F'[_ ]' '{print $1,$3,$4}' | sort -k2,2gr -k1,1 | tee $PDBCODESFILE | awk '{print $1,$2}'  # PDBCODESFILE: PDBCODE SEQID SEQUENCE
 
 if [[ $RMSD -eq 1 ]]; then
     PDBS=$(cat $PDBCODESFILE | awk '{print $1}' | tr '\n' ' ')
-    $DIRSCRIPT/../python/pairwise-rmsds.py -p $(echo $PDBS) | grep -v "ExecutiveLoad-Detail" | tee "${RMSDFILE:=$(mktemp)}" > /dev/null
+    icp --pdbs $(echo $PDBS) --niter 5 | grep -v "ExecutiveLoad-Detail" | tee "${RMSDFILE:=$(mktemp)}" > /dev/null
     sed 's/pdb1/pdb2/;t;s/pdb2/pdb1/' $RMSDFILE >> $RMSDFILE  # To symmetrize the RMSD matrix
     sed 's/pdb1/model/' $RMSDFILE | sed 's/pdb2/native/' | sponge $RMSDFILE
     if [[ $PLOT -eq 1 ]]; then
