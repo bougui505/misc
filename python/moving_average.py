@@ -50,7 +50,7 @@ def apply(data, window_size, axes=-1):
     shape = np.asarray(data.shape)
     shape[axes] = window_size
     window = np.ones(shape)
-    window /= window.sum()
+    window /= window_size
     return signal.fftconvolve(data, window, mode='same', axes=axes)
 
 
