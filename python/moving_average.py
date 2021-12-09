@@ -37,14 +37,23 @@
 #############################################################################
 
 import numpy as np
+import scipy.signal as signal
 
 
-def apply(data, window_size):
+def apply(data, window_size, axes=-1):
     """
     see: http://goo.gl/OMbvco
+    data: input data
+    window_size: size of the window for the moving average
+    axes: -1 by default. If None apply the convolution on all axes
     """
-    window = np.ones(int(window_size)) / float(window_size)
-    return np.convolve(data, window, 'same')
+    if type(axes) == int:
+        axes = (axes, )
+    shape = np.asarray(data.shape)
+    shape[axes] = window_size
+    window = np.ones(shape)
+    window /= window.sum()
+    return signal.fftconvolve(data, window, mode='same', axes=axes)
 
 
 if __name__ == '__main__':
