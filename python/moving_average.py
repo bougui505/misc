@@ -47,10 +47,11 @@ def apply(data, window_size, axes=-1):
     window_size: size of the window for the moving average
     axes: -1 by default. If None apply the convolution on all axes
     """
-    shape = np.asarray(data.shape)
+    shape = np.ones(data.ndim, dtype=int)
     shape[axes] = window_size
     window = np.ones(shape)
     window /= window_size
+    print("Moving average window shape:", window.shape)
     return signal.fftconvolve(data, window, mode='same', axes=axes)
 
 
