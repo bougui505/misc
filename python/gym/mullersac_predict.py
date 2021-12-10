@@ -13,6 +13,7 @@ model = SAC.load("sac_muller")
 
 obs = env.reset()
 env.coords = np.asarray([98., 27.])
+env.maxiter = env.pathlen
 traj = []
 total_reward = 0
 while True:

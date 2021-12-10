@@ -31,9 +31,9 @@ class MullerEnv(gym.Env):
                                                                 start=start,
                                                                 end=end)
         self.path = [tuple(e) for e in self.path]
-        self.n = len(self.path)
+        self.pathlen = len(self.path)
         self.rewardmap = self.rewardmap_init.copy()
-        self.maxiter = self.n
+        self.maxiter = self.pathlen
         self.box = Box(self.V.shape, padding=self.pad, padded_shape=True)
         self.V[self.pad[0], :] = self.V.max()
         self.V[-(self.pad[0] + 1), :] = self.V.max()
@@ -92,6 +92,8 @@ class MullerEnv(gym.Env):
             return 0.
 
     def step(self, action):
+        action /= np.linalg.norm(action)
+        action *= np.sqrt(2)
         done = False
         win = False
         # action = 2 * action / np.linalg.norm(action)
@@ -101,6 +103,7 @@ class MullerEnv(gym.Env):
         else:
             done = False
         ind_prev = np.copy(self.discretized_coords)
+        # coords_prev = self.coords.copy()
         self.coords += action
         # if not self.coords_space.contains(self.coords):
         #     self.coords = coords_prev
@@ -112,13 +115,14 @@ class MullerEnv(gym.Env):
         #     done = True
         self.traj.append(self.coords)
         # if self.V[i1, j1] <= -130.:
-        #     # if self.V[i1, j1] == self.V.min():
-        #     done = True
-        #     win = True
-        reward = self.rewardmap[i1, j1] + self.milestones_reward()
+        if self.V[i1, j1] == self.V.min():
+            #     #     done = True
+            win = True
+        reward = self.rewardmap[i1, j1]  # + self.milestones_reward()
         self.rewardmap[i1, j1] = self.rewardmap.min()
         # if win:
-        #     reward = self.n
+        #     # reward = len(self.traj)
+        #     reward = 1000.
         self.state = self.localenv[None, ...]
         i, j = self.discretized_coords
         # print(self.iter, i, j, self.i_stop, self.j_stop)
@@ -144,6 +148,10 @@ class MullerEnv(gym.Env):
     def reset(self):
         # self.coords = self.coords_space.sample()
         self.coords = np.asarray([98., 27.])
+        # startpos = np.random.randint(low=0, high=self.pathlen)
+        # startpos = (self.pathlen - 1) - self.nreset % self.pathlen
+        # self.coords = np.asarray(self.path[startpos], dtype=float)
+        # self.maxiter = self.pathlen - startpos
         self.rewardmap = self.rewardmap_init.copy()
         self.state = self.localenv[None, ...]
         self.iter = 0
