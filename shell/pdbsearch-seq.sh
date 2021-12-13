@@ -23,6 +23,7 @@ Retrieve PDB codes above a given sequence identity threshold from a given sequen
     -n, --num maximum number of results (default: 100)
     --rmsd compute RMSD calculation between found PDB structures
     --plot plot the pairwise RMSD matrix
+    --printseq print the sequence found
 EOF
 }
 
@@ -32,6 +33,7 @@ N=100
 FASTA=None
 RMSD=0
 PLOT=0
+PRINTSEQ=0
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -s|--seq) SEQ="$2"; shift ;;
@@ -40,6 +42,7 @@ while [[ "$#" -gt 0 ]]; do
         -n|--num) N=$2; shift ;;
         --rmsd) RMSD=1 ;;
         --plot) PLOT=1 ;;
+        --printseq) PRINTSEQ=1 ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -51,7 +54,13 @@ echo "input_sequence: $SEQ"
 PDBCODESFILE=$(mktemp)
 http https://search.rcsb.org/rcsbsearch/v1/query\?json\="{\"query\": {\"type\": \"terminal\",    \"service\": \"sequence\",    \"parameters\": {      \"evalue_cutoff\": 1,      \"identity_cutoff\": $ID,      \"target\": \"pdb_protein_sequence\",      \"value\": \"$SEQ\"  }  },  \"request_options\": {    \"scoring_strategy\": \"sequence\", \"pager\": {  \"start\": 0, \"rows\": $N}  },  \"return_type\": \"polymer_entity\"}" \
     | jq -r '.result_set[] | .identifier + " " + (.services[].nodes[].match_context[].sequence_identity|tostring) + " " + (.services[].nodes[].match_context[].subject_aligned_seq|tostring)' \
-    | awk -F'[_ ]' '{print $1,$3,$4}' | sort -k2,2gr -k1,1 | tee $PDBCODESFILE | awk '{print $1,$2}'  # PDBCODESFILE: PDBCODE SEQID SEQUENCE
+    | awk -F'[_ ]' '{print $1,$3,$4}' | sort -k2,2gr -k1,1 > $PDBCODESFILE  # PDBCODESFILE: PDBCODE SEQID SEQUENCE
+
+if [[ $PRINTSEQ -eq 1 ]]; then
+    cat $PDBCODESFILE | awk '{print $1,$2,$3}'
+else
+    cat $PDBCODESFILE | awk '{print $1,$2}'
+fi
 
 if [[ $RMSD -eq 1 ]]; then
     PDBS=$(cat $PDBCODESFILE | awk '{print $1}' | tr '\n' ' ')
