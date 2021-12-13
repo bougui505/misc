@@ -10,6 +10,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 import os
 import sys
+import re
 
 
 def molfromsmile(smile):
@@ -97,7 +98,8 @@ if __name__ == '__main__':
     if args.smiles is not None:
         for smiles in args.smiles:
             m = Chem.MolFromSmiles(smiles)
-            outname = smiles + ".sdf"
+            outname = re.sub('[^A-Za-z0-9]+', '', smiles)
+            outname += ".sdf"
             mlist.append(m)
             outnames.append(outname)
     if args.tautomers:
