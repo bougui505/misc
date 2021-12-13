@@ -16,7 +16,8 @@
 \setbeamertemplate{frame footer}{\insertshortauthor~(\insertshortinstitute)}
 
 % Redefine Fira font (thanks to: https://tex.stackexchange.com/a/268340/19419)
-\usepackage{svg}  % use includesvg command (similar to includegraphics)
+% prevent to extract svg text with inkscapelatex=false option (see: https://tex.stackexchange.com/a/437498/19419)
+\usepackage[inkscapelatex=false]{svg}  % use includesvg command (similar to includegraphics)
 \usepackage{qrcode}
 \usepackage{listings}
 \usepackage[sfdefault,light]{FiraSans}
