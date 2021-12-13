@@ -72,5 +72,5 @@ done
 I=0
 for FILE in $FILES; do
     (( I+=1 ))
-    mv -v $FILE $OUTFILENAMES[$I].$FILE:e 2> /dev/null || echo "$FILE has already been renamed"
+    mv -v $FILE $FILE:h/$OUTFILENAMES[$I].$FILE:e 2> /dev/null || echo "$FILE has already been renamed"
 done
