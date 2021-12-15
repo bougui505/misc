@@ -48,6 +48,8 @@ def discriminator(V, start, end):
     rewardmap[tuple(path.T)] = 0
     rewardmap = ndimage.distance_transform_edt(rewardmap)
     rewardmap = 1 - np.exp(0.04 * rewardmap)
+    # rewardmap /= np.abs(rewardmap.min())
+    # rewardmap[rewardmap == 0] = 0.01
     # rewardmap[tuple(start)] = len(path)
     return rewardmap, path
 

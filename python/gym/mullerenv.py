@@ -93,6 +93,7 @@ class MullerEnv(gym.Env):
 
     def step(self, action):
         action /= np.linalg.norm(action)
+        print('angle:', np.rad2deg(np.arccos(action[0])))
         action *= np.sqrt(2)
         done = False
         win = False

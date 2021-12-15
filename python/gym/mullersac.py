@@ -8,9 +8,20 @@ from feature_extractor import CustomCNN
 
 env = MullerEnv()
 
-policy_kwargs = dict(features_extractor_class=CustomCNN,
-                     # features_extractor_kwargs=dict(features_dim=8),
-                     )
+policy_kwargs = dict(
+    features_extractor_class=CustomCNN,
+    net_arch=dict(qf=[512, 512], pi=[512, 512]),
+    # features_extractor_kwargs=dict(features_dim=8),
+)
+
+
+def lr_sched(x, y0=1e-3, yf=1e-6):
+    """
+    x: current progress remaining (from 1 to 0)
+    """
+    y = (y0 - yf) * x + yf
+    return y
+
 
 model = SAC(
     "CnnPolicy",
@@ -21,6 +32,7 @@ model = SAC(
     policy_kwargs=policy_kwargs,
     use_sde=False,
     sde_sample_freq=-1,
+    learning_rate=lr_sched,
     # buffer_size=100,
     # batch_size=8
 )
