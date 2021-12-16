@@ -77,7 +77,7 @@ class Spectrogram(object):
             if jp == 0:
                 ax.set_ylabel('Frequency')
             if labels is not None:
-                ax.set_title(labels[i])
+                ax.set_title(labels[i], fontsize=14)
         todel = range(i + 1, nplots + 2)
         for j in todel:
             ip, jp = np.unravel_index(j, (nrows, ncols))
