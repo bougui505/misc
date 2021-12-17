@@ -39,6 +39,7 @@
 import numpy as np
 from misc import moving_average
 from scipy import signal
+import scipy.spatial.distance as scidist
 import matplotlib.pyplot as plt
 
 
@@ -55,23 +56,32 @@ class Spectrogram(object):
             self.data -= self.baseline
         self.frequencies, self.time, self.Sxx = signal.spectrogram(self.data,
                                                                    fs=1.)
-
-    def plot(self, labels=None):
         if self.Sxx.ndim == 2:
             self.Sxx = self.Sxx[None, ...]
-        nplots = self.Sxx.shape[0]
+        self.ncells, self.nfreq, self.nt = self.Sxx.shape
+
+    def plot(self, labels=None, correlation=False):
+        X = self.time
+        if correlation:
+            data = self.correlation()
+            Y = np.arange(1, data.shape[1] + 2)
+        else:
+            data = self.Sxx
+            Y = self.frequencies
+        nplots = data.shape[0]
         nrows = int(np.sqrt(nplots))
         ncols = nrows + nplots % nrows
-        print(nplots, nrows, ncols)
         f, axes = plt.subplots(nrows, ncols, sharex='all', sharey='all')
-        for i, Sxx in enumerate(self.Sxx):
+        for i, data_ in enumerate(data):
             ip, jp = np.unravel_index(i, (nrows, ncols))
             ax = axes[ip, jp]
-            ax.pcolormesh(self.time,
-                          self.frequencies,
-                          Sxx,
-                          shading='flat',
-                          cmap='binary')
+            pcm = ax.pcolormesh(X,
+                                Y,
+                                data_,
+                                shading='flat',
+                                cmap='binary',
+                                vmin=0.)
+            f.colorbar(pcm, ax=ax)
             if ip == nrows - 1:
                 ax.set_xlabel('Time')
             if jp == 0:
@@ -83,6 +93,21 @@ class Spectrogram(object):
             ip, jp = np.unravel_index(j, (nrows, ncols))
             f.delaxes(axes[ip][jp])
         plt.show()
+
+    def correlation(self):
+        """
+        Time resolve correlation
+        """
+        print(self.Sxx.shape)
+        corr = np.zeros((self.ncells, self.ncells, self.nt))
+        for t in range(self.nt):
+            for cell1 in range(self.ncells):
+                spectrum1 = self.Sxx[cell1, :, t]
+                for cell2 in range(self.ncells):
+                    spectrum2 = self.Sxx[cell2, :, t]
+                    corrval = 1. - scidist.correlation(spectrum1, spectrum2)
+                    corr[cell1, cell2, t] = corrval
+        return corr
 
 
 if __name__ == '__main__':
