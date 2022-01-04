@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
-from stable_baselines3 import SAC
+from stable_baselines3 import A2C
 from mullerenv import MullerEnv
 import numpy as np
 
@@ -9,7 +9,7 @@ import numpy as np
 
 history = 3
 
-model = SAC.load("sac_muller")
+model = A2C.load("sac_muller")
 # plt.matshow(env.V)
 env = MullerEnv(history=history)
 

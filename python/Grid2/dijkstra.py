@@ -64,7 +64,7 @@ def dijkstra(V):
         # print cc
         neighbors = [
             tuple(e) for e in np.asarray(cc) - connectivity if e[0] > 0
-            and e[1] > 0 and e[0] < V.shape[0] and e[1] < V.shape[1]
+                              and e[1] > 0 and e[0] < V.shape[0] and e[1] < V.shape[1]
         ]
         neighbors = [e for e in neighbors if not visit_mask[e]]
         tentative_distance = np.asarray([V[e] - V[cc] for e in neighbors])
@@ -104,6 +104,7 @@ def shortestPath(start, end, P):
 
 if __name__ == '__main__':
     import argparse
+
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])

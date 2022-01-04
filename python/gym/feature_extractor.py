@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
+import sys
 
 import gym
-import torch as th
+import torch as torch
 import torch.nn as nn
 
-from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 
@@ -15,29 +15,105 @@ class CustomCNN(BaseFeaturesExtractor):
     :param features_dim: (int) Number of features extracted.
         This corresponds to the number of unit for the last layer.
     """
+
     def __init__(self,
-                 observation_space: gym.spaces.Box,
-                 features_dim: int = 32):
+                 observation_space: gym.spaces.Dict,
+                 features_dim: int = 32,
+                 history=3):
         super(CustomCNN, self).__init__(observation_space, features_dim)
+        self.history = history
+
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
-        n_input_channels = observation_space.shape[0]
-        self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 8, kernel_size=8, stride=1, padding=0),
+        # We get a sample input for shapes. Then images are processed through a CNN that yields a single vector
+
+        sample = observation_space.sample()
+        sample_img = sample['values']
+        sample_img = sample_img[None, ...]
+        sample_pos = sample['movement']
+
+        n_input_channels = sample_img.shape[0]
+        self.cnn = nn.ModuleList((
+            nn.Conv3d(n_input_channels, 8, kernel_size=(history, 4, 4), stride=1, padding=0),
             nn.ReLU(),
-            nn.Conv2d(8, 16, kernel_size=4, stride=1, padding=0),
+            nn.MaxPool3d(kernel_size=(1, 2, 2)),
+            nn.Conv3d(8, 8, kernel_size=(1, 4, 4), stride=2, padding=0),
             nn.ReLU(),
-            nn.Flatten(),
-        )
+            nn.MaxPool3d(kernel_size=(1, 2, 2)),
+            nn.Conv3d(8, 16, kernel_size=(1, 3, 3), stride=1, padding=0),
+            nn.Flatten()))
 
         # Compute shape by doing one forward pass
-        with th.no_grad():
-            n_flatten = self.cnn(
-                th.as_tensor(
-                    observation_space.sample()[None]).float()).shape[1]
-
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim),
+        with torch.no_grad():
+            n_flatten = self.forward_cnn(torch.as_tensor(sample_img)).float().shape[1]
+        # print(n_flatten)
+        # sys.exit()
+        # print(n_flatten + 2 * self.history)
+        self.linear = nn.Sequential(nn.Linear(n_flatten + 2 * self.history, features_dim),
                                     nn.ReLU())
 
-    def forward(self, observations: th.Tensor) -> th.Tensor:
-        return self.linear(self.cnn(observations))
+    def forward_cnn(self, input):
+        for layer in self.cnn:
+            input = layer(input)
+        return input
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        image = observations['values']
+        pos = observations['movement']
+        img_feats = self.forward_cnn(image)
+        pos_feats = pos.flatten(start_dim=1)
+        # print(img_feats.shape)
+        # print(pos_feats.shape)
+        total_feats = torch.cat((img_feats, pos_feats), dim=1)
+        preds = self.linear(total_feats)
+        return preds
+
+
+class CustomCNN2D(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(self,
+                 observation_space: gym.spaces.Dict,
+                 # observation_space: gym.spaces.Box,
+                 features_dim: int = 32,
+                 history=1):
+        super(CustomCNN2D, self).__init__(observation_space, features_dim)
+
+        # We assume CxHxW images (channels first)
+        # Re-ordering will be done by pre-preprocessing or wrapper
+        # We get a sample input for shapes. Then images are processed through a CNN that yields a single vector
+
+        sample = observation_space.sample()
+        sample_img = sample['values']
+        sample_img = sample_img[None, ...]
+        sample_pos = sample['movement']
+
+        n_input_channels = sample_img.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 8, kernel_size=4, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(8, 8, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(8, 16, kernel_size=3, stride=1, padding=0),
+            nn.Flatten())
+
+        # Compute shape by doing one forward pass
+        with torch.no_grad():
+            self.cnn(torch.as_tensor(sample_img))
+            n_flatten = self.cnn(torch.as_tensor(sample_img).float()).shape[1]
+        self.linear = nn.Sequential(nn.Linear(n_flatten + 2, features_dim),
+                                    nn.ReLU())
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        image = observations['values']
+        pos = observations['movement']
+        img_feats = self.cnn(image)
+        total_feats = torch.cat((img_feats, pos), dim=1)
+        preds = self.linear(total_feats)
+        return preds
