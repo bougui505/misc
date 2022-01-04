@@ -39,6 +39,7 @@
 import openmm.app as app
 import openmm
 import openmm.unit as unit
+import os
 from sys import stdout
 
 
@@ -67,6 +68,9 @@ def run(inpdb='input.pdb',
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
+    with open(f'{os.path.splitext(outdcd)[0]}.pdb', 'w') as outpdbfile:
+        app.PDBFile.writeFile(modeller.topology, modeller.positions,
+                              outpdbfile)
     simulation.reporters.append(app.DCDReporter(outdcd, reportInterval))
     simulation.reporters.append(
         app.StateDataReporter(stdout,
