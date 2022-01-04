@@ -76,8 +76,12 @@ def run(inpdb='input.pdb',
         app.StateDataReporter(stdout,
                               reportInterval,
                               step=True,
+			      time=True,
                               potentialEnergy=True,
-                              temperature=True))
+                              temperature=True,
+			      speed=True,
+			      remainingTime=True,
+			      totalSteps=steps))
     simulation.step(steps)
 
 
