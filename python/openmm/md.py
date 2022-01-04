@@ -49,7 +49,7 @@ def run(inpdb='input.pdb',
         temperature=300 * unit.kelvin,
         frictionCoeff=1 / unit.picosecond,
         stepSize=0.002 * unit.picoseconds,
-        outdcd='output.dcd',
+        outbasename='output',
         reportInterval=1000,
         steps=10000,
         pH=7.0,
@@ -68,10 +68,12 @@ def run(inpdb='input.pdb',
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
-    with open(f'{os.path.splitext(outdcd)[0]}.pdb', 'w') as outpdbfile:
+    with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
         app.PDBFile.writeFile(modeller.topology, modeller.positions,
                               outpdbfile)
+    outdcd = f'{outbasename}_traj.dcd'
     simulation.reporters.append(app.DCDReporter(outdcd, reportInterval))
+    simulation.reporters.append(app.CheckpointReporter(f'{outbasename}.chk', steps//100))
     simulation.reporters.append(
         app.StateDataReporter(stdout,
                               reportInterval,
@@ -91,6 +93,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb')
+    parser.add_argument('--nsteps', type=int)
     args = parser.parse_args()
-
-    run(inpdb=args.pdb)
+    outbasename = os.path.splitext(args.pdb)[0]
+    run(inpdb=args.pdb, steps=args.nsteps, outbasename=outbasename)
