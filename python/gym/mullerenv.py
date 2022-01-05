@@ -8,7 +8,6 @@ import scipy.spatial.distance as distance
 import torch
 
 from misc import muller_potential
-from misc.box.box import Box
 
 
 def dijkstra(V, start, end):
@@ -64,7 +63,7 @@ def dijkstra(V, start, end):
     return np.asarray(path)
 
 
-def get_potential(easy=True, padding=(0, 0), use_dijkstra=False, binary=False, show=False, offset=0):
+def get_potential(easy=True, padding=((0, 0), (0, 0)), use_dijkstra=False, binary=False, show=False, offset=0):
     """
     We always return a reward-like matrix, suitably padded.
     The maximum values are around 1 and the negative ones are close to zero.
@@ -90,10 +89,10 @@ def get_potential(easy=True, padding=(0, 0), use_dijkstra=False, binary=False, s
         V = ndimage.distance_transform_edt(V)
         V = np.exp(-V / 10)
         V = np.pad(V, pad_width=padding, constant_values=V.min())
-        start = tuple(padding)
+        start = padding[0][0], padding[1][0]
         # Use 22, the last value as a target
-        x = 22
-        end = x + padding[0], int(0.1 * x ** 2) + padding[1]
+        x = 4
+        end = x + padding[0][0], int(0.1 * x ** 2) + padding[1][0]
     else:
         minx = -1.5
         maxx = 1.2
@@ -213,6 +212,7 @@ class MullerEnv(gym.Env):
         return self.V[i - di:i + di, j - dj:j + dj]
 
     def localpast_coords(self, discrete_coords):
+        # TODO : be smarter
         di, dj = np.asarray(self.localenvshape, dtype=int) // 2
         i, j = discrete_coords
         # localpast_img = np.zeros(self.localenvshape)
@@ -247,46 +247,39 @@ class MullerEnv(gym.Env):
             return 0.
 
     def step(self, action):
-        # We always do this computation
-        done = False
-        win = False
         self.iter += 1
         if self.iter >= self.maxiter:
             done = True
         else:
             done = False
 
-        # What does the action do ?
-        # # Continuous !
-        # action /= np.linalg.norm(action)
-        # # print('angle:', np.rad2deg(np.arccos(action[0])))
-        # action *= np.sqrt(2)
-        # # action = 2 * action / np.linalg.norm(action)
-
-        # Discrete :
-        action = self.action_dict[action]
-
-        # We clamp coords to stay in the authorized region and compute their discrete counterpart
+        # Take an action and observe the next state based on taking it.
+        # Discrete
+        if self.discrete_action_space:
+            action = self.action_dict[action]
+        # Continuous
+        else:
+            action /= np.linalg.norm(action)
+            # # print('angle:', np.rad2deg(np.arccos(action[0])))
+            # action *= np.sqrt(2)
         old_coords = self.coords
+        # We clamp coords to stay in the authorized region and compute their discrete counterpart
         self.coords = self.clamp_coords(action + self.coords)
         self.discretized_coords = self.discretize_coords(self.coords)
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        movement = self.coords - old_coords
-        # self.state = {'values': self.localenv[None, ...], 'movement': movement}
-        # self.state = self.localenv[None, ...]
         self.state = self.state_from_traj()
 
+        # Get the reward from the state we end up with.
         # reward = self.rewardmap[i1, j1]  # + self.milestones_reward()
-        self.rewardmap[i1, j1] = self.rewardmap.min()
-        reward = -0.1
-
+        # reward = -0.1
         # reward += j1 * 0.03
-        if self.rewardmap[i1, j1] == 0:
-            reward += 20
+        # if self.rewardmap[i1, j1] == 0:
+        #     reward += 20
+        reward = self.rewardmap[i1, j1]
+        self.rewardmap[i1, j1] = self.rewardmap.min()
 
         if (i1, j1) == self.end:
-            win = True
             done = True
             reward += 20
 
@@ -300,19 +293,20 @@ class MullerEnv(gym.Env):
         """
         Generate a state observation from the trajectory.
         """
-        replay = self.traj[::-1][:self.history]
+        replay = self.traj[::-1][:self.history + 1]
         img_state = np.zeros(shape=self.img_env_shape)
-        for i, step in enumerate(replay):
+        for i, step in enumerate(replay[:self.history]):
             img_state[:, -(i + 1), ...] = self.localenv_coords(step)
-        spacedict = {'values':img_state}
+        spacedict = {'values': img_state}
         if self.include_past:
             past_img = np.zeros(shape=self.img_env_shape)
-            for i, step in enumerate(replay):
+            for i, step in enumerate(replay[:self.history]):
                 past_img[:, -(i + 1), ...] = self.localpast_coords(step)
             spacedict['past_img'] = past_img
         if self.include_move:
             pos_state = np.zeros(shape=self.pos_env_shape)
-            for i, step in enumerate(replay):
+            for i, (next, prev) in enumerate(zip(replay[:self.history], replay[1:])):
+                step = next - prev
                 pos_state[-(i + 1), ...] = step
             spacedict['movement'] = pos_state
         return spacedict

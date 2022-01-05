@@ -8,12 +8,12 @@ from feature_extractor import CustomCNN
 history = 2
 maxiter = 200
 localenvshape = (36, 36)
-easy = False
-binary = True
+easy = True
+binary = False
 dijkstra = False
 discrete_action_space = True,
 include_traj = True
-include_move = False
+include_move = True
 
 env = MullerEnv(history=history, maxiter=maxiter, localenvshape=localenvshape, easy=easy,
                 binary=binary, dijkstra=dijkstra, discrete_action_space=discrete_action_space,
