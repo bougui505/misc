@@ -141,8 +141,9 @@ def get_potential(easy=True, padding=(0, 0), use_dijkstra=False, binary=False, s
 
 
 class MullerEnv(gym.Env):
-    def __init__(self, history=2, maxiter=200, localenvshape=(36, 36), easy=True,
-                 binary=True, dijkstra=True, discrete_action_space=True):
+    def __init__(self, history=2, maxiter=200, localenvshape=(36, 36), easy=False,
+                 binary=True, dijkstra=False, discrete_action_space=True,
+                 include_past=False, include_move=False):
         self.easy = easy
         self.binary = binary
         self.dijkstra = dijkstra
@@ -152,58 +153,53 @@ class MullerEnv(gym.Env):
         self.history = history
 
         # Get the space state ready :
+        self.localenvshape = localenvshape
+        # This the format expected for padding : before and after, for each dimension
+        self.pad = tuple((size_localenv // 2, size_localenv // 2) for size_localenv in self.localenvshape)
+
         # First get the raw potential as well as a local environment.
         # Pad the potential to avoid states on the border
-        self.localenvshape = localenvshape
-        self.pad = np.asarray(self.localenvshape) // 2
-        self.V, self.start, self.end = get_potential(show=True, easy=easy, padding=self.pad, binary=binary,
+        self.V, self.start, self.end = get_potential(show=False, easy=easy, padding=self.pad, binary=binary,
                                                      use_dijkstra=dijkstra)
-
-        self.n, self.p = np.asarray(self.V.shape) - np.asarray(self.localenvshape)  # (100, 82)
         self.initial_coords = np.asarray(self.start)
         self.rewardmap_init = self.V
 
-        print(self.V.max())
-        print(self.V.min())
-        sys.exit()
-
-        # self.action_space = gym.spaces.Box(low=np.asarray([-1, -1]),
-        #                                    high=np.asarray([1, 1]),
-        #                                    shape=(2,))
-
-        self.action_space = gym.spaces.Discrete(8)
-
-        # Create a grid, then remove the middle value and shift the ones after to get all neighbors
-        self.action_dict = {i: np.asarray((i % 3 - 1, i // 3 - 1)) for i in range(9)}
-        for i in range(4, 8):
-            self.action_dict[i] = self.action_dict[i + 1]
-        self.action_dict.pop(8)
-
-        low = self.pad
-        high = self.pad + np.asarray([self.p, self.n])
-        # self.low high represent the i,j bounds
-        self.low, self.high = low[::-1], high[::-1]
-        self.coords_space = gym.spaces.Box(low=low[::-1],
-                                           high=high[::-1],
-                                           shape=(2,))
-        local_n, local_p = self.localenvshape
-        # self.observation_space = gym.spaces.Box(low=self.V.min(),
-        #                                         high=self.V.max(),
-        #                                         shape=(1, local_n, local_p),
-        #                                         dtype=np.float32)
+        # self.low high represent the i,j bounds (the inner image border)
+        self.n_row, self.n_col = np.asarray(self.V.shape) - np.asarray(self.localenvshape)  # (100, 82)
+        self.low = self.pad[0][0], self.pad[1][0]
+        self.high = self.low + np.asarray([self.n_row, self.n_col])
+        local_n_row, local_n_col = self.localenvshape
         self.history = history
-        self.img_env_shape = (1, history, local_n, local_p)
+        self.img_env_shape = (1, history, local_n_row, local_n_col)
+        self.include_past = include_past
+        self.include_move = include_move
+        spacedict = {'values': gym.spaces.Box(low=self.V.min(),
+                                              high=self.V.max(),
+                                              shape=self.img_env_shape,
+                                              dtype=np.float32)}
+        if include_past:
+            spacedict['past_img'] = gym.spaces.Box(low=self.V.min(),
+                                                   high=self.V.max(),
+                                                   shape=self.img_env_shape,
+                                                   dtype=np.float32)
         self.pos_env_shape = (history, 2,)
-        self.observation_space = gym.spaces.Dict({
-            'values': gym.spaces.Box(low=self.V.min(),
-                                     high=self.V.max(),
-                                     shape=self.img_env_shape,
-                                     dtype=np.float32),
-            'traj_img': gym.spaces.Box(low=self.V.min(),
-                                       high=self.V.max(),
-                                       shape=self.img_env_shape,
-                                       dtype=np.float32),
-            'movement': gym.spaces.Box(low=-1, high=1, shape=self.pos_env_shape), })
+        if include_move:
+            spacedict['movement'] = gym.spaces.Box(low=-1, high=1, shape=self.pos_env_shape)
+        self.observation_space = gym.spaces.Dict(spaces=spacedict)
+
+        # Finally, set up the action space
+        self.discrete_action_space = discrete_action_space
+        if discrete_action_space:
+            # Create a grid, then remove the middle value and shift the ones after to get all neighbors
+            self.action_space = gym.spaces.Discrete(8)
+            self.action_dict = {i: np.asarray((i % 3 - 1, i // 3 - 1)) for i in range(9)}
+            for i in range(4, 8):
+                self.action_dict[i] = self.action_dict[i + 1]
+            self.action_dict.pop(8)
+        else:
+            self.action_space = gym.spaces.Box(low=np.asarray([-1, -1]),
+                                               high=np.asarray([1, 1]),
+                                               shape=(2,))
 
         self.reset()
 
@@ -288,11 +284,6 @@ class MullerEnv(gym.Env):
         # reward += j1 * 0.03
         if self.rewardmap[i1, j1] == 0:
             reward += 20
-            print('toto')
-            # print(self.rewardmap.mean())
-            # print((self.rewardmap == 0.).sum())
-            # print(self.rewardmap.min())
-            # print(reward)
 
         if (i1, j1) == self.end:
             win = True
@@ -309,15 +300,22 @@ class MullerEnv(gym.Env):
         """
         Generate a state observation from the trajectory.
         """
-        img_state = np.zeros(shape=self.img_env_shape)
-        traj_img = np.zeros(shape=self.img_env_shape)
-        pos_state = np.zeros(shape=self.pos_env_shape)
         replay = self.traj[::-1][:self.history]
+        img_state = np.zeros(shape=self.img_env_shape)
         for i, step in enumerate(replay):
             img_state[:, -(i + 1), ...] = self.localenv_coords(step)
-            traj_img[:, -(i + 1), ...] = self.localpast_coords(step)
-            pos_state[-(i + 1), ...] = step
-        return {'values': img_state, 'movement': pos_state, 'traj_img': traj_img}
+        spacedict = {'values':img_state}
+        if self.include_past:
+            past_img = np.zeros(shape=self.img_env_shape)
+            for i, step in enumerate(replay):
+                past_img[:, -(i + 1), ...] = self.localpast_coords(step)
+            spacedict['past_img'] = past_img
+        if self.include_move:
+            pos_state = np.zeros(shape=self.pos_env_shape)
+            for i, step in enumerate(replay):
+                pos_state[-(i + 1), ...] = step
+            spacedict['movement'] = pos_state
+        return spacedict
 
     def reset(self, random_start=False):
         self.iter = 0
@@ -325,7 +323,6 @@ class MullerEnv(gym.Env):
         if random_start:
             try:
                 possibilities = np.asarray(np.where(self.V == self.V.max())).T
-                print(possibilities)
                 chosen_idx = np.random.choice(len(possibilities))
                 self.coords = possibilities[chosen_idx]
             except ValueError:

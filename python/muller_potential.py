@@ -77,7 +77,7 @@ def muller_mat(minx, maxx, miny, maxy, nbins, padding=None):
     xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
     V = muller_potential(xx, yy)
     if padding is not None:
-        V = np.pad(V, padding, constant_values=V.max())
+        V = np.pad(V, pad_width=padding, constant_values=V.max())
     return V
 
 

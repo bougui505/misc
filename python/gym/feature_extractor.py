@@ -19,24 +19,24 @@ class CustomCNN(BaseFeaturesExtractor):
     def __init__(self,
                  observation_space: gym.spaces.Dict,
                  features_dim: int = 32,
-                 history=1):
+                 history=1,
+                 discrete_action_space=False,
+                 include_traj=False,
+                 include_move=False
+                 ):
         super(CustomCNN, self).__init__(observation_space, features_dim)
         self.history = history
-
-        # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
-        # We get a sample input for shapes. Then images are processed through a CNN that yields a single vector
+        self.discrete_action_space = discrete_action_space,
+        self.include_traj = include_traj
+        self.include_move = include_move
 
         sample = observation_space.sample()
         sample_img = sample['values']
         sample_img = sample_img[None, ...]
-        sample_past = sample['traj_img'][None, ...]
-        sample_pos = sample['movement']
-
-        n_input_channels = 2
-        # n_input_channels = sample_img.shape[0] + sample_past.shape[0]
-        # print(sample_past.shape)
-        # sys.exit()
+        n_input_channels = 1
+        if include_traj:
+            sample_past = sample['past_img'][None, ...]
+            n_input_channels = 2
         self.cnn = nn.ModuleList((
             nn.Conv3d(n_input_channels, 8, kernel_size=(history, 4, 4), stride=1, padding=0),
             nn.ReLU(),
@@ -49,15 +49,13 @@ class CustomCNN(BaseFeaturesExtractor):
 
         # Compute shape by doing one forward pass
         with torch.no_grad():
-            input_img = torch.as_tensor(sample_img)
-            input_past = torch.as_tensor(sample_past)
-            input = torch.cat((input_img, input_past), dim=1)
-            n_flatten = self.forward_cnn(input).float().shape[1]
-        # print(n_flatten)
-        # sys.exit()
-        # print(n_flatten + 2 * self.history)
-        self.linear = nn.Sequential(nn.Linear(n_flatten + 2 * self.history, features_dim),
-                                    nn.ReLU())
+            sample_input = torch.as_tensor(sample_img)
+            if include_traj:
+                sample_input_past = torch.as_tensor(sample_past)
+                sample_input = torch.cat((sample_input, sample_input_past), dim=1)
+            n_flatten = self.forward_cnn(sample_input).float().shape[1]
+        n_flatten += 2 * self.history * self.include_move
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward_cnn(self, input):
         for layer in self.cnn:
@@ -66,17 +64,17 @@ class CustomCNN(BaseFeaturesExtractor):
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         # GEt inputs and concatenate
-        image = observations['values']
-        traj = observations['traj_img']
-        pos = observations['movement']
-        input_tensor = torch.cat((image, traj), dim=1)
+        input_tensor = observations['values']
+        if self.include_traj:
+            past = observations['past_img']
+            input_tensor = torch.cat((input_tensor, past), dim=1)
 
         # Feed to CNN and linear
-        img_feats = self.forward_cnn(input_tensor)
-        pos_feats = pos.flatten(start_dim=1)
-        # print(img_feats.shape)
-        # print(pos_feats.shape)
-        total_feats = torch.cat((img_feats, pos_feats), dim=1)
+        total_feats = self.forward_cnn(input_tensor)
+        if self.include_move:
+            move = observations['movement']
+            pos_feats = move.flatten(start_dim=1)
+            total_feats = torch.cat((total_feats, pos_feats), dim=1)
         preds = self.linear(total_feats)
         return preds
 
