@@ -7,11 +7,13 @@ import numpy as np
 
 # import matplotlib.pyplot as plt
 
-history = 3
+history = 1
 
-model = A2C.load("sac_muller")
+model = A2C.load("A2C_muller")
 # plt.matshow(env.V)
+# env = model.env
 env = MullerEnv(history=history)
+
 
 print()
 
@@ -22,6 +24,7 @@ while True:
     action, _states = model.predict(obs, deterministic=False)
     # action, _states = model.predict(obs, deterministic=True)
     # print(obs)
+    print(action)
     obs, reward, done, info = env.step(action)
     if env.V[env.discretized_coords] == env.V.min():
         done = True

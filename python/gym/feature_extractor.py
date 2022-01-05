@@ -19,7 +19,7 @@ class CustomCNN(BaseFeaturesExtractor):
     def __init__(self,
                  observation_space: gym.spaces.Dict,
                  features_dim: int = 32,
-                 history=3):
+                 history=1):
         super(CustomCNN, self).__init__(observation_space, features_dim)
         self.history = history
 
@@ -30,9 +30,13 @@ class CustomCNN(BaseFeaturesExtractor):
         sample = observation_space.sample()
         sample_img = sample['values']
         sample_img = sample_img[None, ...]
+        sample_past = sample['traj_img'][None, ...]
         sample_pos = sample['movement']
 
-        n_input_channels = sample_img.shape[0]
+        n_input_channels = 2
+        # n_input_channels = sample_img.shape[0] + sample_past.shape[0]
+        # print(sample_past.shape)
+        # sys.exit()
         self.cnn = nn.ModuleList((
             nn.Conv3d(n_input_channels, 8, kernel_size=(history, 4, 4), stride=1, padding=0),
             nn.ReLU(),
@@ -45,7 +49,10 @@ class CustomCNN(BaseFeaturesExtractor):
 
         # Compute shape by doing one forward pass
         with torch.no_grad():
-            n_flatten = self.forward_cnn(torch.as_tensor(sample_img)).float().shape[1]
+            input_img = torch.as_tensor(sample_img)
+            input_past = torch.as_tensor(sample_past)
+            input = torch.cat((input_img, input_past), dim=1)
+            n_flatten = self.forward_cnn(input).float().shape[1]
         # print(n_flatten)
         # sys.exit()
         # print(n_flatten + 2 * self.history)
@@ -58,9 +65,14 @@ class CustomCNN(BaseFeaturesExtractor):
         return input
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        # GEt inputs and concatenate
         image = observations['values']
+        traj = observations['traj_img']
         pos = observations['movement']
-        img_feats = self.forward_cnn(image)
+        input_tensor = torch.cat((image, traj), dim=1)
+
+        # Feed to CNN and linear
+        img_feats = self.forward_cnn(input_tensor)
         pos_feats = pos.flatten(start_dim=1)
         # print(img_feats.shape)
         # print(pos_feats.shape)
