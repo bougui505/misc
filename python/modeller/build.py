@@ -40,6 +40,7 @@ import itertools
 import modeller
 import numpy as np
 from modeller.optimizers import ConjugateGradients
+from modeller.optimizers import MolecularDynamics
 
 lib = '/usr/lib/modeller10.1/modlib'
 
@@ -63,6 +64,29 @@ def extended(sequence):
 
     mdl = modeller.Model(env)
     mdl.build_sequence(sequence)
+    return mdl
+
+
+def optimize(mdl, max_iterations=10000):
+    cg = ConjugateGradients()
+    md = MolecularDynamics()
+    atmsel = modeller.Selection(mdl)
+    mdl.restraints.make(atmsel, restraint_type='stereo', spline_on_site=False)
+    mdl.restraints.make(atmsel,
+                        restraint_type='SPHERE14',
+                        spline_on_site=False)
+    mdl.restraints.make(atmsel, restraint_type='LJ14', spline_on_site=False)
+    # self.mdl.restraints.make(atmsel,
+    #                          restraint_type='COULOMB14',
+    #                          spline_on_site=False)
+    mdl.restraints.make(atmsel, restraint_type='SPHERE', spline_on_site=False)
+    mdl.restraints.make(atmsel, restraint_type='LJ', spline_on_site=False)
+    # self.mdl.restraints.make(atmsel,
+    #                          restraint_type='COULOMB',
+    #                          spline_on_site=False)
+    cg.optimize(atmsel, max_iterations=max_iterations)
+    md.optimize(atmsel, max_iterations=max_iterations)
+    cg.optimize(atmsel, max_iterations=max_iterations)
     return mdl
 
 
@@ -283,6 +307,16 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-s', '--seq', help='1-letter code sequence to build')
     parser.add_argument('-o', '--out', help='out pdb file name')
+    parser.add_argument(
+        '--optimize',
+        help=
+        'optimize the coordinates with minimization and molecular dynamics',
+        action='store_true')
+    parser.add_argument(
+        '--maxiter',
+        help='maximum number of iterations for the optimization',
+        type=int,
+        default=1000)
     parser.add_argument('--test',
                         help='Test System class',
                         action='store_true')
@@ -293,4 +327,6 @@ if __name__ == '__main__':
         sys.exit()
 
     mdl = extended(args.seq)
+    if args.optimize:
+        mdl = optimize(mdl, max_iterations=args.maxiter)
     mdl.write(args.out)
