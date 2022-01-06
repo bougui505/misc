@@ -40,7 +40,7 @@ from pymol import cmd
 from tqdm import tqdm
 
 
-def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
+def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None, stride=1):
     """
     Get the number of atoms with the given SS-class ('H' or 'S')
     """
@@ -55,7 +55,7 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
         outfile = open(outfile, 'w')
         outfile.write(f'#state #n({ssclass})\n')
     pbar = tqdm(total=nstates)  # Init pbar
-    for state in range(1, nstates + 1):
+    for state in range(1, nstates + 1, stride):
         cmd.dss(selection='all', state=state)
         nss = cmd.select(
             f'ss {ssclass} and {sel} and state {state} and name CA')
@@ -63,7 +63,7 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
             print(nss)
         else:
             outfile.write(f'{state} {nss}\n')
-            pbar.update(1)
+            pbar.update(stride)
     if outfile is not None:
         outfile.close()
 
@@ -85,10 +85,16 @@ if __name__ == '__main__':
     parser.add_argument(
         '--out',
         help='Outfilename to store the result. If not given print to stdout')
+    parser.add_argument(
+        '--stride',
+        help='Stride for the secondary structure computation (default: 1)',
+        type=int,
+        default=1)
     args = parser.parse_args()
 
     get_nss(pdb=args.pdb,
             ssclass=args.ss,
             traj=args.traj,
             sel=args.sel,
-            outfile=args.out)
+            outfile=args.out,
+            stride=args.stride)
