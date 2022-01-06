@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 
+import os
+import numpy as np
 from pymol import cmd
 from tqdm import tqdm
 
@@ -45,27 +47,40 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None, stride=1):
     Get the number of atoms with the given SS-class ('H' or 'S')
     """
     cmd.load(filename=pdb, object='myprot')
+    if outfile is not None:
+        if not os.path.exists(outfile):
+            outfile = open(outfile, 'w')
+            outfile.write(f'#state #n({ssclass})\n')
+            laststate = 0
+        else:
+            data = np.genfromtxt(outfile, dtype=int)
+            laststate = data[-1][0]
+            outfile = open(outfile, 'a')
     if traj is not None:
         # improve PyMOL performance for many-state objects
         cmd.set('defer_builds_mode', 3)
-        cmd.load_traj(traj, object='myprot', state=1, selection=sel)
+        cmd.load_traj(traj,
+                      object='myprot',
+                      state=1,
+                      selection=sel,
+                      start=laststate + stride)
     nstates = cmd.count_states(selection='myprot')
     print(f'Computing secondary structures for {nstates} states')
-    if outfile is not None:
-        outfile = open(outfile, 'w')
-        outfile.write(f'#state #n({ssclass})\n')
-    pbar = tqdm(total=nstates)  # Init pbar
+    if nstates > 1:
+        pbar = tqdm(total=nstates)  # Init pbar
     for state in range(1, nstates + 1, stride):
         cmd.dss(selection='all', state=state)
         nss = cmd.select(
             f'ss {ssclass} and {sel} and state {state} and name CA')
-        if outfile is None:
+        if outfile is None or nstates == 1:
             print(nss)
         else:
-            outfile.write(f'{state} {nss}\n')
+            outfile.write(f'{laststate + state} {nss}\n')
             pbar.update(stride)
     if outfile is not None:
         outfile.close()
+    if nstates > 1:
+        pbar.close()
 
 
 if __name__ == '__main__':
