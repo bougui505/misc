@@ -45,7 +45,7 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
     """
     cmd.load(filename=pdb, object='myprot')
     if traj is not None:
-        cmd.load_traj(traj, object='myprot', state=1)
+        cmd.load_traj(traj, object='myprot', state=1, selection=sel)
     nstates = cmd.count_states(selection='myprot')
     print(f'Computing secondary structures for {nstates} states')
     if outfile is not None:
