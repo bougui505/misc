@@ -37,6 +37,7 @@
 #############################################################################
 
 from pymol import cmd
+from tqdm import tqdm
 
 
 def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
@@ -53,6 +54,7 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
     if outfile is not None:
         outfile = open(outfile, 'w')
         outfile.write(f'#state #n({ssclass})\n')
+    pbar = tqdm(total=nstates)  # Init pbar
     for state in range(1, nstates + 1):
         cmd.dss(selection='all', state=state)
         nss = cmd.select(
@@ -61,6 +63,7 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None):
             print(nss)
         else:
             outfile.write(f'{state} {nss}\n')
+            pbar.update(1)
     if outfile is not None:
         outfile.close()
 
