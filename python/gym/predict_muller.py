@@ -1,40 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
-from stable_baselines3 import A2C
-from mullerenv import MullerEnv
+from loader import Loader
+import matplotlib.pyplot as plt
 import numpy as np
 
-# import matplotlib.pyplot as plt
+name_exp = 'SAC'
+save = False
+show = True
 
-history = 1
+model, args = Loader().load(name=name_exp)
+env = args['env']
 
-model = A2C.load("A2C_muller")
-# plt.matshow(env.V)
-# env = model.env
-env = MullerEnv(history=history)
-
-
-print()
-
+print(f"Doing prediction with a {args['model']} model")
 obs = env.reset()
 traj = []
 total_reward = 0
 while True:
     action, _states = model.predict(obs, deterministic=False)
     # action, _states = model.predict(obs, deterministic=True)
-    # print(obs)
-    print(action)
     obs, reward, done, info = env.step(action)
     if env.V[env.discretized_coords] == env.V.min():
         done = True
     total_reward += reward
-    # print(total_reward, reward, env.V[env.discretized_coords])
     traj.append(env.coords.copy())
     if done:
         obs = env.reset()
         break
-
 traj = np.asarray(traj)
-np.save('env.npy', env.V)
-np.save('traj.npy', traj)
+
+if save:
+    np.save('env.npy', env.V)
+    np.save('traj.npy', traj)
+
+if show:
+    V = np.ma.masked_array(env.V, env.V > 200)
+    plt.matshow(V, 40)
+    plt.plot(traj[:, 1], traj[:, 0], color='r')
+    plt.show()

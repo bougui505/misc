@@ -1,9 +1,22 @@
-# Learning:
+# Toy RL
+
+### Overview
+
+This is a toy setting for RL. We aim to solve path finding problems in Mazes. Those mazes are defined in mullerenv.py.
+Then a features extractor for state representation is defined in feature extractot.
+
+Finally, two scripts for training and making inference are available :
+
+### Learning:
+
 ```
-./mullersac.py | tee mullersac.log
+./train_muller.py | tee mullersac.log
 ```
 
-# Predict:
+### Predict:
+
 ```
-./mullersac_predict.py && ./mullersac_plot.py
+./predict_muller.py
 ```
+
+

@@ -1,25 +1,58 @@
-import sys
-
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 import scipy.spatial.distance as distance
-import torch
 
-from misc import muller_potential
+
+def muller_potential(x, y):
+    """Muller potential
+    Parameters
+    ----------
+    x : {float, np.ndarray}
+    X coordinate. If you supply an array, x and y need to be the same shape,
+    and the potential will be calculated at each (x,y pair)
+    y : {float, np.ndarray}
+    Y coordinate. If you supply an array, x and y need to be the same shape,
+    and the potential will be calculated at each (x,y pair)
+    Returns
+    -------
+    potential : {float, np.ndarray, or theano symbolic variable}
+    Potential energy. Will be the same shape as the inputs, x and y.
+    Reference
+    ---------
+    Code adapted from https://cims.nyu.edu/~eve2/ztsMueller.m
+    """
+    aa = [-1, -1, -6.5, 0.7]
+    bb = [0, 0, 11, 0.6]
+    cc = [-10, -10, -6.5, 0.7]
+    AA = [-200, -100, -170, 15]
+    XX = [1, 0, -0.5, -1]
+    YY = [0, 0.5, 1.5, 1]
+    # use symbolic algebra if you supply symbolic quantities
+    value = 0
+    for j in range(0, 4):
+        value += AA[j] * np.exp(aa[j] * (x - XX[j]) ** 2 + bb[j] * (x - XX[j]) *
+                                (y - YY[j]) + cc[j] * (y - YY[j]) ** 2)
+    return value
+
+
+def muller_mat(minx, maxx, miny, maxy, nbins, padding=None):
+    grid_width = max(maxx - minx, maxy - miny) / nbins
+    xx, yy = np.mgrid[minx:maxx:grid_width, miny:maxy:grid_width]
+    V = muller_potential(xx, yy)
+    if padding is not None:
+        V = np.pad(V, pad_width=padding, constant_values=V.max())
+    return V
 
 
 def dijkstra(V, start, end):
     """
 
-    Args:
-        V:
-
-    Returns:
-        m: mask
-        P: dictionary of predecessors
-
+    :param V:
+    :param start:
+    :param end:
+    :return:
     """
     V = np.ma.masked_array(V, np.zeros(V.shape, dtype=bool))
     mask = V.mask
@@ -34,8 +67,8 @@ def dijkstra(V, start, end):
     break_next = False
     for _ in range(V.size):
         # Get neighbors list
-        neighbors = [tuple(e) for e in np.asarray(cc) - connectivity if e[0] >= 0
-                     and e[1] >= 0 and e[0] < V.shape[0] and e[1] < V.shape[1]]
+        neighbors = [tuple(e) for e in np.asarray(cc) - connectivity if
+                     0 <= e[0] < V.shape[0] and e[1] >= 0 and e[1] < V.shape[1]]
         neighbors = [e for e in neighbors if not visit_mask[e]]
         tentative_distance = np.asarray([V[e] for e in neighbors])
         # tentative_distance = np.asarray([V[e] - V[cc] for e in neighbors])
@@ -98,12 +131,12 @@ def get_potential(easy=True, padding=((0, 0), (0, 0)), use_dijkstra=False, binar
         maxx = 1.2
         miny = -0.2
         maxy = 2
-        V = muller_potential.muller_mat(minx,
-                                        maxx,
-                                        miny,
-                                        maxy,
-                                        nbins=100,
-                                        padding=padding)
+        V = muller_mat(minx,
+                       maxx,
+                       miny,
+                       maxy,
+                       nbins=100,
+                       padding=padding)
         V = np.exp(-(V - V.min()) / 100)
         # Define a random starting point and find the argmin (53, 79)
         start, end = (98, 27), np.unravel_index(V.argmax(), V.shape)
@@ -331,3 +364,11 @@ class MullerEnv(gym.Env):
         self.state = self.state_from_traj()
 
         return self.state
+
+
+if __name__ == '__main__':
+    pass
+    from stable_baselines3.common.env_checker import check_env
+
+    env = MullerEnv()
+    check_env(env)
