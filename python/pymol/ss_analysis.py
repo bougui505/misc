@@ -77,8 +77,7 @@ def get_nss(pdb,
     total_states = dcd_reader.get_nframes(traj)
     print(f'Computing secondary structures for {total_states} states')
     if nstates > 1:
-        pbar = tqdm(total=total_states)  # Init pbar
-        pbar.update(laststate)
+        pbar = tqdm(total=total_states, initial=laststate)  # Init pbar
     istraj = False
     for state in range(1, nstates + 1, stride):
         cmd.dss(selection='all', state=state)
@@ -120,6 +119,11 @@ if __name__ == '__main__':
         help='Stride for the secondary structure computation (default: 1)',
         type=int,
         default=1)
+    parser.add_argument(
+        '--maxframes',
+        help='Maximum number of frames to load at once (default: 1000)',
+        type=int,
+        default=1000)
     args = parser.parse_args()
 
     istraj = True
@@ -130,4 +134,4 @@ if __name__ == '__main__':
                          sel=args.sel,
                          outfile=args.out,
                          stride=args.stride,
-                         maxframes=1000)
+                         maxframes=args.maxframes)
