@@ -49,13 +49,13 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None, stride=1):
     cmd.load(filename=pdb, object='myprot')
     if outfile is not None:
         if not os.path.exists(outfile):
-            outfile = open(outfile, 'w', buffering=0)
+            outfile = open(outfile, 'w', buffering=1)
             outfile.write(f'#state #n({ssclass})\n')
             laststate = 0
         else:
             data = np.genfromtxt(outfile, dtype=int)
             laststate = data[-1][0]
-            outfile = open(outfile, 'a', buffering=0)
+            outfile = open(outfile, 'a', buffering=1)
     if traj is not None:
         # improve PyMOL performance for many-state objects
         cmd.set('defer_builds_mode', 3)
