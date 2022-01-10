@@ -40,12 +40,20 @@ import os
 import numpy as np
 from pymol import cmd
 from tqdm import tqdm
+from misc.pymol import dcd_reader
 
 
-def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None, stride=1):
+def get_nss(pdb,
+            ssclass,
+            sel='all',
+            traj=None,
+            outfile=None,
+            stride=1,
+            maxframes=1000):
     """
     Get the number of atoms with the given SS-class ('H' or 'S')
     """
+    cmd.reinitialize()
     cmd.load(filename=pdb, object='myprot')
     if outfile is not None:
         if not os.path.exists(outfile):
@@ -63,24 +71,31 @@ def get_nss(pdb, ssclass, sel='all', traj=None, outfile=None, stride=1):
                       object='myprot',
                       state=1,
                       selection=sel,
-                      start=laststate + stride)
+                      start=laststate + stride,
+                      max=maxframes)
     nstates = cmd.count_states(selection='myprot')
-    print(f'Computing secondary structures for {nstates} states')
+    total_states = dcd_reader.get_nframes(traj)
+    print(f'Computing secondary structures for {total_states} states')
     if nstates > 1:
-        pbar = tqdm(total=nstates)  # Init pbar
+        pbar = tqdm(total=total_states)  # Init pbar
+        pbar.update(laststate)
+    istraj = False
     for state in range(1, nstates + 1, stride):
         cmd.dss(selection='all', state=state)
         nss = cmd.select(
             f'ss {ssclass} and {sel} and state {state} and name CA')
         if outfile is None or nstates == 1:
             print(nss)
+            istraj = False
         else:
             outfile.write(f'{laststate + state} {nss}\n')
+            istraj = True
             pbar.update(stride)
     if outfile is not None:
         outfile.close()
     if nstates > 1:
         pbar.close()
+    return istraj
 
 
 if __name__ == '__main__':
@@ -107,9 +122,12 @@ if __name__ == '__main__':
         default=1)
     args = parser.parse_args()
 
-    get_nss(pdb=args.pdb,
-            ssclass=args.ss,
-            traj=args.traj,
-            sel=args.sel,
-            outfile=args.out,
-            stride=args.stride)
+    istraj = True
+    while istraj:
+        istraj = get_nss(pdb=args.pdb,
+                         ssclass=args.ss,
+                         traj=args.traj,
+                         sel=args.sel,
+                         outfile=args.out,
+                         stride=args.stride,
+                         maxframes=1000)
