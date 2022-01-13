@@ -39,7 +39,6 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
 
 def potential(x, xdeep=-3, xshal=3, wellslope=2):
@@ -68,6 +67,24 @@ def move(x, beta=0.1):
         return x, V
 
 
+def MCtraj(nsteps=100, plot=True):
+    if plot:
+        fig, ax = plt.subplots()
+        xs = np.linspace(-5, 5, 100)
+        ys = potential(xs)
+        ax.plot(xs, ys)
+    x = -3
+    if plot:
+        dot, = ax.plot(x, potential(x), marker='o', color='red')
+    for i in range(nsteps):
+        x, V = move(x)
+        print(x, V)
+        if plot:
+            dot.remove()
+            dot, = ax.plot(x, V, marker='o', color='red')
+            plt.savefig(f'MCmovie/{i+1:04d}.png')
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -76,18 +93,4 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     args = parser.parse_args()
 
-    fig, ax = plt.subplots()
-    xs = np.linspace(-5, 5, 100)
-    ys = potential(xs)
-    ax.plot(xs, ys)
-    x = -3
-    dot, = ax.plot(x, potential(x), marker='o', color='red')
-    if not os.path.exists('MCmovie'):
-        os.mkdir('MCmovie')
-        plt.savefig(f'MCmovie/{0:04d}.png')
-    for i in range(100):
-        x, V = move(x)
-        dot.remove()
-        dot, = ax.plot(x, V, marker='o', color='red')
-        plt.savefig(f'MCmovie/{i+1:04d}.png')
-        print(x, V)
+    MCtraj(plot=True)
