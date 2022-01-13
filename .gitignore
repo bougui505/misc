@@ -164,3 +164,5 @@ python/protein/data/1igd_center.pdb
 python/protein/min.pdb
 X_data
 y_data
+python/toymodels/MCmovie
+python/toymodels/out.mp4
