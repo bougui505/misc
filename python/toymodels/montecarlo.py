@@ -80,13 +80,14 @@ def plot_dist(traj, ax):
     return hist[2]
 
 
-def MCtraj(nsteps=2000, plot=True, metaD=True):
+def MCtraj(nsteps=2000, plot=True, metaD=False):
     if plot:
         plt.rcParams['figure.constrained_layout.use'] = False
         if not os.path.exists('MCmovie'):
             os.mkdir('MCmovie')
         fig = plt.figure()
         ax = plt.subplot2grid(shape=(2, 1), loc=(0, 0))
+        ax.set_ylabel('potential')
         ax2 = plt.subplot2grid(shape=(2, 1), loc=(1, 0), sharex=ax)
         plot_potential(potential, ax)
     x = -3
@@ -95,7 +96,8 @@ def MCtraj(nsteps=2000, plot=True, metaD=True):
     ]
     if plot:
         hist = plot_dist(traj, ax2)
-        print(hist)
+        ax2.set_xlabel('collective variable')
+        ax2.set_ylabel('count')
     if plot:
         dot, = ax.plot(x, potential(x), marker='o', color='red')
     for i in range(nsteps):
@@ -114,7 +116,8 @@ def MCtraj(nsteps=2000, plot=True, metaD=True):
                 line = plot_potential(potential_i, ax, color='green')
             hist = plot_dist(traj, ax2)
             plt.savefig(f'MCmovie/{i+1:04d}.png')
-            line.remove()
+            if metaD:
+                line.remove()
 
 
 if __name__ == '__main__':
@@ -122,7 +125,9 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--metaD',
+                        action='store_true',
+                        help='Activate meta-dynamics')
     args = parser.parse_args()
 
-    MCtraj(plot=True)
+    MCtraj(plot=True, metaD=args.metaD)
