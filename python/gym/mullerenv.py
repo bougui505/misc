@@ -96,7 +96,7 @@ def dijkstra(V, start, end):
     return np.asarray(path)
 
 
-def get_potential(easy=True, padding=((0, 0), (0, 0)), use_dijkstra=False, binary=False, show=False, offset=0):
+def get_potential(easy=True, padding=((0, 0), (0, 0)), show=False):
     """
     We always return a reward-like matrix, suitably padded.
     The maximum values are around 1 and the negative ones are close to zero.
@@ -140,46 +140,69 @@ def get_potential(easy=True, padding=((0, 0), (0, 0)), use_dijkstra=False, binar
         V = np.exp(-(V - V.min()) / 100)
         # Define a random starting point and find the argmin (53, 79)
         start, end = (98, 27), np.unravel_index(V.argmax(), V.shape)
+    if show:
+        # We need to reverse the values to plot y as a function of x (and use scatter...)
+        plt.matshow(V.T, origin='lower')
+        plt.scatter(*start)
+        plt.scatter(*end)
+        plt.colorbar()
+        plt.show()
+    return V, start, end
 
+
+def get_reward_map(potential, start, end, use_dijkstra=False, binary=False, show=False, offset=0):
+    """
+
+    :param potential:
+    :param start:
+    :param end:
+    :param use_dijkstra:
+    :param binary:
+    :param show:
+    :param offset:
+    :return:
+    """
+    rew_potential = np.copy(potential)
     # This could be more efficient, but we did it afterwards and it's nothing
     if binary:
-        V = 0 * np.ones_like(V)
-        V[start] = 1
-        V[end] = 1
+        rew_potential = 0 * np.ones_like(rew_potential)
+        rew_potential[start] = 1
+        rew_potential[end] = 1
 
     # Then Use Djikstra to get an idea of the optimum cost minimizing this route
     if use_dijkstra:
         # For djikstra we need the reverse : the distance to the minimum (and we add epsilon)
         # In the easy setting, we get diagonals so conter-intuitive results
-        V = 0.01 + V.max() - V
-        path = dijkstra(V, start, end)
-        rewardmap = np.ones_like(V)
-        rewardmap[tuple(path.T)] = 0
-        V = ndimage.distance_transform_edt(rewardmap)
-        V = np.exp(-V / 10)
+        rew_potential = 0.01 + rew_potential.max() - rew_potential
+        path = dijkstra(rew_potential, start, end)
+        rew_potential = np.ones_like(rew_potential)
+        rew_potential[tuple(path.T)] = 0
+        rew_potential = ndimage.distance_transform_edt(rew_potential)
+        rew_potential = np.exp(-rew_potential / 10)
 
-    V += offset
+    rew_potential += offset
 
     if show:
         # We need to reverse the values to plot y as a function of x (and use scatter...)
-        plt.matshow(V.T, origin='lower')
+        plt.matshow(rew_potential.T, origin='lower')
         plt.scatter(*start)
         plt.scatter(*end)
         if use_dijkstra:
             plt.plot(*tuple(path.T), c='r')
         plt.colorbar()
         plt.show()
-    return V, start, end
+    return rew_potential
 
 
 class MullerEnv(gym.Env):
     def __init__(self, history=2, maxiter=200, localenvshape=(36, 36), easy=False,
                  binary=True, dijkstra=False, discrete_action_space=True,
-                 include_past=False, include_move=False):
+                 include_past=False, include_move=False, disappearing_rewards=False):
         self.easy = easy
         self.binary = binary
         self.dijkstra = dijkstra
         self.history = history
+        self.disappearing_rewards = disappearing_rewards
 
         self.maxiter = maxiter
         self.history = history
@@ -191,10 +214,9 @@ class MullerEnv(gym.Env):
 
         # First get the raw potential as well as a local environment.
         # Pad the potential to avoid states on the border
-        self.V, self.start, self.end = get_potential(show=False, easy=easy, padding=self.pad, binary=binary,
-                                                     use_dijkstra=dijkstra)
+        self.V, self.start, self.end = get_potential(show=False, easy=easy, padding=self.pad, )
         self.initial_coords = np.asarray(self.start)
-        self.rewardmap_init = self.V
+        self.rewardmap_init = get_reward_map(self.V, self.start, self.end, binary=binary, use_dijkstra=dijkstra)
 
         # self.low high represent the i,j bounds (the inner image border)
         self.n_row, self.n_col = np.asarray(self.V.shape) - np.asarray(self.localenvshape)  # (100, 82)
@@ -310,7 +332,9 @@ class MullerEnv(gym.Env):
         # if self.rewardmap[i1, j1] == 0:
         #     reward += 20
         reward = self.rewardmap[i1, j1]
-        self.rewardmap[i1, j1] = self.rewardmap.min()
+
+        if self.disappearing_rewards:
+            self.rewardmap[i1, j1] = self.rewardmap.min()
 
         if (i1, j1) == self.end:
             done = True
