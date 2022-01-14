@@ -41,24 +41,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def potential(x, xdeep=-3, xshal=3, wellslope=2):
+def potential(x, xdeep=-3, xshal=3, wellslope=2, mu_list=[], sigma=1.):
     y = ((x - xdeep) * (x - xshal))**2 + wellslope * x
+    for mu in mu_list:
+        y += np.exp(-(x - mu)**2 / (2 * sigma**2))
     return y
 
 
-def plot_potential(pos=-3):
-    x = np.linspace(-5, 5, 100)
-    y = potential(x)
-    plt.plot(x, y)
-    if pos is not None:
-        plt.scatter(pos, potential(pos), marker='o', color='r')
-
-
-def move(x, beta=0.1):
-    dx = np.random.uniform(low=-.5, high=.5)
+def move(x, Vfunc, beta=0.1):
+    dx = np.random.uniform(low=-1., high=1.)
     x_new = x + dx
-    V = potential(x)
-    V_new = potential(x_new)
+    V = Vfunc(x)
+    V_new = Vfunc(x_new)
     delta = V_new - V
     p = np.exp(-beta * delta)
     if p > np.random.uniform():
@@ -67,22 +61,40 @@ def move(x, beta=0.1):
         return x, V
 
 
-def MCtraj(nsteps=100, plot=True):
+def plot_potential(potential, ax, color='k'):
+    x = np.linspace(-5, 5, 100)
+    y = potential(x)
+    line, = ax.plot(x, y, c=color)
+    return line
+
+
+def MCtraj(nsteps=200, plot=True, metaD=True):
     if plot:
+        if not os.path.exists('MCmovie'):
+            os.mkdir('MCmovie')
         fig, ax = plt.subplots()
-        xs = np.linspace(-5, 5, 100)
-        ys = potential(xs)
-        ax.plot(xs, ys)
+        plot_potential(potential, ax)
     x = -3
+    traj = [
+        x,
+    ]
     if plot:
         dot, = ax.plot(x, potential(x), marker='o', color='red')
     for i in range(nsteps):
-        x, V = move(x)
-        print(x, V)
+        if metaD:
+            potential_i = lambda x: potential(x, mu_list=traj)
+        else:
+            potential_i = potential
+        x, V = move(x, Vfunc=potential_i)
+        traj.append(x)
+        print(i + 1, x, V)
         if plot:
             dot.remove()
             dot, = ax.plot(x, V, marker='o', color='red')
+            if metaD:
+                line = plot_potential(potential_i, ax, color='green')
             plt.savefig(f'MCmovie/{i+1:04d}.png')
+            line.remove()
 
 
 if __name__ == '__main__':
