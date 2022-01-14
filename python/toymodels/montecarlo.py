@@ -41,10 +41,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def potential(x, xdeep=-3, xshal=3, wellslope=2, mu_list=[], sigma=1.):
+def potential(x,
+              xdeep=-3,
+              xshal=3,
+              wellslope=2,
+              mu_list=[],
+              sigma=.1,
+              weight=3.):
     y = ((x - xdeep) * (x - xshal))**2 + wellslope * x
     for mu in mu_list:
-        y += np.exp(-(x - mu)**2 / (2 * sigma**2))
+        y += weight * np.exp(-(x - mu)**2 / (2 * sigma**2))
     return y
 
 
@@ -74,7 +80,7 @@ def plot_dist(traj, ax):
     return hist[2]
 
 
-def MCtraj(nsteps=400, plot=True, metaD=True):
+def MCtraj(nsteps=2000, plot=True, metaD=True):
     if plot:
         plt.rcParams['figure.constrained_layout.use'] = False
         if not os.path.exists('MCmovie'):
