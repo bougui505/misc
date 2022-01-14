@@ -4,20 +4,28 @@
 from loader import Loader
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
 
-name_exp = 'SAC'
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('-n', '--name_exp', help='Name used for saving', type=str, default=None)
+parser.add_argument('-d', '--deterministic', help='No continuous potential, just binary', action='store_true',
+                    default=False)
+# parser.add_argument('--anchor', nargs=3, metavar=('x', 'y', 'z'), type=float,
+#                     help='xyz coordinates of the center of the blob to monitor. Can be pasted from the pymol plugin.')
+args = parser.parse_args()
+
 save = False
 show = True
 
-model, args = Loader().load(name=name_exp)
-env = args['env']
+model, exp_args = Loader().load(name=args.name_exp)
+env = exp_args['env']
 
-print(f"Doing prediction with a {args['model']} model")
+print(f"Doing prediction with a {exp_args['model']} model")
 obs = env.reset()
 traj = []
 total_reward = 0
 while True:
-    action, _states = model.predict(obs, deterministic=False)
+    action, _states = model.predict(obs, deterministic=args.deterministic)
     # action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
     if env.V[env.discretized_coords] == env.V.min():
