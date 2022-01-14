@@ -50,6 +50,7 @@ def potential(x, xdeep=-3, xshal=3, wellslope=2, mu_list=[], sigma=1.):
 
 def move(x, Vfunc, beta=0.1):
     dx = np.random.uniform(low=-1., high=1.)
+    # dx = np.random.choice([-0.1, 0.1])
     x_new = x + dx
     V = Vfunc(x)
     V_new = Vfunc(x_new)
@@ -68,16 +69,27 @@ def plot_potential(potential, ax, color='k'):
     return line
 
 
-def MCtraj(nsteps=200, plot=True, metaD=True):
+def plot_dist(traj, ax):
+    hist = ax.hist(traj, bins=50, color='b', range=(-5, 5))
+    return hist[2]
+
+
+def MCtraj(nsteps=400, plot=True, metaD=True):
     if plot:
+        plt.rcParams['figure.constrained_layout.use'] = False
         if not os.path.exists('MCmovie'):
             os.mkdir('MCmovie')
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        ax = plt.subplot2grid(shape=(2, 1), loc=(0, 0))
+        ax2 = plt.subplot2grid(shape=(2, 1), loc=(1, 0), sharex=ax)
         plot_potential(potential, ax)
     x = -3
     traj = [
         x,
     ]
+    if plot:
+        hist = plot_dist(traj, ax2)
+        print(hist)
     if plot:
         dot, = ax.plot(x, potential(x), marker='o', color='red')
     for i in range(nsteps):
@@ -90,9 +102,11 @@ def MCtraj(nsteps=200, plot=True, metaD=True):
         print(i + 1, x, V)
         if plot:
             dot.remove()
+            hist.remove()
             dot, = ax.plot(x, V, marker='o', color='red')
             if metaD:
                 line = plot_potential(potential_i, ax, color='green')
+            hist = plot_dist(traj, ax2)
             plt.savefig(f'MCmovie/{i+1:04d}.png')
             line.remove()
 
