@@ -1,0 +1,3 @@
+# See: https://github.com/openmm/openmm-plumed#using-the-plugin
+d: DISTANCE ATOMS=1,10
+METAD ARG=d SIGMA=0.2 HEIGHT=0.3 PACE=500

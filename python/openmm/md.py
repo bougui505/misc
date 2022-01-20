@@ -36,14 +36,24 @@
 #                                                                           #
 #############################################################################
 
+# Based on the openmm-plumed Plugin (https://github.com/openmm/openmm-plumed)
+
 import openmm.app as app
 import openmm
+import openmmplumed
 import openmm.unit as unit
 import os
 from sys import stdout
 
 
+def add_plumed_forces(plumed_script, system):
+    with open(plumed_script, 'r') as plumedfile:
+        script = plumedfile.read()
+    system.addForce(openmmplumed.PlumedForce(script))
+
+
 def run(inpdb='input.pdb',
+        plumed_script=None,
         forcefield_xml='amber99sb.xml',
         watermodel_xml='tip3p.xml',
         temperature=300 * unit.kelvin,
@@ -65,6 +75,10 @@ def run(inpdb='input.pdb',
                                      constraints=app.HBonds)
     integrator = openmm.LangevinIntegrator(temperature, frictionCoeff,
                                            stepSize)
+    # ######## add PLUMED forces ##########
+    if plumed_script is not None:
+        add_plumed_forces(plumed_script, system)
+    # #####################################
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
@@ -73,17 +87,18 @@ def run(inpdb='input.pdb',
                               outpdbfile)
     outdcd = f'{outbasename}_traj.dcd'
     simulation.reporters.append(app.DCDReporter(outdcd, reportInterval))
-    simulation.reporters.append(app.CheckpointReporter(f'{outbasename}.chk', steps//100))
+    simulation.reporters.append(
+        app.CheckpointReporter(f'{outbasename}.chk', steps // 100))
     simulation.reporters.append(
         app.StateDataReporter(stdout,
                               reportInterval,
                               step=True,
-			      time=True,
+                              time=True,
                               potentialEnergy=True,
                               temperature=True,
-			      speed=True,
-			      remainingTime=True,
-			      totalSteps=steps))
+                              speed=True,
+                              remainingTime=True,
+                              totalSteps=steps))
     simulation.step(steps)
 
 
@@ -94,6 +109,11 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb')
     parser.add_argument('--nsteps', type=int)
+    parser.add_argument('--plumed',
+                        help='Plumed script (see example in plumed.dat)')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
-    run(inpdb=args.pdb, steps=args.nsteps, outbasename=outbasename)
+    run(inpdb=args.pdb,
+        plumed_script=args.plumed,
+        steps=args.nsteps,
+        outbasename=outbasename)
