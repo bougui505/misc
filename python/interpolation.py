@@ -81,6 +81,11 @@ def format_output(x, y, delimiter):
     np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
 
 
+def parse_fields(fields):
+    fields = np.asarray([fields[i] for i in range(len(fields))], dtype=str)
+    return fields
+
+
 if __name__ == '__main__':
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
@@ -111,14 +116,29 @@ if __name__ == '__main__':
         '--kind',
         help='Kind of interpolation (linear -- default --, cubic, ...)',
         default='linear')
+    parser.add_argument(
+        '-f',
+        '--fields',
+        help='Fields (default: xy). Give the column field names (e.g. xyy)',
+        default='xy')
     args = parser.parse_args()
 
     A = read_stdin(delimiter=args.delimiter)
-    x, y = A[:, 0], A[:, 1]
-    x, y = interpolate(x,
-                       y,
-                       args.step,
-                       xmin=args.min,
-                       xmax=args.max,
-                       kind=args.kind)
-    format_output(x, y, args.delimiter)
+    fields = parse_fields(args.fields)
+    x, y = A[:, fields == 'x'], A[:, fields == 'y']
+    if x.shape[1] == 1:
+        x = np.squeeze(x)
+    else:
+        print('Multiple x value given. Not yet implemented')
+        sys.exit()
+    ys = []
+    for y in y.T:
+        xinter, yinter = interpolate(x,
+                                     y,
+                                     args.step,
+                                     xmin=args.min,
+                                     xmax=args.max,
+                                     kind=args.kind)
+        ys.append(yinter)
+    ys = np.asarray(ys).T
+    format_output(xinter, ys, args.delimiter)
