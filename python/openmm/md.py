@@ -73,14 +73,19 @@ def run(inpdb='input.pdb',
     plumed_script: if not None, run a metadynamics using the given plumed script in PLUMED using openmmplumed
     checkpoint: if not None, resume the simulation by loading the given checkpoint
     """
+    if checkpoint is not None:
+        restart = True
     outdcd = f'{outbasename}_traj.dcd'
     outcheckpoint = f'{outbasename}.chk'
     outlog = f'{outbasename}.log'
+    if restart:
+        inpdb = f'{outbasename}_start.pdb'
     pdb = app.PDBFile(inpdb)
     modeller = app.Modeller(pdb.topology, pdb.positions)
     forcefield = app.ForceField(forcefield_xml, watermodel_xml)
-    modeller.addHydrogens(forcefield, pH=pH)
-    modeller.addSolvent(forcefield, padding=padding)
+    if not restart:
+        modeller.addHydrogens(forcefield, pH=pH)
+        modeller.addSolvent(forcefield, padding=padding)
     system = forcefield.createSystem(modeller.topology,
                                      nonbondedMethod=app.PME,
                                      nonbondedCutoff=1 * unit.nanometer,
@@ -92,7 +97,7 @@ def run(inpdb='input.pdb',
         add_plumed_forces(plumed_script, system)
     # #####################################
     simulation = app.Simulation(modeller.topology, system, integrator)
-    if checkpoint is None:
+    if not restart:
         simulation.context.setPositions(modeller.positions)
         simulation.minimizeEnergy()
         with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
