@@ -44,6 +44,9 @@ import openmmplumed
 import openmm.unit as unit
 import os
 from sys import stdout
+import time
+import shutil
+import sys
 
 
 def add_plumed_forces(plumed_script, system):
@@ -63,7 +66,16 @@ def run(inpdb='input.pdb',
         reportInterval=1000,
         steps=10000,
         pH=7.0,
-        padding=1.0 * unit.nanometers):
+        padding=1.0 * unit.nanometers,
+        checkpoint=None):
+    """
+    inpdb: input pdb file
+    plumed_script: if not None, run a metadynamics using the given plumed script in PLUMED using openmmplumed
+    checkpoint: if not None, resume the simulation by loading the given checkpoint
+    """
+    outdcd = f'{outbasename}_traj.dcd'
+    outcheckpoint = f'{outbasename}.chk'
+    outlog = f'{outbasename}.log'
     pdb = app.PDBFile(inpdb)
     modeller = app.Modeller(pdb.topology, pdb.positions)
     forcefield = app.ForceField(forcefield_xml, watermodel_xml)
@@ -80,17 +92,30 @@ def run(inpdb='input.pdb',
         add_plumed_forces(plumed_script, system)
     # #####################################
     simulation = app.Simulation(modeller.topology, system, integrator)
-    simulation.context.setPositions(modeller.positions)
-    simulation.minimizeEnergy()
-    with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
-        app.PDBFile.writeFile(modeller.topology, modeller.positions,
-                              outpdbfile)
-    outdcd = f'{outbasename}_traj.dcd'
+    if checkpoint is None:
+        simulation.context.setPositions(modeller.positions)
+        simulation.minimizeEnergy()
+        with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
+            app.PDBFile.writeFile(modeller.topology, modeller.positions,
+                                  outpdbfile)
+    else:  # Restart a simulation
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        backup_dir = f'md_{timestamp}'
+        os.mkdir(backup_dir)
+        for filename in [outdcd, outlog]:
+            try:
+                shutil.move(filename, backup_dir)
+            except FileNotFoundError:
+                print(f'{filename} is not present')
+        shutil.copy(outcheckpoint, backup_dir)
+        if plumed_script is not None:
+            shutil.copy('HILLS', backup_dir)
+        simulation.loadCheckpoint(checkpoint)
     simulation.reporters.append(app.DCDReporter(outdcd, reportInterval))
     simulation.reporters.append(
-        app.CheckpointReporter(f'{outbasename}.chk', steps // 100))
+        app.CheckpointReporter(outcheckpoint, steps // 100))
     simulation.reporters.append(
-        app.StateDataReporter(stdout,
+        app.StateDataReporter(outlog,
                               reportInterval,
                               step=True,
                               time=True,
@@ -111,9 +136,13 @@ if __name__ == '__main__':
     parser.add_argument('--nsteps', type=int)
     parser.add_argument('--plumed',
                         help='Plumed script (see example in plumed.dat)')
+    parser.add_argument(
+        '--restart',
+        help='Restart the simulation. Give the checkpoint file as argument')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     run(inpdb=args.pdb,
         plumed_script=args.plumed,
         steps=args.nsteps,
-        outbasename=outbasename)
+        outbasename=outbasename,
+        checkpoint=args.restart)
