@@ -162,42 +162,45 @@ def get_reward_map(potential, start, end, use_dijkstra=False, binary=False, show
     :param offset:
     :return:
     """
-    rew_potential = np.copy(potential)
+    raw_potential = np.copy(potential)
     # This could be more efficient, but we did it afterwards and it's nothing
     if binary:
-        rew_potential = 0 * np.ones_like(rew_potential)
-        rew_potential[start] = 1
-        rew_potential[end] = 1
+        raw_potential = 0 * np.ones_like(raw_potential)
+        raw_potential[start] = 1
+        raw_potential[end] = 1
 
     # Then Use Djikstra to get an idea of the optimum cost minimizing this route
     if use_dijkstra:
         # For djikstra we need the reverse : the distance to the minimum (and we add epsilon)
         # In the easy setting, we get diagonals so conter-intuitive results
-        rew_potential = 0.01 + rew_potential.max() - rew_potential
-        path = dijkstra(rew_potential, start, end)
-        rew_potential = np.ones_like(rew_potential)
-        rew_potential[tuple(path.T)] = 0
-        rew_potential = ndimage.distance_transform_edt(rew_potential)
-        rew_potential = np.exp(-rew_potential / 10)
+        raw_potential = 0.01 + raw_potential.max() - raw_potential
+        path = dijkstra(raw_potential, start, end)
+        raw_potential = np.ones_like(raw_potential)
+        raw_potential[tuple(path.T)] = 0
+        raw_potential = ndimage.distance_transform_edt(raw_potential)
+        raw_potential = np.exp(-raw_potential / 10)
 
-    rew_potential += offset
+    raw_potential += offset
 
     if show:
         # We need to reverse the values to plot y as a function of x (and use scatter...)
-        plt.matshow(rew_potential.T, origin='lower')
+        plt.matshow(raw_potential.T, origin='lower')
         plt.scatter(*start)
         plt.scatter(*end)
         if use_dijkstra:
             plt.plot(*tuple(path.T), c='r')
         plt.colorbar()
         plt.show()
-    return rew_potential
+
+        plt.hist(raw_potential.flatten())
+        plt.show()
+    return raw_potential
 
 
 class MullerEnv(gym.Env):
     def __init__(self, history=2, maxiter=200, localenvshape=(36, 36), easy=False,
                  binary=True, dijkstra=False, discrete_action_space=True,
-                 include_past=False, include_move=False, disappearing_rewards=False):
+                 include_past=False, include_move=False, disappearing_rewards=False, offset=0):
         self.easy = easy
         self.binary = binary
         self.dijkstra = dijkstra
@@ -214,9 +217,10 @@ class MullerEnv(gym.Env):
 
         # First get the raw potential as well as a local environment.
         # Pad the potential to avoid states on the border
-        self.V, self.start, self.end = get_potential(show=False, easy=easy, padding=self.pad, )
+        self.V, self.start, self.end = get_potential(easy=easy, padding=self.pad, show=False)
         self.initial_coords = np.asarray(self.start)
-        self.rewardmap_init = get_reward_map(self.V, self.start, self.end, binary=binary, use_dijkstra=dijkstra)
+        self.rewardmap_init = get_reward_map(self.V, self.start, self.end, binary=binary, use_dijkstra=dijkstra,
+                                             show=False, offset=offset)
 
         # self.low high represent the i,j bounds (the inner image border)
         self.n_row, self.n_col = np.asarray(self.V.shape) - np.asarray(self.localenvshape)  # (100, 82)
@@ -323,7 +327,7 @@ class MullerEnv(gym.Env):
         self.discretized_coords = self.discretize_coords(self.coords)
         i1, j1 = self.discretized_coords
         self.traj.append(self.coords)
-        self.state = self.state_from_traj()
+        state = self.state_from_traj()
 
         # Get the reward from the state we end up with.
         # reward = self.rewardmap[i1, j1]  # + self.milestones_reward()
@@ -340,17 +344,22 @@ class MullerEnv(gym.Env):
             done = True
             reward += 20
 
+        # print()
+        # print(self.end)
+        # print(i1, j1)
+        # print(done)
         info = {}
         # if done:
         #     print('iter:', self.iter)
         #     print('pos:', i1, j1)
-        return self.state, float(reward), done, info
+        return state, float(reward), done, info
 
     def state_from_traj(self):
         """
         Generate a state observation from the trajectory.
         """
         replay = self.traj[::-1][:self.history + 1]
+        # print(replay)
         img_state = np.zeros(shape=self.img_env_shape)
         for i, step in enumerate(replay[:self.history]):
             img_state[:, -(i + 1), ...] = self.localenv_coords(step)
@@ -384,10 +393,10 @@ class MullerEnv(gym.Env):
         self.traj = [self.discretized_coords]
 
         self.rewardmap = self.rewardmap_init.copy()
-        # self.state = self.localenv[None, ...]
-        self.state = self.state_from_traj()
+        # state = self.localenv[None, ...]
+        state = self.state_from_traj()
 
-        return self.state
+        return state
 
 
 if __name__ == '__main__':

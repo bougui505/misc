@@ -28,8 +28,8 @@ while True:
     action, _states = model.predict(obs, deterministic=args.deterministic)
     # action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
-    if env.V[env.discretized_coords] == env.V.min():
-        done = True
+    # print(obs['values'].sum())
+    # print(env.traj[-5:])
     total_reward += reward
     traj.append(env.coords.copy())
     if done:

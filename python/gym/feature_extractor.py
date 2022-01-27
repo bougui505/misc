@@ -41,9 +41,9 @@ class CustomCNN(BaseFeaturesExtractor):
             nn.Conv3d(n_input_channels, 8, kernel_size=(history, 4, 4), stride=1, padding=0),
             nn.ReLU(),
             nn.MaxPool3d(kernel_size=(1, 2, 2)),
-            nn.Conv3d(8, 8, kernel_size=(1, 4, 4), stride=2, padding=0),
+            nn.Conv3d(8, 8, kernel_size=(1, 4, 4), stride=1, padding=0),
             nn.ReLU(),
-            nn.MaxPool3d(kernel_size=(1, 2, 2)),
+            # nn.MaxPool3d(kernel_size=(1, 2, 2)),
             nn.Conv3d(8, 16, kernel_size=(1, 3, 3), stride=1, padding=0),
             nn.Flatten()))
 
@@ -60,10 +60,11 @@ class CustomCNN(BaseFeaturesExtractor):
     def forward_cnn(self, input):
         for layer in self.cnn:
             input = layer(input)
+            # print(input.shape)
         return input
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        # GEt inputs and concatenate
+        # Get inputs and concatenate
         input_tensor = observations['values']
         if self.include_traj:
             past = observations['past_img']
