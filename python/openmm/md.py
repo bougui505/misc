@@ -75,6 +75,8 @@ def run(inpdb='input.pdb',
     """
     if checkpoint is not None:
         restart = True
+    else:
+        restart = False
     outdcd = f'{outbasename}_traj.dcd'
     outcheckpoint = f'{outbasename}.chk'
     outlog = f'{outbasename}.log'
