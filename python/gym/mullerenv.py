@@ -124,7 +124,7 @@ def get_potential(easy=True, padding=((0, 0), (0, 0)), show=False):
         V = np.pad(V, pad_width=padding, constant_values=V.min())
         start = padding[0][0], padding[1][0]
         # Use 22, the last value as a target
-        x = 4
+        x = 8
         end = x + padding[0][0], int(0.1 * x ** 2) + padding[1][0]
     else:
         minx = -1.5

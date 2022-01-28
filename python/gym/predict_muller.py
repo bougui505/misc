@@ -26,6 +26,7 @@ traj = []
 total_reward = 0
 while True:
     action, _states = model.predict(obs, deterministic=args.deterministic)
+    # action = int(action)
     # action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
     # print(obs['values'].sum())

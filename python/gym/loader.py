@@ -12,7 +12,7 @@ class Loader:
     def __init__(self, model=None, args=None):
         self.model = model
         self.args = args
-        self.possible_models = {'a2c', 'sac'}
+        self.possible_models = {'a2c', 'sac', 'dqn'}
 
     def save(self, name):
         modelname = f"{name}_model"
@@ -44,6 +44,9 @@ class Loader:
         elif model_type == 'sac':
             from stable_baselines3 import SAC
             model = SAC.load(modelname)
+        elif model_type == 'dqn':
+            from stable_baselines3 import DQN
+            model = DQN.load(modelname)
         else:
             model = 0
 

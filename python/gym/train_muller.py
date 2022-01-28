@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
-from stable_baselines3 import A2C, SAC
+from stable_baselines3 import A2C, SAC, DQN
 from mullerenv import MullerEnv
 from feature_extractor import CustomCNN
 from loader import Loader
 import argparse
 
-log_interval = 100
-# log_interval = 1
+# log_interval = 100
+log_interval = 10
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('-n', '--dump_name', help='Name used for saving', type=str, default=None)
@@ -55,6 +55,12 @@ elif model_type == 'sac':
                          net_arch=dict(qf=[24], pi=[24]),
                          features_extractor_kwargs=features_extractor_kwargs, )
     model = SAC("MultiInputPolicy", env, verbose=1, policy_kwargs=policy_kwargs)
+elif model_type == 'dqn':
+    policy_kwargs = dict(features_extractor_class=CustomCNN,
+                         net_arch=[24],
+                         features_extractor_kwargs=features_extractor_kwargs, )
+    model = DQN("MultiInputPolicy", env, verbose=1, policy_kwargs=policy_kwargs, buffer_size=10000,
+                exploration_final_eps=0.01)
 else:
     raise NotImplementedError
 
