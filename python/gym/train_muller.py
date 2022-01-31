@@ -7,8 +7,8 @@ from feature_extractor import CustomCNN
 from loader import Loader
 import argparse
 
-# log_interval = 100
-log_interval = 10
+log_interval = 100
+# log_interval = 10
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('-n', '--dump_name', help='Name used for saving', type=str, default=None)
@@ -48,7 +48,7 @@ if model_type == 'a2c':
     policy_kwargs = dict(net_arch=[dict(vf=[24], pi=[24])],
                          features_extractor_class=CustomCNN,
                          features_extractor_kwargs=features_extractor_kwargs)
-    model = A2C("MultiInputPolicy", env, verbose=1, policy_kwargs=policy_kwargs)
+    model = A2C("MultiInputPolicy", env, verbose=1, policy_kwargs=policy_kwargs, tensorboard_log='tensorboard/')
 elif model_type == 'sac':
     assert not args.discrete
     policy_kwargs = dict(features_extractor_class=CustomCNN,
@@ -64,6 +64,6 @@ elif model_type == 'dqn':
 else:
     raise NotImplementedError
 
-model.learn(total_timesteps=args.total_timesteps, log_interval=log_interval)
+model.learn(total_timesteps=args.total_timesteps, log_interval=log_interval, tb_log_name=args.dump_name)
 loader = Loader(model=model, args={'model': model_type, 'policy_kwargs': policy_kwargs, 'env': env})
 loader.save(args.dump_name)

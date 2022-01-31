@@ -26,11 +26,12 @@ traj = []
 total_reward = 0
 while True:
     action, _states = model.predict(obs, deterministic=args.deterministic)
-    # action = int(action)
-    # action, _states = model.predict(obs, deterministic=True)
+    # For DQN, the action is just a number, for others it's a numpy array.
+    try:
+        action = int(action)
+    except:
+        pass
     obs, reward, done, info = env.step(action)
-    # print(obs['values'].sum())
-    # print(env.traj[-5:])
     total_reward += reward
     traj.append(env.coords.copy())
     if done:
