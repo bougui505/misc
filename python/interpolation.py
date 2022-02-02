@@ -75,10 +75,16 @@ def interpolate(x, y, step, xmin=None, xmax=None, kind='linear'):
     return x, y
 
 
-def format_output(x, y, delimiter):
+def format_output(x, y, delimiter, label=None):
     if delimiter is None:
         delimiter = ' '
-    np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
+    if label is None:
+        np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
+    else:
+        np.savetxt(sys.stdout,
+                   np.c_[x, y, label],
+                   delimiter=delimiter,
+                   fmt='%.4g')
 
 
 def parse_fields(fields):

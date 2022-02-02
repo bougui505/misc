@@ -40,6 +40,7 @@ import sys
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint
+from sklearn.cluster import AgglomerativeClustering
 
 
 def random_timeseries(npts):
@@ -110,54 +111,51 @@ def get_intervals(tlist, npts):
     return intervals
 
 
-class Objective(object):
-    def __init__(self, timeseries, nsplit, delta_t):
-        self.timeseries = timeseries
-        self.nsplit = nsplit
-        self.delta_t = delta_t
-        self.npts = len(timeseries)
-
-    def func(self, tlist):
-        intervals = get_intervals(tlist, self.npts)
-        splitted = split(self.timeseries,
-                         intervals=intervals,
-                         delta_t=self.delta_t)
-        return std(splitted, mean=True)
-
-
-def optimal_split(timeseries, nsplit, delta_t=.1):
-    objective = Objective(timeseries=timeseries,
-                          nsplit=nsplit,
-                          delta_t=delta_t)
+def get_distances(timeseries):
     npts = len(timeseries)
-    interval_len = npts // nsplit
-    t0 = [interval_len + i * interval_len for i in range(nsplit - 1)]
-    # bounds = [
-    #     (0, npts - 1),
-    # ] * (nsplit - 1)
-    res = minimize(objective.func,
-                   t0,
-                   method='Nelder-Mead',
-                   options={'disp': True})
-    tlist = res.x
-    print(tlist)
-    intervals = get_intervals(tlist, npts)
-    splitted = split(timeseries, intervals, delta_t)
-    print(std(splitted))
+    distances = (timeseries[1:] - timeseries[:-1])**2
+    pmat = np.ones((npts, npts)) * 9999.
+    np.fill_diagonal(pmat, 0.)
+    pmat[np.arange(npts - 1), np.arange(1, npts)] = distances
+    pmat[np.arange(1, npts), np.arange(npts - 1)] = distances
+    return pmat
+
+
+def get_clusters(timeseries, ninter):
+    pmat = get_distances(timeseries)
+    agg = AgglomerativeClustering(n_clusters=ninter,
+                                  affinity='precomputed',
+                                  linkage='average')
+    labels = agg.fit_predict(pmat)
+    return labels
 
 
 if __name__ == '__main__':
     import argparse
+    from misc.interpolation import read_stdin, parse_fields, format_output
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--test', help='Test the module', action='store_true')
-    parser.add_argument('--npts',
-                        help='Test the module. Number of points for the test',
+    parser.add_argument('-d', '--delimiter', help='Delimiter to use', type=str)
+    parser.add_argument(
+        '-f',
+        '--fields',
+        help='Fields (default: xy). Give the column field names',
+        default='xy')
+    parser.add_argument('--ninter',
+                        help='Number of intervals',
                         type=int,
-                        default=1000)
+                        required=True)
     args = parser.parse_args()
 
-    if args.test:
-        timeseries = random_timeseries(args.npts)
-        optimal_split(timeseries, nsplit=10)
+    A = read_stdin(delimiter=args.delimiter)
+    fields = parse_fields(args.fields)
+    x, y = A[:, fields == 'x'], A[:, fields == 'y']
+    y = np.squeeze(y)
+    if x.shape[1] == 1:
+        x = np.squeeze(x)
+    else:
+        print('Multiple x value given. Not yet implemented')
+        sys.exit()
+    labels = get_clusters(y, args.ninter)
+    format_output(x, y, delimiter=args.delimiter, label=labels)
