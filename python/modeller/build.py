@@ -35,14 +35,17 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
-
+import os
 import itertools
 import modeller
 import numpy as np
 from modeller.optimizers import ConjugateGradients
 from modeller.optimizers import MolecularDynamics
 
-lib = '/usr/lib/modeller10.1/modlib'
+# lib = '/usr/lib/modeller10.1/modlib'
+# lib = '/home/vmallet/anaconda3/envs/emaze/lib/modeller-10.2/modlib'
+
+lib = os.getenv('MODELLERPATH')
 
 env = modeller.Environ()
 env.libs.topology.read(file=f'{lib}/top_heav.lib')
@@ -94,6 +97,7 @@ class System():
     """
     Build a protein system by adding residues sequentially
     """
+
     def __init__(self):
         """
         >>> # Build a first system
@@ -301,6 +305,7 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(
         description='Build an extended peptide using the given sequence')
