@@ -39,112 +39,123 @@
 import sys
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize, NonlinearConstraint
+from sklearn.cluster import AgglomerativeClustering
 
 
-def format_line(line, delimiter):
-    line = line.split(delimiter)
-    outline = []
-    for e in line:
-        e = e.strip()
-        try:
-            e = int(float(e)) if int(float(e)) == float(e) else float(e)
-        except ValueError:
-            pass
-        outline.append(e)
-    return outline
+def random_timeseries(npts):
+    """
+    Generate a random timeseries with npts points
+    """
+    timeseries = np.random.uniform(size=npts)
+    timeseries[:100] += 50.
+    timeseries[500:] -= 10.
+    return timeseries
 
 
-def read_stdin(delimiter=None):
-    A = []
-    with sys.stdin as inpipe:
-        for line in inpipe:
-            line = format_line(line, delimiter)
-            A.append(line)
-    A = np.asarray(A, dtype=float)
-    return A
-
-
-def interpolate(x, y, step, xmin=None, xmax=None, kind='linear'):
-    f = interp1d(x, y, kind=kind)
-    if xmin is None:
-        xmin = x.min()
-    if xmax is None:
-        xmax = x.max()
-    x = np.arange(xmin, xmax, step)
-    y = f(x)
-    return x, y
-
-
-def format_output(x, y, delimiter, label=None):
-    if delimiter is None:
-        delimiter = ' '
-    if label is None:
-        np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
+def interpolate(timeseries, kind='linear'):
+    npts = len(timeseries)
+    if timeseries.ndim == 1:
+        x = np.arange(npts)
+        y = timeseries
     else:
-        np.savetxt(sys.stdout,
-                   np.c_[x, y, label],
-                   delimiter=delimiter,
-                   fmt='%.4g')
+        x, y = timeseries.T
+    f = interp1d(x, y, kind=kind)
+    return f
 
 
-def parse_fields(fields):
-    fields = np.asarray([fields[i] for i in range(len(fields))], dtype=str)
-    return fields
+def split(timeseries, intervals, delta_t):
+    """
+    Split the timeseries in the given intervals [(t0, t1), (t2, t3), ...]
+    """
+    f = interpolate(timeseries)
+    npts = len(timeseries)
+    subtimeseries = []
+    for interval in intervals:
+        t0, t1 = interval
+        trange = np.arange(t0, t1, step=delta_t)
+        trange = trange[trange < npts - 1]
+        ts = f(trange)
+        subtimeseries.append(ts)
+    return subtimeseries
+
+
+def std(ts, mean=False):
+    """
+    Return the standard deviation of a timeseries or a list of timeseries
+    """
+    if not hasattr(ts[0], '__iter__'):
+        ts = [
+            ts,
+        ]
+    stds = []
+    for _ts_ in ts:
+        stds.append(np.std(_ts_))
+    stds = np.asarray(stds)
+    if not mean:
+        return stds
+    else:
+        return stds.mean()
+
+
+def get_intervals(tlist, npts):
+    tlist = list(tlist)
+    tlist.sort()
+    left = [
+        0,
+    ] + tlist
+    right = tlist + [
+        npts,
+    ]
+    intervals = list(zip(left, right))
+    return intervals
+
+
+def get_distances(timeseries):
+    npts = len(timeseries)
+    distances = (timeseries[1:] - timeseries[:-1])**2
+    pmat = np.ones((npts, npts)) * 9999.
+    np.fill_diagonal(pmat, 0.)
+    pmat[np.arange(npts - 1), np.arange(1, npts)] = distances
+    pmat[np.arange(1, npts), np.arange(npts - 1)] = distances
+    return pmat
+
+
+def get_clusters(timeseries, ninter):
+    pmat = get_distances(timeseries)
+    agg = AgglomerativeClustering(n_clusters=ninter,
+                                  affinity='precomputed',
+                                  linkage='average')
+    labels = agg.fit_predict(pmat)
+    return labels
 
 
 if __name__ == '__main__':
     import argparse
+    from misc.interpolation import read_stdin, parse_fields, format_output
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-s',
-                        '--step',
-                        help='Spacing between values',
-                        type=float,
-                        required=True)
-    parser.add_argument(
-        '-m',
-        '--min',
-        help=
-        'x-min value to start the interpolation with. By default, the min x-values is used',
-        type=float,
-        required=False)
-    parser.add_argument(
-        '-M',
-        '--max',
-        help=
-        'x-max value to start the interpolation with. By default, the max x-values is used',
-        type=float,
-        required=False)
     parser.add_argument('-d', '--delimiter', help='Delimiter to use', type=str)
-    parser.add_argument(
-        '-k',
-        '--kind',
-        help='Kind of interpolation (linear -- default --, cubic, ...)',
-        default='linear')
     parser.add_argument(
         '-f',
         '--fields',
-        help='Fields (default: xy). Give the column field names (e.g. xyy)',
+        help='Fields (default: xy). Give the column field names',
         default='xy')
+    parser.add_argument('--ninter',
+                        help='Number of intervals',
+                        type=int,
+                        required=True)
     args = parser.parse_args()
 
     A = read_stdin(delimiter=args.delimiter)
     fields = parse_fields(args.fields)
     x, y = A[:, fields == 'x'], A[:, fields == 'y']
+    y = np.squeeze(y)
     if x.shape[1] == 1:
         x = np.squeeze(x)
     else:
         print('Multiple x value given. Not yet implemented')
         sys.exit()
-    ys = []
-    for y in y.T:
-        xinter, yinter = interpolate(x,
-                                     y,
-                                     args.step,
-                                     xmin=args.min,
-                                     xmax=args.max,
-                                     kind=args.kind)
-        ys.append(yinter)
-    ys = np.asarray(ys).T
-    format_output(xinter, ys, args.delimiter)
+    labels = get_clusters(y, args.ninter)
+    format_output(x, y, delimiter=args.delimiter, label=labels)

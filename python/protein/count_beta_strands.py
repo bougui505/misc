@@ -36,60 +36,82 @@
 #                                                                           #
 #############################################################################
 
+# Count the number of beta-strand in a beta sheet
+
 import sys
+from pymol import cmd
 import numpy as np
-from scipy.interpolate import interp1d
+import scipy.spatial.distance as scidist
+import scipy.ndimage as ndi
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
-def format_line(line, delimiter):
-    line = line.split(delimiter)
-    outline = []
-    for e in line:
-        e = e.strip()
-        try:
-            e = int(float(e)) if int(float(e)) == float(e) else float(e)
-        except ValueError:
-            pass
-        outline.append(e)
-    return outline
+def load_coords(pdb, selection, traj=None):
+    selection = f'myprot and {selection} and name CA'
+    cmd.load(filename=pdb, object='myprot')
+    natoms = cmd.select(selection)
+    if traj is not None:
+        cmd.load_traj(filename=traj,
+                      object='myprot',
+                      state=1,
+                      selection=selection)
+    coords = cmd.get_coords(selection=selection, state=0)
+    nframes = coords.shape[0] // natoms
+    coords = coords.reshape((nframes, natoms, 3))
+    return coords
 
 
-def read_stdin(delimiter=None):
-    A = []
-    with sys.stdin as inpipe:
-        for line in inpipe:
-            line = format_line(line, delimiter)
-            A.append(line)
-    A = np.asarray(A, dtype=float)
-    return A
+def get_contacts(coords, threshold=6):
+    dmat = scidist.squareform(scidist.pdist(coords))
+    cmap = dmat < threshold
+    return cmap
 
 
-def interpolate(x, y, step, xmin=None, xmax=None, kind='linear'):
-    f = interp1d(x, y, kind=kind)
-    if xmin is None:
-        xmin = x.min()
-    if xmax is None:
-        xmax = x.max()
-    x = np.arange(xmin, xmax, step)
-    y = f(x)
-    return x, y
+def clean_contact(cmap):
+    cmap = np.triu(cmap)
+    return cmap
 
 
-def format_output(x, y, delimiter, label=None):
-    if delimiter is None:
-        delimiter = ' '
-    if label is None:
-        np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
+def get_label(cmap):
+    labels, num_features = ndi.label(cmap)
+    # Remove diagonal label
+    label_diag = labels[0, 0]
+    labels[labels == label_diag] = 0
+    # Remove small clusters
+    for label in np.unique(labels):
+        count = (labels == label).sum()
+        if count < 3:
+            labels[labels == label] = 0
+    return labels
+
+
+def count_strands(coords, contact_threshold=6):
+    # coords.shape must be (nframes, natoms, 3) with nframes=1 if a single conformation was loaded
+    nstrands = []
+    with tqdm(total=len(coords)) as pbar:
+        for conf in coords:
+            cmap = get_contacts(conf, threshold=contact_threshold)
+            cmap = clean_contact(cmap)
+            labels = get_label(cmap)
+            # plt.matshow(labels)
+            # plt.show()
+            labelids = np.unique(labels[labels != 0])
+            n = len(labelids)
+            if n > 0:
+                n += 1
+            nstrands.append(n)
+            pbar.update()
+    return nstrands
+
+
+def format_output(strandlist, outfilename=None, traj=None, selection=None):
+    if outfilename is None:
+        header = ''
+        outfilename = sys.stdout
     else:
-        np.savetxt(sys.stdout,
-                   np.c_[x, y, label],
-                   delimiter=delimiter,
-                   fmt='%.4g')
-
-
-def parse_fields(fields):
-    fields = np.asarray([fields[i] for i in range(len(fields))], dtype=str)
-    return fields
+        header = f'Number of beta-strand for trajectory {traj} and selection {selection}'
+    np.savetxt(outfilename, strandlist, fmt='%d', header=header)
 
 
 if __name__ == '__main__':
@@ -97,54 +119,19 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-s',
-                        '--step',
-                        help='Spacing between values',
-                        type=float,
-                        required=True)
-    parser.add_argument(
-        '-m',
-        '--min',
-        help=
-        'x-min value to start the interpolation with. By default, the min x-values is used',
-        type=float,
-        required=False)
-    parser.add_argument(
-        '-M',
-        '--max',
-        help=
-        'x-max value to start the interpolation with. By default, the max x-values is used',
-        type=float,
-        required=False)
-    parser.add_argument('-d', '--delimiter', help='Delimiter to use', type=str)
-    parser.add_argument(
-        '-k',
-        '--kind',
-        help='Kind of interpolation (linear -- default --, cubic, ...)',
-        default='linear')
-    parser.add_argument(
-        '-f',
-        '--fields',
-        help='Fields (default: xy). Give the column field names (e.g. xyy)',
-        default='xy')
+    parser.add_argument('--pdb', required=True)
+    parser.add_argument('--sel', required=True)
+    parser.add_argument('--traj', required=False)
+    parser.add_argument('--threshold',
+                        help='Distance threshold in angstrom for contacts',
+                        default=6.0,
+                        type=float)
+    parser.add_argument('--out', default='STRANDS.txt')
     args = parser.parse_args()
 
-    A = read_stdin(delimiter=args.delimiter)
-    fields = parse_fields(args.fields)
-    x, y = A[:, fields == 'x'], A[:, fields == 'y']
-    if x.shape[1] == 1:
-        x = np.squeeze(x)
-    else:
-        print('Multiple x value given. Not yet implemented')
-        sys.exit()
-    ys = []
-    for y in y.T:
-        xinter, yinter = interpolate(x,
-                                     y,
-                                     args.step,
-                                     xmin=args.min,
-                                     xmax=args.max,
-                                     kind=args.kind)
-        ys.append(yinter)
-    ys = np.asarray(ys).T
-    format_output(xinter, ys, args.delimiter)
+    coords = load_coords(pdb=args.pdb, traj=args.traj, selection=args.sel)
+    nstrands = count_strands(coords, contact_threshold=args.threshold)
+    format_output(nstrands,
+                  traj=args.traj,
+                  selection=args.sel,
+                  outfilename=args.out)
