@@ -36,8 +36,6 @@
 #                                                                           #
 #############################################################################
 
-import tensorflow as tf
-import glob
 import os
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
