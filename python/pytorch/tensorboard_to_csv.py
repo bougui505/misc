@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 
+# see: https://laszukdawid.com/blog/2021/01/26/parsing-tensorboard-data-locally/
+
 import os
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
@@ -93,9 +95,12 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-d',
+                        '--dir',
+                        help='Path to the directory with the tensorboard data')
     args = parser.parse_args()
 
-    dir_path = "./tensorboard/default_name_1"
+    dir_path = args.dir
     df = convert_tb_data(dir_path)
-    df.to_csv('out.csv')
+    outname = os.path.split(dir_path)[1]
+    df.to_csv(f'{outname}.csv')
