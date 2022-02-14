@@ -97,7 +97,8 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-d',
                         '--dir',
-                        help='Path to the directory with the tensorboard data')
+                        help='Path to the directory with the tensorboard data',
+                        required=True)
     args = parser.parse_args()
 
     dir_path = args.dir
