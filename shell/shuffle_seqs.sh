@@ -75,7 +75,8 @@ func shuffle() {
 
 cat $FASTA \
     | tr -d ':' \
-    | tr '\n' ':' \
+    | awk '{if (substr($1,1,1)==">"){print $0":"} else {print $0}}' \
+    | tr -d '\n' \
     | tr '>' '\n' \
     | awk 'NR>1' \
     | shuffle \
