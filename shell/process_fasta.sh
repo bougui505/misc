@@ -51,9 +51,13 @@ In the awk statement:
     \$1 stores the sequence names
     \$2 stores the sequences
 
-e.g.
+EXAMPLES:
 
-process_fasta --fasta FASTAFILE | awk -F: '{print \$1}'
+- Print the names of the sequences:
+    process_fasta --fasta FASTAFILE | awk -F: '{print \$1}'
+
+- Recover a standard fasta format:
+    process_fasta --fasta FASTAFILE | awk -F: '{print ">"\$1"\n"\$2}'
 
     -f, --fasta fasta file to process
     -h, --help print this help message and exit
