@@ -36,19 +36,18 @@
 #                                                                           #
 #############################################################################
 
-
 import multiprocessing
 import numpy as np
 
 
-def init(l):
+def init(locker):
     global lock
-    lock = l
+    lock = locker
 
 
 def parallel_run():
-    l = multiprocessing.Lock()
-    pool = multiprocessing.Pool(initializer=init, initargs=(l,))
+    locker = multiprocessing.Lock()
+    pool = multiprocessing.Pool(initializer=init, initargs=(locker, ))
     pool.map(do_one, range(10))
 
 
