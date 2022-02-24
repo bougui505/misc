@@ -92,8 +92,7 @@ def run(inpdb='input.pdb',
                                      nonbondedMethod=app.PME,
                                      nonbondedCutoff=1 * unit.nanometer,
                                      constraints=app.HBonds)
-    integrator = openmm.LangevinIntegrator(temperature, frictionCoeff,
-                                           stepSize)
+    integrator = openmm.LangevinIntegrator(temperature, frictionCoeff, stepSize)
     # ######## add PLUMED forces ##########
     if plumed_script is not None:
         add_plumed_forces(plumed_script, system)
@@ -103,8 +102,7 @@ def run(inpdb='input.pdb',
         simulation.context.setPositions(modeller.positions)
         simulation.minimizeEnergy()
         with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
-            app.PDBFile.writeFile(modeller.topology, modeller.positions,
-                                  outpdbfile)
+            app.PDBFile.writeFile(modeller.topology, modeller.positions, outpdbfile)
     else:  # Restart a simulation
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         backup_dir = f'md_{timestamp}'
@@ -119,8 +117,7 @@ def run(inpdb='input.pdb',
             shutil.copy('HILLS', backup_dir)
         simulation.loadCheckpoint(checkpoint)
     simulation.reporters.append(app.DCDReporter(outdcd, reportInterval))
-    simulation.reporters.append(
-        app.CheckpointReporter(outcheckpoint, steps // 100))
+    simulation.reporters.append(app.CheckpointReporter(outcheckpoint, steps // 100))
     simulation.reporters.append(
         app.StateDataReporter(outlog,
                               reportInterval,
@@ -141,14 +138,16 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb')
     parser.add_argument('--nsteps', type=int)
-    parser.add_argument('--plumed',
-                        help='Plumed script (see example in plumed.dat)')
-    parser.add_argument(
-        '--restart',
-        help='Restart the simulation. Give the checkpoint file as argument')
+    parser.add_argument('-ff',
+                        '--forcefield',
+                        help='xml file for the forcefield to use. (default: amber99sb.xml)',
+                        default='amber99sb.xml')
+    parser.add_argument('--plumed', help='Plumed script (see example in plumed.dat)')
+    parser.add_argument('--restart', help='Restart the simulation. Give the checkpoint file as argument')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     run(inpdb=args.pdb,
+        forcefield_xml=args.forcefield,
         plumed_script=args.plumed,
         steps=args.nsteps,
         outbasename=outbasename,
