@@ -67,6 +67,7 @@ def run(inpdb='input.pdb',
         steps=10000,
         pH=7.0,
         padding=1.0 * unit.nanometers,
+        boxSize=None,
         checkpoint=None):
     """
     inpdb: input pdb file
@@ -87,7 +88,10 @@ def run(inpdb='input.pdb',
     forcefield = app.ForceField(forcefield_xml, watermodel_xml)
     if not restart:
         modeller.addHydrogens(forcefield, pH=pH)
-        modeller.addSolvent(forcefield, padding=padding)
+        if boxSize is not None:
+            modeller.addSolvent(forcefield, boxSize=boxSize)
+        else:
+            modeller.addSolvent(forcefield, padding=padding)
     system = forcefield.createSystem(modeller.topology,
                                      nonbondedMethod=app.PME,
                                      nonbondedCutoff=1 * unit.nanometer,
@@ -147,17 +151,29 @@ if __name__ == '__main__':
                         default='tip3p.xml')
     parser.add_argument('--temperature', help='Temperature in Kelvin (default 300 K)', default=300., type=float)
     parser.add_argument('--padding', help='Padding in nanometers for the box (default: 1 nm)', default=1.0, type=float)
+    parser.add_argument('--box',
+                        help='Size of the box in nm (optional. If not given see --padding)',
+                        metavar=('NX', 'NY', 'NZ'),
+                        default=None,
+                        type=float,
+                        nargs=3)
     parser.add_argument('--plumed', help='Plumed script (see example in plumed.dat)')
     parser.add_argument('--restart', help='Restart the simulation. Give the checkpoint file as argument')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     padding = args.padding * unit.nanometers
     temperature = args.temperature * unit.kelvin
+    if args.box is None:
+        boxSize = None
+    else:
+        nx, ny, nz = boxSize
+        boxSize = openmm.Vec3(nx, ny, nz) * unit.nanometers
     run(inpdb=args.pdb,
         temperature=temperature,
         forcefield_xml=args.forcefield,
         watermodel_xml=args.watermodel,
         padding=padding,
+        boxSize=boxSize,
         plumed_script=args.plumed,
         steps=args.nsteps,
         outbasename=outbasename,
