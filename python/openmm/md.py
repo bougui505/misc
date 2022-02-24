@@ -145,13 +145,16 @@ if __name__ == '__main__':
     parser.add_argument('--watermodel',
                         help='xml file for the watermodel to use. (default: tip3p.xml)',
                         default='tip3p.xml')
-    parser.add_argument('--padding', help='padding in nanometers for the box (default: 1 nm)', default=1.0, type=float)
+    parser.add_argument('--temperature', help='Temperature in Kelvin (default 300 K)', default=300., type=float)
+    parser.add_argument('--padding', help='Padding in nanometers for the box (default: 1 nm)', default=1.0, type=float)
     parser.add_argument('--plumed', help='Plumed script (see example in plumed.dat)')
     parser.add_argument('--restart', help='Restart the simulation. Give the checkpoint file as argument')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     padding = args.padding * unit.nanometers
+    temperature = args.temperature * unit.kelvin
     run(inpdb=args.pdb,
+        temperature=temperature,
         forcefield_xml=args.forcefield,
         watermodel_xml=args.watermodel,
         padding=padding,
