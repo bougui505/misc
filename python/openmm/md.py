@@ -166,7 +166,7 @@ if __name__ == '__main__':
     if args.box is None:
         boxSize = None
     else:
-        nx, ny, nz = boxSize
+        nx, ny, nz = args.box
         boxSize = openmm.Vec3(nx, ny, nz) * unit.nanometers
     run(inpdb=args.pdb,
         temperature=temperature,
