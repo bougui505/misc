@@ -142,12 +142,16 @@ if __name__ == '__main__':
                         '--forcefield',
                         help='xml file for the forcefield to use. (default: amber99sb.xml)',
                         default='amber99sb.xml')
+    parser.add_argument('--watermodel',
+                        help='xml file for the watermodel to use. (default: tip3p.xml)',
+                        default='tip3p.xml')
     parser.add_argument('--plumed', help='Plumed script (see example in plumed.dat)')
     parser.add_argument('--restart', help='Restart the simulation. Give the checkpoint file as argument')
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     run(inpdb=args.pdb,
         forcefield_xml=args.forcefield,
+        watermodel_xml=args.watermodel,
         plumed_script=args.plumed,
         steps=args.nsteps,
         outbasename=outbasename,
