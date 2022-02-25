@@ -81,10 +81,7 @@ def format_output(x, y, delimiter, label=None):
     if label is None:
         np.savetxt(sys.stdout, np.c_[x, y], delimiter=delimiter, fmt='%.4g')
     else:
-        np.savetxt(sys.stdout,
-                   np.c_[x, y, label],
-                   delimiter=delimiter,
-                   fmt='%.4g')
+        np.savetxt(sys.stdout, np.c_[x, y, label], delimiter=delimiter, fmt='%.4g')
 
 
 def parse_fields(fields):
@@ -97,41 +94,36 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-s',
-                        '--step',
-                        help='Spacing between values',
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-s', '--step', help='Spacing between values', type=float)
+    group.add_argument('-n', '--npts', help='Number of points (replace the step option)', type=int)
+    parser.add_argument('-m',
+                        '--min',
+                        help='x-min value to start the interpolation with. By default, the min x-values is used',
                         type=float,
-                        required=True)
-    parser.add_argument(
-        '-m',
-        '--min',
-        help=
-        'x-min value to start the interpolation with. By default, the min x-values is used',
-        type=float,
-        required=False)
-    parser.add_argument(
-        '-M',
-        '--max',
-        help=
-        'x-max value to start the interpolation with. By default, the max x-values is used',
-        type=float,
-        required=False)
+                        required=False)
+    parser.add_argument('-M',
+                        '--max',
+                        help='x-max value to start the interpolation with. By default, the max x-values is used',
+                        type=float,
+                        required=False)
     parser.add_argument('-d', '--delimiter', help='Delimiter to use', type=str)
-    parser.add_argument(
-        '-k',
-        '--kind',
-        help='Kind of interpolation (linear -- default --, cubic, ...)',
-        default='linear')
-    parser.add_argument(
-        '-f',
-        '--fields',
-        help='Fields (default: xy). Give the column field names (e.g. xyy)',
-        default='xy')
+    parser.add_argument('-k',
+                        '--kind',
+                        help='Kind of interpolation (linear -- default --, cubic, ...)',
+                        default='linear')
+    parser.add_argument('-f',
+                        '--fields',
+                        help='Fields (default: xy). Give the column field names (e.g. xyy)',
+                        default='xy')
     args = parser.parse_args()
 
     A = read_stdin(delimiter=args.delimiter)
     fields = parse_fields(args.fields)
     x, y = A[:, fields == 'x'], A[:, fields == 'y']
+    if args.npts is not None:
+        in_npts = len(A)
+        args.step = (x.max() - x.min()) / args.npts
     if x.shape[1] == 1:
         x = np.squeeze(x)
     else:
@@ -139,12 +131,7 @@ if __name__ == '__main__':
         sys.exit()
     ys = []
     for y in y.T:
-        xinter, yinter = interpolate(x,
-                                     y,
-                                     args.step,
-                                     xmin=args.min,
-                                     xmax=args.max,
-                                     kind=args.kind)
+        xinter, yinter = interpolate(x, y, args.step, xmin=args.min, xmax=args.max, kind=args.kind)
         ys.append(yinter)
     ys = np.asarray(ys).T
     format_output(xinter, ys, args.delimiter)
