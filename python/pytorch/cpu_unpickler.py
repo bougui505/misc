@@ -39,7 +39,8 @@
 # Load a torch or pickle object saved on GPU on a CPU machine
 # See: https://github.com/pytorch/pytorch/issues/16797#issuecomment-633423219
 
-import pickle
+# import pickle
+import dill as pickle
 import torch
 import io
 
