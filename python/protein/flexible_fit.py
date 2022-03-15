@@ -38,6 +38,7 @@
 
 import torch
 import tqdm
+import ICP
 
 
 class Rotation(torch.nn.Module):
@@ -51,11 +52,20 @@ class Rotation(torch.nn.Module):
     >>> B.shape
     torch.Size([10, 3])
     """
-    def __init__(self, requires_grad=True):
+    def __init__(self, requires_grad=True, roll=None, yaw=None, pitch=None, init_noise=1.):
         super().__init__()
-        self.roll = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad))
-        self.yaw = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad))
-        self.pitch = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad))
+        if roll is None:
+            self.roll = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad) * init_noise)
+        else:
+            self.roll = torch.nn.Parameter(roll[None, ...])
+        if yaw is None:
+            self.yaw = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad) * init_noise)
+        else:
+            self.yaw = torch.nn.Parameter(yaw[None, ...])
+        if pitch is None:
+            self.pitch = torch.nn.Parameter(torch.randn(1, requires_grad=requires_grad) * init_noise)
+        else:
+            self.pitch = torch.nn.Parameter(pitch[None, ...])
         self.tensor_0 = torch.zeros(1)
         self.tensor_1 = torch.ones(1)
 
@@ -83,6 +93,13 @@ class Rotation(torch.nn.Module):
         return out
 
 
+def get_angles(R):
+    yaw = torch.atan2(R[1, 0], R[0, 0])
+    pitch = torch.atan2(-R[2, 0], torch.sqrt(R[2, 1]**2 + R[2, 2]**2))
+    roll = torch.atan2(R[2, 1], R[2, 2])
+    return roll, yaw, pitch
+
+
 def loss_MSE(A, B):
     return ((B - A)**2).mean()
 
@@ -101,10 +118,10 @@ class FlexFitter(torch.nn.Module):
     3
 
     """
-    def __init__(self, dorotate=True):
+    def __init__(self, dorotate=True, roll=None, yaw=None, pitch=None):
         super(FlexFitter, self).__init__()
         self.dorotate = dorotate
-        self.rotation = Rotation()
+        self.rotation = Rotation(roll=roll, yaw=yaw, pitch=pitch)
 
     def forward(self, x):
         if self.dorotate:
@@ -112,16 +129,15 @@ class FlexFitter(torch.nn.Module):
         return x
 
 
-def fit(inp, target, maxiter, stop=1e-3, verbose=True):
+def fit(inp, target, maxiter, roll=None, yaw=None, pitch=None, stop=1e-3, verbose=True):
     """
     >>> inp = torch.rand((10, 3))
     >>> rotation = Rotation()
     >>> target = rotation(inp)
     >>> loss_init = loss_MSE(inp, target)
     >>> output, loss = fit(inp, target, maxiter=10000, verbose=False)
-    >>> loss_init, loss
     """
-    ff = FlexFitter()
+    ff = FlexFitter(roll=roll, yaw=yaw, pitch=pitch)
     optimizer = torch.optim.Adam(ff.parameters())
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
@@ -132,23 +148,50 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True):
         loss.backward(retain_graph=True)
         optimizer.step()
         if verbose:
+            rmsd = torch.sqrt(loss)
+            pbar.set_description(desc=f'{rmsd:.3f}')
             pbar.update(1)
         if loss < stop:
             break
     return output, loss
 
 
+def torchify(x):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    try:
+        x = torch.from_numpy(x)
+    except TypeError:
+        pass
+    x = x.to(device)
+    x = x.float()
+    return x
+
+
 if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    from pymol import cmd
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--pdb1')
+    parser.add_argument('--pdb2')
+    parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    cmd.load(args.pdb1, 'pdb1')
+    cmd.load(args.pdb2, 'pdb2')
+    pdb1 = torchify(cmd.get_coords('pdb1'))
+    pdb2 = torchify(cmd.get_coords('pdb2'))
+    R, t = ICP.ICP.find_rigid_alignment(pdb1, pdb2)
+    roll, yaw, pitch = get_angles(R)
+    fit(pdb1, pdb2, maxiter=args.maxiter)
+    # fit(pdb1, pdb2, maxiter=args.maxiter, roll=roll, yaw=yaw, pitch=pitch)
+    # pdb1 = ICP.ICP.transform(pdb1, R, t)
+    # fit(pdb1, pdb2, maxiter=args.maxiter, roll=torch.tensor(0.), yaw=torch.tensor(0.), pitch=torch.tensor(0.))
