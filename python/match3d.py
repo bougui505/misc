@@ -36,23 +36,24 @@
 #                                                                           #
 #############################################################################
 
-
 import modeller
 import os
-
 
 if __name__ == '__main__':
     # See: https://salilab.org/modeller/wiki/Missing%20residues
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='Transfer sequence from ref to target by keeping coordinates of equivalent atoms. Atoms which do not have an equivalent are built based on the internal coordinates specified in the residue topology library')
+    parser = argparse.ArgumentParser(
+        description=
+        'Transfer sequence from ref to target by keeping coordinates of equivalent atoms. Atoms which do not have an equivalent are built based on the internal coordinates specified in the residue topology library'
+    )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-t', '--target', help='mobile pdb structure file to transfer sequence on', type=str)
     parser.add_argument('-r', '--ref', help='reference pdb structure file with sequence to transfer', type=str)
     args = parser.parse_args()
 
     env = modeller.environ()
-    lib = '/usr/lib/modeller9.23/modlib'
+    lib = os.environ.get('MODELLERPATH')  # '/usr/lib/modeller9.23/modlib'
     env.libs.topology.read(file=f'{lib}/top_heav.lib')
     env.libs.parameters.read(file=f'{lib}/par.lib')
     aln = modeller.alignment(env)
