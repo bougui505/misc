@@ -196,11 +196,17 @@ class FlexFitter(torch.nn.Module):
 
 
 def get_loss_dmat(dmat, dmat_ref):
-    conv = templatematching(dmat, dmat_ref)
-    return -torch.diagonal(conv, 0).mean()
+    # conv = templatematching(dmat, dmat_ref)
+    offset = get_offset(dmat, dmat_ref)
+    dmat_ref_aln = dmat_ref[offset:, offset:]
+    n = dmat.shape[0]
+    dmat_ref_aln = dmat_ref_aln[:n, :n]
+    out = ((dmat - dmat_ref_aln)**2).mean()
+    return out
+    # return -torch.diagonal(conv, 0).mean()
 
 
-def loss_rms(coords, coords_ref):
+def get_loss_rms(coords, coords_ref):
     rms = ((coords - coords_ref)**2).mean()
     return rms
 
@@ -228,8 +234,8 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
     dmat_ref = get_dmat(target, standardize=False)
     mu = dmat_ref.mean()
     sigma = dmat_ref.std()
-    dmat_ref = get_dmat(target, standardize=True, mu=mu, sigma=sigma)
-    dmat_inp = get_dmat(inp, standardize=True, mu=mu, sigma=sigma)
+    dmat_ref = get_dmat(target, standardize=False, mu=mu, sigma=sigma)
+    dmat_inp = get_dmat(inp, standardize=False, mu=mu, sigma=sigma)
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
     losses = []
@@ -241,8 +247,10 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
         output = ff(inp)
         if save_traj is not None:
             traj.append(output.detach().numpy())
-        dmat = get_dmat(output, standardize=True, mu=mu, sigma=sigma)
-        loss = get_loss_dmat(dmat, dmat_ref)
+        dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
+        loss_dmat = get_loss_dmat(dmat, dmat_ref)
+        loss_rms = get_loss_rms(output, inp)
+        loss = loss_dmat  # + 0.001 * loss_rms
         losses.append(loss.detach())
         loss_std = np.std(losses[-loss_std_range:])
         # rmsd = get_rmsd(output, target)
@@ -250,7 +258,11 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
         optimizer.step()
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
-            pbar.set_description(desc=f'loss: {loss:.3f} ± {loss_std:.3e}')
+            rmsd = np.sqrt(loss_rms.detach().numpy())
+            pbar.set_description(
+                desc=
+                f'loss: {loss:.3f} ± {loss_std:.3e} ; rmsd: {rmsd:.3f} ; loss_dmat: {loss_dmat:.3f}; loss_rms: {loss_rms:.3f}'
+            )
             pbar.update(1)
         if len(losses) >= loss_std_range:
             if loss_std <= stop:
