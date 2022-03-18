@@ -42,7 +42,7 @@ import numpy as np
 
 def create_topology(coords, object):
     for i, c in enumerate(coords):
-        cmd.pseudoatom(object, pos=list(c), resi=i + 1, name='CA')
+        cmd.pseudoatom(object, pos=list(c), resi=i + 1, name='CA', resn='GLY', hetatm=False)
         if i > 0:
             cmd.bond(f'resi {i + 1}', f'resi {i}')
     cmd.color('green', object)
