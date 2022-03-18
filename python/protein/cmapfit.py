@@ -37,6 +37,8 @@
 #############################################################################
 
 import torch
+import tqdm
+import ICP
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -53,7 +55,7 @@ def torchify(x):
     return x
 
 
-def get_dmat(coords, standardize=False):
+def get_dmat(coords, standardize=False, mu=None, sigma=None):
     """
     >>> coords = torch.randn((10, 3))
     >>> dmat = get_dmat(coords)
@@ -62,7 +64,7 @@ def get_dmat(coords, standardize=False):
     """
     dmat = torch.cdist(coords, coords)
     if standardize:
-        dmat = standardize_dmat(dmat)
+        dmat = standardize_dmat(dmat, mu=mu, sigma=sigma)
     return dmat
 
 
@@ -89,9 +91,11 @@ def get_cmap(coords):
     return cmap
 
 
-def standardize_dmat(dmat):
-    mu = dmat.mean()
-    sigma = dmat.std()
+def standardize_dmat(dmat, mu=None, sigma=None):
+    if mu is None:
+        mu = dmat.mean()
+    if sigma is None:
+        sigma = dmat.std()
     return (dmat - mu) / sigma
 
 
@@ -143,24 +147,103 @@ def get_offset(dmat, dmat_ref):
     return offset
 
 
-# def get_offset(dmat, dmat_ref):
-#     """
-#     >>> coords_ref = torch.randn((10, 3))
-#     >>> coords = coords_ref[3:]
-#     >>> dmat_ref = get_dmat(coords_ref)
-#     >>> dmat = get_dmat(coords)
-#     >>> offset = get_offset(dmat, dmat_ref)
-#     >>> offset
-#     """
-#     conv = crosscorrdmat(dmat, dmat_ref)
-#     p = len(dmat_ref)
-#     n = (1 + np.sqrt(1 + 8 * p)) / 2
-#     assert n == int(n)
-#     n = int(n)
-#     ind = conv.argmax()
-#     offsets = list(itertools.combinations(range(n), 2))
-#     offset = offsets[ind]
-#     return offset
+class Mover(torch.nn.Module):
+    """
+    >>> A = torch.rand((10, 3))
+    >>> A.shape
+    torch.Size([10, 3])
+    >>> mover = Mover(len(A))
+    >>> B = mover(A)
+    >>> B.shape
+    torch.Size([10, 3])
+    """
+    def __init__(self, n):
+        """
+        n: number of points to move
+        """
+        super().__init__()
+        self.delta = torch.nn.Parameter(torch.randn((n, 3)))
+
+    def __call__(self, x):
+        out = x + self.delta
+        return out
+
+
+class FlexFitter(torch.nn.Module):
+    """
+    Torch model (https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html)
+    >>> A = torch.rand((10, 3))
+    >>> A.shape
+    torch.Size([10, 3])
+    >>> ff = FlexFitter(A)
+    >>> x = ff(A)
+    >>> x.shape
+    torch.Size([10, 3])
+
+    >>> print(len(list(ff.parameters())))
+    1
+
+    """
+    def __init__(self, coords_init):
+        super(FlexFitter, self).__init__()
+        self.coords_init = coords_init[:]
+        self.n = len(self.coords_init)
+        self.mover = Mover(self.n)
+
+    def forward(self, x):
+        x = self.mover(x)
+        return x
+
+
+def loss_dmat(dmat, dmat_ref):
+    conv = templatematching(dmat, dmat_ref)
+    return -torch.diagonal(conv, 0).mean()
+
+
+def get_rmsd(A, B):
+    R, t = ICP.ICP.find_rigid_alignment(A, B)
+    A_fit = ICP.ICP.transform(A, R, t)
+    rmsd = torch.sqrt(((B - A_fit)**2).mean())
+    return rmsd
+
+
+def fit(inp, target, maxiter, stop=1e-3, verbose=True):
+    """
+    >>> inp = torch.rand((8, 3))
+    >>> target = torch.rand((10, 3))
+    >>> loss_init = loss_dmat(inp, target)
+    >>> output, loss = fit(inp, target, maxiter=10000, verbose=True)
+    >>> dmat_ref = get_dmat(target)
+    >>> dmat = get_dmat(output)
+    >>> f = plt.matshow(dmat_ref.detach().numpy())
+    >>> plt.savefig('dmat_ref_test.png')
+    >>> f = plt.matshow(dmat.detach().numpy())
+    >>> plt.savefig('dmat_test.png')
+    """
+    ff = FlexFitter(inp)
+    optimizer = torch.optim.Adam(ff.parameters())
+    dmat_ref = get_dmat(target, standardize=False)
+    mu = dmat_ref.mean()
+    sigma = dmat_ref.std()
+    dmat_ref = get_dmat(target, standardize=True, mu=mu, sigma=sigma)
+    if verbose:
+        pbar = tqdm.tqdm(total=maxiter)
+    for i in range(maxiter):
+        optimizer.zero_grad()
+        output = ff(inp)
+        dmat = get_dmat(output, standardize=True, mu=mu, sigma=sigma)
+        loss = loss_dmat(dmat, dmat_ref)
+        # rmsd = get_rmsd(output, target)
+        loss.backward(retain_graph=True)
+        optimizer.step()
+        if verbose:
+            # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
+            pbar.set_description(desc=f'loss: {loss:.3f}')
+            pbar.update(1)
+        # if rmsd < stop:
+        #     break
+    return output, loss
+
 
 if __name__ == '__main__':
     from pymol import cmd
