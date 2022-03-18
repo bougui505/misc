@@ -41,8 +41,8 @@ from misc.pymol.load_traj_npy import load_traj_npy
 import ICP
 import torch
 
-cmd.load('data/5b02_D.pdb', 'target')
-cmd.load('data/5b0j_B.pdb', 'inp')
+cmd.load('data/5b02_D_230-320.pdb', 'inp')
+cmd.load('data/5b0j_B.pdb', 'target')
 cmd.remove('not name CA')
 load_traj_npy('traj.npy')
 cmd.color('red', 'traj')
@@ -54,6 +54,7 @@ target_coords = torch.from_numpy(target_coords)
 # def icp(coords, coords_ref, device, maxiter, dist_thr=3.8, lstsq_fit_thr=0., verbose=True, stop=1e-3):
 out_coords = cmd.get_coords('out')
 out_coords = torch.from_numpy(out_coords)
-target_coords, rmsd = ICP.ICP.icp(target_coords, out_coords, 'cpu', 10)
+R, t = ICP.ICP.icp(target_coords, out_coords, 'cpu', 10, return_Rt=True)
+target_coords = ICP.ICP.transform(target_coords, R, t)
 target_coords = target_coords.numpy()
 cmd.load_coords(target_coords, 'target')

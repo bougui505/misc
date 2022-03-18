@@ -218,7 +218,7 @@ def get_rmsd(A, B):
     return rmsd
 
 
-def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None):
+def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None):
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
@@ -253,22 +253,26 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
         loss = loss_dmat  # + 0.001 * loss_rms
         losses.append(loss.detach())
         loss_std = np.std(losses[-loss_std_range:])
-        # rmsd = get_rmsd(output, target)
         loss.backward(retain_graph=True)
         optimizer.step()
+        rmsdmat = np.sqrt(loss_dmat.detach().numpy())
+        try:
+            rmsd_prev = rmsd
+        except UnboundLocalError:
+            rmsd_prev = np.inf
+        rmsd = np.sqrt(loss_rms.detach().numpy())
+        delta_rmsd = rmsd - rmsd_prev
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
-            rmsd = np.sqrt(loss_rms.detach().numpy())
             pbar.set_description(
                 desc=
-                f'loss: {loss:.3f} ± {loss_std:.3e} ; rmsd: {rmsd:.3f} ; loss_dmat: {loss_dmat:.3f}; loss_rms: {loss_rms:.3f}'
+                f'loss: {loss:.3f}±{loss_std:.3e}; rmsd: {rmsd:.3f}; rmsdmat: {rmsdmat:.3f}; deltarmsd: {delta_rmsd:.3e}'
             )
             pbar.update(1)
-        if len(losses) >= loss_std_range:
-            if loss_std <= stop:
-                if verbose:
-                    print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
-                break
+        if np.abs(delta_rmsd) <= stop:
+            if verbose:
+                print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
+            break
     if save_traj is not None:
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
