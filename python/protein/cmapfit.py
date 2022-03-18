@@ -195,9 +195,14 @@ class FlexFitter(torch.nn.Module):
         return x
 
 
-def loss_dmat(dmat, dmat_ref):
+def get_loss_dmat(dmat, dmat_ref):
     conv = templatematching(dmat, dmat_ref)
     return -torch.diagonal(conv, 0).mean()
+
+
+def loss_rms(coords, coords_ref):
+    rms = ((coords - coords_ref)**2).mean()
+    return rms
 
 
 def get_rmsd(A, B):
@@ -211,10 +216,8 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> loss_init = loss_dmat(inp, target)
-    >>> output, loss = fit(inp, target, maxiter=10000, verbose=True)
-    >>> dmat_ref = get_dmat(target)
-    >>> dmat = get_dmat(output)
+    >>> loss_init = get_loss_dmat(inp, target)
+    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, verbose=False)
     >>> f = plt.matshow(dmat_ref.detach().numpy())
     >>> plt.savefig('dmat_ref_test.png')
     >>> f = plt.matshow(dmat.detach().numpy())
@@ -239,7 +242,7 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
         if save_traj is not None:
             traj.append(output.detach().numpy())
         dmat = get_dmat(output, standardize=True, mu=mu, sigma=sigma)
-        loss = loss_dmat(dmat, dmat_ref)
+        loss = get_loss_dmat(dmat, dmat_ref)
         losses.append(loss.detach())
         loss_std = np.std(losses[-loss_std_range:])
         # rmsd = get_rmsd(output, target)
@@ -251,10 +254,9 @@ def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None)
             pbar.update(1)
         if len(losses) >= loss_std_range:
             if loss_std <= stop:
-                print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
-                pbar.close()
+                if verbose:
+                    print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
                 break
-    pbar.close()
     if save_traj is not None:
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
