@@ -207,7 +207,7 @@ def get_rmsd(A, B):
     return rmsd
 
 
-def fit(inp, target, maxiter, stop=1e-3, verbose=True):
+def fit(inp, target, maxiter, stop=1e-6, verbose=True, lr=0.001, save_traj=None):
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
@@ -221,28 +221,45 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True):
     >>> plt.savefig('dmat_test.png')
     """
     ff = FlexFitter(inp)
-    optimizer = torch.optim.Adam(ff.parameters())
+    optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
     dmat_ref = get_dmat(target, standardize=False)
     mu = dmat_ref.mean()
     sigma = dmat_ref.std()
     dmat_ref = get_dmat(target, standardize=True, mu=mu, sigma=sigma)
+    dmat_inp = get_dmat(inp, standardize=True, mu=mu, sigma=sigma)
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
+    losses = []
+    loss_std_range = 100
+    if save_traj is not None:
+        traj = [inp.numpy()]
     for i in range(maxiter):
         optimizer.zero_grad()
         output = ff(inp)
+        if save_traj is not None:
+            traj.append(output.detach().numpy())
         dmat = get_dmat(output, standardize=True, mu=mu, sigma=sigma)
         loss = loss_dmat(dmat, dmat_ref)
+        losses.append(loss.detach())
+        loss_std = np.std(losses[-loss_std_range:])
         # rmsd = get_rmsd(output, target)
         loss.backward(retain_graph=True)
         optimizer.step()
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
-            pbar.set_description(desc=f'loss: {loss:.3f}')
+            pbar.set_description(desc=f'loss: {loss:.3f} ± {loss_std:.3e}')
             pbar.update(1)
-        # if rmsd < stop:
-        #     break
-    return output, loss
+        if len(losses) >= loss_std_range:
+            if loss_std <= stop:
+                print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
+                pbar.close()
+                break
+    pbar.close()
+    if save_traj is not None:
+        traj = np.asarray(traj)
+        print(f'Trajectory shape: {traj.shape}')
+        np.save(save_traj, traj)
+    return output, loss, dmat_inp, dmat_ref, dmat
 
 
 if __name__ == '__main__':
@@ -256,6 +273,9 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--pdb1')
     parser.add_argument('--pdb2')
+    parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
+    parser.add_argument('--lr', help='Learning rate for the optimizer (Adam) -- default=0.01', default=0.01, type=float)
+    parser.add_argument('--save_traj', help='Save the trajectory minimization in the given npy file')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -268,3 +288,16 @@ if __name__ == '__main__':
     cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
+    coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
+                                                        pdb2,
+                                                        args.maxiter,
+                                                        stop=1e-6,
+                                                        verbose=True,
+                                                        lr=args.lr,
+                                                        save_traj=args.save_traj)
+    plt.matshow(dmat_inp.detach().numpy())
+    plt.savefig('dmat_inp.png')
+    plt.matshow(dmat_out.detach().numpy())
+    plt.savefig('dmat_out.png')
+    plt.matshow(dmat_ref.detach().numpy())
+    plt.savefig('dmat_ref.png')
