@@ -271,7 +271,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
             pbar.update(1)
         if np.abs(delta_rmsd) <= stop:
             if verbose:
-                print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e}/{stop:.3e}")
+                print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e} with deltarmsd: {delta_rmsd:.3e}/{stop}")
             break
     if save_traj is not None:
         traj = np.asarray(traj)
@@ -309,7 +309,7 @@ if __name__ == '__main__':
     coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
                                                         pdb2,
                                                         args.maxiter,
-                                                        stop=1e-6,
+                                                        stop=1e-4,
                                                         verbose=True,
                                                         lr=args.lr,
                                                         save_traj=args.save_traj)
