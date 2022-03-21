@@ -55,74 +55,84 @@ def torchify(x):
     return x
 
 
-def get_dmat(coords, standardize=False, mu=None, sigma=None):
+def get_dmat(coords):
     """
-    >>> coords = torch.randn((10, 3))
+    >>> coords = torch.randn((1, 10, 3))
     >>> dmat = get_dmat(coords)
     >>> dmat.shape
-    torch.Size([10, 10])
+    torch.Size([1, 1, 10, 10])
+    >>> coords = torch.randn((4, 10, 3))
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape
+    torch.Size([4, 1, 10, 10])
     """
-    dmat = torch.cdist(coords, coords)
-    if standardize:
-        dmat = standardize_dmat(dmat, mu=mu, sigma=sigma)
+    dmat = []
+    for c in coords:
+        dmat_ = torch.cdist(c, c)
+        dmat.append(dmat_[None, ...])
+    dmat = torch.vstack(tuple(dmat))
+    dmat = addbatchchannel(dmat)
     return dmat
 
 
 def addbatchchannel(dmat):
     """
-    >>> coords = torch.randn((10, 3))
-    >>> dmat = get_dmat(coords)
-    >>> dmat.shape
-    torch.Size([10, 10])
-    >>> dmat = addbatchchannel(dmat)
-    >>> dmat.shape
-    torch.Size([1, 1, 10, 10])
     """
     if dmat.ndim == 2:
         dmat = torch.unsqueeze(dmat, 0)
         dmat = torch.unsqueeze(dmat, 1)
+    if dmat.ndim == 3:
+        dmat = torch.unsqueeze(dmat, 1)
     return dmat
 
 
-def get_cmap(coords):
-    dmat = get_dmat(coords)
-    dmat -= dmat.mean()
-    cmap = torch.nn.functional.sigmoid(dmat)
-    return cmap
+def split_coords(coords, split_size):
+    """
+    >>> coords = torch.randn((17, 3))
+    >>> batch = split_coords(coords, 4)
+    >>> batch.shape
+    torch.Size([4, 4, 3])
+    >>> coords = torch.randn((16, 3))
+    >>> batch = split_coords(coords, 4)
+    >>> batch.shape
+    torch.Size([4, 4, 3])
 
+    If split_size is larger than the number of coords return one batch:
 
-def standardize_dmat(dmat, mu=None, sigma=None):
-    if mu is None:
-        mu = dmat.mean()
-    if sigma is None:
-        sigma = dmat.std()
-    return (dmat - mu) / sigma
+    >>> coords = torch.randn((16, 3))
+    >>> batch = split_coords(coords, 17)
+    >>> batch.shape
+    torch.Size([1, 16, 3])
+    """
+    coords = torch.squeeze(coords)
+    batch = torch.split(coords, split_size)
+    if batch[-1].shape != batch[0].shape:
+        batch = batch[:-1]
+    batch = torch.stack(batch)
+    return batch
 
 
 def templatematching(dmat, dmat_ref):
     """
     See: https://github.com/hirune924/TemplateMatching/blob/master/Template%20Matching%20(PyTorch%20implementation).ipynb
 
-    >>> coords_ref = torch.randn((10, 3)) * 10.
-    >>> coords = coords_ref[4:]
-    >>> dmat_ref = get_dmat(coords_ref, standardize=True)
-    >>> dmat = get_dmat(coords, standardize=True)
-
-    # >>> p = plt.matshow(dmat.numpy().squeeze())
-    # >>> plt.savefig('test_dmat.png')
-    # >>> p = plt.matshow(dmat_ref.numpy().squeeze())
-    # >>> plt.savefig('test_dmat_ref.png')
-
+    >>> coords_ref = torch.randn((1, 17, 3)) * 10.
+    >>> coords = split_coords(coords_ref, 4)
+    >>> coords.shape
+    torch.Size([4, 4, 3])
+    >>> dmat_ref = get_dmat(coords_ref)
+    >>> dmat_ref.shape
+    torch.Size([1, 1, 17, 17])
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape
+    torch.Size([4, 1, 4, 4])
     >>> conv = templatematching(dmat, dmat_ref)
 
     >>> conv.shape
-    torch.Size([5, 5])
-
-    # >>> p = plt.matshow(conv.numpy().squeeze())
-    # >>> plt.savefig('test_templatematching.png')
+    torch.Size([4, 14, 14])
     """
-    dmat = addbatchchannel(dmat)
-    dmat_ref = addbatchchannel(dmat_ref)
+    # dmat = addbatchchannel(dmat)
+    # dmat_ref = addbatchchannel(dmat_ref)
     result1 = torch.nn.functional.conv2d(dmat_ref, dmat, bias=None, stride=1, padding=0)
     result2 = torch.sqrt(
         torch.sum(dmat**2) *
@@ -132,37 +142,51 @@ def templatematching(dmat, dmat_ref):
 
 def get_offset(dmat, dmat_ref):
     """
-    >>> coords_ref = torch.randn((10, 3)) * 10.
-    >>> ind = np.random.choice(len(coords_ref) - 2)
-    >>> coords = coords_ref[ind:]
-    >>> dmat_ref = get_dmat(coords_ref, standardize=True)
-    >>> dmat = get_dmat(coords, standardize=True)
+    >>> coords_ref = torch.randn((1, 17, 3)) * 10.
+    >>> coords = split_coords(coords_ref + torch.randn((1, 17, 3)), 4)
+    >>> coords.shape
+    torch.Size([4, 4, 3])
+    >>> dmat_ref = get_dmat(coords_ref)
+    >>> dmat_ref.shape
+    torch.Size([1, 1, 17, 17])
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape
+    torch.Size([4, 1, 4, 4])
     >>> offset = get_offset(dmat, dmat_ref)
-    >>> offset == ind
-    tensor(True)
+    >>> offset.shape
+    torch.Size([4])
+    >>> offset
+    tensor([ 0,  4,  8, 12])
     """
     conv = templatematching(dmat, dmat_ref)
-    diag = torch.diagonal(conv, 0)
-    offset = diag.argmax()
+    if conv.ndim == 2:
+        diag = torch.diagonal(conv)[None, ...]
+    else:
+        diag = torch.diagonal(conv, dim1=1, dim2=2)
+    # print(diag.shape)
+    offset = diag.argmax(dim=1)
     return offset
 
 
 class Mover(torch.nn.Module):
     """
-    >>> A = torch.rand((10, 3))
+    The first dimension is a batch 
+    >>> n = 10
+    >>> batchsize = 2
+    >>> A = torch.rand((batchsize, n, 3))
     >>> A.shape
-    torch.Size([10, 3])
-    >>> mover = Mover(len(A))
+    torch.Size([2, 10, 3])
+    >>> mover = Mover(n, batchsize)
     >>> B = mover(A)
     >>> B.shape
-    torch.Size([10, 3])
+    torch.Size([2, 10, 3])
     """
-    def __init__(self, n):
+    def __init__(self, n, batchsize):
         """
         n: number of points to move
         """
         super().__init__()
-        self.delta = torch.nn.Parameter(torch.randn((n, 3)))
+        self.delta = torch.nn.Parameter(torch.randn((batchsize, n, 3)))
 
     def __call__(self, x):
         out = x + self.delta
@@ -172,13 +196,13 @@ class Mover(torch.nn.Module):
 class FlexFitter(torch.nn.Module):
     """
     Torch model (https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html)
-    >>> A = torch.rand((10, 3))
+    >>> A = torch.rand((2, 10, 3))
     >>> A.shape
-    torch.Size([10, 3])
+    torch.Size([2, 10, 3])
     >>> ff = FlexFitter(A)
     >>> x = ff(A)
     >>> x.shape
-    torch.Size([10, 3])
+    torch.Size([2, 10, 3])
 
     >>> print(len(list(ff.parameters())))
     1
@@ -187,8 +211,9 @@ class FlexFitter(torch.nn.Module):
     def __init__(self, coords_init):
         super(FlexFitter, self).__init__()
         self.coords_init = coords_init[:]
-        self.n = len(self.coords_init)
-        self.mover = Mover(self.n)
+        self.n = self.coords_init.shape[1]
+        self.batchsize = self.coords_init.shape[0]
+        self.mover = Mover(self.n, self.batchsize)
 
     def forward(self, x):
         x = self.mover(x)
@@ -196,59 +221,110 @@ class FlexFitter(torch.nn.Module):
 
 
 def get_loss_dmat(dmat, dmat_ref):
+    """
+    >>> coords_ref = torch.randn((1, 31, 3)) * 10.
+    >>> coords = split_coords(coords_ref, 5)
+    >>> coords.shape
+    torch.Size([6, 5, 3])
+    >>> dmat_ref = get_dmat(coords_ref)
+    >>> dmat_ref.shape
+    torch.Size([1, 1, 31, 31])
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape
+    torch.Size([6, 1, 5, 5])
+    >>> loss = get_loss_dmat(dmat, dmat_ref)
+    >>> loss < 1e-5
+    tensor(True)
+    """
     # conv = templatematching(dmat, dmat_ref)
-    offset = get_offset(dmat, dmat_ref)
-    dmat_ref_aln = dmat_ref[offset:, offset:]
-    n = dmat.shape[0]
-    dmat_ref_aln = dmat_ref_aln[:n, :n]
-    out = ((dmat - dmat_ref_aln)**2).mean()
-    return out
-    # return -torch.diagonal(conv, 0).mean()
+    offsets = get_offset(dmat, dmat_ref)
+    n = dmat.shape[2]
+    loss = 0
+    nbatch = len(offsets)
+    for i, offset in enumerate(offsets):
+        dmat_ref_aln = torch.squeeze(dmat_ref)[offset:, offset:]
+        dmat_ref_aln = dmat_ref_aln[:n, :n]
+        loss += ((dmat[i, 0, ...] - dmat_ref_aln)**2).mean()
+    loss /= nbatch
+    return loss
 
 
 def get_loss_rms(coords, coords_ref):
+    """
+    >>> coords_ref = torch.randn((1, 30, 3)) * 10.
+    >>> coords_ref.shape
+    torch.Size([1, 30, 3])
+    >>> coords = split_coords(coords_ref, 5)
+    >>> coords.shape
+    torch.Size([6, 5, 3])
+    >>> get_loss_rms(coords, coords_ref)
+    tensor(0.)
+    """
+    nbatch = coords.shape[0]
+    n = coords.shape[1]
+    coords = coords.reshape(nbatch * n, 3)
+    nbatch_ref = coords_ref.shape[0]
+    n_ref = coords_ref.shape[1]
+    coords_ref = coords_ref.reshape(nbatch_ref * n_ref, 3)
+    assert coords.shape == coords_ref.shape
     rms = ((coords - coords_ref)**2).mean()
     return rms
 
 
-def get_rmsd(A, B):
-    R, t = ICP.ICP.find_rigid_alignment(A, B)
-    A_fit = ICP.ICP.transform(A, R, t)
-    rmsd = torch.sqrt(((B - A_fit)**2).mean())
-    return rmsd
+def unbatch_coords(coords):
+    out = coords
+    nbatch, n, _ = out.shape
+    return out.reshape(nbatch * n, 3)
 
 
-def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None):
+def unbatch_dmat(coords):
+    coords = unbatch_coords(coords)[None, ...]
+    dmat = torch.squeeze(get_dmat(coords))
+    return dmat
+
+
+def fit(inp, target, maxiter, split_size, stop=1e-4, verbose=True, lr=0.01, save_traj=None):
     """
-    >>> inp = torch.rand((8, 3))
-    >>> target = torch.rand((10, 3))
-    >>> loss_init = get_loss_dmat(inp, target)
-    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, verbose=False)
-    >>> f = plt.matshow(dmat_ref.detach().numpy())
-    >>> plt.savefig('dmat_ref_test.png')
-    >>> f = plt.matshow(dmat.detach().numpy())
-    >>> plt.savefig('dmat_test.png')
+    >>> coords_ref = torch.randn((1, 132, 3)) * 10.
+    >>> coords = torch.randn((1, 132, 3)) * 10.
+    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(coords, coords_ref, split_size=4, maxiter=100, verbose=True, stop=-np.inf)
+    >>> output.shape
+    torch.Size([132, 3])
+    >>> dmat_inp.shape
+    torch.Size([132, 132])
+    >>> dmat_ref.shape
+    torch.Size([132, 132])
+    >>> dmat.shape
+    torch.Size([132, 132])
+
+    # >>> f = plt.matshow(dmat_ref.detach().numpy())
+    # >>> plt.savefig('dmat_ref_test.png')
+    # >>> f = plt.matshow(dmat.detach().numpy())
+    # >>> plt.savefig('dmat_test.png')
     """
+    if inp.ndim == 2:
+        # Add a batch dimanesion
+        inp = torch.unsqueeze(inp, 0)
+    if target.ndim == 2:
+        target = torch.unsqueeze(target, 0)
+    inp = split_coords(inp, split_size=split_size)
     ff = FlexFitter(inp)
     optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
-    dmat_ref = get_dmat(target, standardize=False)
-    mu = dmat_ref.mean()
-    sigma = dmat_ref.std()
-    dmat_ref = get_dmat(target, standardize=False, mu=mu, sigma=sigma)
-    dmat_inp = get_dmat(inp, standardize=False, mu=mu, sigma=sigma)
+    dmat_ref = get_dmat(target)
+    # dmat_inp = get_dmat(inp)
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
     losses = []
     loss_std_range = 100
     if save_traj is not None:
-        traj = [inp.numpy()]
+        traj = [unbatch_coords(inp).numpy()]
     rmsd = np.inf
     for i in range(maxiter):
         optimizer.zero_grad()
         output = ff(inp)
         if save_traj is not None:
-            traj.append(output.detach().numpy())
-        dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
+            traj.append(unbatch_coords(output).detach().numpy())
+        dmat = get_dmat(output)
         loss_dmat = get_loss_dmat(dmat, dmat_ref)
         loss_rms = get_loss_rms(output, inp)
         loss = loss_dmat  # + 0.001 * loss_rms
@@ -275,7 +351,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
         np.save(save_traj, traj)
-    return output, loss, dmat_inp, dmat_ref, dmat
+    return unbatch_coords(output), loss, unbatch_dmat(inp), unbatch_dmat(target), unbatch_dmat(output)
 
 
 if __name__ == '__main__':
@@ -290,6 +366,10 @@ if __name__ == '__main__':
     parser.add_argument('--pdb1')
     parser.add_argument('--pdb2')
     parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
+    parser.add_argument('--splitsize',
+                        help='Size of the fragment to fit (default: no fragment)',
+                        type=int,
+                        default=1000000)
     parser.add_argument('--lr', help='Learning rate for the optimizer (Adam) -- default=0.01', default=0.01, type=float)
     parser.add_argument('--save_traj', help='Save the trajectory minimization in the given npy file')
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -307,6 +387,7 @@ if __name__ == '__main__':
     coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
                                                         pdb2,
                                                         args.maxiter,
+                                                        split_size=args.splitsize,
                                                         stop=1e-4,
                                                         verbose=True,
                                                         lr=args.lr,
