@@ -242,6 +242,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     loss_std_range = 100
     if save_traj is not None:
         traj = [inp.numpy()]
+    rmsd = np.inf
     for i in range(maxiter):
         optimizer.zero_grad()
         output = ff(inp)
@@ -256,10 +257,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         loss.backward(retain_graph=True)
         optimizer.step()
         rmsdmat = np.sqrt(loss_dmat.detach().numpy())
-        try:
-            rmsd_prev = rmsd
-        except UnboundLocalError:
-            rmsd_prev = np.inf
+        rmsd_prev = rmsd
         rmsd = np.sqrt(loss_rms.detach().numpy())
         delta_rmsd = rmsd - rmsd_prev
         if verbose:
