@@ -68,7 +68,7 @@ def sliding_mse(A, w):
     A_unfold = torch.nn.functional.unfold(A, w.shape[-2:])
     # print(A_unfold.shape, w.view(w.size(0), -1).t().shape)
     out_unfold = (A_unfold - w.flatten()[None, ..., None])**2
-    out_unfold = out_unfold.sum(axis=1)
+    out_unfold = out_unfold.mean(axis=1)
     n = int(np.sqrt(out_unfold.shape[1]))
     out = out_unfold.reshape((n, n))
     return out
