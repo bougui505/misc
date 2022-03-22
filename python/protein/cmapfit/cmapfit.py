@@ -344,9 +344,9 @@ if __name__ == '__main__':
                                                         verbose=True,
                                                         lr=args.lr,
                                                         save_traj=args.save_traj)
-    plt.matshow(dmat_inp.detach().numpy())
+    plt.matshow(dmat_inp.detach().cpu().numpy())
     plt.savefig('dmat_inp.png')
-    plt.matshow(dmat_out.detach().numpy())
+    plt.matshow(dmat_out.detach().cpu().numpy())
     plt.savefig('dmat_out.png')
-    plt.matshow(dmat_ref.detach().numpy())
+    plt.matshow(dmat_ref.detach().cpu().numpy())
     plt.savefig('dmat_ref.png')
