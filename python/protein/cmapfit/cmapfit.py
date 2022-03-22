@@ -175,7 +175,7 @@ def get_offset(dmat, dmat_ref):
     conv = templatematching(dmat, dmat_ref)
     diag = torch.diagonal(conv, 0)
     offset = diag.argmin()
-    score = diag.mean()
+    score = diag.min()
     return offset, score
 
 
