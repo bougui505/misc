@@ -45,6 +45,7 @@ import matplotlib.pyplot as plt
 
 def sliding_mse(A, w):
     """
+    Sub region matching
     >>> coords = torch.randn((10, 3))
     >>> A = get_dmat(coords)
     >>> A.shape
@@ -228,6 +229,90 @@ class FlexFitter(torch.nn.Module):
         return x
 
 
+class CNN(torch.nn.Module):
+    """
+    >>> A = torch.rand((50, 3))
+    >>> dmat = get_dmat(A)
+    >>> dmat = addbatchchannel(dmat)
+    >>> dmat.shape
+    torch.Size([1, 1, 50, 50])
+    >>> cnn = CNN(dmat)
+    >>> out = cnn(dmat)
+    >>> out.shape
+    torch.Size([1, 50])
+    >>> out.sum() - 1. < 1e-3
+    tensor(True)
+    """
+    def __init__(self, dmat, out_features=None):
+        super(CNN, self).__init__()
+        batch, nchannels, n, _ = dmat.shape
+        if out_features is None:
+            out_features = n
+        out1, out2 = 2, 4
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=out1, kernel_size=9, padding='same')
+        self.conv2 = torch.nn.Conv2d(in_channels=out1, out_channels=out2, kernel_size=9, padding='same')
+        self.linear = torch.nn.Linear(in_features=out2 * n**2, out_features=out_features)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = x.view(1, -1)
+        x = self.linear(x)
+        x = torch.nn.functional.softmax(x)
+        return x
+
+
+def crop_dmat(dmat, nout, ind):
+    """
+    Crop the given dmat at ind to get a map of size (nout, nout)
+    >>> A = torch.rand((50, 3))
+    >>> dmat = get_dmat(A)
+    >>> dmat = addbatchchannel(dmat)
+    >>> dmat.shape
+    torch.Size([1, 1, 50, 50])
+    >>> dmat_crop = crop_dmat(dmat, 32, 4)
+    >>> dmat_crop.shape
+    torch.Size([1, 1, 32, 32])
+    """
+    assert dmat.ndim == 4  # (batch, channel, n, n)
+    n = dmat.shape[-1]
+    if nout >= n:
+        return dmat
+    else:
+        d = n - nout
+        sel = np.r_[:ind, ind + d:n]
+        dmat = dmat[:, :, sel, :][..., sel]
+        return dmat
+
+
+class Autocrop(object):
+    """
+    Learn to crop automatically the distance matrix
+    >>> A = torch.rand((50, 3))
+    >>> dmat = get_dmat(A)
+    >>> dmat = addbatchchannel(dmat)
+    >>> dmat.shape
+    torch.Size([1, 1, 50, 50])
+    >>> autocropper = Autocrop(dmat, 32)
+    >>> dmat_crop = autocropper()
+    >>> dmat_crop.shape
+    torch.Size([1, 1, 32, 32])
+    """
+    def __init__(self, dmat, nout):
+        if dmat.ndim < 4:  # (batch, channel, n, n)
+            dmat = addbatchchannel(dmat)
+        self.dmat = dmat
+        self.n = dmat.shape[-1]
+        self.nout = nout
+        self.cnn = CNN(self.dmat, out_features=self.n - self.nout)
+
+    def __call__(self):
+        probs = self.cnn(self.dmat)
+        ind = probs.argmax()
+        dmat_crop = crop_dmat(self.dmat, self.nout, ind)
+        return dmat_crop
+
+
 def get_loss_dmat(dmat, dmat_ref):
     """
     >>> coords = torch.randn((10, 3))
@@ -256,11 +341,12 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, verbose=False)
-    >>> f = plt.matshow(dmat_ref.detach().numpy())
-    >>> plt.savefig('dmat_ref_test.png')
-    >>> f = plt.matshow(dmat.detach().numpy())
-    >>> plt.savefig('dmat_test.png')
+    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=True)
+
+    # >>> f = plt.matshow(dmat_ref.detach().numpy())
+    # >>> plt.savefig('dmat_ref_test.png')
+    # >>> f = plt.matshow(dmat.detach().numpy())
+    # >>> plt.savefig('dmat_test.png')
     """
     ff = FlexFitter(inp)
     optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
@@ -269,6 +355,8 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     sigma = dmat_ref.std()
     dmat_ref = get_dmat(target, standardize=False, mu=mu, sigma=sigma)
     dmat_inp = get_dmat(inp, standardize=False, mu=mu, sigma=sigma)
+    autocropper = Autocrop(dmat_ref, dmat_inp.shape[-1])
+    optimizer_cropper = torch.optim.Adam(autocropper.cnn.parameters())
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
     losses = []
@@ -282,7 +370,8 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         if save_traj is not None:
             traj.append(output.detach().cpu().numpy())
         dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
-        loss_dmat = get_loss_dmat(dmat, dmat_ref)
+        dmat_ref_crop = autocropper()
+        loss_dmat = get_loss_dmat(dmat, dmat_ref_crop)
         loss_rms = get_loss_rms(output, inp)
         loss = loss_dmat  # + 0.001 * loss_rms
         losses.append(loss.detach().cpu())
