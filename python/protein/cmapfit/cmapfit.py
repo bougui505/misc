@@ -44,6 +44,36 @@ import itertools
 import matplotlib.pyplot as plt
 
 
+def sliding_mse(A, w):
+    """
+    >>> coords = torch.randn((10, 3))
+    >>> A = get_dmat(coords)
+    >>> A.shape
+    torch.Size([10, 10])
+    >>> coords_w = coords[2:6]
+    >>> w = get_dmat(coords_w)
+    >>> w.shape
+    torch.Size([4, 4])
+    >>> smse = sliding_mse(A, w)
+    >>> ind = smse.diagonal().argmin()
+    >>> ind
+    tensor(2)
+    >>> smse.diagonal()[ind]
+    tensor(0.)
+    """
+    A = addbatchchannel(A)
+    w = addbatchchannel(w)
+    # conv = torch.nn.functional.conv2d(A, w)
+    # print(conv.shape)
+    A_unfold = torch.nn.functional.unfold(A, w.shape[-2:])
+    # print(A_unfold.shape, w.view(w.size(0), -1).t().shape)
+    out_unfold = (A_unfold - w.flatten()[None, ..., None])**2
+    out_unfold = out_unfold.sum(axis=1)
+    n = int(np.sqrt(out_unfold.shape[1]))
+    out = out_unfold.reshape((n, n))
+    return out
+
+
 def torchify(x):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     try:
@@ -123,11 +153,13 @@ def templatematching(dmat, dmat_ref):
     """
     dmat = addbatchchannel(dmat)
     dmat_ref = addbatchchannel(dmat_ref)
-    result1 = torch.nn.functional.conv2d(dmat_ref, dmat, bias=None, stride=1, padding=0)
-    result2 = torch.sqrt(
-        torch.sum(dmat**2) *
-        torch.nn.functional.conv2d(dmat_ref**2, torch.ones_like(dmat), bias=None, stride=1, padding=0))
-    return (result1 / result2).squeeze(0).squeeze(0)
+    result = sliding_mse(dmat_ref, dmat)
+    return result
+    # result1 = torch.nn.functional.conv2d(dmat_ref, dmat, bias=None, stride=1, padding=0)
+    # result2 = torch.sqrt(
+    #     torch.sum(dmat**2) *
+    #     torch.nn.functional.conv2d(dmat_ref**2, torch.ones_like(dmat), bias=None, stride=1, padding=0))
+    # return (result1 / result2).squeeze(0).squeeze(0)
 
 
 def get_offset(dmat, dmat_ref):
@@ -137,14 +169,15 @@ def get_offset(dmat, dmat_ref):
     >>> coords = coords_ref[ind:]
     >>> dmat_ref = get_dmat(coords_ref, standardize=True)
     >>> dmat = get_dmat(coords, standardize=True)
-    >>> offset = get_offset(dmat, dmat_ref)
+    >>> offset, score = get_offset(dmat, dmat_ref)
     >>> offset == ind
     tensor(True)
     """
     conv = templatematching(dmat, dmat_ref)
     diag = torch.diagonal(conv, 0)
-    offset = diag.argmax()
-    return offset
+    offset = diag.argmin()
+    score = diag.mean()
+    return offset, score
 
 
 class Mover(torch.nn.Module):
@@ -196,13 +229,21 @@ class FlexFitter(torch.nn.Module):
 
 
 def get_loss_dmat(dmat, dmat_ref):
+    """
+    >>> coords = torch.randn((10, 3))
+    >>> dmat_ref = get_dmat(coords)
+    >>> dmat_ref.shape
+    torch.Size([10, 10])
+    >>> coords_w = coords[2:6]
+    >>> dmat = get_dmat(coords_w)
+    >>> dmat.shape
+    torch.Size([4, 4])
+    >>> get_loss_dmat(dmat, dmat_ref)
+    tensor(...)
+    """
     # conv = templatematching(dmat, dmat_ref)
-    offset = get_offset(dmat, dmat_ref)
-    dmat_ref_aln = dmat_ref[offset:, offset:]
-    n = dmat.shape[0]
-    dmat_ref_aln = dmat_ref_aln[:n, :n]
-    out = ((dmat - dmat_ref_aln)**2).mean()
-    return out
+    offset, score = get_offset(dmat, dmat_ref)
+    return score
     # return -torch.diagonal(conv, 0).mean()
 
 
@@ -222,7 +263,6 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> loss_init = get_loss_dmat(inp, target)
     >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, verbose=False)
     >>> f = plt.matshow(dmat_ref.detach().numpy())
     >>> plt.savefig('dmat_ref_test.png')
@@ -254,7 +294,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         loss = loss_dmat  # + 0.001 * loss_rms
         losses.append(loss.detach())
         loss_std = np.std(losses[-loss_std_range:])
-        loss.backward(retain_graph=True)
+        loss.backward(retain_graph=False)
         optimizer.step()
         rmsdmat = np.sqrt(loss_dmat.detach().numpy())
         rmsd_prev = rmsd
