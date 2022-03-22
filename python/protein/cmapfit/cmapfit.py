@@ -244,13 +244,14 @@ class CNN(torch.nn.Module):
     """
     def __init__(self, dmat, out_features=None):
         super(CNN, self).__init__()
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         batch, nchannels, n, _ = dmat.shape
         if out_features is None:
             out_features = n
         out1, out2 = 2, 4
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=out1, kernel_size=9, padding='same')
-        self.conv2 = torch.nn.Conv2d(in_channels=out1, out_channels=out2, kernel_size=9, padding='same')
-        self.linear = torch.nn.Linear(in_features=out2 * n**2, out_features=out_features)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=out1, kernel_size=9, padding='same', device=device)
+        self.conv2 = torch.nn.Conv2d(in_channels=out1, out_channels=out2, kernel_size=9, padding='same', device=device)
+        self.linear = torch.nn.Linear(in_features=out2 * n**2, out_features=out_features, device=device)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -307,7 +308,7 @@ class Autocrop(object):
 
     def __call__(self):
         probs = self.cnn(self.dmat)
-        ind = probs.argmax()
+        ind = probs.argmax().cpu()
         dmat_crop = crop_dmat(self.dmat, self.nout, ind)
         return dmat_crop
 
