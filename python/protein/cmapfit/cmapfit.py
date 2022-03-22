@@ -38,7 +38,6 @@
 
 import torch
 import tqdm
-import ICP
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -195,7 +194,8 @@ class Mover(torch.nn.Module):
         n: number of points to move
         """
         super().__init__()
-        self.delta = torch.nn.Parameter(torch.randn((n, 3)))
+        randw = torchify(torch.randn((n, 3)))
+        self.delta = torch.nn.Parameter(randw)
 
     def __call__(self, x):
         out = x + self.delta
@@ -252,13 +252,6 @@ def get_loss_rms(coords, coords_ref):
     return rms
 
 
-def get_rmsd(A, B):
-    R, t = ICP.ICP.find_rigid_alignment(A, B)
-    A_fit = ICP.ICP.transform(A, R, t)
-    rmsd = torch.sqrt(((B - A_fit)**2).mean())
-    return rmsd
-
-
 def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None):
     """
     >>> inp = torch.rand((8, 3))
@@ -281,24 +274,24 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     losses = []
     loss_std_range = 100
     if save_traj is not None:
-        traj = [inp.numpy()]
+        traj = [inp.cpu().numpy()]
     rmsd = np.inf
     for i in range(maxiter):
         optimizer.zero_grad()
         output = ff(inp)
         if save_traj is not None:
-            traj.append(output.detach().numpy())
+            traj.append(output.detach().cpu().numpy())
         dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
         loss_dmat = get_loss_dmat(dmat, dmat_ref)
         loss_rms = get_loss_rms(output, inp)
         loss = loss_dmat  # + 0.001 * loss_rms
-        losses.append(loss.detach())
+        losses.append(loss.detach().cpu())
         loss_std = np.std(losses[-loss_std_range:])
         loss.backward(retain_graph=False)
         optimizer.step()
-        rmsdmat = np.sqrt(loss_dmat.detach().numpy())
+        rmsdmat = np.sqrt(loss_dmat.detach().cpu().numpy())
         rmsd_prev = rmsd
-        rmsd = np.sqrt(loss_rms.detach().numpy())
+        rmsd = np.sqrt(loss_rms.detach().cpu().numpy())
         delta_rmsd = rmsd - rmsd_prev
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
