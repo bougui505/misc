@@ -114,10 +114,9 @@ def addbatchchannel(dmat):
     return dmat
 
 
-def get_cmap(coords):
-    dmat = get_dmat(coords)
-    dmat -= dmat.mean()
-    cmap = torch.nn.functional.sigmoid(dmat)
+def get_cmap(dmat, threshold=8.):
+    cmap = dmat - threshold
+    cmap = torch.nn.functional.relu(-cmap)
     return cmap
 
 
@@ -371,14 +370,17 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
             traj.append(output.detach().cpu().numpy())
         dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
         dmat_ref_crop = autocropper()
-        loss_dmat = get_loss_dmat(dmat, dmat_ref_crop)
+        loss_dmat = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_ref_crop))
+        loss_dmat_auto = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_inp))
         loss_rms = get_loss_rms(output, inp)
-        loss = loss_dmat  # + 0.001 * loss_rms
+        loss = loss_dmat  # + loss_dmat_auto  # + 0.001 * loss_rms
         losses.append(loss.detach().cpu())
         loss_std = np.std(losses[-loss_std_range:])
         loss.backward(retain_graph=False)
         optimizer.step()
+        optimizer_cropper.step()
         rmsdmat = np.sqrt(loss_dmat.detach().cpu().numpy())
+        rmsdmat_auto = np.sqrt(loss_dmat_auto.detach().cpu().numpy())
         rmsd_prev = rmsd
         rmsd = np.sqrt(loss_rms.detach().cpu().numpy())
         delta_rmsd = rmsd - rmsd_prev
@@ -386,7 +388,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
             pbar.set_description(
                 desc=
-                f'loss: {loss:.3f}±{loss_std:.3e}; rmsd: {rmsd:.3f}; rmsdmat: {rmsdmat:.3f}; deltarmsd: {delta_rmsd:.3e}'
+                f'loss: {loss:.3f}; rmsd: {rmsd:.3f}; rmsdmat: {rmsdmat:.3f}; rmsdmat_auto: {rmsdmat_auto:.3f}; deltarmsd: {delta_rmsd:.3e}'
             )
             pbar.update(1)
         if np.abs(delta_rmsd) <= stop:
