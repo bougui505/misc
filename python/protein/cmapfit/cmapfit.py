@@ -341,7 +341,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=True)
+    >>> output, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=True)
 
     # >>> f = plt.matshow(dmat_ref.detach().numpy())
     # >>> plt.savefig('dmat_ref_test.png')
@@ -400,7 +400,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
         np.save(save_traj, traj)
-    return output, loss, dmat_inp, dmat_ref, dmat
+    return output, loss, dmat_inp, dmat_ref, torch.squeeze(dmat_ref_crop), dmat
 
 
 if __name__ == '__main__':
@@ -429,16 +429,18 @@ if __name__ == '__main__':
     cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
-    coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
-                                                        pdb2,
-                                                        args.maxiter,
-                                                        stop=1e-6,
-                                                        verbose=True,
-                                                        lr=args.lr,
-                                                        save_traj=args.save_traj)
+    coordsfit, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat_out = fit(pdb1,
+                                                                       pdb2,
+                                                                       args.maxiter,
+                                                                       stop=1e-6,
+                                                                       verbose=True,
+                                                                       lr=args.lr,
+                                                                       save_traj=args.save_traj)
     plt.matshow(dmat_inp.detach().cpu().numpy())
     plt.savefig('dmat_inp.png')
     plt.matshow(dmat_out.detach().cpu().numpy())
     plt.savefig('dmat_out.png')
     plt.matshow(dmat_ref.detach().cpu().numpy())
     plt.savefig('dmat_ref.png')
+    plt.matshow(dmat_ref_crop.detach().cpu().numpy())
+    plt.savefig('dmat_ref_crop.png')
