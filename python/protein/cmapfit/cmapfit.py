@@ -409,6 +409,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     # >>> f = plt.matshow(dmat.detach().numpy())
     # >>> plt.savefig('dmat_test.png')
     """
+    logging.info('Fitting')
     ff = FlexFitter(inp)
     optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
     dmat_ref = get_dmat(target, standardize=False)
@@ -446,6 +447,8 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         rmsd_prev = rmsd
         rmsd = np.sqrt(loss_rms.detach().cpu().numpy())
         delta_rmsd = rmsd - rmsd_prev
+        if i == 0:
+            logging.info(f'Initial loss: {loss:.3f}')
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
             pbar.set_description(
@@ -469,6 +472,11 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
