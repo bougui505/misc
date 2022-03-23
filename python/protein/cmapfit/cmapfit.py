@@ -428,6 +428,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     rmsd = np.inf
     for i in range(maxiter):
         optimizer.zero_grad()
+        optimizer_cropper.zero_grad()
         output = ff(inp)
         if save_traj is not None:
             traj.append(output.detach().cpu().numpy())
