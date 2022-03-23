@@ -258,19 +258,81 @@ class CNN(torch.nn.Module):
         x = self.conv2(x)
         x = x.view(1, -1)
         x = self.linear(x)
-        x = torch.nn.functional.softmax(x)
+        x = torch.nn.functional.softmax(x, dim=1)
         return x
 
 
-def crop_dmat(dmat, nout, ind):
+def get_chunk_len(probs, total_slice_len):
+    probs_int = torch.round(probs * total_slice_len)
+    if probs_int.sum() > 0.:
+        probs_int = probs_int / probs_int.sum()
+    else:
+        ind = probs[:-total_slice_len].argmax()
+        probs_int[ind] = 1.
+    chunks = (probs_int * total_slice_len)
+    assert chunks.sum(
+    ) == total_slice_len, f'the sum of chunk lengths ({chunks.sum()}) is different from the desired total slice length ({total_slice_len})'
+    chunk_ind = torch.nonzero(chunks).squeeze()
+    chunk_len = chunks[chunk_ind]
+    chunk_ind = torch.atleast_1d(chunk_ind)
+    chunk_len = torch.atleast_1d(chunk_len)
+    return chunk_ind, chunk_len
+
+
+def probs_to_slices(probs, total_slice_len):
     """
-    Crop the given dmat at ind to get a map of size (nout, nout)
+    Convert a list of probs to slice indexing
+
+    >>> probs = torch.zeros((1, 50))
+    >>> probs[0, 3] = 0.3
+    >>> probs[0, 5] = 0.5
+    >>> probs[0, 48] = 0.2
+    >>> probs.shape
+    torch.Size([1, 50])
+    >>> torch.isclose(probs.sum(), torch.Tensor([1.]))
+    tensor([True])
+    >>> slices = probs_to_slices(probs, 18)
+    >>> slices
+    [0, 1, 2, 3, 4, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
+    >>> len(slices)
+    32
+    """
+    probs = probs.squeeze()
+    total_len = len(probs)
+    chunk_ind, chunk_len = get_chunk_len(probs, total_slice_len)
+    for i, length in zip(chunk_ind, chunk_len):
+        if length > total_len - i:
+            probs[i:] = 0.
+    probs = torch.nn.functional.softmax(probs)
+    chunk_ind, chunk_len = get_chunk_len(probs, total_slice_len)
+    todiscard = []
+    for i, length in zip(chunk_ind, chunk_len):
+        if len(todiscard) > 0:
+            if i <= todiscard[-1]:  # Overlaping chunks
+                i = todiscard[-1] + 1
+                length = length + todiscard[-1] - i
+        todiscard.extend(range(int(i), int(i + length)))
+    tokeep = set(range(total_len))
+    tokeep = list(tokeep - set(todiscard))
+    tokeep.sort()
+    return tokeep
+
+
+def crop_dmat(dmat, nout, probs):
+    """
+    Crop the given dmat at indices given by probs to get a map of size (nout, nout)
+    >>> probs = torch.zeros((1, 50))
+    >>> probs[0, 3] = 0.3
+    >>> probs[0, 5] = 0.5
+    >>> probs[0, 48] = 0.2
+    >>> probs.shape
+    torch.Size([1, 50])
     >>> A = torch.rand((50, 3))
     >>> dmat = get_dmat(A)
     >>> dmat = addbatchchannel(dmat)
     >>> dmat.shape
     torch.Size([1, 1, 50, 50])
-    >>> dmat_crop = crop_dmat(dmat, 32, 4)
+    >>> dmat_crop = crop_dmat(dmat, 32, probs)
     >>> dmat_crop.shape
     torch.Size([1, 1, 32, 32])
     """
@@ -280,8 +342,8 @@ def crop_dmat(dmat, nout, ind):
         return dmat
     else:
         d = n - nout
-        sel = np.r_[:ind, ind + d:n]
-        dmat = dmat[:, :, sel, :][..., sel]
+        slices = probs_to_slices(probs, d)
+        dmat = dmat[:, :, slices, :][..., slices]
         return dmat
 
 
@@ -304,12 +366,11 @@ class Autocrop(object):
         self.dmat = dmat
         self.n = dmat.shape[-1]
         self.nout = nout
-        self.cnn = CNN(self.dmat, out_features=self.n - self.nout)
+        self.cnn = CNN(self.dmat)
 
     def __call__(self):
         probs = self.cnn(self.dmat)
-        ind = probs.argmax().cpu()
-        dmat_crop = crop_dmat(self.dmat, self.nout, ind)
+        dmat_crop = crop_dmat(self.dmat, self.nout, probs)
         return dmat_crop
 
 
@@ -341,7 +402,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> output, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=True)
+    >>> output, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=False)
 
     # >>> f = plt.matshow(dmat_ref.detach().numpy())
     # >>> plt.savefig('dmat_ref_test.png')
