@@ -443,24 +443,31 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         loss.backward(retain_graph=False)
         optimizer.step()
         optimizer_cropper.step()
-        rmsdmat = np.sqrt(loss_dmat.detach().cpu().numpy())
-        rmsdmat_auto = np.sqrt(loss_dmat_auto.detach().cpu().numpy())
+        rmsdmat_target = np.sqrt(loss_dmat.detach().cpu().numpy())
+        rmsdmat_inp = np.sqrt(loss_dmat_auto.detach().cpu().numpy())
         rmsd_prev = rmsd
         rmsd = np.sqrt(loss_rms.detach().cpu().numpy())
         delta_rmsd = rmsd - rmsd_prev
         if i == 0:
-            logging.info(f'Initial loss: {loss:.3f}')
+            logging.info(f'Initial_loss: {loss:.3f}')
+            logging.info(f'Initial_rmsd: {rmsd:.3f}')
+            logging.info(f'Initial_rmsdmat: {rmsdmat_target:.3f}')
+            logging.info(f'Initial_rmsdmat_inp: {rmsdmat_inp:.3f}')
         if verbose:
             # pbar.set_description(desc=f'loss: {loss:.3f}; RMSD: {rmsd:.3f}')
             pbar.set_description(
                 desc=
-                f'loss: {loss:.3f}; rmsd: {rmsd:.3f}; rmsdmat: {rmsdmat:.3f}; rmsdmat_auto: {rmsdmat_auto:.3f}; deltarmsd: {delta_rmsd:.3e}'
+                f'loss: {loss:.3f}; rmsd: {rmsd:.3f}; rmsdmat_target: {rmsdmat_target:.3f}; rmsdmat_inp: {rmsdmat_inp:.3f}; deltarmsd: {delta_rmsd:.3e}'
             )
             pbar.update(1)
         if np.abs(delta_rmsd) <= stop:
             if verbose:
                 print(f"Early stop at loss: {loss:.3f} ± {loss_std:.3e} with deltarmsd: {delta_rmsd:.3e}/{stop}")
             break
+    logging.info(f'Final_loss: {loss:.3f}')
+    logging.info(f'Final_rmsd: {rmsd:.3f}')
+    logging.info(f'Final_rmsdmat: {rmsdmat_target:.3f}')
+    logging.info(f'Final_rmsdmat_inp: {rmsdmat_inp:.3f}')
     if save_traj is not None:
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
