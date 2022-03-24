@@ -430,7 +430,7 @@ if __name__ == '__main__':
     coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
                                                         pdb2,
                                                         args.maxiter,
-                                                        stop=1e-3,
+                                                        stop=1e-6,
                                                         verbose=True,
                                                         lr=args.lr,
                                                         save_traj=args.save_traj)
