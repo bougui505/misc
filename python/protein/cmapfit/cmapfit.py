@@ -412,6 +412,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--pdb1')
     parser.add_argument('--pdb2')
+    parser.add_argument('--profile', help='Compute the sliding MSE profile and exit', action='store_true')
     parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
     parser.add_argument('--lr', help='Learning rate for the optimizer (Adam) -- default=0.01', default=0.01, type=float)
     parser.add_argument('--save_traj', help='Save the trajectory minimization in the given npy file')
@@ -427,6 +428,13 @@ if __name__ == '__main__':
     cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
+    dmat_ref = get_dmat(pdb2)
+    dmat = get_dmat(pdb1)
+    profile = sliding_mse(get_cmap(dmat_ref), get_cmap(dmat)).diagonal()
+    plt.plot(profile)
+    plt.savefig('profile.png')
+    if args.profile:
+        sys.exit()
     coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
                                                         pdb2,
                                                         args.maxiter,
