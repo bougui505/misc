@@ -50,20 +50,20 @@ def create_topology(coords, object):
 
 
 @cmd.extend
-def load_traj_npy(npyfile, construct_topology=True, object='traj'):
+def load_traj_npy(npyfile, topology=None, selection='all', object='traj'):
     """
     load the given npy file containing a numpy array of shape (nstep, natoms, 3)
-    if construct_topology is True assess a linear topology
+    if topology is None assess a linear topology
     """
     traj = np.load(npyfile)
-    if construct_topology:
+    if topology is None:
         coords = traj[0]
         print(coords.shape)
         create_topology(coords, object)
-    if construct_topology:
-        startindex = 1
     else:
-        startindex = 0
+        cmd.load(filename=topology, object=object)
+        cmd.remove(f'{object} and not {selection}')
+    startindex = 1
     nsteps = len(traj)
     state = 2
     for i in range(startindex, nsteps):
