@@ -228,126 +228,19 @@ class FlexFitter(torch.nn.Module):
         return x
 
 
-class CNN(torch.nn.Module):
-    """
-    >>> A = torch.rand((50, 3))
-    >>> dmat = get_dmat(A)
-    >>> dmat = addbatchchannel(dmat)
-    >>> dmat.shape
-    torch.Size([1, 1, 50, 50])
-    >>> cnn = CNN(dmat)
-    >>> out = cnn(dmat)
-    >>> out.shape
-    torch.Size([1, 50])
-    >>> out.sum() - 1. < 1e-3
-    tensor(True)
-    """
-    def __init__(self, dmat, out_features=None):
-        super(CNN, self).__init__()
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        batch, nchannels, n, _ = dmat.shape
-        if out_features is None:
-            out_features = n
-        out1, out2 = 2, 4
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=out1, kernel_size=9, padding='same', device=device)
-        self.conv2 = torch.nn.Conv2d(in_channels=out1, out_channels=out2, kernel_size=9, padding='same', device=device)
-        self.linear = torch.nn.Linear(in_features=out2 * n**2, out_features=out_features, device=device)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = x.view(1, -1)
-        x = self.linear(x)
-        x = torch.nn.functional.softmax(x, dim=1)
-        return x
+def get_P(n, nout):
+    P = torch.eye(n)
+    P = P[:nout, ...]
+    return P
 
 
-def get_chunk_len(probs, total_slice_len):
-    probs_int = torch.round(probs * total_slice_len)
-    if probs_int.sum() > 0.:
-        probs_int = probs_int / probs_int.sum()
-    else:
-        ind = probs[:-total_slice_len].argmax()
-        probs_int[ind] = 1.
-    chunks = (probs_int * total_slice_len)
-    assert chunks.sum(
-    ) == total_slice_len, f'the sum of chunk lengths ({chunks.sum()}) is different from the desired total slice length ({total_slice_len})'
-    chunk_ind = torch.nonzero(chunks).squeeze()
-    chunk_len = chunks[chunk_ind]
-    chunk_ind = torch.atleast_1d(chunk_ind)
-    chunk_len = torch.atleast_1d(chunk_len)
-    return chunk_ind, chunk_len
+def permute(x, P):
+    x = torch.matmul(P, x)
+    x = torch.matmul(x, P.T)
+    return x
 
 
-def probs_to_slices(probs, total_slice_len):
-    """
-    Convert a list of probs to slice indexing
-
-    >>> probs = torch.zeros((1, 50))
-    >>> probs[0, 3] = 0.3
-    >>> probs[0, 5] = 0.5
-    >>> probs[0, 48] = 0.2
-    >>> probs.shape
-    torch.Size([1, 50])
-    >>> torch.isclose(probs.sum(), torch.Tensor([1.]))
-    tensor([True])
-    >>> slices = probs_to_slices(probs, 18)
-    >>> slices
-    [0, 1, 2, 3, 4, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
-    >>> len(slices)
-    32
-    """
-    probs = probs.squeeze()
-    total_len = len(probs)
-    chunk_ind, chunk_len = get_chunk_len(probs, total_slice_len)
-    for i, length in zip(chunk_ind, chunk_len):
-        if length > total_len - i:
-            probs[i:] = 0.
-    probs = torch.nn.functional.softmax(probs)
-    chunk_ind, chunk_len = get_chunk_len(probs, total_slice_len)
-    todiscard = []
-    for i, length in zip(chunk_ind, chunk_len):
-        if len(todiscard) > 0:
-            if i <= todiscard[-1]:  # Overlaping chunks
-                i = todiscard[-1] + 1
-                length = length + todiscard[-1] - i
-        todiscard.extend(range(int(i), int(i + length)))
-    tokeep = set(range(total_len))
-    tokeep = list(tokeep - set(todiscard))
-    tokeep.sort()
-    return tokeep
-
-
-def crop_dmat(dmat, nout, probs):
-    """
-    Crop the given dmat at indices given by probs to get a map of size (nout, nout)
-    >>> probs = torch.zeros((1, 50))
-    >>> probs[0, 3] = 0.3
-    >>> probs[0, 5] = 0.5
-    >>> probs[0, 48] = 0.2
-    >>> probs.shape
-    torch.Size([1, 50])
-    >>> A = torch.rand((50, 3))
-    >>> dmat = get_dmat(A)
-    >>> dmat = addbatchchannel(dmat)
-    >>> dmat.shape
-    torch.Size([1, 1, 50, 50])
-    >>> dmat_crop = crop_dmat(dmat, 32, probs)
-    >>> dmat_crop.shape
-    torch.Size([1, 1, 32, 32])
-    """
-    assert dmat.ndim == 4  # (batch, channel, n, n)
-    n = dmat.shape[-1]
-    if nout >= n:
-        return dmat
-    else:
-        d = n - nout
-        slices = probs_to_slices(probs, d)
-        dmat = dmat[:, :, slices, :][..., slices]
-        return dmat
-
-
-class Autocrop(object):
+class Autocrop(torch.nn.Module):
     """
     Learn to crop automatically the distance matrix
     >>> A = torch.rand((50, 3))
@@ -356,22 +249,37 @@ class Autocrop(object):
     >>> dmat.shape
     torch.Size([1, 1, 50, 50])
     >>> autocropper = Autocrop(dmat, 32)
-    >>> dmat_crop = autocropper()
+    >>> P = get_P(50, 32)
+    >>> P.shape
+    torch.Size([32, 50])
+    >>> P = autocropper(P)
+    >>> P.shape
+    torch.Size([32, 50])
+    >>> dmat_crop = permute(dmat, P)
     >>> dmat_crop.shape
     torch.Size([1, 1, 32, 32])
+    >>> opt = torch.optim.Adam(autocropper.parameters())
+    >>> opt.zero_grad()
+    >>> P_out = autocropper(P)
+    >>> loss = get_loss_permutation(P_out)
+    >>> loss.backward()
+    >>> opt.step()
+    >>> P_out = autocropper(P)
+    >>> loss_2 = get_loss_permutation(P_out)
+    >>> loss_2 < loss
+    tensor(True)
     """
     def __init__(self, dmat, nout):
+        super(Autocrop, self).__init__()
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if dmat.ndim < 4:  # (batch, channel, n, n)
             dmat = addbatchchannel(dmat)
-        self.dmat = dmat
-        self.n = dmat.shape[-1]
-        self.nout = nout
-        self.cnn = CNN(self.dmat)
+        batch, channel, n, _ = dmat.shape
+        self.linear = torch.nn.Linear(n, n, device=device)
 
-    def __call__(self):
-        probs = self.cnn(self.dmat)
-        dmat_crop = crop_dmat(self.dmat, self.nout, probs)
-        return dmat_crop
+    def forward(self, x):
+        x = torch.nn.functional.sigmoid(self.linear(x))
+        return x
 
 
 def get_loss_dmat(dmat, dmat_ref):
@@ -398,27 +306,36 @@ def get_loss_rms(coords, coords_ref):
     return rms
 
 
+def get_loss_permutation(P):
+    eps = 1e-3
+    loss_1 = (P * torch.log(P + eps)).mean()
+    loss_2 = ((1. - P.sum(axis=0))**2).mean() + ((1. - P.sum(axis=1))**2).mean()
+    loss = loss_1 + loss_2
+    return loss
+
+
 def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None):
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
-    >>> output, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=False)
+    >>> output, loss, dmat_inp, dmat_ref, dmat = fit(inp, target, maxiter=10000, lr=0.01, stop=1e-8, verbose=False)
 
     # >>> f = plt.matshow(dmat_ref.detach().numpy())
     # >>> plt.savefig('dmat_ref_test.png')
     # >>> f = plt.matshow(dmat.detach().numpy())
     # >>> plt.savefig('dmat_test.png')
     """
+    # torch.autograd.set_detect_anomaly(True)
     logging.info('Fitting')
     ff = FlexFitter(inp)
-    optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
     dmat_ref = get_dmat(target, standardize=False)
     mu = dmat_ref.mean()
     sigma = dmat_ref.std()
     dmat_ref = get_dmat(target, standardize=False, mu=mu, sigma=sigma)
     dmat_inp = get_dmat(inp, standardize=False, mu=mu, sigma=sigma)
-    autocropper = Autocrop(dmat_ref, dmat_inp.shape[-1])
-    optimizer_cropper = torch.optim.Adam(autocropper.cnn.parameters())
+    # autocropper = Autocrop(dmat_ref, dmat_inp.shape[-1])
+    optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
+    # optimizer_cropper = torch.optim.Adam(autocropper.parameters(), lr=0.1)
     if verbose:
         pbar = tqdm.tqdm(total=maxiter)
     losses = []
@@ -426,23 +343,27 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     if save_traj is not None:
         traj = [inp.cpu().numpy()]
     rmsd = np.inf
+    # P = get_P(dmat_ref.shape[-1], dmat_inp.shape[-1])
     for i in range(maxiter):
         optimizer.zero_grad()
-        optimizer_cropper.zero_grad()
+        # optimizer_cropper.zero_grad()
         output = ff(inp)
         if save_traj is not None:
             traj.append(output.detach().cpu().numpy())
         dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
-        dmat_ref_crop = autocropper()
-        loss_dmat = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_ref_crop))
+        # P_out = autocropper(P)
+        # dmat_ref_crop = permute(dmat_ref, P_out)
+        loss_dmat = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_ref))
         loss_dmat_auto = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_inp))
         loss_rms = get_loss_rms(output, inp)
-        loss = loss_dmat  # + loss_dmat_auto  # + 0.001 * loss_rms
+        # loss_P = get_loss_permutation(P_out)
+        loss = loss_dmat
         losses.append(loss.detach().cpu())
         loss_std = np.std(losses[-loss_std_range:])
         loss.backward(retain_graph=False)
         optimizer.step()
-        optimizer_cropper.step()
+        # optimizer_cropper.step()
+        # logging.info(autocropper.P.mean())
         rmsdmat_target = np.sqrt(loss_dmat.detach().cpu().numpy())
         rmsdmat_inp = np.sqrt(loss_dmat_auto.detach().cpu().numpy())
         rmsd_prev = rmsd
@@ -472,7 +393,7 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         traj = np.asarray(traj)
         print(f'Trajectory shape: {traj.shape}')
         np.save(save_traj, traj)
-    return output, loss, dmat_inp, dmat_ref, torch.squeeze(dmat_ref_crop), dmat
+    return output, loss, dmat_inp, dmat_ref, dmat
 
 
 if __name__ == '__main__':
@@ -506,18 +427,16 @@ if __name__ == '__main__':
     cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
-    coordsfit, loss, dmat_inp, dmat_ref, dmat_ref_crop, dmat_out = fit(pdb1,
-                                                                       pdb2,
-                                                                       args.maxiter,
-                                                                       stop=1e-6,
-                                                                       verbose=True,
-                                                                       lr=args.lr,
-                                                                       save_traj=args.save_traj)
+    coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
+                                                        pdb2,
+                                                        args.maxiter,
+                                                        stop=1e-3,
+                                                        verbose=True,
+                                                        lr=args.lr,
+                                                        save_traj=args.save_traj)
     plt.matshow(dmat_inp.detach().cpu().numpy())
     plt.savefig('dmat_inp.png')
     plt.matshow(dmat_out.detach().cpu().numpy())
     plt.savefig('dmat_out.png')
     plt.matshow(dmat_ref.detach().cpu().numpy())
     plt.savefig('dmat_ref.png')
-    plt.matshow(dmat_ref_crop.detach().cpu().numpy())
-    plt.savefig('dmat_ref_crop.png')
