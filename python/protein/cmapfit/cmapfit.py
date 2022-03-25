@@ -43,7 +43,7 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-def sliding_mse(A, w):
+def sliding_mse(A, w, padding=0):
     """
     Sub region matching
     >>> coords = torch.randn((10, 3))
@@ -55,17 +55,40 @@ def sliding_mse(A, w):
     >>> w.shape
     torch.Size([4, 4])
     >>> smse = sliding_mse(A, w)
+    >>> smse.shape
+    torch.Size([7, 7])
     >>> ind = smse.diagonal().argmin()
     >>> ind
     tensor(2)
     >>> smse.diagonal()[ind]
     tensor(0.)
+
+    >>> smse = sliding_mse(A, w, padding='full')
+    >>> smse.shape
+    torch.Size([15, 15])
+    >>> ind_pad = smse.diagonal().argmin()
+    >>> ind_pad == w.shape[0] + ind
+    tensor(True)
+
+    # With odd kernel shape:
+    >>> coords_w = coords[2:7]
+    >>> w = get_dmat(coords_w)
+    >>> w.shape
+    torch.Size([5, 5])
+    >>> smse = sliding_mse(A, w, padding='full')
+    >>> smse.shape
+    torch.Size([16, 16])
+    >>> ind_pad = smse.diagonal().argmin()
+    >>> ind_pad == w.shape[0] + ind
+    tensor(True)
     """
     A = addbatchchannel(A)
     w = addbatchchannel(w)
     # conv = torch.nn.functional.conv2d(A, w)
     # print(conv.shape)
-    A_unfold = torch.nn.functional.unfold(A, w.shape[-2:])
+    if padding == 'full':
+        padding = w.shape[-2:]
+    A_unfold = torch.nn.functional.unfold(A, w.shape[-2:], padding=padding)
     # print(A_unfold.shape, w.view(w.size(0), -1).t().shape)
     out_unfold = (A_unfold - w.flatten()[None, ..., None])**2
     out_unfold = out_unfold.mean(axis=1)
