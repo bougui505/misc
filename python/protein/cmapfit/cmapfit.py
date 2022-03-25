@@ -453,6 +453,8 @@ if __name__ == '__main__':
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
     dmat_ref = get_dmat(pdb2)
     dmat = get_dmat(pdb1)
+    print('dmat.shape: ', dmat.shape)
+    print('dmat_ref.shape: ', dmat_ref.shape)
     profile = sliding_mse(get_cmap(dmat_ref), get_cmap(dmat)).diagonal()
     plt.plot(profile)
     plt.savefig('profile.png')
