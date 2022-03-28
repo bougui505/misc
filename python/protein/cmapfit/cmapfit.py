@@ -477,6 +477,56 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     return output, loss, dmat_inp, dmat_ref, dmat
 
 
+class Profile(object):
+    def __init__(self, dmat, dmat_ref):
+        """
+        # First example with dmat.shape < dmat_ref.shape
+        >>> coords = torch.rand((50, 3)) * 10
+        >>> dmat_ref = get_dmat(coords)
+        >>> coords_w = coords[7:17]
+        >>> dmat = get_dmat(coords_w)
+        >>> dmat.shape
+        torch.Size([10, 10])
+        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile.argmin()
+        7
+        >>> profile.plot(filename='profile_test1.png')
+
+        # Example with dmat.shape > dmat_ref.shape
+        >>> coords = torch.rand((50, 3)) * 10
+        >>> dmat = get_dmat(coords)
+        >>> coords_w = coords[7:17]
+        >>> dmat_ref = get_dmat(coords_w)
+        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile.argmin()
+        -7
+        >>> profile.plot(filename='profile_test2.png')
+        """
+        self.dmat = dmat
+        self.dmat_ref = dmat_ref
+        self.get_profile()
+
+    def get_profile(self):
+        self.profile = torch.squeeze(
+            sliding_mse(get_cmap(self.dmat_ref), get_cmap(self.dmat), diagonal=True, padding='full'))
+        self.indices = np.arange(len(self.profile)) - self.dmat.shape[0]
+        return self.indices, self.profile
+
+    def plot(self, filename='profile.png'):
+        plt.figure()
+        plt.plot(self.indices, self.profile)
+        plt.axvline(0, color='red', linestyle='--', linewidth=1.)
+        # plt.axvline(self.dmat_ref.shape[-1], color='red', linestyle='--', linewidth=1.)
+        plt.axvline(self.dmat_ref.shape[-1] - self.dmat.shape[-1], color='gray', linestyle='--', linewidth=1.)
+        plt.savefig(filename)
+
+    def argmin(self):
+        return self.indices[self.profile.argmin()]
+
+    def map_aligned(self):
+        pass
+
+
 if __name__ == '__main__':
     from pymol import cmd
     import sys
@@ -513,9 +563,8 @@ if __name__ == '__main__':
     dmat = get_dmat(pdb1)
     print('dmat.shape: ', dmat.shape)
     print('dmat_ref.shape: ', dmat_ref.shape)
-    profile = sliding_mse(get_cmap(dmat_ref), get_cmap(dmat)).diagonal()
-    plt.plot(profile)
-    plt.savefig('profile.png')
+    profile = Profile(dmat, dmat_ref)
+    profile.plot()
     if args.profile:
         sys.exit()
     coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
