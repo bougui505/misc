@@ -43,7 +43,7 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-def sliding_mse(A, w, padding=0):
+def sliding_mse(A, w, padding=0, diagonal=False):
     """
     Sub region matching
     >>> coords = torch.randn((10, 3))
@@ -81,20 +81,78 @@ def sliding_mse(A, w, padding=0):
     >>> ind_pad = smse.diagonal().argmin()
     >>> ind_pad == w.shape[0] + ind
     tensor(True)
+
+    # Compute the convolution only on the diagonal
+    >>> coords = torch.randn((50, 3))
+    >>> A = get_dmat(coords)
+    >>> coords_w = coords[7:17]
+    >>> w = get_dmat(coords_w)
+    >>> w.shape
+    torch.Size([10, 10])
+    >>> smse = sliding_mse(A, w, diagonal=True)
+    >>> smse.shape
+    torch.Size([1, 40])
+    >>> ind = smse.argmin()
+    >>> ind
+    tensor(7)
+
+    # Compute the convolution only on the diagonal with full padding:
+    >>> smse = sliding_mse(A, w, diagonal=True, padding='full')
+    >>> smse.shape
+    torch.Size([1, 60])
+    >>> ind_pad = smse.argmin()
+    >>> ind_pad == ind + w.shape[0]
+    tensor(True)
     """
     A = addbatchchannel(A)
     w = addbatchchannel(w)
+    N, C, H, W = A.shape
     # conv = torch.nn.functional.conv2d(A, w)
     # print(conv.shape)
-    if padding == 'full':
-        padding = w.shape[-2:]
-    A_unfold = torch.nn.functional.unfold(A, w.shape[-2:], padding=padding)
-    # print(A_unfold.shape, w.view(w.size(0), -1).t().shape)
+    if not diagonal:
+        if padding == 'full':
+            padding = w.shape[-2:]
+        A_unfold = torch.nn.functional.unfold(A, w.shape[-2:], padding=padding)
+    else:  # diagonal
+        A_unfold = unfold_diagonal(A, w.shape[-2:], padding=padding)
     out_unfold = (A_unfold - w.flatten()[None, ..., None])**2
     out_unfold = out_unfold.mean(axis=1)
-    n = int(np.sqrt(out_unfold.shape[1]))
-    out = out_unfold.reshape((n, n))
-    return out
+    if diagonal:
+        return out_unfold
+    else:
+        n = int(np.sqrt(out_unfold.shape[1]))
+        out = out_unfold.reshape((n, n))
+        return out
+
+
+def unfold_diagonal(A, kernel_size, padding=0):
+    """
+    >>> A = torch.randn((3, 2, 50, 50))
+    >>> A_unfold = unfold_diagonal(A, (10, 10))
+    >>> A_unfold.shape
+    torch.Size([3, 200, 40])
+
+    # Padding:
+    >>> A_unfold = unfold_diagonal(A, (10, 10), padding=3)
+    >>> A_unfold.shape
+    torch.Size([3, 200, 46])
+    >>> A_unfold = unfold_diagonal(A, (10, 10), padding='full')
+    >>> A_unfold.shape
+    torch.Size([3, 200, 60])
+    """
+    if padding == 'full':
+        padding = tuple(kernel_size) + tuple(kernel_size)
+    else:
+        padding = (padding, ) * 4
+    A = torch.nn.functional.pad(A, padding)
+    N, C, H, W = A.shape
+    assert H == W, f"A is not symmetric: {A.shape}"  # Assert a square input tensor
+    h, w = kernel_size
+    A_unfold = torch.zeros((N, C * h * w, H - h))
+    for i in range(H - h):
+        A_ = A[:, :, i:i + h, i:i + w].reshape((N, C * h * w))
+        A_unfold[:, :, i] = A_
+    return A_unfold
 
 
 def torchify(x):
