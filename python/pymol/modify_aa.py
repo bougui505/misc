@@ -36,7 +36,27 @@
 #                                                                           #
 #############################################################################
 
+import os
 from pymol import cmd
+import chempy
+
+
+def modify(fragment, sel, anchor):
+    """
+    fragment: fragment to add to the peptide
+    sel: atom selection to add the fragment on (usually an hydrogen atom)
+    anchor: atom index of the fragment for anchoring
+    """
+    fragment_path = chempy.fragments.path
+    cmd.load(filename=fragment, object='X_')
+    fragment = os.path.splitext(os.path.basename(fragment))[0]
+    cmd.save(fragment + '.pkl', selection='X_')
+    cmd.remove('X_')
+    chempy.fragments.path = './'
+    cmd.edit(selection1=sel)
+    cmd.editor.attach_fragment(selection='pk1', fragment=fragment, anchor=anchor, hydrogen=0)
+    chempy.fragments.path = fragment_path
+
 
 if __name__ == '__main__':
     import sys
@@ -52,17 +72,22 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument('-p', '--pdb', help='Structure filename to modify', required=True)
+    parser.add_argument('-f', '--fragment', help='Fragment filename', required=True)
     parser.add_argument('-s',
-                        '--seq',
-                        help='Sequence to build in 1 letter code. Mark the optional input structure as X',
+                        '--sel',
+                        help='Atom selection on the pdb (see --pdb) to plug the fragment on',
                         required=True)
+    parser.add_argument('-a', '--anchor', help='anchoring atom on the fragment given as an atom id', required=True)
     parser.add_argument('-o', '--out', help='Output file name', required=True)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
+    cmd.set('retain_order', 1)
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    cmd.editor.build_peptide(sequence=args.seq)
+    cmd.load(args.pdb, 'inpdb')
+    modify(args.fragment, args.sel, args.anchor)
     cmd.save(args.out)
