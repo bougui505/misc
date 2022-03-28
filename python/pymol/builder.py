@@ -37,6 +37,7 @@
 #############################################################################
 
 from pymol import cmd
+from misc.pymol import renumber
 
 if __name__ == '__main__':
     import sys
@@ -65,4 +66,5 @@ if __name__ == '__main__':
         sys.exit()
 
     cmd.editor.build_peptide(sequence=args.seq)
+    renumber.renumber()
     cmd.save(args.out)
