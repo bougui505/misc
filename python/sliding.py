@@ -68,39 +68,35 @@ class Sliding_op(object):
         self.a = a
         self.window_size = window_size
         self.func = func
-        self.npadleft, self.npadright = 0, 0
-        if padding:
-            self.pad()
         self.outlen = self.a.size - self.window_size + 1
-
-    def pad(self):
-        """
-        pad the data with random number from a normal distribution
-        """
-        nout = self.a.size - self.window_size + 1
-        npad = self.a.size - nout
-        self.npadleft = 0
-        self.npadright = npad - self.npadleft
-        mu, sigma = self.a[:self.window_size].mean(), self.a[:self.window_size].std()
-        padleft = np.random.normal(loc=mu, scale=sigma, size=self.npadleft)
-        mu, sigma = self.a[-self.window_size:].mean(), self.a[-self.window_size:].std()
-        padright = np.random.normal(loc=mu, scale=sigma, size=self.npadright)
-        self.a = np.r_[padleft, self.a, padright]
+        self.padding = padding
 
     def transform(self):
         n = self.a.strides[0]
         a2D = np.lib.stride_tricks.as_strided(self.a, shape=(self.outlen, self.window_size), strides=(n, n))
         out = self.func(a2D, axis=1)
+        if self.padding:
+            out = self.pad(out)
         return out
 
-    def unpad(self):
-        if self.npadright > 0:
-            return self.a[self.npadleft:-self.npadright]
-        else:
-            return self.a[self.npadleft:]
+    def pad(self, transformed):
+        nout = self.a.size - self.window_size + 1
+        npad = self.a.size - nout
+        npadleft = npad // 2
+        npadright = npad - npadleft
+        padleft = []
+        for i in range(npadleft):
+            e = self.func(self.a[:i + 1])
+            padleft.append(e)
+        padright = []
+        for i in range(npadright):
+            e = self.func(self.a[:i + 1])
+            padright.append(e)
+        out = np.r_[padleft, transformed, padright]
+        return out
 
     def plot(self):
-        plt.plot(self.unpad())
+        plt.plot(self.a)
         out = self.transform()
         plt.plot(out, color='red')
         plt.show()
