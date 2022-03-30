@@ -66,9 +66,10 @@ class Sliding_op(object):
 
     Example with zscore
     >>> a = np.random.normal(size=100)
+    >>> a += np.sin(0.25 * np.arange(100)) * 3.
     >>> a[50] = 10
-    >>> slmu = Sliding_op(a, 50, np.mean, padding=True).transform()
-    >>> slstd = Sliding_op(a, 50, np.std, padding=True).transform()
+    >>> slmu = Sliding_op(a, 10, np.mean, padding=True).transform()
+    >>> slstd = Sliding_op(a, 10, np.std, padding=True).transform()
     >>> slstd[slstd==0] = 1.
     >>> slz = (a - slmu) / slstd
     >>> slz.shape
