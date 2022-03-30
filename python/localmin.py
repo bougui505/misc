@@ -46,13 +46,13 @@ class Local_peaks(object):
     """
     # Detect local maxima
     >>> data = np.random.normal(size=100)
-    >>> data[[40, 80, 90]] += 10.
-    >>> local_peaks = Local_peaks(data, zscore=1)
+    >>> data[[10, 40, 80, 90]] += 20.
+    >>> local_peaks = Local_peaks(data, zscore=3, wlen=25)
     >>> local_peaks.peaks
     array([40, 80, 90])
     >>> local_peaks.plot()
     """
-    def __init__(self, data, zscore, wlen=10, minima=False):
+    def __init__(self, data, zscore=None, wlen=10, minima=False):
         self.data = data
         self.zscore = zscore
         self.wlen = wlen
@@ -60,20 +60,10 @@ class Local_peaks(object):
 
     @property
     def peaks(self):
-        peaks, properties = find_peaks(self.data, prominence=(None, None), wlen=self.wlen)
-        prominences = properties['prominences']
-        left_bases = properties['left_bases']
-        right_bases = properties['right_bases']
-        bases = np.asarray(list(zip(left_bases, right_bases)))
-        slmu = sliding.Sliding_op(a=prominences, window_size=len(prominences) // 5, func=np.mean,
-                                  padding=True).transform()
-        slsigma = sliding.Sliding_op(a=prominences, window_size=len(prominences) // 5, func=np.mean,
-                                     padding=True).transform()
-        zscores = (prominences - slmu) / slsigma
-        selection = (zscores > self.zscore)
-        peaks = peaks[selection]
-        bases = bases[selection]
-        # print(bases)
+        slmu = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.mean, padding=True).transform()
+        slsigma = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.std, padding=True).transform()
+        slz = (self.data - slmu) / slsigma
+        peaks = np.where(slz > self.zscore)[0]
         return peaks
 
     def plot(self):
