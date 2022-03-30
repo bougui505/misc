@@ -63,6 +63,18 @@ class Sliding_op(object):
     >>> slmean.transform().shape
     (100,)
     >>> slmean.plot()
+
+    Example with zscore
+    >>> a = np.random.normal(size=100)
+    >>> a[50] = 10
+    >>> slmu = Sliding_op(a, 50, np.mean, padding=True).transform()
+    >>> slstd = Sliding_op(a, 50, np.std, padding=True).transform()
+    >>> slstd[slstd==0] = 1.
+    >>> slz = (a - slmu) / slstd
+    >>> slz.shape
+    >>> plt.plot(a)
+    >>> plt.plot(slz, color='red')
+    >>> plt.show()
     """
     def __init__(self, a, window_size, func, padding=False):
         self.a = a
@@ -84,14 +96,8 @@ class Sliding_op(object):
         npad = self.a.size - nout
         npadleft = npad // 2
         npadright = npad - npadleft
-        padleft = []
-        for i in range(npadleft):
-            e = self.func(self.a[:i + 1])
-            padleft.append(e)
-        padright = []
-        for i in range(npadright):
-            e = self.func(self.a[:i + 1])
-            padright.append(e)
+        padleft = [self.func(self.a[:self.window_size])] * npadleft
+        padright = [self.func(self.a[-self.window_size:])] * npadright
         out = np.r_[padleft, transformed, padright]
         return out
 
