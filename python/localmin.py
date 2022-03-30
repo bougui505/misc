@@ -39,6 +39,7 @@
 import numpy as np
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from misc import sliding
 
 
 class Local_peaks(object):
@@ -64,9 +65,11 @@ class Local_peaks(object):
         left_bases = properties['left_bases']
         right_bases = properties['right_bases']
         bases = np.asarray(list(zip(left_bases, right_bases)))
-        mu, sigma = prominences.mean(), prominences.std()
-        print(mu, sigma)
-        zscores = (prominences - mu) / sigma
+        slmu = sliding.Sliding_op(a=prominences, window_size=len(prominences) // 5, func=np.mean,
+                                  padding=True).transform()
+        slsigma = sliding.Sliding_op(a=prominences, window_size=len(prominences) // 5, func=np.mean,
+                                     padding=True).transform()
+        zscores = (prominences - slmu) / slsigma
         selection = (zscores > self.zscore)
         peaks = peaks[selection]
         bases = bases[selection]
