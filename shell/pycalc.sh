@@ -43,4 +43,4 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-python3 -c "print($@)"
+python3 -c "import numpy as np; print($@)"
