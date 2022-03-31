@@ -169,3 +169,16 @@ python/toymodels/out.mp4
 python/toymodels/metaD.mp4
 python/test.txt
 test_crosscorrdmat.png
+python/protein/cmapfit/data/5b02_D_230-320.pdb
+python/protein/cmapfit/dmat_inp.png
+python/protein/cmapfit/dmat_ref.png
+python/protein/cmapfit/profile.png
+python/protein/cmapfit/profile_test1.png
+python/protein/cmapfit/profile_test2.png
+python/protein/cmapfit/profile_test3.png
+python/protein/cmapfit/run_test.sh
+python/protein/cmapfit/traj.npy
+python/pymol/AC.pkl
+python/pymol/AC.sdf
+python/pymol/mod.pdb
+python/pymol/test.pdb

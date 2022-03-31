@@ -62,6 +62,13 @@ done
 
 _CWD_=$(pwd)
 _GITROOT_=$(git rev-parse --show-toplevel)
-cd $_GITROOT_ \
-    && git ls-files --others --exclude-standard >> .gitignore \
-    && cd $_CWD_
+git status -u
+echo "########################################################"
+if read -q "choice?Press Y/y to add the files listed above in .gitignore: "; then
+    echo "\nAdding files to gitinore"
+    cd $_GITROOT_ \
+        && git ls-files --others --exclude-standard >> .gitignore \
+        && cd $_CWD_
+else
+    echo "\nOperation cancelled"
+fi
