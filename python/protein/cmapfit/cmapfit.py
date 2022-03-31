@@ -332,48 +332,6 @@ def permute(x, P):
     return x
 
 
-class Autocrop(torch.nn.Module):
-    """
-    Learn to crop automatically the distance matrix
-    >>> A = torch.rand((50, 3))
-    >>> dmat = get_dmat(A)
-    >>> dmat = addbatchchannel(dmat)
-    >>> dmat.shape
-    torch.Size([1, 1, 50, 50])
-    >>> autocropper = Autocrop(dmat, 32)
-    >>> P = get_P(50, 32)
-    >>> P.shape
-    torch.Size([32, 50])
-    >>> P = autocropper(P)
-    >>> P.shape
-    torch.Size([32, 50])
-    >>> dmat_crop = permute(dmat, P)
-    >>> dmat_crop.shape
-    torch.Size([1, 1, 32, 32])
-    >>> opt = torch.optim.Adam(autocropper.parameters())
-    >>> opt.zero_grad()
-    >>> P_out = autocropper(P)
-    >>> loss = get_loss_permutation(P_out)
-    >>> loss.backward()
-    >>> opt.step()
-    >>> P_out = autocropper(P)
-    >>> loss_2 = get_loss_permutation(P_out)
-    >>> loss_2 < loss
-    tensor(True)
-    """
-    def __init__(self, dmat, nout):
-        super(Autocrop, self).__init__()
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        if dmat.ndim < 4:  # (batch, channel, n, n)
-            dmat = addbatchchannel(dmat)
-        batch, channel, n, _ = dmat.shape
-        self.linear = torch.nn.Linear(n, n, device=device)
-
-    def forward(self, x):
-        x = torch.nn.functional.sigmoid(self.linear(x))
-        return x
-
-
 def get_loss_dmat(dmat, dmat_ref):
     """
     >>> coords = torch.randn((10, 3))
@@ -527,13 +485,15 @@ class Profile(object):
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
         7
+        >>> profile.localminima()
+        array([7])
         >>> profile.plot(filename='profile_test1.png')
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
         >>> dmat.shape, dmat_ref.shape
         (torch.Size([93, 93]), torch.Size([259, 259]))
-        >>> dmat_aln.shape, dmat_ref_aln.shape
-        (torch.Size([93, 93]), torch.Size([93, 93]))
-        >>> torch.isclose(((get_cmap(dmat_aln) - get_cmap(dmat_ref_aln))**2).mean(), profile.profile.min())
+        >>> [d.shape for d in dmat_aln], [d.shape for d in dmat_ref_aln]
+        ([torch.Size([93, 93])], [torch.Size([93, 93])])
+        >>> torch.isclose(((get_cmap(dmat_aln[0]) - get_cmap(dmat_ref_aln[0]))**2).mean(), profile.profile.min())
         tensor(True)
 
         # Example with dmat.shape > dmat_ref.shape
@@ -544,22 +504,35 @@ class Profile(object):
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
         7
+        >>> profile.localminima()
+        array([7])
         >>> profile.plot(filename='profile_test2.png')
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
         >>> dmat.shape, dmat_ref.shape
         (torch.Size([259, 259]), torch.Size([93, 93]))
-        >>> dmat_aln.shape, dmat_ref_aln.shape
-        (torch.Size([93, 93]), torch.Size([93, 93]))
-        >>> torch.isclose(((get_cmap(dmat_aln) - get_cmap(dmat_ref_aln))**2).mean(), profile.profile.min())
+        >>> [d.shape for d in dmat_aln], [d.shape for d in dmat_ref_aln]
+        ([torch.Size([93, 93])], [torch.Size([93, 93])])
+        >>> torch.isclose(((get_cmap(dmat_aln[0]) - get_cmap(dmat_ref_aln[0]))**2).mean(), profile.profile.min())
         tensor(True)
 
         # Example with non-contiguous domains
         >>> coords = generate_trace()
         >>> dmat_ref = get_dmat(coords)
+        >>> dmat_ref.shape
+        torch.Size([259, 259])
         >>> coords_w = coords[np.r_[10:50, 200:250]]
         >>> dmat = get_dmat(coords_w)
+        >>> dmat.shape
+        torch.Size([90, 90])
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.plot(filename='profile_test3.png')
+        >>> profile.localminima()
+        array([ 10, 160])
+        >>> dmat.shape, dmat_ref.shape
+        (torch.Size([90, 90]), torch.Size([259, 259]))
+        >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
+        >>> [d.shape for d in dmat_aln], [d.shape for d in dmat_ref_aln]
+        ([torch.Size([90, 90]), torch.Size([90, 90])], [torch.Size([90, 90]), torch.Size([90, 90])])
         """
         self.dmat = dmat
         self.dmat_ref = dmat_ref
@@ -590,7 +563,7 @@ class Profile(object):
         return self.indices, self.profile
 
     def localminima(self):
-        lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=None, wlen=10, minima=True, logging=logging).peaks
+        lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=2.5, wlen=10, minima=True, logging=logging).peaks
         # lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
         # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
         lm = self.indices[lm_raw]
@@ -609,12 +582,19 @@ class Profile(object):
         return self.indices[self.profile.argmin()]
 
     def map_aligned(self):
-        ind = self.argmin()
+        inds = self.localminima()
         n = self.dmat1.shape[-1]
+        dmats2 = []
+        for ind in inds:
+            dmats2.append(self.dmat2[ind:ind + n, :][:, ind:ind + n])
+        dmats1 = []
+        for dmat2 in dmats2:
+            n = dmat2.shape[-1]
+            dmats1.append(self.dmat1[:n, :][:, :n])
         if not self.reverse_ref:
-            return self.dmat1, self.dmat2[ind:ind + n, :][:, ind:ind + n]
+            return dmats1, dmats2
         else:
-            return self.dmat2[ind:ind + n, :][:, ind:ind + n], self.dmat1
+            return dmats2, dmats1
 
 
 if __name__ == '__main__':

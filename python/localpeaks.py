@@ -85,7 +85,7 @@ class Local_peaks(object):
         if self.zscore is None:
             self.zscore = self._automatic_threshold(slz)
             if self.logging is not None:
-                self.logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
+                self.logging.info(f'Automatic_zcore_threshold: {self.zscore:.3f}')
         if not self.minima:
             if self.logging is not None:
                 self.logging.info(f'zscores.max: {slz.max():.3f}')
