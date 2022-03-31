@@ -569,6 +569,7 @@ class Profile(object):
         # lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
         # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
         lm = self.indices[lm_raw]
+        logging.info(f'local_minima: {lm}')
         return lm
 
     def plot(self, filename='profile.png'):
@@ -607,7 +608,7 @@ class Profile(object):
             s = np.sqrt(((dmat1 - dmat2)**2)[sel].mean())
             scores.append(s)
         if len(scores) > 0:
-            return np.mean(scores)
+            return np.nanmean(scores)
         else:
             return np.inf
 
