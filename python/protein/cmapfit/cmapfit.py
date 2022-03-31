@@ -517,22 +517,22 @@ class Profile(object):
 
         # Example with non-contiguous domains
         >>> coords = generate_trace()
-        >>> dmat_ref = get_dmat(coords)
+        >>> dmat_ref = get_dmat(coords[:245])
         >>> dmat_ref.shape
-        torch.Size([259, 259])
-        >>> coords_w = coords[np.r_[10:50, 200:250]]
+        torch.Size([245, 245])
+        >>> coords_w = coords[np.r_[10:50, 160:250]]
         >>> dmat = get_dmat(coords_w)
         >>> dmat.shape
-        torch.Size([90, 90])
+        torch.Size([130, 130])
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.plot(filename='profile_test3.png')
         >>> profile.localminima()
-        array([ 10, 160])
+        array([ 10, 120])
         >>> dmat.shape, dmat_ref.shape
-        (torch.Size([90, 90]), torch.Size([259, 259]))
+        (torch.Size([130, 130]), torch.Size([245, 245]))
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
         >>> [d.shape for d in dmat_aln], [d.shape for d in dmat_ref_aln]
-        ([torch.Size([90, 90]), torch.Size([90, 90])], [torch.Size([90, 90]), torch.Size([90, 90])])
+        ([torch.Size([130, 130]), torch.Size([125, 125])], [torch.Size([130, 130]), torch.Size([125, 125])])
         """
         self.dmat = dmat
         self.dmat_ref = dmat_ref
@@ -563,7 +563,7 @@ class Profile(object):
         return self.indices, self.profile
 
     def localminima(self):
-        lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=2.5, wlen=10, minima=True, logging=logging).peaks
+        lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=2.5, wlen=30, minima=True, logging=logging).peaks
         # lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
         # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
         lm = self.indices[lm_raw]
@@ -590,7 +590,8 @@ class Profile(object):
         dmats1 = []
         for dmat2 in dmats2:
             n = dmat2.shape[-1]
-            dmats1.append(self.dmat1[:n, :][:, :n])
+            dmat1 = self.dmat1[:n, :][:, :n]
+            dmats1.append(dmat1)
         if not self.reverse_ref:
             return dmats1, dmats2
         else:
