@@ -73,18 +73,26 @@ class Local_peaks(object):
             self.logging.info(f'wlen: {self.wlen}')
             self.logging.info(f'minima: {self.minima}')
 
+    def _automatic_threshold(self, zscores, zz=3.):
+        thr = abs(zscores.mean()) + zz * zscores.std()
+        return thr
+
     @property
     def peaks(self):
         slmu = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.mean, padding=True).transform()
         slsigma = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.std, padding=True).transform()
         slz = (self.data - slmu) / slsigma
         if self.zscore is None:
-            self.zscore = slz.mean() + 3. * slz.std()
+            self.zscore = self._automatic_threshold(slz)
             if self.logging is not None:
                 self.logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
         if not self.minima:
+            if self.logging is not None:
+                self.logging.info(f'zscores.max: {slz.max():.3f}')
             peaks = np.where(slz > self.zscore)[0]
         else:
+            if self.logging is not None:
+                self.logging.info(f'zscores.min: {slz.min():.3f}')
             peaks = np.where(slz < -self.zscore)[0]
         return peaks
 
