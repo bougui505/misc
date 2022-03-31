@@ -48,7 +48,7 @@ class Local_peaks(object):
     >>> data = np.random.normal(size=100)
     >>> data += np.sin(0.25*np.arange(100)) * 3.
     >>> data[[10, 40, 80, 90]] += 20.
-    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10)
+    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10, logging=logging)
     >>> local_peaks.peaks
     array([10, 40, 80, 90])
     >>> local_peaks.plot()
@@ -57,18 +57,19 @@ class Local_peaks(object):
     >>> data = np.random.normal(size=100)
     >>> data += np.sin(0.25*np.arange(100)) * 3.
     >>> data[[10, 40, 80, 90]] -= 20.
-    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10, minima=True)
+    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10, minima=True, logging=logging)
     >>> local_peaks.peaks
     array([10, 40, 80, 90])
     >>> local_peaks.plot()
     """
-    def __init__(self, data, zscore=None, wlen=10, minima=False):
+    def __init__(self, data, zscore=None, wlen=10, minima=False, logging=None):
         self.data = data
         self.zscore = zscore
         self.wlen = wlen
         self.minima = minima
-        logging.info(f'zscore: {self.zscore}')
-        logging.info(f'wlen: {self.wlen}')
+        if logging is not None:
+            logging.info(f'zscore: {self.zscore}')
+            logging.info(f'wlen: {self.wlen}')
 
     @property
     def peaks(self):
@@ -77,7 +78,8 @@ class Local_peaks(object):
         slz = (self.data - slmu) / slsigma
         if self.zscore is None:
             self.zscore = slz.mean() + 3. * slz.std()
-            logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
+            if logging is not None:
+                logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
         if not self.minima:
             peaks = np.where(slz > self.zscore)[0]
         else:
