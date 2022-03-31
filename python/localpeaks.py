@@ -71,6 +71,7 @@ class Local_peaks(object):
         if self.logging is not None:
             self.logging.info(f'zscore: {self.zscore}')
             self.logging.info(f'wlen: {self.wlen}')
+            self.logging.info(f'minima: {self.minima}')
 
     @property
     def peaks(self):
