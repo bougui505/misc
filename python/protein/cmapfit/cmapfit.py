@@ -43,6 +43,7 @@ import itertools
 import scipy.spatial.distance as scidist
 import matplotlib.pyplot as plt
 import scipy.signal
+from misc.localpeaks import Local_peaks
 
 
 def sliding_mse(A, w, padding=0, diagonal=False):
@@ -589,8 +590,8 @@ class Profile(object):
         return self.indices, self.profile
 
     def localminima(self):
-        distance = self.dmat1.shape[-1]
-        lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
+        lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=None, wlen=10, minima=True, logging=logging).peaks
+        # lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
         # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
         lm = self.indices[lm_raw]
         return lm
