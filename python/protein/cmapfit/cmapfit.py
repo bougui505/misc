@@ -537,6 +537,8 @@ class Profile(object):
         self.dmat = dmat
         self.dmat_ref = dmat_ref
         self.get_profile()
+        self.score = self.get_score()
+        logging.info(f'dmat_score: {self.score:.3f}')
 
     @property
     def dmat1(self):
@@ -597,6 +599,18 @@ class Profile(object):
         else:
             return dmats2, dmats1
 
+    def get_score(self, dthreshold=8.):
+        dmats1, dmats2 = self.map_aligned()
+        scores = []
+        for dmat1, dmat2 in zip(dmats1, dmats2):
+            sel = dmat2 < dthreshold
+            s = np.sqrt(((dmat1 - dmat2)**2)[sel].mean())
+            scores.append(s)
+        if len(scores) > 0:
+            return np.mean(scores)
+        else:
+            return np.inf
+
 
 if __name__ == '__main__':
     from pymol import cmd
@@ -614,7 +628,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--pdb1')
     parser.add_argument('--pdb2')
-    parser.add_argument('--profile', help='Compute the sliding MSE profile and exit', action='store_true')
+    parser.add_argument('--fit', help='Flexible fit of contact maps', action='store_true')
     parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
     parser.add_argument('--lr', help='Learning rate for the optimizer (Adam) -- default=0.01', default=0.01, type=float)
     parser.add_argument('--save_traj', help='Save the trajectory minimization in the given npy file')
@@ -626,28 +640,30 @@ if __name__ == '__main__':
         sys.exit()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    logging.info(f'pdb1: {args.pdb1}')
+    logging.info(f'pdb2: {args.pdb2}')
     cmd.load(args.pdb1, 'pdb1')
     cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
     pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
+    logging.info(f'pdb1.shape: {pdb1.shape[0]}')
+    logging.info(f'pdb2.shape: {pdb2.shape[0]}')
     dmat_ref = get_dmat(pdb2)
     dmat = get_dmat(pdb1)
-    print('dmat.shape: ', dmat.shape)
-    print('dmat_ref.shape: ', dmat_ref.shape)
     profile = Profile(dmat, dmat_ref)
+    print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f}')
     profile.plot()
-    if args.profile:
-        sys.exit()
-    coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
-                                                        pdb2,
-                                                        args.maxiter,
-                                                        stop=1e-6,
-                                                        verbose=True,
-                                                        lr=args.lr,
-                                                        save_traj=args.save_traj)
-    plt.matshow(dmat_inp.detach().cpu().numpy())
-    plt.savefig('dmat_inp.png')
-    plt.matshow(dmat_out.detach().cpu().numpy())
-    plt.savefig('dmat_out.png')
-    plt.matshow(dmat_ref.detach().cpu().numpy())
-    plt.savefig('dmat_ref.png')
+    if args.fit:
+        coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
+                                                            pdb2,
+                                                            args.maxiter,
+                                                            stop=1e-6,
+                                                            verbose=True,
+                                                            lr=args.lr,
+                                                            save_traj=args.save_traj)
+        plt.matshow(dmat_inp.detach().cpu().numpy())
+        plt.savefig('dmat_inp.png')
+        plt.matshow(dmat_out.detach().cpu().numpy())
+        plt.savefig('dmat_out.png')
+        plt.matshow(dmat_ref.detach().cpu().numpy())
+        plt.savefig('dmat_ref.png')

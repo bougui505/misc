@@ -182,3 +182,5 @@ python/pymol/AC.pkl
 python/pymol/AC.sdf
 python/pymol/mod.pdb
 python/pymol/test.pdb
+python/protein/cmapfit/data/5hl8_A.pdb
+python/protein/cmapfit/data/5hl8_C.pdb
