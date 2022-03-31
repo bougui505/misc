@@ -67,9 +67,10 @@ class Local_peaks(object):
         self.zscore = zscore
         self.wlen = wlen
         self.minima = minima
-        if logging is not None:
-            logging.info(f'zscore: {self.zscore}')
-            logging.info(f'wlen: {self.wlen}')
+        self.logging = logging
+        if self.logging is not None:
+            self.logging.info(f'zscore: {self.zscore}')
+            self.logging.info(f'wlen: {self.wlen}')
 
     @property
     def peaks(self):
@@ -78,8 +79,8 @@ class Local_peaks(object):
         slz = (self.data - slmu) / slsigma
         if self.zscore is None:
             self.zscore = slz.mean() + 3. * slz.std()
-            if logging is not None:
-                logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
+            if self.logging is not None:
+                self.logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
         if not self.minima:
             peaks = np.where(slz > self.zscore)[0]
         else:
