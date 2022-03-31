@@ -40,7 +40,9 @@ import torch
 import tqdm
 import numpy as np
 import itertools
+import scipy.spatial.distance as scidist
 import matplotlib.pyplot as plt
+import scipy.signal
 
 
 def sliding_mse(A, w, padding=0, diagonal=False):
@@ -196,8 +198,16 @@ def addbatchchannel(dmat):
 
 
 def get_cmap(dmat, threshold=8.):
+    """
+    >>> dmat = torch.arange(10)
+    >>> dmat
+    tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    >>> get_cmap(dmat)
+    tensor([8., 7., 6., 5., 4., 3., 2., 1., -0., 0.])
+    """
     cmap = dmat - threshold
     cmap = torch.nn.functional.relu(-cmap)
+    # cmap = threshold - cmap
     return cmap
 
 
@@ -477,54 +487,133 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     return output, loss, dmat_inp, dmat_ref, dmat
 
 
+def generate_trace():
+    """
+    >>> coords = generate_trace()
+    >>> coords.shape
+    torch.Size([259, 3])
+    >>> torch.norm(coords[1:] - coords[:-1], dim=1).mean()
+    tensor(3.7984)
+    """
+    cmd.load('data/6i3r_A.pdb')
+    coords = cmd.get_coords('polymer.protein and name CA')
+    # coords = [np.random.normal(size=3)]
+    # while len(coords) < n:
+    #     v = np.random.normal(size=3)
+    #     v /= np.linalg.norm(v)
+    #     v *= 3.8
+    #     c = coords[-1] + v
+    #     cdist = scidist.cdist(c[None, :], np.asarray(coords))
+    #     dmin = cdist.min()
+    #     dmax = cdist.max()
+    #     if dmin >= 3.8 and dmax < 50:
+    #         coords.append(c)
+    # coords = np.asarray(coords)
+    # # coords -= coords.mean(axis=0)
+    return torch.Tensor(coords)
+
+
 class Profile(object):
     def __init__(self, dmat, dmat_ref):
         """
         # First example with dmat.shape < dmat_ref.shape
-        >>> coords = torch.rand((50, 3)) * 10
+        >>> coords = generate_trace()
         >>> dmat_ref = get_dmat(coords)
-        >>> coords_w = coords[7:17]
+        >>> coords_w = coords[7:100]
         >>> dmat = get_dmat(coords_w)
         >>> dmat.shape
-        torch.Size([10, 10])
+        torch.Size([93, 93])
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
         7
         >>> profile.plot(filename='profile_test1.png')
+        >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
+        >>> dmat.shape, dmat_ref.shape
+        (torch.Size([93, 93]), torch.Size([259, 259]))
+        >>> dmat_aln.shape, dmat_ref_aln.shape
+        (torch.Size([93, 93]), torch.Size([93, 93]))
+        >>> torch.isclose(((get_cmap(dmat_aln) - get_cmap(dmat_ref_aln))**2).mean(), profile.profile.min())
+        tensor(True)
 
         # Example with dmat.shape > dmat_ref.shape
-        >>> coords = torch.rand((50, 3)) * 10
+        >>> coords = generate_trace()
         >>> dmat = get_dmat(coords)
-        >>> coords_w = coords[7:17]
+        >>> coords_w = coords[7:100]
         >>> dmat_ref = get_dmat(coords_w)
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
-        -7
+        7
         >>> profile.plot(filename='profile_test2.png')
+        >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
+        >>> dmat.shape, dmat_ref.shape
+        (torch.Size([259, 259]), torch.Size([93, 93]))
+        >>> dmat_aln.shape, dmat_ref_aln.shape
+        (torch.Size([93, 93]), torch.Size([93, 93]))
+        >>> torch.isclose(((get_cmap(dmat_aln) - get_cmap(dmat_ref_aln))**2).mean(), profile.profile.min())
+        tensor(True)
+
+        # Example with non-contiguous domains
+        >>> coords = generate_trace()
+        >>> dmat_ref = get_dmat(coords)
+        >>> coords_w = coords[np.r_[10:50, 200:250]]
+        >>> dmat = get_dmat(coords_w)
+        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile.plot(filename='profile_test3.png')
         """
         self.dmat = dmat
         self.dmat_ref = dmat_ref
         self.get_profile()
 
+    @property
+    def dmat1(self):
+        if self.dmat.shape[-1] <= self.dmat_ref.shape[-1]:
+            self.reverse_ref = False
+            return self.dmat
+        else:
+            self.reverse_ref = True
+            return self.dmat_ref
+
+    @property
+    def dmat2(self):
+        if self.dmat.shape[-1] <= self.dmat_ref.shape[-1]:
+            self.reverse_ref = False
+            return self.dmat_ref
+        else:
+            self.reverse_ref = True
+            return self.dmat
+
     def get_profile(self):
         self.profile = torch.squeeze(
-            sliding_mse(get_cmap(self.dmat_ref), get_cmap(self.dmat), diagonal=True, padding='full'))
-        self.indices = np.arange(len(self.profile)) - self.dmat.shape[0]
+            sliding_mse(get_cmap(self.dmat2), get_cmap(self.dmat1), diagonal=True, padding='full'))
+        self.indices = np.arange(len(self.profile)) - self.dmat1.shape[0]
         return self.indices, self.profile
+
+    def localminima(self):
+        distance = self.dmat1.shape[-1]
+        lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
+        # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
+        lm = self.indices[lm_raw]
+        return lm
 
     def plot(self, filename='profile.png'):
         plt.figure()
         plt.plot(self.indices, self.profile)
-        plt.axvline(0, color='red', linestyle='--', linewidth=1.)
-        # plt.axvline(self.dmat_ref.shape[-1], color='red', linestyle='--', linewidth=1.)
-        plt.axvline(self.dmat_ref.shape[-1] - self.dmat.shape[-1], color='gray', linestyle='--', linewidth=1.)
+        plt.axvline(0, color='red', linestyle='-', linewidth=1.)
+        plt.axvline(self.dmat2.shape[-1] - self.dmat1.shape[-1], color='gray', linestyle='-', linewidth=1.)
+        for lm in self.localminima():
+            plt.axvline(lm, color='blue', linestyle='--', linewidth=1.)
         plt.savefig(filename)
 
     def argmin(self):
         return self.indices[self.profile.argmin()]
 
     def map_aligned(self):
-        pass
+        ind = self.argmin()
+        n = self.dmat1.shape[-1]
+        if not self.reverse_ref:
+            return self.dmat1, self.dmat2[ind:ind + n, :][:, ind:ind + n]
+        else:
+            return self.dmat2[ind:ind + n, :][:, ind:ind + n], self.dmat1
 
 
 if __name__ == '__main__':

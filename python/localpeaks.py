@@ -46,10 +46,20 @@ class Local_peaks(object):
     """
     # Detect local maxima
     >>> data = np.random.normal(size=100)
+    >>> data += np.sin(0.25*np.arange(100)) * 3.
     >>> data[[10, 40, 80, 90]] += 20.
-    >>> local_peaks = Local_peaks(data, zscore=3, wlen=25)
+    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10)
     >>> local_peaks.peaks
-    array([40, 80, 90])
+    array([10, 40, 80, 90])
+    >>> local_peaks.plot()
+
+    # Detect local minima
+    >>> data = np.random.normal(size=100)
+    >>> data += np.sin(0.25*np.arange(100)) * 3.
+    >>> data[[10, 40, 80, 90]] -= 20.
+    >>> local_peaks = Local_peaks(data, zscore=None, wlen=10, minima=True)
+    >>> local_peaks.peaks
+    array([10, 40, 80, 90])
     >>> local_peaks.plot()
     """
     def __init__(self, data, zscore=None, wlen=10, minima=False):
@@ -57,13 +67,21 @@ class Local_peaks(object):
         self.zscore = zscore
         self.wlen = wlen
         self.minima = minima
+        logging.info(f'zscore: {self.zscore}')
+        logging.info(f'wlen: {self.wlen}')
 
     @property
     def peaks(self):
         slmu = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.mean, padding=True).transform()
         slsigma = sliding.Sliding_op(self.data, window_size=self.wlen, func=np.std, padding=True).transform()
         slz = (self.data - slmu) / slsigma
-        peaks = np.where(slz > self.zscore)[0]
+        if self.zscore is None:
+            self.zscore = slz.mean() + 3. * slz.std()
+            logging.info(f'Automatic zcore threshold: {self.zscore:.3f}')
+        if not self.minima:
+            peaks = np.where(slz > self.zscore)[0]
+        else:
+            peaks = np.where(slz < -self.zscore)[0]
         return peaks
 
     def plot(self):
@@ -79,11 +97,11 @@ if __name__ == '__main__':
     import doctest
     import argparse
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
