@@ -485,7 +485,7 @@ class Profile(object):
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
         7
-        >>> profile.localminima()
+        >>> profile.localminima
         array([7])
         >>> profile.plot(filename='profile_test1.png')
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
@@ -504,7 +504,7 @@ class Profile(object):
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.argmin()
         7
-        >>> profile.localminima()
+        >>> profile.localminima
         array([7])
         >>> profile.plot(filename='profile_test2.png')
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
@@ -526,7 +526,7 @@ class Profile(object):
         torch.Size([130, 130])
         >>> profile = Profile(dmat, dmat_ref)
         >>> profile.plot(filename='profile_test3.png')
-        >>> profile.localminima()
+        >>> profile.localminima
         array([ 10, 120])
         >>> dmat.shape, dmat_ref.shape
         (torch.Size([130, 130]), torch.Size([245, 245]))
@@ -537,6 +537,7 @@ class Profile(object):
         self.dmat = dmat
         self.dmat_ref = dmat_ref
         self.get_profile()
+        self.localminima = self.get_localminima()
         self.scores, self.score, self.score_min = self.get_score()
         logging.info(f'dmat_score_mean: {self.score:.3f}')
         logging.info(f'dmat_score_min: {self.score_min:.3f}')
@@ -567,7 +568,7 @@ class Profile(object):
         self.indices = np.arange(len(self.profile)) - self.dmat1.shape[0]
         return self.indices, self.profile
 
-    def localminima(self):
+    def get_localminima(self):
         lm_raw = Local_peaks(self.profile.cpu().numpy(), zscore=2.5, wlen=30, minima=True, logging=logging).peaks
         # lm_raw, _ = scipy.signal.find_peaks(-self.profile.cpu().numpy(), prominence=0.05, wlen=10)
         # lm_raw = scipy.signal.argrelextrema(self.profile.cpu().numpy(), np.less)
@@ -580,7 +581,7 @@ class Profile(object):
         plt.plot(self.indices, self.profile)
         plt.axvline(0, color='red', linestyle='-', linewidth=1.)
         plt.axvline(self.dmat2.shape[-1] - self.dmat1.shape[-1], color='gray', linestyle='-', linewidth=1.)
-        for lm in self.localminima():
+        for lm in self.localminima:
             plt.axvline(lm, color='blue', linestyle='--', linewidth=1.)
         plt.savefig(filename)
 
@@ -605,7 +606,7 @@ class Profile(object):
         return self.indices[self.profile.argmin()]
 
     def map_aligned(self):
-        inds = self.localminima()
+        inds = self.localminima
         n = self.dmat1.shape[-1]
         dmats2 = []
         for ind in inds:
