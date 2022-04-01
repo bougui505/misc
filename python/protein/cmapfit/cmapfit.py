@@ -473,7 +473,7 @@ def generate_trace():
 
 
 class Profile(object):
-    def __init__(self, dmat, dmat_ref):
+    def __init__(self, dmat, dmat_ref, coords=None, coords_ref=None):
         """
         # First example with dmat.shape < dmat_ref.shape
         >>> coords = generate_trace()
@@ -482,7 +482,7 @@ class Profile(object):
         >>> dmat = get_dmat(coords_w)
         >>> dmat.shape
         torch.Size([93, 93])
-        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile = Profile(dmat, dmat_ref, coords=coords_w, coords_ref=coords)
         >>> profile.argmin()
         7
         >>> profile.localminima
@@ -495,13 +495,18 @@ class Profile(object):
         ([torch.Size([93, 93])], [torch.Size([93, 93])])
         >>> torch.isclose(((get_cmap(dmat_aln[0]) - get_cmap(dmat_ref_aln[0]))**2).mean(), profile.profile.min())
         tensor(True)
+        >>> coords1, coords2 = profile.split_coords()
+        >>> [c.shape for c in coords1], [c.shape for c in coords2]
+        ([torch.Size([93, 3])], [torch.Size([93, 3])])
+        >>> [(get_dmat(c)==d).all() for c, d in zip(coords1, dmat_aln)]
+        [tensor(True)]
 
         # Example with dmat.shape > dmat_ref.shape
         >>> coords = generate_trace()
         >>> dmat = get_dmat(coords)
         >>> coords_w = coords[7:100]
         >>> dmat_ref = get_dmat(coords_w)
-        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile = Profile(dmat, dmat_ref, coords, coords_w)
         >>> profile.argmin()
         7
         >>> profile.localminima
@@ -514,6 +519,11 @@ class Profile(object):
         ([torch.Size([93, 93])], [torch.Size([93, 93])])
         >>> torch.isclose(((get_cmap(dmat_aln[0]) - get_cmap(dmat_ref_aln[0]))**2).mean(), profile.profile.min())
         tensor(True)
+        >>> coords1, coords2 = profile.split_coords()
+        >>> [c.shape for c in coords1], [c.shape for c in coords2]
+        ([torch.Size([93, 3])], [torch.Size([93, 3])])
+        >>> [(get_dmat(c)==d).all() for c, d in zip(coords1, dmat_aln)]
+        [tensor(True)]
 
         # Example with non-contiguous domains
         >>> coords = generate_trace()
@@ -524,7 +534,7 @@ class Profile(object):
         >>> dmat = get_dmat(coords_w)
         >>> dmat.shape
         torch.Size([130, 130])
-        >>> profile = Profile(dmat, dmat_ref)
+        >>> profile = Profile(dmat, dmat_ref, coords_w, coords[:245])
         >>> profile.plot(filename='profile_test3.png')
         >>> profile.localminima
         array([ 10, 120])
@@ -533,9 +543,18 @@ class Profile(object):
         >>> dmat_aln, dmat_ref_aln = profile.map_aligned()
         >>> [d.shape for d in dmat_aln], [d.shape for d in dmat_ref_aln]
         ([torch.Size([130, 130]), torch.Size([125, 125])], [torch.Size([130, 130]), torch.Size([125, 125])])
+        >>> coords1, coords2 = profile.split_coords()
+        >>> [c.shape for c in coords1], [c.shape for c in coords2]
+        ([torch.Size([130, 3]), torch.Size([125, 3])], [torch.Size([130, 3]), torch.Size([125, 3])])
         """
         self.dmat = dmat
         self.dmat_ref = dmat_ref
+        self.coords = coords
+        self.coords_ref = coords_ref
+        if self.coords is not None:
+            assert len(self.coords) == self.dmat.shape[-1]
+        if self.coords_ref is not None:
+            assert len(self.coords_ref) == self.dmat_ref.shape[-1]
         self.get_profile()
         self.localminima = self.get_localminima()
         self.scores, self.score, self.score_min = self.get_score()
@@ -554,6 +573,15 @@ class Profile(object):
             return self.dmat_ref
 
     @property
+    def coords1(self):
+        if self.dmat.shape[-1] <= self.dmat_ref.shape[-1]:
+            self.reverse_ref = False
+            return self.coords
+        else:
+            self.reverse_ref = True
+            return self.coords_ref
+
+    @property
     def dmat2(self):
         if self.dmat.shape[-1] <= self.dmat_ref.shape[-1]:
             self.reverse_ref = False
@@ -561,6 +589,15 @@ class Profile(object):
         else:
             self.reverse_ref = True
             return self.dmat
+
+    @property
+    def coords2(self):
+        if self.dmat.shape[-1] <= self.dmat_ref.shape[-1]:
+            self.reverse_ref = False
+            return self.coords_ref
+        else:
+            self.reverse_ref = True
+            return self.coords
 
     def get_profile(self):
         self.profile = torch.squeeze(
@@ -616,10 +653,20 @@ class Profile(object):
             n = dmat2.shape[-1]
             dmat1 = self.dmat1[:n, :][:, :n]
             dmats1.append(dmat1)
-        if not self.reverse_ref:
-            return dmats1, dmats2
-        else:
-            return dmats2, dmats1
+        return dmats1, dmats2
+
+    def split_coords(self):
+        inds = self.localminima
+        n = self.coords1.shape[0]
+        coords2 = []
+        for ind in inds:
+            coords2.append(self.coords2[ind:ind + n, :])
+        coords1 = []
+        for c2 in coords2:
+            n = c2.shape[0]
+            c1 = self.coords1[:n, :][:, :n]
+            coords1.append(c1)
+        return coords1, coords2
 
     def get_score(self, dthreshold=8.):
         dmats1, dmats2 = self.map_aligned()
@@ -674,7 +721,7 @@ if __name__ == '__main__':
     dmat = get_dmat(pdb1)
     profile = Profile(dmat, dmat_ref)
     print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f}')
-    # profile.plot()
+    profile.plot()
     # profile.plot_dmat()
     if args.fit:
         coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
