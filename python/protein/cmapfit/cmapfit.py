@@ -584,6 +584,23 @@ class Profile(object):
             plt.axvline(lm, color='blue', linestyle='--', linewidth=1.)
         plt.savefig(filename)
 
+    def plot_dmat(self):
+        dmats1, dmats2 = self.map_aligned()
+        n = len(dmats1)
+        plt.figure()
+        plt.matshow(self.dmat1)
+        plt.savefig('dmat1.png')
+        plt.figure()
+        plt.matshow(self.dmat2)
+        plt.savefig('dmat2.png')
+        for i in range(n):
+            plt.figure()
+            plt.matshow(dmats1[i])
+            plt.savefig(f'dmats1_{i}.png')
+            plt.figure()
+            plt.matshow(dmats2[i])
+            plt.savefig(f'dmats2_{i}.png')
+
     def argmin(self):
         return self.indices[self.profile.argmin()]
 
@@ -656,7 +673,8 @@ if __name__ == '__main__':
     dmat = get_dmat(pdb1)
     profile = Profile(dmat, dmat_ref)
     print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f}')
-    profile.plot()
+    # profile.plot()
+    # profile.plot_dmat()
     if args.fit:
         coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
                                                             pdb2,

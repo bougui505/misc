@@ -69,7 +69,7 @@ class Local_peaks(object):
         self.minima = minima
         self.logging = logging
         if self.logging is not None:
-            self.logging.info(f'zscore: {self.zscore}')
+            self.logging.info(f'zscore_threshold: {self.zscore}')
             self.logging.info(f'wlen: {self.wlen}')
             self.logging.info(f'minima: {self.minima}')
 
@@ -96,8 +96,8 @@ class Local_peaks(object):
             if self.logging is not None:
                 zscores_repr = ', '.join([f'{e:.3f}' for e in slz[peaks]])
                 self.logging.info(f'zscores: {zscores_repr}')
-                self.logging.info(f'zscores.min: {slz.min():.3f}')
-                self.logging.info(f'zscores.mean: {slz.mean():.3f}')
+                self.logging.info(f'zscores.min: {slz[peaks].min():.3f}')
+                self.logging.info(f'zscores.mean: {slz[peaks].mean():.3f}')
         return peaks
 
     def plot(self):
