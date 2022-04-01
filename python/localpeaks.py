@@ -92,9 +92,12 @@ class Local_peaks(object):
                 self.logging.info(f'zscores.max: {slz.max():.3f}')
             peaks = np.where(slz > self.zscore)[0]
         else:
-            if self.logging is not None:
-                self.logging.info(f'zscores.min: {slz.min():.3f}')
             peaks = np.where(slz < -self.zscore)[0]
+            if self.logging is not None:
+                zscores_repr = ', '.join([f'{e:.3f}' for e in slz[peaks]])
+                self.logging.info(f'zscores: {zscores_repr}')
+                self.logging.info(f'zscores.min: {slz.min():.3f}')
+                self.logging.info(f'zscores.mean: {slz.mean():.3f}')
         return peaks
 
     def plot(self):

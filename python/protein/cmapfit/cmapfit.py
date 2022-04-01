@@ -537,8 +537,11 @@ class Profile(object):
         self.dmat = dmat
         self.dmat_ref = dmat_ref
         self.get_profile()
-        self.score = self.get_score()
-        logging.info(f'dmat_score: {self.score:.3f}')
+        self.scores, self.score, self.score_min = self.get_score()
+        logging.info(f'dmat_score_mean: {self.score:.3f}')
+        logging.info(f'dmat_score_min: {self.score_min:.3f}')
+        scores_repr = ', '.join([f'{e:.3f}' for e in self.scores])
+        logging.info(f'dmat_scores: {scores_repr}')
 
     @property
     def dmat1(self):
@@ -608,9 +611,9 @@ class Profile(object):
             s = np.sqrt(((dmat1 - dmat2)**2)[sel].mean())
             scores.append(s)
         if len(scores) > 0:
-            return np.nanmean(scores)
+            return scores, np.nanmean(scores), np.nanmin(scores)
         else:
-            return np.inf
+            return scores, np.inf, np.inf
 
 
 if __name__ == '__main__':
