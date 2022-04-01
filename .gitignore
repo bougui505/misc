@@ -184,3 +184,5 @@ python/pymol/mod.pdb
 python/pymol/test.pdb
 python/protein/cmapfit/data/5hl8_A.pdb
 python/protein/cmapfit/data/5hl8_C.pdb
+python/protein/cmapfit/data/5wul_A.pdb
+python/protein/cmapfit/data/5wuw_B.pdb
