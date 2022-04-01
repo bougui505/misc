@@ -720,7 +720,7 @@ if __name__ == '__main__':
     dmat_ref = get_dmat(pdb2)
     dmat = get_dmat(pdb1)
     profile = Profile(dmat, dmat_ref)
-    print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f}')
+    print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f} Å')
     # profile.plot()
     # profile.plot_dmat()
     if args.fit:
