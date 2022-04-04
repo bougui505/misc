@@ -204,10 +204,12 @@ def get_cmap(dmat, threshold=8.):
     >>> dmat
     tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     >>> get_cmap(dmat)
-    tensor([8., 7., 6., 5., 4., 3., 2., 1., -0., 0.])
+    tensor([1.0000, 0.8750, 0.7500, 0.6250, 0.5000, 0.3750, 0.2500, 0.1250, -0.0000,
+            0.0000])
     """
     cmap = dmat - threshold
     cmap = torch.nn.functional.relu(-cmap)
+    cmap = cmap / threshold
     # cmap = threshold - cmap
     return cmap
 
@@ -364,7 +366,7 @@ def get_loss_permutation(P):
     return loss
 
 
-def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None):
+def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None, contact=False):
     """
     >>> inp = torch.rand((8, 3))
     >>> target = torch.rand((10, 3))
@@ -382,7 +384,11 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
     mu = dmat_ref.mean()
     sigma = dmat_ref.std()
     dmat_ref = get_dmat(target, standardize=False, mu=mu, sigma=sigma)
+    if contact:
+        dmat_ref = get_cmap(dmat_ref)
     dmat_inp = get_dmat(inp, standardize=False, mu=mu, sigma=sigma)
+    if contact:
+        dmat_inp = get_cmap(dmat_inp)
     # autocropper = Autocrop(dmat_ref, dmat_inp.shape[-1])
     optimizer = torch.optim.Adam(ff.parameters(), lr=lr)
     # optimizer_cropper = torch.optim.Adam(autocropper.parameters(), lr=0.1)
@@ -401,10 +407,12 @@ def fit(inp, target, maxiter, stop=1e-3, verbose=True, lr=0.001, save_traj=None)
         if save_traj is not None:
             traj.append(output.detach().cpu().numpy())
         dmat = get_dmat(output, standardize=False, mu=mu, sigma=sigma)
+        if contact:
+            dmat = get_cmap(dmat)
         # P_out = autocropper(P)
         # dmat_ref_crop = permute(dmat_ref, P_out)
-        loss_dmat = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_ref))
-        loss_dmat_auto = get_loss_dmat(get_cmap(dmat), get_cmap(dmat_inp))
+        loss_dmat = get_loss_dmat(dmat, dmat_ref)
+        loss_dmat_auto = get_loss_dmat(dmat, dmat_inp)
         loss_rms = get_loss_rms(output, inp)
         # loss_P = get_loss_permutation(P_out)
         loss = loss_dmat
@@ -698,6 +706,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdb1')
     parser.add_argument('--pdb2')
     parser.add_argument('--fit', help='Flexible fit of contact maps', action='store_true')
+    parser.add_argument('--contacts', help='Flexible fit to optimize contacts and not distances', action='store_true')
     parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
     parser.add_argument('--lr', help='Learning rate for the optimizer (Adam) -- default=0.01', default=0.01, type=float)
     parser.add_argument('--save_traj', help='Save the trajectory minimization in the given npy file')
@@ -719,21 +728,25 @@ if __name__ == '__main__':
     logging.info(f'pdb2.shape: {pdb2.shape[0]}')
     dmat_ref = get_dmat(pdb2)
     dmat = get_dmat(pdb1)
-    profile = Profile(dmat, dmat_ref)
+    profile = Profile(dmat, dmat_ref, coords=pdb1, coords_ref=pdb2)
     print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f} Å')
     # profile.plot()
     # profile.plot_dmat()
     if args.fit:
-        coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(pdb1,
-                                                            pdb2,
-                                                            args.maxiter,
-                                                            stop=1e-6,
-                                                            verbose=True,
-                                                            lr=args.lr,
-                                                            save_traj=args.save_traj)
-        plt.matshow(dmat_inp.detach().cpu().numpy())
-        plt.savefig('dmat_inp.png')
-        plt.matshow(dmat_out.detach().cpu().numpy())
-        plt.savefig('dmat_out.png')
-        plt.matshow(dmat_ref.detach().cpu().numpy())
-        plt.savefig('dmat_ref.png')
+        coords1, coords2 = profile.split_coords()
+        for i, (c1, c2) in enumerate(zip(coords1, coords2)):
+            out_traj = f'{os.path.splitext(args.save_traj)[0]}_{i}.npy'
+            coordsfit, loss, dmat_inp, dmat_ref, dmat_out = fit(c1,
+                                                                c2,
+                                                                args.maxiter,
+                                                                stop=1e-6,
+                                                                verbose=True,
+                                                                lr=args.lr,
+                                                                save_traj=out_traj,
+                                                                contact=args.contacts)
+            plt.matshow(dmat_inp.detach().cpu().numpy())
+            plt.savefig(f'dmat_inp_{i}.png')
+            plt.matshow(dmat_out.detach().cpu().numpy())
+            plt.savefig(f'dmat_out_{i}.png')
+            plt.matshow(dmat_ref.detach().cpu().numpy())
+            plt.savefig(f'dmat_ref_{i}.png')
