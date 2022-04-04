@@ -741,6 +741,7 @@ if __name__ == '__main__':
             if coords is not None:
                 logging.info(f'pdb2: {name}')
                 logging.info(f'pdb2.shape: {coords.shape[0]}')
+                coords = torchify(coords)
                 dmat_ref = get_dmat(coords)
                 profile = Profile(dmat, dmat_ref)
 

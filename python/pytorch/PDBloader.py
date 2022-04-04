@@ -101,9 +101,9 @@ class PDBdataset(torch.utils.data.Dataset):
         coords = cmd.get_coords(selection=f'{pymolname} and {self.selection}')
         cmd.delete(pymolname)
         if not self.return_name:
-            return torchify.torchify(coords)
+            return coords
         else:
-            return pdbfile, torchify.torchify(coords)
+            return pdbfile, coords
 
 
 if __name__ == '__main__':
