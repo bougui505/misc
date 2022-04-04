@@ -117,6 +117,7 @@ def sliding_mse(A, w, padding=0, diagonal=False):
         A_unfold = torch.nn.functional.unfold(A, w.shape[-2:], padding=padding)
     else:  # diagonal
         A_unfold = unfold_diagonal(A, w.shape[-2:], padding=padding)
+    A_unfold = torchify(A_unfold)
     out_unfold = (A_unfold - w.flatten()[None, ..., None])**2
     out_unfold = out_unfold.mean(axis=1)
     if diagonal:
@@ -680,7 +681,7 @@ class Profile(object):
         scores = []
         for dmat1, dmat2 in zip(dmats1, dmats2):
             sel = dmat2 < dthreshold
-            s = np.sqrt(((dmat1 - dmat2)**2)[sel].mean())
+            s = np.sqrt(((dmat1.cpu() - dmat2.cpu())**2)[sel].mean())
             scores.append(s)
         if len(scores) > 0:
             return scores, np.nanmean(scores), np.nanmin(scores)
