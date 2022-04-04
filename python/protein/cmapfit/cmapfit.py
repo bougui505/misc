@@ -107,6 +107,7 @@ def sliding_mse(A, w, padding=0, diagonal=False):
     """
     A = addbatchchannel(A)
     w = addbatchchannel(w)
+    w = torchify(w)
     N, C, H, W = A.shape
     # conv = torch.nn.functional.conv2d(A, w)
     # print(conv.shape)
