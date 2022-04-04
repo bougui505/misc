@@ -40,6 +40,7 @@ import torch
 import glob
 from pymol import cmd
 from misc import randomgen
+from misc.pytorch import torchify
 
 
 def collate_fn(batch):
@@ -100,9 +101,9 @@ class PDBdataset(torch.utils.data.Dataset):
         coords = cmd.get_coords(selection=f'{pymolname} and {self.selection}')
         cmd.delete(pymolname)
         if not self.return_name:
-            return coords
+            return torchify.torchify(coords)
         else:
-            return pdbfile, coords
+            return pdbfile, torchify.torchify(coords)
 
 
 if __name__ == '__main__':

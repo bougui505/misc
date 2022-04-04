@@ -39,11 +39,9 @@
 import torch
 import tqdm
 import numpy as np
-import itertools
-import scipy.spatial.distance as scidist
 import matplotlib.pyplot as plt
-import scipy.signal
 from misc.localpeaks import Local_peaks
+from misc.pytorch import PDBloader
 
 
 def sliding_mse(A, w, padding=0, diagonal=False):
@@ -702,9 +700,9 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--pdb1')
+    parser.add_argument('--pdb1', required=True)
     parser.add_argument('--pdb2')
+    parser.add_argument('--db')
     parser.add_argument('--fit', help='Flexible fit of contact maps', action='store_true')
     parser.add_argument('--contacts', help='Flexible fit to optimize contacts and not distances', action='store_true')
     parser.add_argument('-n', '--maxiter', help='Maximum number of minimizer iterations', default=5000, type=int)
@@ -719,17 +717,33 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logging.info(f'pdb1: {args.pdb1}')
-    logging.info(f'pdb2: {args.pdb2}')
     cmd.load(args.pdb1, 'pdb1')
-    cmd.load(args.pdb2, 'pdb2')
     pdb1 = torchify(cmd.get_coords('pdb1 and polymer.protein and name CA'))
-    pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
     logging.info(f'pdb1.shape: {pdb1.shape[0]}')
-    logging.info(f'pdb2.shape: {pdb2.shape[0]}')
-    dmat_ref = get_dmat(pdb2)
     dmat = get_dmat(pdb1)
-    profile = Profile(dmat, dmat_ref, coords=pdb1, coords_ref=pdb2)
-    print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f} Å')
+    if args.pdb2 is not None:
+        logging.info(f'pdb2: {args.pdb2}')
+        cmd.load(args.pdb2, 'pdb2')
+        pdb2 = torchify(cmd.get_coords('pdb2 and polymer.protein and name CA'))
+        logging.info(f'pdb2.shape: {pdb2.shape[0]}')
+        dmat_ref = get_dmat(pdb2)
+        profile = Profile(dmat, dmat_ref, coords=pdb1, coords_ref=pdb2)
+        print(f'{args.pdb1}|{args.pdb2}: {profile.score:.3f} Å')
+    if args.db is not None:
+        dataset = PDBloader.PDBdataset(args.db, return_name=True, selection='polymer.protein and name CA')
+        dataloader = torch.utils.data.DataLoader(dataset,
+                                                 batch_size=1,
+                                                 shuffle=False,
+                                                 num_workers=os.cpu_count(),
+                                                 collate_fn=PDBloader.collate_fn)
+        for batch in dataloader:
+            name, coords = batch[0]
+            if coords is not None:
+                logging.info(f'pdb2: {name}')
+                logging.info(f'pdb2.shape: {coords.shape[0]}')
+                dmat_ref = get_dmat(coords)
+                profile = Profile(dmat, dmat_ref)
+
     # profile.plot()
     # profile.plot_dmat()
     if args.fit:

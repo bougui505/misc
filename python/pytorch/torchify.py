@@ -45,6 +45,7 @@ def torchify(x):
         x = torch.from_numpy(x)
     except TypeError:
         pass
-    x = x.to(device)
-    x = x.float()
+    if x is not None:
+        x = x.to(device)
+        x = x.float()
     return x
