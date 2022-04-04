@@ -187,3 +187,13 @@ python/protein/cmapfit/data/5hl8_C.pdb
 python/protein/cmapfit/data/5wul_A.pdb
 python/protein/cmapfit/data/5wuw_B.pdb
 python/protein/cmapfit/data/6i3r_A_icp.pdb
+python/protein/cmapfit/dmat_inp_0.png
+python/protein/cmapfit/dmat_inp_1.png
+python/protein/cmapfit/dmat_out_0.png
+python/protein/cmapfit/dmat_out_1.png
+python/protein/cmapfit/dmat_ref_0.png
+python/protein/cmapfit/dmat_ref_1.png
+python/protein/cmapfit/sol0.pdb
+python/protein/cmapfit/sol0_icp.pdb
+python/protein/cmapfit/traj_0.npy
+python/protein/cmapfit/traj_1.npy
