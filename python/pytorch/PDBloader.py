@@ -72,9 +72,21 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> coords = batch[0]
     >>> coords.shape
     (2209, 3)
+
+    # with return_name=True
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', return_name=True)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = dataiter.next()
+    >>> name, coords = batch[0]
+    >>> coords.shape
+    (2209, 3)
+    >>> name
+    '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz'
     """
-    def __init__(self, pdbpath, selection='all'):
+    def __init__(self, pdbpath, selection='all', return_name=False):
         self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+        self.return_name = return_name
         self.selection = selection
         cmd.reinitialize()
 
@@ -87,7 +99,10 @@ class PDBdataset(torch.utils.data.Dataset):
         cmd.load(filename=pdbfile, object=pymolname)
         coords = cmd.get_coords(selection=f'{pymolname} and {self.selection}')
         cmd.delete(pymolname)
-        return coords
+        if not self.return_name:
+            return coords
+        else:
+            return pdbfile, coords
 
 
 if __name__ == '__main__':
