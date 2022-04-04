@@ -741,6 +741,7 @@ if __name__ == '__main__':
         for batch in dataloader:
             name, coords = batch[0]
             if coords is not None:
+                logging.info(f'pdb1: {args.pdb1}')
                 logging.info(f'pdb2: {name}')
                 logging.info(f'pdb2.shape: {coords.shape[0]}')
                 coords = torchify(coords)
