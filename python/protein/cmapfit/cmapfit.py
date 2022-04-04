@@ -745,7 +745,10 @@ if __name__ == '__main__':
                 logging.info(f'pdb2.shape: {coords.shape[0]}')
                 coords = torchify(coords)
                 dmat_ref = get_dmat(coords)
-                profile = Profile(dmat, dmat_ref)
+                try:
+                    profile = Profile(dmat, dmat_ref)
+                except RuntimeError:
+                    logging.info('RuntimeError: out of memory?')
 
     # profile.plot()
     # profile.plot_dmat()
