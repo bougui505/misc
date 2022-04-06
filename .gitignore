@@ -197,3 +197,4 @@ python/protein/cmapfit/sol0.pdb
 python/protein/cmapfit/sol0_icp.pdb
 python/protein/cmapfit/traj_0.npy
 python/protein/cmapfit/traj_1.npy
+python/protein/cmapfit/fitting_example.pse
