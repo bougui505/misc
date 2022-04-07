@@ -55,6 +55,7 @@
 
 import numpy as np
 import torch
+import tqdm
 from misc.pytorch import torchify
 import misc.rotation
 
@@ -71,7 +72,7 @@ def transform(Y, R, t, s=1.):
     return (s * torch.mm(Y, R.T) + t.T)
 
 
-def compute_P(X, Y, R, t, s, sigma, w):
+def compute_P(X, Y, R, t, s, sigma_sq, w):
     """
     >>> N = 12
     >>> M = 10
@@ -81,9 +82,9 @@ def compute_P(X, Y, R, t, s, sigma, w):
     >>> s = 1
     >>> X = torch.randn((N, D))
     >>> Y = torch.randn((M, D))
-    >>> sigma = 1.
+    >>> sigma_sq = 1.
     >>> w = 0.5
-    >>> P = compute_P(X, Y, R, t, s, sigma, w)
+    >>> P = compute_P(X, Y, R, t, s, sigma_sq, w)
     >>> P.shape == torch.Size([M, N])
     True
     """
@@ -91,16 +92,16 @@ def compute_P(X, Y, R, t, s, sigma, w):
     M, D = Y.shape
     Y_trans = (s * R.mm(Y.T) + t).T  # transform(Y, R, t, s=s)
     cdist = torch.cdist(Y_trans, X)
-    num = torch.exp((-1 / (2 * sigma**2)) * cdist**2)
+    num = torch.exp((-1 / (2 * sigma_sq)) * cdist**2)
     pi = torch.tensor(np.pi)
     if w < 1:
         w_ratio = w / (1 - w)
     else:
         w_ratio = torch.inf
     # tmp0 = num.sum(axis=0)
-    tmp = torch.exp(torch.logsumexp((-1 / (2 * sigma**2)) * cdist**2, dim=0))
+    tmp = torch.exp(torch.logsumexp((-1 / (2 * sigma_sq)) * cdist**2, dim=0))
     # print(tmp0 - tmp1)
-    den = tmp + (2 * pi * sigma**2)**(D / 2) * w_ratio * (M / N)
+    den = tmp + (2 * pi * sigma_sq)**(D / 2) * w_ratio * (M / N)
     P = num / den
     return P
 
@@ -115,17 +116,17 @@ def M_step(X, Y, P, compute_s=False):
     >>> s = 1
     >>> X = torch.randn((N, D))
     >>> Y = torch.randn((M, D))
-    >>> sigma = 1.
+    >>> sigma_sq = 1.
     >>> w = 0.5
-    >>> P = compute_P(X, Y, R, t, s, sigma, w)
-    >>> R, t, s, sigma = M_step(X, Y, P)
+    >>> P = compute_P(X, Y, R, t, s, sigma_sq, w)
+    >>> R, t, s, sigma_sq = M_step(X, Y, P)
     >>> R.shape
     torch.Size([3, 3])
     >>> t.shape
     torch.Size([3, 1])
     >>> s
     tensor(1.)
-    >>> sigma
+    >>> sigma_sq
     tensor(...)
     """
     N, D = X.shape
@@ -154,8 +155,10 @@ def M_step(X, Y, P, compute_s=False):
     t = mu_x - s * R.mm(mu_y)
     tmp = X_hat.T.mm(torch.diag_embed(P.T.mm(ones_M).flatten())).mm(X_hat)
     sigma_sq = (1 / (N_P * D)) * (torch.trace(tmp) - s * torch.trace(A.T.mm(R)))
-    sigma = torch.squeeze(torch.sqrt(sigma_sq))
-    return R, t, s, sigma
+    sigma_sq = torch.clip(sigma_sq, min=0.)
+    # sigma_sq = torch.abs(sigma_sq)
+    # sigma = torch.squeeze(torch.sqrt(sigma_sq))
+    return R, t, s, sigma_sq
 
 
 def get_rmsd(coords1, coords2):
@@ -164,7 +167,16 @@ def get_rmsd(coords1, coords2):
     return rmsd
 
 
-def EMopt(X, Y, w=0.8, maxiter=1000, optimize_s=False):
+def inititalize_sigma_sq(X, Y, R, t, s):
+    N, D = X.shape
+    M, D = Y.shape
+    Y_trans = transform(Y, R, t, s)
+    cdist = torch.cdist(Y_trans, X)
+    sigma_sq = (1 / (D * N * M)) * (cdist**2).sum()
+    return sigma_sq
+
+
+def EMopt(X, Y, w=0., maxiter=5000, optimize_s=True, progress=False):
     """
     >>> N = 12
     >>> M = 10
@@ -177,32 +189,43 @@ def EMopt(X, Y, w=0.8, maxiter=1000, optimize_s=False):
     >>> t.shape
     torch.Size([3, 1])
     >>> Y = transform(X[:M, :], R, t)
-    >>> R_opt, t_opt, s_opt, sigma = EMopt(X, Y, optimize_s=False)
+    >>> R_opt, t_opt, s_opt, sigma_sq = EMopt(X, Y, optimize_s=False)
     >>> Y_opt = transform(Y, R_opt, t_opt, s_opt)
-    >>> get_rmsd(X[:M], Y), get_rmsd(X[:M], Y_opt), sigma
+    >>> get_rmsd(X[:M], Y), get_rmsd(X[:M], Y_opt), sigma_sq
     """
     N, D = X.shape
     M, D = Y.shape
     R = torch.eye(D)
     t = torch.zeros((D, 1))
     s = 1.
-    cdist = torch.cdist(Y, X)
-    sigma_sq = (1 / (D * N * M)) * (cdist**2).sum()
-    sigma = torch.sqrt(sigma_sq)
+    # cdist = torch.cdist(Y, X)
+    sigma_sq = inititalize_sigma_sq(X, Y, R, t, s)
+    # sigma_sq = (1 / (D * N * M)) * (cdist**2).sum()
+    # sigma = torch.sqrt(sigma_sq)
+    if progress:
+        pbar = tqdm.tqdm(total=maxiter)
     for i in range(maxiter):
-        P = compute_P(X, Y, R, t, s, sigma, w)
+        P = compute_P(X, Y, R, t, s, sigma_sq, w)
         # print(i, P.sum(), sigma)
-        sigma_prev = sigma
-        R, t, s, sigma = M_step(X, Y, P, compute_s=optimize_s)
+        sigma_sq_prev = sigma_sq
+        R, t, s, sigma_sq = M_step(X, Y, P, compute_s=optimize_s)
+        delta_sigma_sq = sigma_sq - sigma_sq_prev
         # print(i, sigma)
-        if torch.isnan(sigma):
+        if progress:
+            pbar.set_description(f'σ²={float(sigma_sq):.3f}|Δσ²={float(delta_sigma_sq):.3f}')
+            pbar.update(1)
+        if torch.isnan(sigma_sq):
             print('!!! nan !!!')
-            sigma = sigma_prev
-        if sigma == 0.:
-            print('!!! 000 !!!')
+            sigma_sq = sigma_sq_prev
+        if sigma_sq == 0.:
             break
-            sigma = sigma_prev
-    return R, t, s, sigma
+            # print('!!! 000 !!!')
+            # sigma_sq = sigma_sq_prev
+        if abs(delta_sigma_sq) < 1e-16:
+            break
+    if progress:
+        pbar.close()
+    return R, t, s, sigma_sq
 
 
 if __name__ == '__main__':
@@ -235,6 +258,6 @@ if __name__ == '__main__':
     pdb1 = torchify.torchify(cmd.get_coords('pdb1'))
     pdb2 = torchify.torchify(cmd.get_coords('pdb2'))
 
-    R, t, s, sigma = EMopt(pdb1, pdb2)
+    R, t, s, sigma_sq = EMopt(pdb1, pdb2, progress=True)
     coords_opt = transform(pdb2, R, t, s).detach().cpu().numpy()
     Coordinates.change(args.pdb2, 'data/out.pdb', coords_opt)
