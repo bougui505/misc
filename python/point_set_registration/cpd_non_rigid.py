@@ -273,7 +273,7 @@ def fit(X, Y, w=0., beta=2., maxiter=10000, progress=False):
         # sigma_sq_prev = sigma_sq
         sigma_sq = update_sigma_sq(X, Y, P, G, W)
         # delta_sigma_sq = sigma_sq - sigma_sq_prev
-        ll.backward(retain_graph=False)
+        ll.backward(retain_graph=True)
         optimizer.step()
         # P = P.detach()
         # W = W.detach()
