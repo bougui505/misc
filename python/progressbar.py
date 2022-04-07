@@ -43,5 +43,6 @@ nsteps = 1000
 pbar = tqdm.tqdm(total=nsteps)
 for i in range(1000):
     time.sleep(0.01)
+    pbar.set_description(f'Custom {i}')
     pbar.update(1)
 pbar.close()
