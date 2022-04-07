@@ -98,9 +98,8 @@ def compute_P(X, Y, R, t, s, sigma_sq, w):
         w_ratio = w / (1 - w)
     else:
         w_ratio = torch.inf
-    # tmp0 = num.sum(axis=0)
-    tmp = torch.exp(torch.logsumexp((-1 / (2 * sigma_sq)) * cdist**2, dim=0))
-    # print(tmp0 - tmp1)
+    tmp = num.sum(axis=0)
+    # tmp = torch.exp(torch.logsumexp((-1 / (2 * sigma_sq)) * cdist**2, dim=0))
     den = tmp + (2 * pi * sigma_sq)**(D / 2) * w_ratio * (M / N)
     P = num / den
     return P
