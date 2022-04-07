@@ -98,7 +98,7 @@ def compute_P(X, Y, W, sigma_sq, w, G):
     M, D = W.shape
     M, M = G.shape
     GW = G.mm(W)
-    cdist = torch.cdist(Y + GW, X)  # shape (M, N)
+    cdist = torch.cdist(torch.Tensor.contiguous(Y + GW), X)  # shape (M, N)
     coeff = -1. / (2 * sigma_sq)
     num = torch.exp(coeff * cdist**2)
     pi = torch.tensor(np.pi)
@@ -136,6 +136,31 @@ def update_W(X, Y, P, G, lambdav, sigma_sq):
     # W = torch.linalg.solve(A, B)
     W = torch.inverse(A).mm(B)
     return W
+
+
+class Transform(torch.nn.Module):
+    """
+    >>> M = 10
+    >>> D = 3
+    >>> beta = 0.5
+    >>> Y = torch.randn((M, D))
+    >>> G = construct_G(Y, beta)
+    >>> transform = Transform(G, D)
+    >>> transform(Y).shape == torch.Size([M, D])
+    True
+    """
+    def __init__(self, G, D):
+        """
+        """
+        super().__init__()
+        M, M = G.shape
+        zeros = torchify.torchify(torch.zeros(M, D))
+        self.G = G
+        self.W = torch.nn.Parameter(zeros)
+
+    def __call__(self, Y):
+        t = Y + self.G.mm(self.W)
+        return t
 
 
 def update_sigma_sq(X, Y, P, G, W):
@@ -190,7 +215,29 @@ def get_rmsd(coords1, coords2):
     return rmsd
 
 
-def EMopt(X, Y, w=0.75, beta=2., lambdav=2., maxiter=5000, progress=False):
+def loss(P):
+    """
+    >>> N = 12
+    >>> M = 10
+    >>> D = 3
+    >>> sigma_sq = 1.
+    >>> beta = 0.5
+    >>> w = 0.5
+    >>> X = torch.randn((N, D))
+    >>> Y = torch.randn((M, D))
+    >>> W = torch.randn((M, D))
+    >>> G = construct_G(Y, beta)
+    >>> P = compute_P(X, Y, W, sigma_sq, w, G)
+    >>> ll = loss(P)
+    >>> ll
+    tensor(...)
+    """
+    M, N = P.shape
+    # return torch.log(P.sum(axis=0)).sum()
+    return -(P * torch.log(P)).sum()
+
+
+def fit(X, Y, w=0., beta=2., maxiter=10000, progress=False):
     """
     >>> N = 12
     >>> M = 10
@@ -203,33 +250,37 @@ def EMopt(X, Y, w=0.75, beta=2., lambdav=2., maxiter=5000, progress=False):
     >>> t.shape
     torch.Size([3, 1])
     >>> Y = (R.mm(X[:M, :].T) + t).T
-    >>> Y_opt = EMopt(X, Y, progress=True)
+    >>> Y_opt = fit(X, Y, progress=True)
     >>> get_rmsd(X[:M], Y), get_rmsd(X[:M], Y_opt)
     """
     N, D = X.shape
     M, D = Y.shape
-    W = torch.zeros(M, D)
-    sigma_sq = inititalize_sigma_sq(X, Y)
     G = construct_G(Y, beta)
+    transform = Transform(G, D)
+    W = transform.W
+    sigma_sq = inititalize_sigma_sq(X, Y)
+    optimizer = torch.optim.Adam(transform.parameters())
     # print(G.mean())
+    # sigma_sq = 1.
     if progress:
         pbar = tqdm.tqdm(total=maxiter)
     for i in range(maxiter):
+        optimizer.zero_grad()
         P = compute_P(X, Y, W, sigma_sq, w, G)
-        W = update_W(X, Y, P, G, lambdav, sigma_sq)
-        sigma_sq_prev = sigma_sq
+        _ = transform(Y)
+        W = transform.W
+        ll = loss(P)
+        # sigma_sq_prev = sigma_sq
         sigma_sq = update_sigma_sq(X, Y, P, G, W)
-        delta_sigma_sq = sigma_sq - sigma_sq_prev
+        # delta_sigma_sq = sigma_sq - sigma_sq_prev
+        ll.backward(retain_graph=False)
+        optimizer.step()
+        # P = P.detach()
+        # W = W.detach()
+        # sigma_sq = sigma_sq.detach()
         if progress:
-            pbar.set_description(f'σ²={float(sigma_sq):.3f}|Δσ²={float(delta_sigma_sq):.3f}|W.mean={W.mean():.3f}')
+            pbar.set_description(f'σ²={float(sigma_sq):.3g}|ll={float(ll):.3g}')
             pbar.update(1)
-        if torch.isnan(sigma_sq):
-            print('!!! nan !!!')
-            sigma_sq = sigma_sq_prev
-        if sigma_sq == 0.:
-            break
-        # if abs(delta_sigma_sq) < 1e-16:
-        #     break
     if progress:
         pbar.close()
     Y_opt = Y + G.mm(W)
