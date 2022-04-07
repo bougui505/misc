@@ -56,6 +56,7 @@
 import numpy as np
 import torch
 from misc.pytorch import torchify
+import misc.rotation
 
 
 def transform(Y, R, t, s=1.):
@@ -67,7 +68,7 @@ def transform(Y, R, t, s=1.):
     >>> out.shape
     torch.Size([10, 3])
     """
-    return (s * torch.mm(R, Y.T) + t).T
+    return (s * torch.mm(Y, R.T) + t.T)
 
 
 def compute_P(X, Y, R, t, s, sigma, w):
@@ -88,7 +89,7 @@ def compute_P(X, Y, R, t, s, sigma, w):
     """
     N, D = X.shape
     M, D = Y.shape
-    Y_trans = transform(Y, R, t, s=s)
+    Y_trans = (s * R.mm(Y.T) + t).T  # transform(Y, R, t, s=s)
     cdist = torch.cdist(Y_trans, X)
     num = torch.exp((-1 / (2 * sigma**2)) * cdist**2)
     pi = torch.tensor(np.pi)
@@ -151,6 +152,51 @@ def M_step(X, Y, P, compute_s=False):
     tmp = X_hat.T.mm(torch.diag_embed(P.T.mm(ones_M).flatten())).mm(X_hat)
     sigma_sq = (1 / (N_P * D)) * (torch.trace(tmp) - s * torch.trace(A.T.mm(R)))
     sigma = torch.squeeze(torch.sqrt(sigma_sq))
+    return R, t, s, sigma
+
+
+def get_rmsd(coords1, coords2):
+    N = coords1.shape[0]
+    rmsd = torch.sqrt(((coords2 - coords1)**2).sum() / N)
+    return rmsd
+
+
+def EMopt(X, Y, w=0.8, maxiter=1000, optimize_s=False):
+    """
+    >>> N = 12
+    >>> M = 10
+    >>> D = 3
+    >>> X = torch.rand((N, D)) * 10.
+    >>> R = torchify.torchify(misc.rotation.get_rotation_matrix(3.14/4., 0., 0.))
+    >>> R.shape
+    torch.Size([3, 3])
+    >>> t = torch.tensor([[1., 1., 1.]]).T
+    >>> t.shape
+    torch.Size([3, 1])
+    >>> Y = transform(X[:M, :], R, t)
+    >>> R_opt, t_opt, s_opt, sigma = EMopt(X, Y, optimize_s=False)
+    >>> Y_opt = transform(Y, R_opt, t_opt, s_opt)
+    >>> get_rmsd(X[:M], Y), get_rmsd(X[:M], Y_opt), sigma
+    """
+    N, D = X.shape
+    M, D = Y.shape
+    R = torch.eye(D)
+    t = torch.zeros((D, 1))
+    s = 1.
+    cdist = torch.cdist(Y, X)
+    sigma_sq = (1 / (D * N * M)) * (cdist**2).sum()
+    sigma = torch.sqrt(sigma_sq)
+    for i in range(maxiter):
+        P = compute_P(X, Y, R, t, s, sigma, w)
+        # print(i, P.sum(), sigma)
+        sigma_prev = sigma
+        R, t, s, sigma = M_step(X, Y, P, compute_s=optimize_s)
+        # print(i, sigma)
+        if torch.isnan(sigma):
+            # print('!!! nan !!!')
+            sigma = sigma_prev
+        if sigma == 0.:
+            sigma = sigma_prev
     return R, t, s, sigma
 
 
