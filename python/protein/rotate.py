@@ -45,17 +45,11 @@ def get_rotation_matrix(angle_x, angle_y, angle_z):
     axes = [np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])]
     rotation_matrix = np.identity(3)
     for angle, vec in zip([angle_x, angle_y, angle_z], axes):
-        rotation_matrix = rotation_matrix.dot(
-            R.from_rotvec(angle * vec).as_matrix())
+        rotation_matrix = rotation_matrix.dot(R.from_rotvec(angle * vec).as_matrix())
     return rotation_matrix
 
 
-def rotate(coords,
-           rotation_matrix=None,
-           angle_x=0,
-           angle_y=0,
-           angle_z=0,
-           center=None):
+def rotate(coords, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0, center=None):
     """
     Rotate 3D coordinates given a rotation matrix or angles for each axis
 
@@ -80,19 +74,12 @@ def rotate(coords,
     return out_coords
 
 
-def rotate_pdb(pdbin,
-               pdbout,
-               rotation_matrix=None,
-               angle_x=0,
-               angle_y=0,
-               angle_z=0):
+def rotate_pdb(pdbin, pdbout, rotation_matrix=None, angle_x=0, angle_y=0, angle_z=0, trans=np.zeros(3)):
     cmd.reinitialize()
     cmd.load(pdbin, object='inpdb')
-    coords = coords = cmd.get_coords()
-    coords_rot = rotate(coords,
-                        angle_x=angle_x,
-                        angle_y=angle_y,
-                        angle_z=angle_z)
+    coords = cmd.get_coords()
+    coords_rot = rotate(coords, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
+    coords_rot += np.atleast_2d(trans)
     cmd.load_coords(coords_rot, 'inpdb')
     cmd.save(pdbout)
 
@@ -104,18 +91,9 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='pdb file to rotate', required=True)
     parser.add_argument('--out', help='out pdb filename', required=True)
-    parser.add_argument('--alpha',
-                        help='Angle (deg.) for x axis',
-                        type=float,
-                        default=0.)
-    parser.add_argument('--beta',
-                        help='Angle (deg.) for y axis',
-                        type=float,
-                        default=0.)
-    parser.add_argument('--gamma',
-                        help='Angle (deg.) for z axis',
-                        type=float,
-                        default=0.)
+    parser.add_argument('--alpha', help='Angle (deg.) for x axis', type=float, default=0.)
+    parser.add_argument('--beta', help='Angle (deg.) for y axis', type=float, default=0.)
+    parser.add_argument('--gamma', help='Angle (deg.) for z axis', type=float, default=0.)
     args = parser.parse_args()
 
     alpha = np.deg2rad(args.alpha)

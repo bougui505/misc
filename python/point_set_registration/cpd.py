@@ -97,7 +97,10 @@ def compute_P(X, Y, R, t, s, sigma, w):
         w_ratio = w / (1 - w)
     else:
         w_ratio = torch.inf
-    den = num.sum(axis=0) + (2 * pi * sigma**2)**(D / 2) * w_ratio * (M / N)
+    # tmp0 = num.sum(axis=0)
+    tmp = torch.exp(torch.logsumexp((-1 / (2 * sigma**2)) * cdist**2, dim=0))
+    # print(tmp0 - tmp1)
+    den = tmp + (2 * pi * sigma**2)**(D / 2) * w_ratio * (M / N)
     P = num / den
     return P
 
@@ -193,9 +196,11 @@ def EMopt(X, Y, w=0.8, maxiter=1000, optimize_s=False):
         R, t, s, sigma = M_step(X, Y, P, compute_s=optimize_s)
         # print(i, sigma)
         if torch.isnan(sigma):
-            # print('!!! nan !!!')
+            print('!!! nan !!!')
             sigma = sigma_prev
         if sigma == 0.:
+            print('!!! 000 !!!')
+            break
             sigma = sigma_prev
     return R, t, s, sigma
 
@@ -204,6 +209,8 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    from pymol import cmd
+    from misc.protein import Coordinates
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -214,10 +221,20 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-p1', '--pdb1')
+    parser.add_argument('-p2', '--pdb2')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    cmd.load(args.pdb1, 'pdb1')
+    cmd.load(args.pdb2, 'pdb2')
+    pdb1 = torchify.torchify(cmd.get_coords('pdb1'))
+    pdb2 = torchify.torchify(cmd.get_coords('pdb2'))
+
+    R, t, s, sigma = EMopt(pdb1, pdb2)
+    coords_opt = transform(pdb2, R, t, s).detach().cpu().numpy()
+    Coordinates.change(args.pdb2, 'data/out.pdb', coords_opt)
