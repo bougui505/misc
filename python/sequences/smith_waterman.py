@@ -63,22 +63,23 @@ def matrix(a, b, match_score=3., gap_cost=2.):
     return H
 
 
-def traceback(H, b, b_='', old_i=0):
+def traceback(H, b, b_='', old_i=0, score=0):
     """
     >>> a = 'ggttgacta'
     >>> b = 'tgttacgg'
     >>> H = matrix(a, b)
     >>> traceback(H, b)
-    ('gtt-ac', 1)
+    ('gtt-ac', 1, 41.0)
     """
     # flip H to get index of **last** occurrence of H.max() with np.argmax()
     H_flip = np.flip(np.flip(H, 0), 1)
     i_, j_ = np.unravel_index(H_flip.argmax(), H_flip.shape)
     i, j = np.subtract(H.shape, (i_ + 1, j_ + 1))  # (i, j) are **last** indexes of H.max()
+    score += H[i, j]
     if H[i, j] == 0:
-        return b_, j
+        return b_, j, score
     b_ = b[j - 1] + '-' + b_ if old_i - i > 1 else b[j - 1] + b_
-    return traceback(H[0:i, 0:j], b, b_, i)
+    return traceback(H=H[0:i, 0:j], b=b, b_=b_, old_i=i, score=score)
 
 
 def smith_waterman(a, b, match_score=3, gap_cost=2):
@@ -86,12 +87,12 @@ def smith_waterman(a, b, match_score=3, gap_cost=2):
     >>> a = 'ggttgacta'
     >>> b = 'tgttacgg'
     >>> smith_waterman(a, b)
-    (1, 7)
+    (1, 7, 41.0)
     """
     a, b = a.upper(), b.upper()
     H = matrix(a, b, match_score, gap_cost)
-    b_, pos = traceback(H, b)
-    return pos, pos + len(b_)
+    b_, pos, score = traceback(H, b)
+    return pos, pos + len(b_), score
 
 
 if __name__ == '__main__':
