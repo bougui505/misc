@@ -70,6 +70,10 @@ def traceback(H, b, b_='', old_i=0, score=0):
     >>> H = matrix(a, b)
     >>> traceback(H, b)
     ('gtt-ac', 1, 41.0)
+    
+    # b can be None:
+    >>> traceback(H, b=None)
+    (None, 1, 41.0)
     """
     # flip H to get index of **last** occurrence of H.max() with np.argmax()
     H_flip = np.flip(np.flip(H, 0), 1)
@@ -78,7 +82,10 @@ def traceback(H, b, b_='', old_i=0, score=0):
     score += H[i, j]
     if H[i, j] == 0:
         return b_, j, score
-    b_ = b[j - 1] + '-' + b_ if old_i - i > 1 else b[j - 1] + b_
+    if b is not None:
+        b_ = b[j - 1] + '-' + b_ if old_i - i > 1 else b[j - 1] + b_
+    else:
+        b_ = None
     return traceback(H=H[0:i, 0:j], b=b, b_=b_, old_i=i, score=score)
 
 
