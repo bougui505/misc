@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+# -*- coding: UTF8 -*-
+
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2022 Institut Pasteur                                       #
+#                 				                            #
+#                                                                           #
+#  Redistribution and use in source and binary forms, with or without       #
+#  modification, are permitted provided that the following conditions       #
+#  are met:                                                                 #
+#                                                                           #
+#  1. Redistributions of source code must retain the above copyright        #
+#  notice, this list of conditions and the following disclaimer.            #
+#  2. Redistributions in binary form must reproduce the above copyright     #
+#  notice, this list of conditions and the following disclaimer in the      #
+#  documentation and/or other materials provided with the distribution.     #
+#  3. Neither the name of the copyright holder nor the names of its         #
+#  contributors may be used to endorse or promote products derived from     #
+#  this software without specific prior written permission.                 #
+#                                                                           #
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS      #
+#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT        #
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR    #
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT     #
+#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,   #
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT         #
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,    #
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY    #
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT      #
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE    #
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.     #
+#                                                                           #
+#  This program is free software: you can redistribute it and/or modify     #
+#                                                                           #
+#############################################################################
+
+import numpy as np
+import scipy.spatial.distance as scidist
+from misc.sequences import smith_waterman
+
+
+def get_dmat(coords):
+    dmat = scidist.pdist(coords)
+    dmat = scidist.squareform(dmat)
+    return dmat
+
+
+def get_cmap(dmat, thr=8.):
+    return dmat <= thr
+
+
+def get_contacts(cmap):
+    """
+    >>> cmap = np.asarray([[True, False, True], [False, True, False], [True, False, True]])
+    >>> contacts = get_contacts(cmap)
+    >>> contacts
+    (array([0, 0, 1, 2, 2]), array([0, 2, 1, 0, 2]))
+    """
+    assert cmap.dtype == np.dtype('bool')
+    contacts = np.where(cmap)
+    return contacts
+
+
+def sep_weight(sequence_separation):
+    weights = np.ones_like(sequence_separation, dtype=float)
+    weights[sequence_separation <= 4] = 0.5
+    weights[sequence_separation == 5] = 0.75
+    return weights
+
+
+def gaussian(mu, sigma, x):
+    g = np.exp(-(x - mu)**2 / (2 * sigma**2))
+    return g
+
+
+def get_seq_sep(contacts):
+    s = contacts[0] - contacts[1]
+    return s
+
+
+def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
+    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = get_dmat(coords_a)
+    >>> dmat_b = get_dmat(coords_b)
+    >>> cmap_a = get_cmap(dmat_a)
+    >>> cmap_b = get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((85, 85), (96, 96))
+    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=1, sep_y=1)
+    >>> mtx.sum()
+    195528.30747931806
+    >>> mtx.shape
+    (85, 96)
+
+    # >>> _ = plt.matshow(mtx)
+    # >>> _ = plt.colorbar()
+    # >>> _ = plt.show()
+
+    """
+    n, p = cmap_a.shape[0], cmap_b.shape[0]
+    M = np.zeros((n, p))
+    mtx = np.zeros_like(M)
+    contacts_a = get_contacts(cmap_a)
+    contacts_b = get_contacts(cmap_b)
+
+    sa = get_seq_sep(contacts_a)
+    sb = get_seq_sep(contacts_b)
+
+    sa, sb = np.meshgrid(sa, sb, indexing='ij')
+    s_dif = np.abs(np.abs(sa) - np.abs(sb))
+    mask = ~np.logical_or(np.logical_and(sa > 0, sb > 0), np.logical_and(sa < 0, sb < 0))
+
+    M_inds = np.meshgrid(contacts_a[1], contacts_b[1], indexing='ij')
+
+    s_min = np.minimum(np.abs(sa), np.abs(sb))
+    s_std = sep_y * (1 + (s_min - 2)**sep_x)
+    w = sep_weight(s_min) * gaussian(0, s_std, s_dif)
+    w[mask] = -1
+    w[np.isnan(w)] = -1
+    M[tuple(M_inds)] = w
+    mtx = np.zeros_like(M)
+    for i in range(n):
+        for j in range(p):
+            _, mtx[i, j] = traceback(M, i=i, j=j)
+    return mtx
+
+
+def traceback(M, i=None, j=None, gap_open=0., gap_extension=0.):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
+    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = get_dmat(coords_a)
+    >>> dmat_b = get_dmat(coords_b)
+    >>> cmap_a = get_cmap(dmat_a)
+    >>> cmap_b = get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((85, 85), (96, 96))
+    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=1, sep_y=1)
+    >>> aln, score = traceback(mtx, gap_open=2., gap_extension=1.)
+    >>> aln
+    {83: 78, 82: 77, 81: 76, 80: 76, 79: 76, 78: 76, 77: 76, 76: 76, 75: 76, 74: 76, 73: 76, 72: 76, 71: 76, 70: 76, 69: 75, 68: 74, 67: 73, 66: 72, 65: 71, 64: 71, 63: 71, 62: 70, 61: 69, 60: 68, 59: 67, 58: 66, 57: 65, 56: 64, 55: 63, 54: 62, 53: 61, 52: 60, 51: 59, 50: 58, 49: 57, 48: 56, 47: 55, 46: 54, 45: 53, 44: 52, 43: 51, 42: 50, 41: 49, 40: 48, 39: 47, 38: 45, 37: 35, 36: 34, 35: 33, 34: 32, 33: 31, 32: 30, 31: 29, 30: 29, 29: 29, 28: 29, 27: 29, 26: 29, 25: 29, 24: 29, 23: 28, 22: 28, 21: 28, 20: 28, 19: 27, 18: 26, 17: 25, 16: 24, 15: 23, 14: 21, 13: 20, 12: 18, 11: 17, 10: 16, 9: 15, 8: 14, 7: 13, 6: 12, 5: 12, 4: 12, 3: 12, 2: 11, 1: 10, 0: 9}
+    """
+    score = 0.
+    n, p = M.shape
+    alignment = {}
+    if i is None or j is None:
+        i, j = np.unravel_index(M.argmax(), M.shape)
+    alignment[i] = j
+    extending = False
+    while not (i == 0 or j == 0):
+        moves = [(i - 1, j - 1), (i - 1, j), (i, j - 1)]
+        if extending:
+            gap_penalty = gap_extension
+        else:
+            gap_penalty = gap_open
+        A = M[moves[0]]  # Align
+        D = M[moves[1]] - gap_penalty  # Down
+        R = M[moves[2]] - gap_penalty  # Right
+        scores = [A, D, R]
+        ind = np.argmax(scores)
+        if ind != 0:
+            extending = True
+        else:
+            extending = False
+        score += scores[ind]
+        i, j = moves[ind]
+        alignment[i] = j
+    return alignment, score
+
+
+def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open, gap_extension, niter=20):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = get_dmat(coords_a)
+    >>> dmat_b = get_dmat(coords_b)
+    >>> cmap_a = get_cmap(dmat_a)
+    >>> cmap_b = get_cmap(dmat_b)
+    >>> sep_x, sep_y, gap_open, gap_extension = 1, 1, 0, 0
+    >>> aln = get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open, gap_extension)
+    >>> aln
+    {83: 78, 82: 76, 81: 76, 80: 76, 79: 76, 78: 76, 77: 76, 76: 76, 75: 76, 74: 76, 73: 76, 72: 76, 71: 76, 70: 76, 69: 75, 68: 75, 67: 75, 66: 71, 65: 71, 64: 71, 63: 71, 62: 69, 61: 69, 60: 66, 59: 65, 58: 55, 57: 55, 56: 55, 55: 55, 54: 54, 53: 51, 52: 51, 51: 51, 50: 51, 49: 51, 48: 47, 47: 47, 46: 47, 45: 46, 44: 45, 43: 45, 42: 45, 41: 45, 40: 45, 39: 45, 38: 45, 37: 33, 36: 32, 35: 32, 34: 32, 33: 32, 32: 32, 31: 32, 30: 32, 29: 32, 28: 32, 27: 32, 26: 32, 25: 32, 24: 29, 23: 28, 22: 28, 21: 28, 20: 28, 19: 27, 18: 23, 17: 22, 16: 22, 15: 22, 14: 21, 13: 20, 12: 18, 11: 15, 10: 15, 9: 11, 8: 10, 7: 10, 6: 10, 5: 10, 4: 10, 3: 4, 2: 1, 1: 1, 0: 0}
+    """
+    na, na = cmap_a.shape
+    nb, nb = cmap_b.shape
+    mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+    contacts_a = get_contacts(cmap_a)
+    contacts_b = get_contacts(cmap_b)
+    sa = get_seq_sep(contacts_a)
+    bi = contacts_b[0]
+    bj = contacts_b[1]
+    for i in range(niter):
+        alignment, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_extension)
+        logging.info(i)
+        bi_ind = [i for i, e in enumerate(bi) if e in alignment]
+        bi_aln = bi[np.r_[bi_ind]]
+        bj_aln = np.asarray([alignment[e] for e in bj if e in alignment])
+        sb = get_seq_sep((bi_aln, bj_aln))
+        sa_mesh, sb_mesh = np.meshgrid(sa, sb, indexing='ij')
+        mask = ~np.logical_or(np.logical_and(sa_mesh > 0, sb_mesh > 0), np.logical_and(sa_mesh < 0, sb_mesh < 0))
+        logging.info(f'{(~mask).sum()}, {mask.size}')
+        M_inds = np.meshgrid(contacts_a[1], bj_aln, indexing='ij')
+        s_min = np.minimum(np.abs(sa_mesh), np.abs(sb_mesh))
+        w = sep_weight(s_min)
+        logging.info(w.shape)
+        # mtx[tuple(M_inds)][~mask] = i / (i + 1) * mtx[tuple(M_inds)][~mask] + w[~mask] / (i + 1)
+        logging.info(w[~mask].sum())
+        mtx[tuple(M_inds)][~mask] = w[~mask]
+        logging.info(f'mtx.mean: {mtx.mean()}')
+    return alignment
+
+
+if __name__ == '__main__':
+    import sys
+    import doctest
+    import argparse
+    from pymol import cmd
+    import matplotlib.pyplot as plt
+    # ### UNCOMMENT FOR LOGGING ####
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    # ### ##################### ####
+    # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
+    parser = argparse.ArgumentParser(description='')
+    # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--test', help='Test the code', action='store_true')
+    args = parser.parse_args()
+
+    if args.test:
+        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        sys.exit()
