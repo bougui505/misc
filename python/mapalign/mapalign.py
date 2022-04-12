@@ -38,7 +38,7 @@
 
 import numpy as np
 import scipy.spatial.distance as scidist
-from misc.sequences import smith_waterman
+from cwrap import initialize_matrix
 
 
 def get_dmat(coords):
@@ -78,58 +78,6 @@ def gaussian(mu, sigma, x):
 def get_seq_sep(contacts):
     s = contacts[0] - contacts[1]
     return s
-
-
-def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
-    """
-    >>> cmd.reinitialize()
-    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
-    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
-    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
-    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
-    >>> dmat_a = get_dmat(coords_a)
-    >>> dmat_b = get_dmat(coords_b)
-    >>> cmap_a = get_cmap(dmat_a)
-    >>> cmap_b = get_cmap(dmat_b)
-    >>> cmap_a.shape, cmap_b.shape
-    ((85, 85), (96, 96))
-    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=1, sep_y=1)
-    >>> mtx.sum()
-    195528.30747931806
-    >>> mtx.shape
-    (85, 96)
-
-    # >>> _ = plt.matshow(mtx)
-    # >>> _ = plt.colorbar()
-    # >>> _ = plt.show()
-
-    """
-    n, p = cmap_a.shape[0], cmap_b.shape[0]
-    M = np.zeros((n, p))
-    mtx = np.zeros_like(M)
-    contacts_a = get_contacts(cmap_a)
-    contacts_b = get_contacts(cmap_b)
-
-    sa = get_seq_sep(contacts_a)
-    sb = get_seq_sep(contacts_b)
-
-    sa, sb = np.meshgrid(sa, sb, indexing='ij')
-    s_dif = np.abs(np.abs(sa) - np.abs(sb))
-    mask = ~np.logical_or(np.logical_and(sa > 0, sb > 0), np.logical_and(sa < 0, sb < 0))
-
-    M_inds = np.meshgrid(contacts_a[1], contacts_b[1], indexing='ij')
-
-    s_min = np.minimum(np.abs(sa), np.abs(sb))
-    s_std = sep_y * (1 + (s_min - 2)**sep_x)
-    w = sep_weight(s_min) * gaussian(0, s_std, s_dif)
-    w[mask] = -1
-    w[np.isnan(w)] = -1
-    M[tuple(M_inds)] = w
-    mtx = np.zeros_like(M)
-    for i in range(n):
-        for j in range(p):
-            _, mtx[i, j] = traceback(M, i=i, j=j)
-    return mtx
 
 
 def traceback(M, i=None, j=None, gap_open=0., gap_extension=0.):
