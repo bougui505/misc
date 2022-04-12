@@ -99,10 +99,11 @@ def traceback(mtx, gap_open=0., gap_extension=0.):
     >>> aln
     """
     na, nb = mtx.shape
-    traceback_C.restype = ndpointer(dtype=c_int, shape=(na))
-    aln = traceback_C(c_int(na), c_int(nb), c_void_p(mtx.ctypes.data), c_double(gap_open), c_double(gap_extension))
+    traceback_C.restype = ndpointer(dtype=c_int, shape=((na + 1) * (nb + 1)))
+    label = traceback_C(c_int(na), c_int(nb), c_void_p(mtx.ctypes.data), c_double(gap_open), c_double(gap_extension))
+    label = label.reshape((na + 1), (nb + 1))
     # aln = {k: v for k, v in enumerate(aln)}
-    return aln
+    return label
 
 
 if __name__ == '__main__':
