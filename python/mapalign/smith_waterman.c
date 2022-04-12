@@ -28,7 +28,7 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
                 }
                 else{
                     sco[i][j] = D;
-                    aln[i-1] = j;
+                    aln[i - 1] = j;
                 }
             }
             else{
@@ -38,7 +38,7 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
                 }
                 else{
                     sco[i][j] = D;
-                    aln[i-1] = j;
+                    aln[i - 1] = j;
                 }
             }
             if(sco[i][j] > max_sco){max_sco = sco[i][j];}
