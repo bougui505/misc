@@ -57,14 +57,15 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
     ((85, 85), (96, 96))
-    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=1, sep_y=1)
+    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
     """
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
+    cmap_a = cmap_a.astype(float)
+    cmap_b = cmap_b.astype(float)
     cfunc.restype = ndpointer(dtype=c_double, shape=(na * nb))
-    M = np.zeros((na, nb))
-    M = cfunc(c_int(na), c_int(nb), c_double(cmap_a.ctypes.data), c_double(cmap_b.ctypes.data), c_double(sep_x),
-              c_double(sep_y), c_double(M.ctypes.data))
+    M = cfunc(c_int(na), c_int(nb), c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), c_double(sep_x),
+              c_double(sep_y))
 
 
 if __name__ == '__main__':
