@@ -17,6 +17,8 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
     double sco[rows+1][cols+1];
     memset(sco, 0, sizeof(sco));
     int labelpt = 0;
+    int max_i = 0;
+    int max_j = 0;
     for (int i = 1; i <= rows; i++){
         for (int j = 1; j <= cols; j++){
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
@@ -45,8 +47,21 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
                     label[labelpt] = 2;
                 }
             }
-            if(sco[i][j] > max_sco){max_sco = sco[i][j];}
+            if(sco[i][j] > max_sco){max_i = i;max_j = j;max_sco = sco[i][j];}
         }
     }
-    return label;
+
+    int i = max_i;int j = max_j;
+    int * aln = (int *)malloc(sizeof(int) * rows);
+    for (int i = 0; i < rows ; i++){
+        aln[i] = -1;
+    }
+    while(1){
+        labelpt = i * cols + j;
+        if(label[labelpt] == 0){break;}
+        else if(label[labelpt] == 1){aln[i-1] = j-1;i--;j--;}
+        else if(label[labelpt] == 2){i--;}
+        else if(label[labelpt] == 3){j--;}
+    }
+    return aln;
 }
