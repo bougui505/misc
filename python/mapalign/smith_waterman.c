@@ -65,3 +65,38 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
     }
     return aln;
 }
+
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+double sep_weight(double sep){if(sep <= 4){return 0.50;}else if(sep == 5){return 0.75;}else{return 1.00;}}
+
+double * update_mtx(int na, int nb, int * aln, double * sco_mtx, double * cmap_a, double * cmap_b, int iter){
+    int bj = 0;
+    int sa = 0;
+    int sb = 0;
+    int s_min = 0;
+    double sco = 0.;
+    double w = 0.;
+    int aptr = 0;
+    int bptr = 0;
+    int mtxptr = 0;
+    for (int ai=0; ai< na; ai++){
+        for (int bi=0; bi< nb; bi++){
+            sco = 0.;
+            for (int aj=0; aj< na; aj++){
+                aptr = ai * na + aj;
+                bj = aln[aj];
+                bptr = bi * nb + bj;
+                sa = ai - aj;
+                sb = bi - bj;
+                if ((sa>0 && sb>0) || (sa<0 && sb <0)){
+                    s_min = MIN(abs(sa), abs(sb));
+                    w = sep_weight(s_min);
+                    sco += cmap_a[aptr] * cmap_b[bptr] * w;
+                }
+            mtxptr = ai * nb + bi;
+            sco_mtx[mtxptr] = iter/(iter+1) * sco_mtx[mtxptr] + sco/(iter+1);
+            }
+        }
+    }
+    return sco_mtx;
+}
