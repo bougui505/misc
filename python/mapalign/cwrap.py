@@ -164,6 +164,7 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
         log(f'score: {score:.3f}')
         pbar.set_description(f'score: {score:.3f}')
         pbar.update(1)
+    pbar.set_description(f'score: {score_max:.3f}')
     pbar.close()
     log(f'score_max: {score_max:.3f}')
     return aln_best, score_max
