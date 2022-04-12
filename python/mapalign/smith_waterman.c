@@ -2,16 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-void traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap_extension){
+int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap_extension){
     // LOCAL_ALIGN
     // Start	0
     // [A]lign	1
     // [D]own	2
     // [R]ight	3
     double max_sco = 0;
+    int * aln = (int *)malloc(sizeof(int) * rows);
+    for (int i = 0; i < rows ; i++){
+        aln[i] = -1.;
+    }
+
     double sco[rows+1][cols+1];
     memset(sco, 0, sizeof(sco));
-    double * aln = (double *)malloc(sizeof(double) * rows);
     for (int i = 1; i <= rows; i++){
         for (int j = 1; j <= cols; j++){
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
@@ -40,4 +44,5 @@ void traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap
             if(sco[i][j] > max_sco){max_sco = sco[i][j];}
         }
     }
+    return aln;
 }

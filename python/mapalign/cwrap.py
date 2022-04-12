@@ -40,8 +40,10 @@ from ctypes import cdll, c_double, c_int, c_void_p
 from numpy.ctypeslib import ndpointer
 import numpy as np
 
-lib = cdll.LoadLibrary("lib/initialize_matrix.so")
-cfunc = lib.initialize_matrix
+lib1 = cdll.LoadLibrary("lib/initialize_matrix.so")
+initialize_matrix_C = lib1.initialize_matrix
+lib2 = cdll.LoadLibrary("lib/smith_waterman.so")
+traceback_C = lib2.traceback
 
 
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
@@ -63,20 +65,43 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     >>> mtx.shape
     (85, 96)
 
-    >>> _ = plt.matshow(mtx)
-    >>> _ = plt.colorbar()
-    >>> _ = plt.show()
+    # >>> _ = plt.matshow(mtx)
+    # >>> _ = plt.colorbar()
+    # >>> _ = plt.show()
 
     """
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
     cmap_a = cmap_a.astype(float)
     cmap_b = cmap_b.astype(float)
-    cfunc.restype = ndpointer(dtype=c_double, shape=(na * nb))
-    mtx = cfunc(c_int(na), c_int(nb), c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), c_double(sep_x),
-                c_double(sep_y))
+    initialize_matrix_C.restype = ndpointer(dtype=c_double, shape=(na * nb))
+    mtx = initialize_matrix_C(c_int(na), c_int(nb), c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data),
+                              c_double(sep_x), c_double(sep_y))
     mtx = mtx.reshape((na, nb))
     return mtx
+
+
+def traceback(mtx, gap_open=0., gap_extension=0.):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
+    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = mapalign.get_dmat(coords_a)
+    >>> dmat_b = mapalign.get_dmat(coords_b)
+    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> cmap_b = mapalign.get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((85, 85), (96, 96))
+    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
+    >>> aln = traceback(mtx)
+    >>> aln
+    """
+    na, nb = mtx.shape
+    traceback_C.restype = ndpointer(dtype=c_int, shape=(na))
+    aln = traceback_C(c_int(na), c_int(nb), c_void_p(mtx.ctypes.data), c_double(gap_open), c_double(gap_extension))
+    return aln
 
 
 if __name__ == '__main__':
