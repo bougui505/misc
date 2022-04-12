@@ -39,11 +39,13 @@
 from ctypes import cdll, c_double, c_int, c_void_p
 from numpy.ctypeslib import ndpointer
 import numpy as np
+import tqdm
 
 lib1 = cdll.LoadLibrary("lib/initialize_matrix.so")
 initialize_matrix_C = lib1.initialize_matrix
 lib2 = cdll.LoadLibrary("lib/smith_waterman.so")
 traceback_C = lib2.traceback
+update_mtx_C = lib2.update_mtx
 
 
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
@@ -81,7 +83,7 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     return mtx
 
 
-def traceback(mtx, gap_open=0., gap_extension=0.):
+def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -97,17 +99,66 @@ def traceback(mtx, gap_open=0., gap_extension=0.):
     >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
     >>> aln, score = traceback(mtx)
     >>> aln
-    {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: -1, 8: -1, 9: 8, 10: 9, 11: 10, 12: 11, 13: 12, 14: 13, 15: 14, 16: 15, 17: 16, 18: 18, 19: 19, 20: 20, 21: 21, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 30, 30: 31, 31: 32, 32: 34, 33: 38, 34: 39, 35: 45, 36: 46, 37: 47, 38: 48, 39: 49, 40: 50, 41: 51, 42: 52, 43: 53, 44: 55, 45: 56, 46: 57, 47: 58, 48: 59, 49: 60, 50: 69, 51: 70, 52: 88, 53: 89, 54: 90, 55: 91, 56: 95, 57: 96, 58: 97, 59: 98, 60: 102, 61: 103, 62: 121, 63: 122, 64: 123, 65: 124, 66: 125, 67: 126, 68: 127, 69: 128, 70: 129, 71: 130, 72: 151, 73: 155, 74: 157, 75: 158, 76: 159, 77: 160, 78: 162, 79: 163, 80: 164, 81: 165, 82: 168, 83: 188, 84: 202, 85: 203, 86: 204, 87: 205}
+    array([  1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,
+            14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,
+            27,  28,  29,  30,  31,  32,  39,  44,  45,  46,  47,  48,  49,
+            50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  69,  70,
+            88,  89,  90,  98,  99, 100, 101, 102, 103, 104, 121, 122, 123,
+           124, 125, 126, 127, 128, 129, 130, 151, 155, 156, 157, 158, 159,
+           160, 161, 162, 163, 164, 165, 168, 169, 170, 171])
     >>> score
-    532.2004088747993
+    509.77545076565457
     """
     na, nb = mtx.shape
     # Return shape is na+1 as we add the score as the last element of the returned value
     traceback_C.restype = ndpointer(dtype=c_double, shape=na + 1)
     aln = traceback_C(c_int(na), c_int(nb), c_void_p(mtx.ctypes.data), c_double(gap_open), c_double(gap_extension))
     score = aln[-1]
-    aln = aln[:-1]
-    aln = {int(k): int(v) for k, v in enumerate(aln)}
+    aln = np.int_(aln[:-1])
+    # aln = {k: v for k, v in enumerate(aln)}
+    return aln, score
+
+
+def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1, niter=20):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = mapalign.get_dmat(coords_a)
+    >>> dmat_b = mapalign.get_dmat(coords_b)
+    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> cmap_b = mapalign.get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((88, 88), (215, 215))
+    >>> aln, score = get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1)
+    >>> aln
+    array([ -1,  -1,  -1,  -1,  -1,  -1,  -1,   0,   1,   2,   3,   4,   5,
+            -1,  -1,   6,   7,   8,   9,  -1,  -1,  -1,  10,  11,  12,  13,
+            14,  15,  16,  17,  18,  19,  20,  21,  -1,  -1,  -1,  22,  23,
+            24,  25,  26,  27,  28,  29,  30,  31,  43,  44,  45,  46,  47,
+            48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,
+            61, 118, 119, 120, 121, 122, 123, 124, 125, 126, 149, 150, 151,
+           152, 153, 154,  -1, 155, 156, 157, 158, 159,  -1])
+    >>> score
+    63.91944521154619
+    """
+    cmap_a = cmap_a.astype(float)
+    cmap_b = cmap_b.astype(float)
+    mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+    na, nb = mtx.shape
+    update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
+    pbar = tqdm.tqdm(total=niter)
+    for i in range(niter):
+        aln, score = traceback(mtx)
+        mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
+                           c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
+        mtx = mtx.reshape((na, nb))
+        pbar.set_description(f'score: {score:.3f}')
+        pbar.update(1)
+    pbar.close()
+    # aln, score = traceback(mtx)
     return aln, score
 
 

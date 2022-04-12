@@ -27,40 +27,45 @@ double * traceback(int rows, int cols, double * sco_mtx, double gap_open, double
             if(label[(i-1)*cols+j] == 1){D += gap_open;}else{D += gap_extension;}
             if(label[i*cols+(j-1)] == 1){R += gap_open;}else{R += gap_extension;}
             labelpt = i * cols + j;
-            if(A >= R){
-                if(A >= D){
-                    sco[i][j] = A;
-                    label[labelpt] = 1;
-                }
-                else{
-                    sco[i][j] = D;
-                    label[labelpt] = 2;
-                }
-            }
+            if(A <= 0 && D <= 0 && R <= 0){label[labelpt] = 0;sco[i][j] = 0;}
             else{
-                if(R >= D){
-                    sco[i][j] = R;
-                    label[labelpt] = 3;
+                if(A >= R){
+                    if(A >= D){
+                        sco[i][j] = A;
+                        label[labelpt] = 1;
+                    }
+                    else{
+                        sco[i][j] = D;
+                        label[labelpt] = 2;
+                    }
                 }
                 else{
-                    sco[i][j] = D;
-                    label[labelpt] = 2;
+                    if(R >= D){
+                        sco[i][j] = R;
+                        label[labelpt] = 3;
+                    }
+                    else{
+                        sco[i][j] = D;
+                        label[labelpt] = 2;
+                    }
                 }
             }
             if(sco[i][j] > max_sco){max_i = i;max_j = j;max_sco = sco[i][j];}
         }
     }
 
-    int i = max_i;int j = max_j;
     // Store the score in the last element of aln
     double * aln = (double *)malloc(sizeof(double) * (rows + 1));
     for (int i = 0; i < rows ; i++){
         aln[i] = -1;
     }
     aln[rows] = max_sco;
+
+    int i = max_i;int j = max_j;
     while(1){
         labelpt = i * cols + j;
-        if(label[labelpt] == 0){break;}
+        // printf("%d, %d, %d\n", i, j, label[labelpt]);
+        if(label[labelpt] == 0 || i == 0 || j ==0){break;}
         else if(label[labelpt] == 1){aln[i-1] = j-1;i--;j--;}
         else if(label[labelpt] == 2){i--;}
         else if(label[labelpt] == 3){j--;}
@@ -81,22 +86,26 @@ double * update_mtx(int na, int nb, int * aln, double * sco_mtx, double * cmap_a
     int aptr = 0;
     int bptr = 0;
     int mtxptr = 0;
+    double IT = (double)iter + 1;
+    double s1 = (IT/(IT+1)); double s2 = (1/(IT+1));
     for (int ai=0; ai< na; ai++){
         for (int bi=0; bi< nb; bi++){
             sco = 0.;
             for (int aj=0; aj< na; aj++){
                 aptr = ai * na + aj;
                 bj = aln[aj];
-                bptr = bi * nb + bj;
-                sa = ai - aj;
-                sb = bi - bj;
-                if ((sa>0 && sb>0) || (sa<0 && sb <0)){
-                    s_min = MIN(abs(sa), abs(sb));
-                    w = sep_weight(s_min);
-                    sco += cmap_a[aptr] * cmap_b[bptr] * w;
+                if (bj != -1){ // if mapping exists
+                    bptr = bi * nb + bj;
+                    sa = ai - aj;
+                    sb = bi - bj;
+                    if ((sa>0 && sb>0) || (sa<0 && sb <0)){
+                        s_min = MIN(abs(sa), abs(sb));
+                        w = sep_weight(s_min);
+                        sco += cmap_a[aptr] * cmap_b[bptr] * w;
+                    }
                 }
             mtxptr = ai * nb + bi;
-            sco_mtx[mtxptr] = iter/(iter+1) * sco_mtx[mtxptr] + sco/(iter+1);
+            sco_mtx[mtxptr] = s1 * sco_mtx[mtxptr] + s2 * sco;
             }
         }
     }
