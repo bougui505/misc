@@ -49,8 +49,8 @@ traceback_C = lib2.traceback
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     """
     >>> cmd.reinitialize()
-    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
-    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
     >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
     >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
     >>> dmat_a = mapalign.get_dmat(coords_a)
@@ -58,12 +58,12 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     >>> cmap_a = mapalign.get_cmap(dmat_a)
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
-    ((85, 85), (96, 96))
+    ((88, 88), (215, 215))
     >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
     >>> mtx.sum()
-    27195.494435191642
+    69962.87346834535
     >>> mtx.shape
-    (85, 96)
+    (88, 215)
 
     # >>> _ = plt.matshow(mtx)
     # >>> _ = plt.colorbar()
@@ -84,8 +84,8 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
 def traceback(mtx, gap_open=0., gap_extension=0.):
     """
     >>> cmd.reinitialize()
-    >>> cmd.load('/home/bougui/pdb/1ycr.cif', 'A_')
-    >>> cmd.load('/home/bougui/pdb/1t4e.cif', 'B_')
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
     >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
     >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
     >>> dmat_a = mapalign.get_dmat(coords_a)
@@ -93,10 +93,11 @@ def traceback(mtx, gap_open=0., gap_extension=0.):
     >>> cmap_a = mapalign.get_cmap(dmat_a)
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
-    ((85, 85), (96, 96))
+    ((88, 88), (215, 215))
     >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
     >>> aln = traceback(mtx)
     >>> aln
+    {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: -1, 8: -1, 9: 8, 10: 9, 11: 10, 12: 11, 13: 12, 14: 13, 15: 14, 16: 15, 17: 16, 18: 18, 19: 19, 20: 20, 21: 21, 22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28, 29: 30, 30: 31, 31: 32, 32: 34, 33: 38, 34: 39, 35: 45, 36: 46, 37: 47, 38: 48, 39: 49, 40: 50, 41: 51, 42: 52, 43: 53, 44: 55, 45: 56, 46: 57, 47: 58, 48: 59, 49: 60, 50: 69, 51: 70, 52: 88, 53: 89, 54: 90, 55: 91, 56: 95, 57: 96, 58: 97, 59: 98, 60: 102, 61: 103, 62: 121, 63: 122, 64: 123, 65: 124, 66: 125, 67: 126, 68: 127, 69: 128, 70: 129, 71: 130, 72: 151, 73: 155, 74: 157, 75: 158, 76: 159, 77: 160, 78: 162, 79: 163, 80: 164, 81: 165, 82: 168, 83: 188, 84: 202, 85: 203, 86: 204, 87: 205}
     """
     na, nb = mtx.shape
     traceback_C.restype = ndpointer(dtype=c_int, shape=na)
