@@ -134,15 +134,15 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
     ((88, 88), (215, 215))
     >>> aln, score = get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1)
     >>> aln
-    array([ -1,  -1,  -1,  -1,  -1,  -1,  -1,   0,   1,   2,   3,   4,   5,
-            -1,  -1,   6,   7,   8,   9,  -1,  -1,  -1,  10,  11,  12,  13,
-            14,  15,  16,  17,  18,  19,  20,  21,  -1,  -1,  -1,  22,  23,
-            24,  25,  26,  27,  28,  29,  30,  31,  43,  44,  45,  46,  47,
-            48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,
-            61, 118, 119, 120, 121, 122, 123, 124, 125, 126, 149, 150, 151,
-           152, 153, 154,  -1, 155, 156, 157, 158, 159,  -1])
+    array([ 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,
+            -1,  -1,  33,  34,  35,  -1,  -1,  -1,  -1,  36,  37,  -1,  -1,
+            -1,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  55,  56,
+            57,  58,  59,  60,  61,  81,  82,  83,  84,  85,  86,  87,  88,
+            89,  90,  91,  92,  93,  94,  96,  97,  98,  99, 100, 101, 102,
+           119, 120, 121, 122, 123, 124, 143, 144, 145, 146, 147, 150, 151,
+           152, 153, 154,  -1, 155, 156, 157, 158, 159, 160])
     >>> score
-    63.91944521154619
+    72.88997596280687
     """
     cmap_a = cmap_a.astype(float)
     cmap_b = cmap_b.astype(float)
@@ -150,16 +150,30 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
     na, nb = mtx.shape
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     pbar = tqdm.tqdm(total=niter)
+    aln, score = traceback(mtx)
+    score_max = 0.
     for i in range(niter):
-        aln, score = traceback(mtx)
         mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
                            c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
         mtx = mtx.reshape((na, nb))
+        aln, score = traceback(mtx)
+        if score >= score_max:
+            score_max = score
+            aln_best = aln
+        log(f'iteration: {i}')
+        log(f'score: {score:.3f}')
         pbar.set_description(f'score: {score:.3f}')
         pbar.update(1)
     pbar.close()
-    # aln, score = traceback(mtx)
-    return aln, score
+    log(f'score_max: {score_max:.3f}')
+    return aln_best, score_max
+
+
+def log(msg):
+    try:
+        logging.info(msg)
+    except NameError:
+        pass
 
 
 if __name__ == '__main__':
@@ -170,11 +184,11 @@ if __name__ == '__main__':
     import mapalign
     import matplotlib.pyplot as plt
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
