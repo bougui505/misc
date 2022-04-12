@@ -58,14 +58,25 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     >>> cmap_a.shape, cmap_b.shape
     ((85, 85), (96, 96))
     >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
+    >>> mtx.sum()
+    27195.494435191642
+    >>> mtx.shape
+    (85, 96)
+
+    >>> _ = plt.matshow(mtx)
+    >>> _ = plt.colorbar()
+    >>> _ = plt.show()
+
     """
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
     cmap_a = cmap_a.astype(float)
     cmap_b = cmap_b.astype(float)
     cfunc.restype = ndpointer(dtype=c_double, shape=(na * nb))
-    M = cfunc(c_int(na), c_int(nb), c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), c_double(sep_x),
-              c_double(sep_y))
+    mtx = cfunc(c_int(na), c_int(nb), c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), c_double(sep_x),
+                c_double(sep_y))
+    mtx = mtx.reshape((na, nb))
+    return mtx
 
 
 if __name__ == '__main__':
@@ -74,6 +85,7 @@ if __name__ == '__main__':
     import argparse
     from pymol import cmd
     import mapalign
+    import matplotlib.pyplot as plt
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging

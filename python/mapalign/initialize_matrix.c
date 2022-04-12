@@ -25,9 +25,10 @@ double Falign(double * sco_mtx, int rows, int cols){
     return(max_sco);
 }
 
-void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double sep_x, double sep_y){
+double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double sep_x, double sep_y){
     double * M = (double *)malloc(sizeof(double) * na*nb);
     // double M[na][nb];
+    double * mtx = (double *)malloc(sizeof(double) * na*nb);
     double Mval = 0;
     double contact_a = 0.;
     double contact_b = 0.;
@@ -40,8 +41,10 @@ void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double 
     int aptr = 0;
     int bptr = 0;
     double score = 0;
+    int mtxptr = 0;
     for (int ai=0; ai< na; ai++){
         for (int bi=0; bi< nb; bi++){
+            mtxptr++;
             int ptr = 0;
             for (int aj=0; aj< na; aj++){
                 for (int bj=0; bj< nb; bj++){
@@ -82,8 +85,9 @@ void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double 
                 }
             }
             score = Falign(M, na, nb);
-            printf("score: %f\n", score);
+            mtx[mtxptr] = score;
+            // printf("score: %f\n", score);
         }
     }
-    // return M;
+    return mtx;
 }
