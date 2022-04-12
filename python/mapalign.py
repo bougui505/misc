@@ -192,7 +192,7 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open, gap_extension, niter=2
     >>> sep_x, sep_y, gap_open, gap_extension = 1, 1, 0, 0
     >>> aln = get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open, gap_extension)
     >>> aln
-    {83: 78, 82: 76, 81: 76, 80: 76, 79: 76, 78: 76, 77: 76, 76: 76, 75: 76, 74: 76, 73: 76, 72: 76, 71: 76, 70: 76, 69: 75, 68: 75, 67: 75, 66: 71, 65: 71, 64: 71, 63: 71, 62: 69, 61: 69, 60: 66, 59: 65, 58: 55, 57: 55, 56: 55, 55: 55, 54: 54, 53: 51, 52: 51, 51: 51, 50: 51, 49: 51, 48: 47, 47: 47, 46: 47, 45: 46, 44: 45, 43: 45, 42: 45, 41: 45, 40: 45, 39: 45, 38: 45, 37: 33, 36: 32, 35: 32, 34: 32, 33: 32, 32: 32, 31: 32, 30: 32, 29: 32, 28: 32, 27: 32, 26: 32, 25: 32, 24: 29, 23: 28, 22: 28, 21: 28, 20: 28, 19: 27, 18: 23, 17: 22, 16: 22, 15: 22, 14: 21, 13: 20, 12: 18, 11: 15, 10: 15, 9: 11, 8: 10, 7: 10, 6: 10, 5: 10, 4: 10, 3: 4, 2: 1, 1: 1, 0: 0}
+    {82: 201, 81: 201, 80: 201, 79: 201, 78: 201, 77: 201, 76: 194, 75: 194, 74: 194, 73: 194, 72: 194, 71: 194, 70: 194, 69: 194, 68: 194, 67: 194, 66: 194, 65: 194, 64: 194, 63: 194, 62: 194, 61: 194, 60: 194, 59: 194, 58: 194, 57: 194, 56: 194, 55: 194, 54: 194, 53: 194, 52: 194, 51: 194, 50: 194, 49: 194, 48: 194, 47: 194, 46: 194, 45: 194, 44: 194, 43: 194, 42: 194, 41: 194, 40: 194, 39: 194, 38: 194, 37: 194, 36: 194, 35: 194, 34: 194, 33: 194, 32: 194, 31: 194, 30: 194, 29: 194, 28: 194, 27: 194, 26: 194, 25: 194, 24: 194, 23: 194, 22: 194, 21: 194, 20: 194, 19: 194, 18: 194, 17: 194, 16: 194, 15: 194, 14: 194, 13: 190, 12: 190, 11: 190, 10: 190, 9: 190, 8: 190, 7: 190, 6: 189, 5: 189, 4: 189, 3: 189, 2: 189, 1: 117, 0: 116}
     """
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
@@ -211,16 +211,18 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open, gap_extension, niter=2
         sb = get_seq_sep((bi_aln, bj_aln))
         sa_mesh, sb_mesh = np.meshgrid(sa, sb, indexing='ij')
         mask = ~np.logical_or(np.logical_and(sa_mesh > 0, sb_mesh > 0), np.logical_and(sa_mesh < 0, sb_mesh < 0))
-        logging.info(f'{(~mask).sum()}, {mask.size}')
         M_inds = np.meshgrid(contacts_a[1], bj_aln, indexing='ij')
         s_min = np.minimum(np.abs(sa_mesh), np.abs(sb_mesh))
         w = sep_weight(s_min)
         logging.info(w.shape)
-        # mtx[tuple(M_inds)][~mask] = i / (i + 1) * mtx[tuple(M_inds)][~mask] + w[~mask] / (i + 1)
-        logging.info(w[~mask].sum())
-        mtx[tuple(M_inds)][~mask] = w[~mask]
+        inds = (M_inds[0][~mask], M_inds[1][~mask])
+        mtx[inds] = i / (i + 1) * mtx[inds] + w[~mask] / (i + 1)
         logging.info(f'mtx.mean: {mtx.mean()}')
     return alignment
+
+
+def plot_aln(cmap_a, cmap_b, aln):
+    pass
 
 
 if __name__ == '__main__':
