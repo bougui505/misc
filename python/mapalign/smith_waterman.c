@@ -22,6 +22,8 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
             double D = sco[i-1][j];
             double R = sco[i][j-1];
+            if(label[(i-1)*cols+j] == 1){D += gap_open;}else{D += gap_extension;}
+            if(label[i*cols+(j-1)] == 1){R += gap_open;}else{R += gap_extension;}
             labelpt = i * cols + j;
             if(A >= R){
                 if(A >= D){
