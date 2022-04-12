@@ -1,14 +1,33 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 double sep_weight(double sep){if(sep <= 4){return 0.50;}else if(sep == 5){return 0.75;}else{return 1.00;}}
 double gaussian(double mean, double stdev, double x){return exp(-pow((x - mean),2)/(2*(pow(stdev,2))));}
 
+double Falign(double * sco_mtx, int rows, int cols){
+    double max_sco = 0;
+    double sco[rows+1][cols+1];
+    memset(sco, 0, sizeof(sco));
+    for (int i = 1; i <= rows; i++){
+        for (int j = 1; j <= cols; j++){
+            double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
+            double D = sco[i-1][j];
+            double R = sco[i][j-1];
+            if(A >= R){if(A >= D){sco[i][j] = A;}else{sco[i][j] = D;}}
+            else{if(R >= D){sco[i][j] = R;}else{sco[i][j] = D;}}
+            if(sco[i][j] > max_sco){max_sco = sco[i][j];}
+        }
+    }
+    return(max_sco);
+}
+
 void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double sep_x, double sep_y){
     double * M = (double *)malloc(sizeof(double) * na*nb);
+    // double M[na][nb];
     double Mval = 0;
     double contact_a = 0.;
     double contact_b = 0.;
@@ -20,6 +39,7 @@ void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double 
     double sb = 0;
     int aptr = 0;
     int bptr = 0;
+    double score = 0;
     for (int ai=0; ai< na; ai++){
         for (int bi=0; bi< nb; bi++){
             int ptr = 0;
@@ -61,6 +81,8 @@ void initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double 
                     // }
                 }
             }
+            score = Falign(M, na, nb);
+            printf("score: %f\n", score);
         }
     }
     // return M;
