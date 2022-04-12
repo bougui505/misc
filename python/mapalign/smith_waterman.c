@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap_extension){
+double * traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap_extension){
     // LOCAL_ALIGN
     // Start	0
     // [A]lign	1
@@ -52,10 +52,12 @@ int * traceback(int rows, int cols, double * sco_mtx, double gap_open, double ga
     }
 
     int i = max_i;int j = max_j;
-    int * aln = (int *)malloc(sizeof(int) * rows);
+    // Store the score in the last element of aln
+    double * aln = (double *)malloc(sizeof(double) * (rows + 1));
     for (int i = 0; i < rows ; i++){
         aln[i] = -1;
     }
+    aln[rows] = max_sco;
     while(1){
         labelpt = i * cols + j;
         if(label[labelpt] == 0){break;}
