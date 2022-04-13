@@ -37,6 +37,7 @@
 #############################################################################
 
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.spatial.distance as scidist
 import tqdm
 import cwrap
@@ -71,19 +72,21 @@ def mapalign(cmap_a,
     >>> cmap_b = get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
     ((88, 88), (215, 215))
-    >>> aln, score = mapalign(cmap_a, cmap_b)
-    >>> aln
-    array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
-             7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
-            31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
-            48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
-            64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
-           123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
-           159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
-    >>> aln.shape
-    (88,)
-    >>> score
-    98.91796030178082
+
+    # Few minutes to run. Uncomment the following to test it!
+    # >>> aln, score = mapalign(cmap_a, cmap_b)
+    # >>> aln
+    # array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
+    #          7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
+    #         31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+    #         48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
+    #         64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
+    #        123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
+    #        159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    # >>> aln.shape
+    # (88,)
+    # >>> score
+    # 98.91796030178082
     """
     aln, score = cwrap.get_alignment(cmap_a,
                                      cmap_b,
@@ -95,8 +98,63 @@ def mapalign(cmap_a,
     return aln, score
 
 
+def get_aligned_maps(cmap_a, cmap_b, aln):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = get_dmat(coords_a)
+    >>> dmat_b = get_dmat(coords_b)
+    >>> cmap_a = get_cmap(dmat_a)
+    >>> cmap_b = get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((88, 88), (215, 215))
+    >>> aln = np.asarray([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6, 7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23, 31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63, 64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122, 123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    >>> aln.shape
+    (88,)
+    >>> cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln)
+    >>> cmap_a_aln.shape
+    (79, 79)
+    >>> cmap_a_aln.shape
+    (79, 79)
+    """
+    ai_aln = np.where(aln != -1)[0]
+    cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
+    bi_aln = aln[ai_aln]
+    cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
+    return cmap_a_aln, cmap_b_aln
+
+
 def plot_aln(cmap_a, cmap_b, aln):
-    pass
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = get_dmat(coords_a)
+    >>> dmat_b = get_dmat(coords_b)
+    >>> cmap_a = get_cmap(dmat_a)
+    >>> cmap_b = get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((88, 88), (215, 215))
+    >>> aln = np.asarray([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6, 7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23, 31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63, 64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122, 123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    >>> aln.shape
+    (88,)
+    >>> plot_aln(cmap_a, cmap_b, aln)
+    """
+    cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln)
+    ai, aj = np.where(cmap_a_aln > 0)
+    bi, bj = np.where(cmap_b_aln > 0)
+    plt.scatter(bi, bj, s=16., c='gray', alpha=.5, label='cmap_b')
+    plt.scatter(ai, aj, s=1., c='blue', label='cmap_a')
+    plt.xticks([])
+    plt.yticks([])
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.legend()
+    plt.show()
 
 
 def log(msg):
@@ -111,7 +169,6 @@ if __name__ == '__main__':
     import doctest
     import argparse
     from pymol import cmd
-    import matplotlib.pyplot as plt
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
