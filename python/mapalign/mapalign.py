@@ -57,7 +57,8 @@ def mapalign(cmap_a,
              sep_x_list=[0, 1, 2],
              sep_y_list=[1, 2, 3, 8, 16, 32],
              gap_e_list=[-0.2, -0.1, -0.01, -0.001],
-             niter=20):
+             niter=20,
+             progress=True):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -88,7 +89,7 @@ def mapalign(cmap_a,
                                      sep_y_list=sep_y_list,
                                      gap_extension_list=gap_e_list,
                                      niter=niter,
-                                     progress=True)
+                                     progress=progress)
     return aln, score
 
 
@@ -119,10 +120,27 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-p1', '--pdb1', required=True)
+    parser.add_argument('-p2', '--pdb2', required=True)
+    parser.add_argument('-s1', '--sel1', required=False, default='all')
+    parser.add_argument('-s2', '--sel2', required=False, default='all')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    log(args.pdb1)
+    log(args.pdb2)
+    cmd.load(args.pdb1, 'A_')
+    cmd.load(args.pdb2, 'B_')
+    coords_a = cmd.get_coords(f'A_ and polymer.protein and name CA and {args.sel1}')
+    coords_b = cmd.get_coords(f'B_ and polymer.protein and name CA and {args.sel2}')
+    dmat_a = get_dmat(coords_a)
+    dmat_b = get_dmat(coords_b)
+    cmap_a = get_cmap(dmat_a)
+    cmap_b = get_cmap(dmat_b)
+    log(f'cmap_a.shape: {cmap_a.shape}')
+    log(f'cmap_b.shape: {cmap_b.shape}')
+    aln, score = mapalign(cmap_a, cmap_b)
