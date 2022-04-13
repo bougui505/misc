@@ -119,7 +119,15 @@ def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     return aln, score
 
 
-def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1, niter=20, progress=False):
+def get_alignment(cmap_a,
+                  cmap_b,
+                  mtx=None,
+                  sep_x=2,
+                  sep_y=1,
+                  gap_open=-1.,
+                  gap_extension=-0.1,
+                  niter=20,
+                  progress=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -143,10 +151,21 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
            152, 153, 154,  -1, 155, 156, 157, 158, 159, 160])
     >>> score
     72.88997596280687
+
+    # One can give the mtx matrix directly:
+    >>> mtx = initialize_matrix(cmap_a, cmap_b, sep_x=2, sep_y=1)
+    >>> aln, score = get_alignment(cmap_a, cmap_b, mtx=mtx.copy(), sep_x=2, sep_y=1)
+    >>> score
+    72.88997596280687
     """
-    cmap_a = cmap_a.astype(float)
-    cmap_b = cmap_b.astype(float)
-    mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+    if mtx is None:
+        cmap_a = cmap_a.astype(float)
+        cmap_b = cmap_b.astype(float)
+        mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+    # else:
+    #     mtx_check = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+    #     # print((mtx == mtx_check).all())
+    #     print(mtx.dtype, mtx_check.dtype)
     na, nb = mtx.shape
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     if progress:
