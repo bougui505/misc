@@ -68,28 +68,24 @@ def mapalign(cmap_a, cmap_b, niter=20):
     >>> aln, score = mapalign(cmap_a, cmap_b)
     """
     score_best = 0.
-    # sep_x_list = [0, 1, 2]
-    sep_x_list = [2.]
-    # sep_y_list = [1, 2, 3, 8, 16, 32]
-    sep_y_list = [1.]
-    # gap_e_list = [-0.2, -0.1, -0.01, -0.001]
-    gap_e_list = [-0.1]
+    sep_x_list = [0, 1, 2]
+    sep_y_list = [1, 2, 3, 8, 16, 32]
+    gap_e_list = [-0.2, -0.1, -0.01, -0.001]
     total = len(sep_x_list) * len(sep_y_list) * len(gap_e_list)
     pbar = tqdm.tqdm(total=total)
-    for sep_x in sep_x_list:
-        for sep_y in sep_y_list:
-            ini_mtx = cwrap.initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
-            for gap_e in gap_e_list:
-                mtx = ini_mtx.copy()
+    for gap_e in gap_e_list:
+        for sep_x in sep_x_list:
+            for sep_y in sep_y_list:
                 aln, score = cwrap.get_alignment(cmap_a,
                                                  cmap_b,
-                                                 mtx=mtx,
+                                                 sep_x=sep_x,
+                                                 sep_y=sep_y,
                                                  gap_open=-1.,
-                                                 gap_extension=gap_e,
-                                                 niter=niter)
+                                                 gap_extension=gap_e)
                 if score > score_best:
                     score_best = score
                     aln_best = aln
+                log(f'gap_e: {gap_e:.1f}|sep_x: {sep_x}|sep_y: {sep_y}|score: {score:.1f}|score_max: {score_best:.1f}')
                 pbar.set_description(f'score: {score_best:.3f}')
                 pbar.update(1)
     return aln_best, score
@@ -97,6 +93,13 @@ def mapalign(cmap_a, cmap_b, niter=20):
 
 def plot_aln(cmap_a, cmap_b, aln):
     pass
+
+
+def log(msg):
+    try:
+        logging.info(msg)
+    except NameError:
+        pass
 
 
 if __name__ == '__main__':
