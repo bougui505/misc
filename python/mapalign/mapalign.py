@@ -100,6 +100,8 @@ def mapalign(cmap_a,
 
 def get_aligned_maps(cmap_a, cmap_b, aln):
     """
+    Return the maps aligned in the frame of cmap_a
+
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
     >>> cmd.load('data/2pd0_A.pdb', 'B_')
