@@ -52,7 +52,12 @@ def get_cmap(dmat, thr=8.):
     return dmat <= thr
 
 
-def mapalign(cmap_a, cmap_b, niter=20):
+def mapalign(cmap_a,
+             cmap_b,
+             sep_x_list=[0, 1, 2],
+             sep_y_list=[1, 2, 3, 8, 16, 32],
+             gap_e_list=[-0.2, -0.1, -0.01, -0.001],
+             niter=20):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -66,29 +71,25 @@ def mapalign(cmap_a, cmap_b, niter=20):
     >>> cmap_a.shape, cmap_b.shape
     ((88, 88), (215, 215))
     >>> aln, score = mapalign(cmap_a, cmap_b)
+    >>> aln
+    array([ 69,  70,  71,  72,  73,  74,  75,  -1,  -1,  -1,  -1,  76,  77,
+            78,  79,  80,  81,  -1,  -1,  -1,  -1,  82,  83,  -1,  -1,  -1,
+            84,  85,  86,  -1,  -1,  87,  88,  -1,  -1,  -1,  -1,  89,  90,
+            91,  92,  93,  -1,  -1,  -1,  -1,  94,  95,  96,  -1,  -1,  97,
+            98,  99,  -1,  -1,  -1,  -1, 100, 101, 102,  -1,  -1,  -1, 103,
+           104, 105,  -1, 106, 107, 108, 109, 110, 111, 112, 113, 152, 153,
+           154, 155, 156, 210, 211, 212, 213,  -1,  -1,  -1])
+    >>> score
+    85.73332247519158
     """
-    score_best = 0.
-    sep_x_list = [0, 1, 2]
-    sep_y_list = [1, 2, 3, 8, 16, 32]
-    gap_e_list = [-0.2, -0.1, -0.01, -0.001]
-    total = len(sep_x_list) * len(sep_y_list) * len(gap_e_list)
-    pbar = tqdm.tqdm(total=total)
-    for gap_e in gap_e_list:
-        for sep_x in sep_x_list:
-            for sep_y in sep_y_list:
-                aln, score = cwrap.get_alignment(cmap_a,
-                                                 cmap_b,
-                                                 sep_x=sep_x,
-                                                 sep_y=sep_y,
-                                                 gap_open=-1.,
-                                                 gap_extension=gap_e)
-                if score > score_best:
-                    score_best = score
-                    aln_best = aln
-                log(f'gap_e: {gap_e:.1f}|sep_x: {sep_x}|sep_y: {sep_y}|score: {score:.1f}|score_max: {score_best:.1f}')
-                pbar.set_description(f'score: {score_best:.3f}')
-                pbar.update(1)
-    return aln_best, score
+    aln, score = cwrap.get_alignment(cmap_a,
+                                     cmap_b,
+                                     sep_x_list=sep_x_list,
+                                     sep_y_list=sep_y_list,
+                                     gap_extension_list=gap_e_list,
+                                     niter=niter,
+                                     progress=True)
+    return aln, score
 
 
 def plot_aln(cmap_a, cmap_b, aln):

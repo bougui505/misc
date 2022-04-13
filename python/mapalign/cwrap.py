@@ -119,7 +119,14 @@ def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     return aln, score
 
 
-def get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1, gap_open=-1., gap_extension=-0.1, niter=20, progress=False):
+def get_alignment(cmap_a,
+                  cmap_b,
+                  sep_x_list=[0, 1, 2],
+                  sep_y_list=[1, 2, 4, 8, 16, 32],
+                  gap_open=-1.,
+                  gap_extension_list=[-0.2, -0.1, -0.01, -0.001],
+                  niter=20,
+                  progress=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -132,7 +139,7 @@ def get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1, gap_open=-1., gap_extension=
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
     ((88, 88), (215, 215))
-    >>> aln, score = get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1)
+    >>> aln, score = get_alignment(cmap_a, cmap_b, sep_x_list=[2], sep_y_list=[1], gap_extension_list=[-0.1])
     >>> aln
     array([ 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,
             -1,  -1,  33,  34,  35,  -1,  -1,  -1,  -1,  36,  37,  -1,  -1,
@@ -146,30 +153,35 @@ def get_alignment(cmap_a, cmap_b, sep_x=2, sep_y=1, gap_open=-1., gap_extension=
     """
     cmap_a = cmap_a.astype(float)
     cmap_b = cmap_b.astype(float)
-    mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
-    na, nb = mtx.shape
+    na, na = cmap_a.shape
+    nb, nb = cmap_b.shape
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
-    if progress:
-        pbar = tqdm.tqdm(total=niter)
-    aln, score = traceback(mtx)
     score_max = 0.
-    for i in range(niter):
-        mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
-                           c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
-        mtx = mtx.reshape((na, nb))
-        aln, score = traceback(mtx)
-        if score >= score_max:
-            score_max = score
-            aln_best = aln
-        log(f'iteration: {i}')
-        log(f'score: {score:.3f}')
-        if progress:
-            pbar.set_description(f'score: {score:.3f}')
-            pbar.update(1)
     if progress:
-        pbar.set_description(f'score: {score_max:.3f}')
-        pbar.close()
+        total = len(sep_x_list) * len(sep_y_list) * len(gap_extension_list) * niter
+        pbar = tqdm.tqdm(total=total)
+    for sep_x in sep_x_list:
+        for sep_y in sep_y_list:
+            mtx_ini = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+            for gap_e in gap_extension_list:
+                mtx = mtx_ini.copy()
+                aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
+                for i in range(niter):
+                    mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
+                                       c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
+                    mtx = mtx.reshape((na, nb))
+                    aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
+                    if score >= score_max:
+                        score_max = score
+                        aln_best = aln
+                    log(f'iteration: {i}')
+                    log(f'score: {score:.3f}')
+                    if progress:
+                        pbar.set_description(f'score: {score_max:.3f}')
+                        pbar.update(1)
     log(f'score_max: {score_max:.3f}')
+    if progress:
+        pbar.close()
     return aln_best, score_max
 
 
