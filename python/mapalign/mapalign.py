@@ -74,28 +74,30 @@ def mapalign(cmap_a,
     ((88, 88), (215, 215))
 
     # Few minutes to run. Uncomment the following to test it!
-    # >>> aln, score = mapalign(cmap_a, cmap_b)
-    # >>> aln
-    # array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
-    #          7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
-    #         31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
-    #         48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
-    #         64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
-    #        123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
-    #        159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
-    # >>> aln.shape
-    # (88,)
-    # >>> score
-    # 98.91796030178082
+    >>> aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a, cmap_b)
+    >>> aln
+    array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
+             7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
+            31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+            48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
+            64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
+           123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
+           159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    >>> aln.shape
+    (88,)
+    >>> score
+    98.91796030178082
+    >>> sep_x_best, sep_y_best, gap_e_best
+    (2, 16, -0.001)
     """
-    aln, score = cwrap.get_alignment(cmap_a,
-                                     cmap_b,
-                                     sep_x_list=sep_x_list,
-                                     sep_y_list=sep_y_list,
-                                     gap_extension_list=gap_e_list,
-                                     niter=niter,
-                                     progress=progress)
-    return aln, score
+    aln, score, sep_x_best, sep_y_best, gap_e_best = cwrap.get_alignment(cmap_a,
+                                                                         cmap_b,
+                                                                         sep_x_list=sep_x_list,
+                                                                         sep_y_list=sep_y_list,
+                                                                         gap_extension_list=gap_e_list,
+                                                                         niter=niter,
+                                                                         progress=progress)
+    return aln, score, sep_x_best, sep_y_best, gap_e_best
 
 
 def get_aln_b(aln_a, nb):
