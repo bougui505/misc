@@ -80,6 +80,8 @@ def mapalign(cmap_a,
             64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
            123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
            159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    >>> aln.shape
+    (88,)
     >>> score
     98.91796030178082
     """
@@ -120,8 +122,8 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p1', '--pdb1', required=True)
-    parser.add_argument('-p2', '--pdb2', required=True)
+    parser.add_argument('-p1', '--pdb1')
+    parser.add_argument('-p2', '--pdb2')
     parser.add_argument('-s1', '--sel1', required=False, default='all')
     parser.add_argument('-s2', '--sel2', required=False, default='all')
     parser.add_argument('--test', help='Test the code', action='store_true')
