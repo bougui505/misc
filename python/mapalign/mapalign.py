@@ -98,10 +98,40 @@ def mapalign(cmap_a,
     return aln, score
 
 
-def get_aligned_maps(cmap_a, cmap_b, aln, aframe=True):
+def get_aln_b(aln_a, nb):
     """
-    Return the maps aligned in the frame of cmap_a
+    >>> aln_a = np.asarray([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6, 7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23, 31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63, 64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122, 123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    >>> aln_a.shape
+    (88,)
+    >>> aln_b = get_aln_b(aln_a, 215)
+    >>> aln_b
+    array([ 2.,  3.,  4.,  5.,  8.,  9., 12., 13., 14., 15., 16., 17., 18.,
+           19., 20., -1., -1., -1., -1., 21., 22., 23., 24., 25., -1., -1.,
+           -1., -1., -1., -1., -1., 26., -1., -1., -1., -1., 27., 28., 29.,
+           30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40., -1., -1.,
+           -1., 41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51., 52.,
+           53., 54., 55., 56., 57., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., 58.,
+           59., 60., 61., 62., 63., 64., 65., 66., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., 67., 68., 69., 70., 71., 72., -1., -1., -1., 73., 74.,
+           75., 76., 77., 78., 79., 80., 81., 82., 83., 84., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+           -1., -1., -1., -1., -1., -1., -1.])
+    """
+    aln_b = -np.ones(nb)
+    ai_aln = np.where(aln_a != -1)[0]
+    bi_aln = aln_a[ai_aln]
+    aln_b[bi_aln] = ai_aln
+    return aln_b
 
+
+def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
+    """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
     >>> cmd.load('data/2pd0_A.pdb', 'B_')
@@ -116,21 +146,48 @@ def get_aligned_maps(cmap_a, cmap_b, aln, aframe=True):
     >>> aln = np.asarray([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6, 7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23, 31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63, 64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122, 123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
     >>> aln.shape
     (88,)
+
+    Returns the maps aligned in the frame of cmap_a
     >>> cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln)
     >>> cmap_a_aln.shape
     (79, 79)
     >>> cmap_a_aln.shape
     (79, 79)
+
+    Returns the maps aligned in the frame of cmap_b
+    >>> cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=True)
+    >>> cmap_a_aln.shape
+    (215, 215)
+    >>> cmap_b_aln.shape
+    (215, 215)
     """
-    if aframe:
-        ai_aln = np.where(aln != -1)[0]
+    na, na = cmap_a.shape
+    nb, nb = cmap_b.shape
+    ai_aln = np.where(aln != -1)[0]
+    mask = (aln == -1)
+    cmap_a[mask] = 0
+    cmap_a[:, mask] = 0
+    bi_aln = aln[ai_aln]
+    if not full:  # Only get the aligned parts
         cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
-        bi_aln = aln[ai_aln]
         cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
+    else:  # get the FULL matrices with zeros in insertion regions
+        if na < nb:
+            cmap_a_aln = np.zeros_like(cmap_b)
+            cmap_a_aln[:na, :na] = cmap_a
+            cmap_a_aln[bi_aln, :] = cmap_a_aln[ai_aln, :]
+            cmap_a_aln[:, bi_aln] = cmap_a_aln[:, ai_aln]
+            cmap_b_aln = cmap_b
+        else:
+            cmap_a_aln = cmap_a
+            cmap_b_aln = np.zeros_like(cmap_a)
+            cmap_b_aln[:nb, :nb] = cmap_b
+            cmap_b_aln[ai_aln, :] = cmap_b_aln[bi_aln, :]
+            cmap_b_aln[:, ai_aln] = cmap_b_aln[:, bi_aln]
     return cmap_a_aln, cmap_b_aln
 
 
-def plot_aln(cmap_a, cmap_b, aln):
+def plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=None):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -147,8 +204,10 @@ def plot_aln(cmap_a, cmap_b, aln):
     >>> aln.shape
     (88,)
     >>> plot_aln(cmap_a, cmap_b, aln)
+
+    >>> plot_aln(cmap_a, cmap_b, aln, full=True)
     """
-    cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln)
+    cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=full)
     ai, aj = np.where(cmap_a_aln > 0)
     bi, bj = np.where(cmap_b_aln > 0)
     plt.scatter(bi, bj, s=16., c='gray', alpha=.5, label='cmap_b')
@@ -157,7 +216,10 @@ def plot_aln(cmap_a, cmap_b, aln):
     plt.yticks([])
     plt.gca().set_aspect('equal', adjustable='box')
     plt.legend()
-    plt.show()
+    if outfilename is not None:
+        plt.savefig(outfilename)
+    else:
+        plt.show()
 
 
 def log(msg):
