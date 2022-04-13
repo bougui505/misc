@@ -315,6 +315,12 @@ if __name__ == '__main__':
                                                               cmap_b,
                                                               sep_x_list=[args.sep_x],
                                                               sep_y_list=[args.sep_y],
-                                                              gap_e_list=[args.gap_e])
+                                                              gap_e_list=[args.gap_e],
+                                                              progress=False)
+    log(f'score: {score:.4f}')
+    print(f'score: {score:.4f}')
+    native_contacts_score = get_score(cmap_a, cmap_b, aln)
+    log(f'native_contacts_score: {native_contacts_score:.4f}')
+    print(f'native_contacts_score: {native_contacts_score:.4f}')
     # >>> sep_x_best, sep_y_best, gap_e_best
     # (2, 16, -0.001)
