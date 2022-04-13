@@ -98,7 +98,7 @@ def mapalign(cmap_a,
     return aln, score
 
 
-def get_aligned_maps(cmap_a, cmap_b, aln):
+def get_aligned_maps(cmap_a, cmap_b, aln, aframe=True):
     """
     Return the maps aligned in the frame of cmap_a
 
@@ -122,10 +122,11 @@ def get_aligned_maps(cmap_a, cmap_b, aln):
     >>> cmap_a_aln.shape
     (79, 79)
     """
-    ai_aln = np.where(aln != -1)[0]
-    cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
-    bi_aln = aln[ai_aln]
-    cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
+    if aframe:
+        ai_aln = np.where(aln != -1)[0]
+        cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
+        bi_aln = aln[ai_aln]
+        cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
     return cmap_a_aln, cmap_b_aln
 
 
