@@ -119,7 +119,7 @@ def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     return aln, score
 
 
-def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1, niter=20):
+def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1, niter=20, progress=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -149,7 +149,8 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
     mtx = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
     na, nb = mtx.shape
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
-    pbar = tqdm.tqdm(total=niter)
+    if progress:
+        pbar = tqdm.tqdm(total=niter)
     aln, score = traceback(mtx)
     score_max = 0.
     for i in range(niter):
@@ -162,10 +163,12 @@ def get_alignment(cmap_a, cmap_b, sep_x, sep_y, gap_open=-1., gap_extension=-0.1
             aln_best = aln
         log(f'iteration: {i}')
         log(f'score: {score:.3f}')
-        pbar.set_description(f'score: {score:.3f}')
-        pbar.update(1)
-    pbar.set_description(f'score: {score_max:.3f}')
-    pbar.close()
+        if progress:
+            pbar.set_description(f'score: {score:.3f}')
+            pbar.update(1)
+    if progress:
+        pbar.set_description(f'score: {score_max:.3f}')
+        pbar.close()
     log(f'score_max: {score_max:.3f}')
     return aln_best, score_max
 
