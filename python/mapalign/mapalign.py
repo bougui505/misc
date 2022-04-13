@@ -188,7 +188,7 @@ def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
 
 def get_score(cmap_a, cmap_b, aln):
     """
-    The score is the number of contacts common in the two maps aligned over the total number of contacts on cmap_a
+    The score is the number of contacts common in the two maps aligned over the minimum of total number of contacts for cmap_a and cmap_b
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
     >>> cmd.load('data/2pd0_A.pdb', 'B_')
@@ -209,7 +209,7 @@ def get_score(cmap_a, cmap_b, aln):
     """
     cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=False)
     comm = np.logical_and(cmap_a_aln, cmap_b_aln)
-    score = comm.sum() / cmap_a.sum()
+    score = comm.sum() / min(cmap_a.sum(), cmap_b.sum())
     return score
 
 
@@ -292,6 +292,8 @@ if __name__ == '__main__':
                         type=float,
                         default=-0.001,
                         help='Gap extension penalty. MUST BE negative (default=-0.001).')
+    parser.add_argument('--show', action='store_true', help='Show the contact map alignment')
+    parser.add_argument('--save', help='Save the contact map alignment in the given filename')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -322,5 +324,7 @@ if __name__ == '__main__':
     native_contacts_score = get_score(cmap_a, cmap_b, aln)
     log(f'native_contacts_score: {native_contacts_score:.4f}')
     print(f'native_contacts_score: {native_contacts_score:.4f}')
+    if args.show or args.save is not None:
+        plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=args.save)
     # >>> sep_x_best, sep_y_best, gap_e_best
     # (2, 16, -0.001)
