@@ -274,6 +274,24 @@ if __name__ == '__main__':
     parser.add_argument('-p2', '--pdb2')
     parser.add_argument('-s1', '--sel1', required=False, default='all')
     parser.add_argument('-s2', '--sel2', required=False, default='all')
+    parser.add_argument(
+        '--sep_x',
+        type=int,
+        default=2,
+        help=
+        'Parameter to compute the STD of the gaussian: s_std=sep_y*(1+(s_min-2)**sep_x), with s_min the min sequence separation for cmap_a and cmap_b of the considered contacts. (default=2)'
+    )
+    parser.add_argument(
+        '--sep_y',
+        type=int,
+        default=16,
+        help=
+        'Parameter to compute the STD of the gaussian: s_std=sep_y*(1+(s_min-2)**sep_x), with s_min the min sequence separation for cmap_a and cmap_b of the considered contacts. (default=16)'
+    )
+    parser.add_argument('--gap_e',
+                        type=float,
+                        default=-0.001,
+                        help='Gap extension penalty. MUST BE negative (default=-0.001).')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -293,4 +311,10 @@ if __name__ == '__main__':
     cmap_b = get_cmap(dmat_b)
     log(f'cmap_a.shape: {cmap_a.shape}')
     log(f'cmap_b.shape: {cmap_b.shape}')
-    aln, score = mapalign(cmap_a, cmap_b)
+    aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a,
+                                                              cmap_b,
+                                                              sep_x_list=[args.sep_x],
+                                                              sep_y_list=[args.sep_y],
+                                                              gap_e_list=[args.gap_e])
+    # >>> sep_x_best, sep_y_best, gap_e_best
+    # (2, 16, -0.001)
