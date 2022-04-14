@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 
+import tqdm
+import os
 import torch
 import glob
 from pymol import cmd
@@ -49,6 +51,36 @@ def collate_fn(batch):
     return batch
 
 
+def batch_mapalign(cmap_a, logfilename, pdblist=[], pdbpath=None, num_workers=None):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = mapalign.get_dmat(coords_a)
+    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> batch_mapalign(cmap_a, 'mapalign_batch.log', pdblist=['data/2pd0_A.pdb', 'data/3u97_A.pdb'])
+    """
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    if num_workers is None:
+        num_workers = os.cpu_count()
+    logging.info(f"num_workers: {num_workers}")
+    dataset = PDBdataset(pdbpath=pdbpath, pdblist=pdblist, cmap_a=cmap_a)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=1,
+                                             shuffle=False,
+                                             num_workers=num_workers,
+                                             collate_fn=collate_fn)
+    pbar = tqdm.tqdm(total=dataset.__len__())
+    for i, batch in enumerate(dataloader):
+        for b in batch:
+            for chain_data in b:
+                index, pdb, chain, score, native_contact = chain_data
+                logging.info(f'{index} {pdb} {chain} {score} {native_contact}')
+        pbar.update(1)
+    pbar.close()
+
+
 class PDBdataset(torch.utils.data.Dataset):
     """
     Load pdb files from a PDB database and return coordinates
@@ -59,9 +91,8 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
     >>> dmat_a = mapalign.get_dmat(coords_a)
     >>> cmap_a = mapalign.get_cmap(dmat_a)
-    >>> # Generate random datapoints for testing
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', cmap_a, logfilename='mapalign_batch.log')
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4, collate_fn=collate_fn)
+    >>> dataset = PDBdataset(pdbpath='/media/bougui/scratch/pdb', cmap_a=cmap_a)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1, collate_fn=collate_fn)
     >>> for i, batch in enumerate(dataloader):
     ...     print(len(batch))
     ...     # print([coords.shape for coords in batch])
@@ -69,19 +100,20 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     1
     >>> batch
+    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 64.0547035603498, 0.31771894093686354)]]
     """
     def __init__(self,
-                 pdbpath,
                  cmap_a,
-                 logfilename,
+                 pdbpath=None,
+                 pdblist=[],
                  selection='polymer.protein and name CA',
                  sep_x_list=[2],
                  sep_y_list=[16],
                  gap_e_list=[-0.001]):
-        logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-        logging.info(f"################ Starting {__file__} ################")
-        logging.info(f"pdbname: score native_contact_ratio")
-        self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+        if pdbpath is not None:
+            self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+        else:
+            self.list_IDs = pdblist
         self.selection = selection
         self.cmap_a = cmap_a
         self.sep_x_list = sep_x_list
@@ -108,8 +140,7 @@ class PDBdataset(torch.utils.data.Dataset):
                                                                 gap_e_list=self.gap_e_list,
                                                                 progress=False)
             native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
-            scores.append((pdbfile, chain, score, native_contacts_score))
-            logging.info(f'{pdbfile}_{chain}: {score:.4f} {native_contacts_score:.4f}')
+            scores.append((index, pdbfile, chain, score, native_contacts_score))
         cmd.delete(pymolname)
         return scores
 
