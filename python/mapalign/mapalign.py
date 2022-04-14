@@ -297,6 +297,7 @@ if __name__ == '__main__':
     parser.add_argument('--full',
                         action='store_true',
                         help='Display the full contact map alignemnt. Not only the aligned contacts')
+    parser.add_argument('--hpo', help='Hyperparameter optimization for sep_x, sep_y and gap_e', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -316,12 +317,20 @@ if __name__ == '__main__':
     cmap_b = get_cmap(dmat_b)
     log(f'cmap_a.shape: {cmap_a.shape}')
     log(f'cmap_b.shape: {cmap_b.shape}')
+    if args.hpo:
+        sep_x_list = [0, 1, 2]
+        sep_y_list = [1, 2, 3, 8, 16, 32]
+        gap_e_list = [-0.2, -0.1, -0.01, -0.001]
+    else:
+        sep_x_list = [args.sep_x]
+        sep_y_list = [args.sep_y]
+        gap_e_list = [args.gap_e]
     aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a,
                                                               cmap_b,
-                                                              sep_x_list=[args.sep_x],
-                                                              sep_y_list=[args.sep_y],
-                                                              gap_e_list=[args.gap_e],
-                                                              progress=False)
+                                                              sep_x_list=sep_x_list,
+                                                              sep_y_list=sep_y_list,
+                                                              gap_e_list=gap_e_list,
+                                                              progress=args.hpo)
     log(f'score: {score:.4f}')
     print(f'score: {score:.4f}')
     native_contacts_score = get_score(cmap_a, cmap_b, aln)
