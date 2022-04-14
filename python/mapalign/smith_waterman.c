@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-double * traceback(int rows, int cols, double * sco_mtx, double gap_open, double gap_extension){
+double * traceback(int rows, int cols, const double * sco_mtx, double gap_open, double gap_extension){
     // LOCAL_ALIGN
     // Start	0
     // [A]lign	1
     // [D]own	2
     // [R]ight	3
     double max_sco = 0;
-    int * label = (int *)malloc(sizeof(int) * ((rows+1) * (cols+1)));
-    for (int i = 0; i < (rows+1) * (cols+1) ; i++){
-        label[i] = 0;
-    }
+    int label[rows+1][cols+1];
+    memset(label, 0, sizeof label);
+    //for (int i = 0; i < (rows+1) * (cols+1) ; i++){
+    //    label[i] = 0;
+    //}
 
     double sco[rows+1][cols+1];
     memset(sco, 0, sizeof(sco));
-    int labelpt = 0;
     int max_i = 0;
     int max_j = 0;
     for (int i = 1; i <= rows; i++){
@@ -24,29 +24,28 @@ double * traceback(int rows, int cols, double * sco_mtx, double gap_open, double
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
             double D = sco[i-1][j];
             double R = sco[i][j-1];
-            if(label[(i-1)*cols+j] == 1){D += gap_open;}else{D += gap_extension;}
-            if(label[i*cols+(j-1)] == 1){R += gap_open;}else{R += gap_extension;}
-            labelpt = i * cols + j;
-            if(A <= 0 && D <= 0 && R <= 0){label[labelpt] = 0;sco[i][j] = 0;}
+            if(label[i-1][j] == 1){D += gap_open;}else{D += gap_extension;}
+            if(label[i][j-1] == 1){R += gap_open;}else{R += gap_extension;}
+            if(A <= 0 && D <= 0 && R <= 0){label[i][j] = 0;sco[i][j] = 0;}
             else{
                 if(A >= R){
                     if(A >= D){
                         sco[i][j] = A;
-                        label[labelpt] = 1;
+                        label[i][j] = 1;
                     }
                     else{
                         sco[i][j] = D;
-                        label[labelpt] = 2;
+                        label[i][j] = 2;
                     }
                 }
                 else{
                     if(R >= D){
                         sco[i][j] = R;
-                        label[labelpt] = 3;
+                        label[i][j] = 3;
                     }
                     else{
                         sco[i][j] = D;
-                        label[labelpt] = 2;
+                        label[i][j] = 2;
                     }
                 }
             }
@@ -63,12 +62,11 @@ double * traceback(int rows, int cols, double * sco_mtx, double gap_open, double
 
     int i = max_i;int j = max_j;
     while(1){
-        labelpt = i * cols + j;
         // printf("%d, %d, %d\n", i, j, label[labelpt]);
-        if(label[labelpt] == 0 || i == 0 || j ==0){break;}
-        else if(label[labelpt] == 1){aln[i-1] = j-1;i--;j--;}
-        else if(label[labelpt] == 2){i--;}
-        else if(label[labelpt] == 3){j--;}
+        if(label[i][j] == 0){break;}
+        else if(label[i][j] == 1){aln[i-1] = j-1;i--;j--;}
+        else if(label[i][j] == 2){i--;}
+        else if(label[i][j] == 3){j--;}
     }
     return aln;
 }

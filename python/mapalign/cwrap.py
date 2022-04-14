@@ -138,6 +138,7 @@ def get_alignment(cmap_a,
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
     ((88, 88), (215, 215))
+
     >>> aln, score, sep_x_best, sep_y_best, gap_e_best = get_alignment(cmap_a, cmap_b, sep_x_list=[1, 2], sep_y_list=[8, 16], gap_extension_list=[-0.01, -0.001], progress=True)
     >>> aln
     array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
