@@ -66,8 +66,8 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     # >>> _ = plt.show()
 
     """
-    lib = cdll.LoadLibrary("lib/initialize_matrix.so")
-    initialize_matrix_C = lib.initialize_matrix
+    libinit = cdll.LoadLibrary("lib/initialize_matrix.so")
+    initialize_matrix_C = libinit.initialize_matrix
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
     cmap_a = cmap_a.astype(float)
@@ -137,17 +137,17 @@ def get_alignment(cmap_a,
     >>> cmap_b = mapalign.get_cmap(dmat_b)
     >>> cmap_a.shape, cmap_b.shape
     ((88, 88), (215, 215))
-    >>> aln, score, sep_x_best, sep_y_best, gap_e_best = get_alignment(cmap_a, cmap_b, sep_x_list=[2], sep_y_list=[1], gap_extension_list=[-0.1])
+    >>> aln, score, sep_x_best, sep_y_best, gap_e_best = get_alignment(cmap_a, cmap_b, sep_x_list=[1, 2], sep_y_list=[8, 16], gap_extension_list=[-0.01, -0.001], progress=True)
     >>> aln
-    array([ 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,
-            -1,  -1,  33,  34,  35,  -1,  -1,  -1,  -1,  36,  37,  -1,  -1,
-            -1,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  55,  56,
-            57,  58,  59,  60,  61,  81,  82,  83,  84,  85,  86,  87,  88,
-            89,  90,  91,  92,  93,  94,  96,  97,  98,  99, 100, 101, 102,
-           119, 120, 121, 122, 123, 124, 143, 144, 145, 146, 147, 150, 151,
-           152, 153, 154,  -1, 155, 156, 157, 158, 159, 160])
+    array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
+             7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
+            31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+            48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
+            64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
+           123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
+           159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
     >>> score
-    72.88997596280687
+    98.91796030178082
     """
     cmap_a = cmap_a.astype(float)
     cmap_b = cmap_b.astype(float)
