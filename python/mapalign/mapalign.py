@@ -188,7 +188,7 @@ def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
 
 def get_score(cmap_a, cmap_b, aln):
     """
-    The score is the number of contacts common in the two maps aligned over the minimum of total number of contacts for cmap_a and cmap_b
+    The score is the number of contacts common in the two maps aligned over the total number of contacts for cmap_a
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
     >>> cmd.load('data/2pd0_A.pdb', 'B_')
@@ -209,7 +209,7 @@ def get_score(cmap_a, cmap_b, aln):
     """
     cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=False)
     comm = np.logical_and(cmap_a_aln, cmap_b_aln)
-    score = comm.sum() / min(cmap_a.sum(), cmap_b.sum())
+    score = comm.sum() / cmap_a.sum()  # min(cmap_a.sum(), cmap_b.sum())
     return score
 
 
