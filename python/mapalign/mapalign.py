@@ -171,7 +171,7 @@ def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
         cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
         cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
     else:  # get the FULL matrices with zeros in insertion regions
-        if na < nb:
+        if na <= nb:
             cmap_a_aln = np.zeros_like(cmap_b)
             cmap_a_aln[:na, :na] = cmap_a
             cmap_a_aln[bi_aln, :] = cmap_a_aln[ai_aln, :]
