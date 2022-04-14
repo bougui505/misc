@@ -41,6 +41,9 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 import tqdm
 
+libinit = cdll.LoadLibrary("lib/initialize_matrix.so")
+libsw = cdll.LoadLibrary("lib/smith_waterman.so")
+
 
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     """
@@ -66,7 +69,6 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     # >>> _ = plt.show()
 
     """
-    libinit = cdll.LoadLibrary("lib/initialize_matrix.so")
     initialize_matrix_C = libinit.initialize_matrix
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
@@ -105,8 +107,7 @@ def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     >>> score
     509.77545076565457
     """
-    lib = cdll.LoadLibrary("lib/smith_waterman.so")
-    traceback_C = lib.traceback
+    traceback_C = libsw.traceback
     na, nb = mtx.shape
     # Return shape is na+1 as we add the score as the last element of the returned value
     traceback_C.restype = ndpointer(dtype=c_double, shape=na + 1)
@@ -153,8 +154,7 @@ def get_alignment(cmap_a,
     cmap_b = cmap_b.astype(float)
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
-    lib = cdll.LoadLibrary("lib/smith_waterman.so")
-    update_mtx_C = lib.update_mtx
+    update_mtx_C = libsw.update_mtx
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     score_max = 0.
     if progress:
