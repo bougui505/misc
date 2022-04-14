@@ -82,7 +82,7 @@ double * update_mtx(int na, int nb, int * aln, const double * sco_mtx, double * 
     int bj = 0;
     int sa = 0;
     int sb = 0;
-    int s_min = 0;
+    double s_min = 0;
     double sco = 0.;
     double w = 0.;
     int aptr = 0;

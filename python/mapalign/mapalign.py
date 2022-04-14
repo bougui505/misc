@@ -49,8 +49,38 @@ def get_dmat(coords):
     return dmat
 
 
-def get_cmap(dmat, thr=8.):
-    return dmat <= thr
+def get_cmap(dmat, thr=8., sep_cut=0):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> coords = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> cmap = get_cmap(get_dmat(coords[:8]), sep_cut=0)
+    >>> cmap
+    array([[False,  True,  True,  True, False, False, False, False],
+           [ True, False,  True,  True,  True, False, False, False],
+           [ True,  True, False,  True,  True,  True, False, False],
+           [ True,  True,  True, False,  True,  True, False, False],
+           [False,  True,  True,  True, False,  True,  True, False],
+           [False, False,  True,  True,  True, False,  True,  True],
+           [False, False, False, False,  True,  True, False,  True],
+           [False, False, False, False, False,  True,  True, False]])
+    >>> cmap = get_cmap(get_dmat(coords[:8]), sep_cut=2)
+    >>> cmap
+    array([[False, False, False,  True, False, False, False, False],
+           [False, False, False, False,  True, False, False, False],
+           [False, False, False, False, False,  True, False, False],
+           [ True, False, False, False, False, False, False, False],
+           [False,  True, False, False, False, False, False, False],
+           [False, False,  True, False, False, False, False, False],
+           [False, False, False, False, False, False, False, False],
+           [False, False, False, False, False, False, False, False]])
+    """
+    n, n = dmat.shape
+    cmap = dmat <= thr
+    for i in range(sep_cut + 1):
+        mask = ~(np.logical_or(np.diag(np.ones(n - i, dtype=bool), k=i), np.diag(np.ones(n - i, dtype=bool), k=-i)))
+        cmap = np.logical_and(cmap, mask)
+    return cmap
 
 
 def mapalign(cmap_a,
@@ -205,7 +235,7 @@ def get_score(cmap_a, cmap_b, aln):
     (88,)
     >>> score = get_score(cmap_a, cmap_b, aln)
     >>> score
-    0.6120162932790224
+    0.5838926174496645
     """
     cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=False)
     comm = np.logical_and(cmap_a_aln, cmap_b_aln)
@@ -229,9 +259,9 @@ def plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=None):
     >>> aln = np.asarray([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6, 7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23, 31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47, 48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63, 64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122, 123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
     >>> aln.shape
     (88,)
-    >>> plot_aln(cmap_a, cmap_b, aln)
 
-    >>> plot_aln(cmap_a, cmap_b, aln, full=True)
+    # >>> plot_aln(cmap_a, cmap_b, aln)
+    # >>> plot_aln(cmap_a, cmap_b, aln, full=True)
     """
     cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=full)
     ai, aj = np.where(cmap_a_aln > 0)
