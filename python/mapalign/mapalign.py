@@ -294,6 +294,9 @@ if __name__ == '__main__':
                         help='Gap extension penalty. MUST BE negative (default=-0.001).')
     parser.add_argument('--show', action='store_true', help='Show the contact map alignment')
     parser.add_argument('--save', help='Save the contact map alignment in the given filename')
+    parser.add_argument('--full',
+                        action='store_true',
+                        help='Display the full contact map alignemnt. Not only the aligned contacts')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -325,6 +328,6 @@ if __name__ == '__main__':
     log(f'native_contacts_score: {native_contacts_score:.4f}')
     print(f'native_contacts_score: {native_contacts_score:.4f}')
     if args.show or args.save is not None:
-        plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=args.save)
+        plot_aln(cmap_a, cmap_b, aln, full=args.full, outfilename=args.save)
     # >>> sep_x_best, sep_y_best, gap_e_best
     # (2, 16, -0.001)
