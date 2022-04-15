@@ -106,19 +106,19 @@ def mapalign(cmap_a,
     # Few minutes to run. Uncomment the following to test it!
     >>> aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a, cmap_b)
     >>> aln
-    array([ -1,  -1,   0,   1,   2,   3,  -1,  -1,   4,   5,  -1,  -1,   6,
-             7,   8,   9,  10,  11,  12,  13,  14,  19,  20,  21,  22,  23,
-            31,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
-            48,  49,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
-            64,  65,  66,  67,  68,  69, 116, 117, 118, 119, 120, 121, 122,
-           123, 124, 145, 146, 147, 148, 149, 150, 154, 155, 156, 157, 158,
-           159, 160, 161, 162, 163, 164, 165,  -1,  -1,  -1])
+    array([  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,
+            13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,
+            26,  27,  28,  29,  30,  31,  32,  33,  34,  44,  45,  46,  47,
+            48,  49,  51,  52,  53,  54,  55,  56,  57,  59,  60,  61, 103,
+           104, 105, 106, 107, 108, 109, 110, 111, 112, 119, 120, 121, 122,
+           123, 124, 125, 126, 127, 152, 153, 154, 155, 156, 157, 158, 159,
+           160, 161, 162, 163, 164, 165, 166, 167, 168, 169], dtype=int32)
     >>> aln.shape
     (88,)
     >>> score
-    98.91796030178082
+    407.2732985813753
     >>> sep_x_best, sep_y_best, gap_e_best
-    (2, 16, -0.001)
+    (1, 16, -0.001)
     """
     aln, score, sep_x_best, sep_y_best, gap_e_best = cwrap.get_alignment(cmap_a,
                                                                          cmap_b,
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(optionflags=doctest.ELLIPSIS)  # | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
     log(args.pdb1)
@@ -361,6 +361,13 @@ if __name__ == '__main__':
                                                               sep_y_list=sep_y_list,
                                                               gap_e_list=gap_e_list,
                                                               progress=args.hpo)
+    if args.hpo:
+        log(f'sep_x: {sep_x_best}')
+        log(f'sep_y: {sep_y_best}')
+        log(f'gap_e: {gap_e_best}')
+        print(f'sep_x: {sep_x_best}')
+        print(f'sep_y: {sep_y_best}')
+        print(f'gap_e: {gap_e_best}')
     log(f'score: {score:.4f}')
     print(f'score: {score:.4f}')
     native_contacts_score = get_score(cmap_a, cmap_b, aln)

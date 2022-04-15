@@ -26,8 +26,9 @@ double Falign(double * sco_mtx, int rows, int cols){
 }
 
 double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, double sep_x, double sep_y){
-    double * M = (double *)malloc(sizeof(double) * na*nb);
-    // double M[na][nb];
+    // double * M = (double *)malloc(sizeof(double) * na*nb);
+    double M[na*nb];
+    memset(M, 0., sizeof M);
     double * mtx = (double *)malloc(sizeof(double) * na*nb);
     double Mval = 0;
     double contact_a = 0.;
@@ -41,14 +42,12 @@ double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, dou
     int aptr = 0;
     int bptr = 0;
     double score = 0;
-    int mtxptr = 0;
     for (int ai=0; ai< na; ai++){
         for (int bi=0; bi< nb; bi++){
-            mtxptr++;
-            int ptr = 0;
+            int mtxptr = ai * nb + bi;
             for (int aj=0; aj< na; aj++){
                 for (int bj=0; bj< nb; bj++){
-                    ptr++;
+                    int ptr = aj * nb + bj;
                     aptr = ai * na + aj;
                     bptr = bi * nb + bj;
                     contact_a = cmap_a[aptr];
@@ -61,12 +60,12 @@ double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, dou
                             s_min = MIN(abs(sa), abs(sb));
                             s_std = sep_y * (1+ pow(s_min - 2, sep_x));
                             w = sep_weight(s_min) * gaussian(0, s_std, s_dif);
-                            if (s_dif/s_std <6){
+                            //if (s_dif/s_std <6){
                                 Mval = contact_a * contact_b * w;
-                            }
-                            else{
-                                Mval=0.;
-                            }
+                            //}
+                            //else{
+                            //    Mval=0.;
+                            //}
                         }
                         else {
                              Mval = -1;
@@ -86,6 +85,9 @@ double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, dou
             }
             score = Falign(M, na, nb);
             mtx[mtxptr] = score;
+            //if (ai==bi){
+            //    printf("%f\n", score);
+            //}
             // printf("score: %f\n", score);
         }
     }
