@@ -41,6 +41,7 @@ import matplotlib.pyplot as plt
 import scipy.spatial.distance as scidist
 import tqdm
 import cwrap
+import PDBloader
 
 
 def get_dmat(coords):
@@ -278,6 +279,38 @@ def plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=None):
         plt.show()
 
 
+def batch_mapalign(cmap_a, logfilename, pdblist=[], pdbpath=None, num_workers=None):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = mapalign.get_dmat(coords_a)
+    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> batch_mapalign(cmap_a, 'mapalign_batch.log', pdblist=['data/2pd0_A.pdb', 'data/3u97_A.pdb'])
+    """
+    import torch
+    import logging
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    if num_workers is None:
+        num_workers = os.cpu_count()
+    logging.info(f"num_workers: {num_workers}")
+    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, cmap_a=cmap_a)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=1,
+                                             shuffle=False,
+                                             num_workers=num_workers,
+                                             collate_fn=PDBloader.collate_fn)
+    pbar = tqdm.tqdm(total=dataset.__len__())
+    for i, batch in enumerate(dataloader):
+        for b in batch:
+            for chain_data in b:
+                index, pdb, chain, score, native_contact = chain_data
+                logging.info(f'{index} {pdb} {chain} {score:.4f} {native_contact:.4f}')
+        pbar.update(1)
+    pbar.close()
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -292,16 +325,13 @@ if __name__ == '__main__':
     from pymol import cmd
     # ### UNCOMMENT FOR LOGGING ####
     import os
-    import logging
-    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    logging.info(f"################ Starting {__file__} ################")
+    import PDBloader
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p1', '--pdb1')
-    parser.add_argument('-p2', '--pdb2')
+    parser.add_argument('-p1', '--pdb1', help='First structure file to align on pdb2')
+    parser.add_argument('-p2', '--pdb2', help='Second pdb file. Can give multiple pdbs', nargs='+')
     parser.add_argument('-s1', '--sel1', required=False, default='all')
     parser.add_argument('-s2', '--sel2', required=False, default='all')
     parser.add_argument(
@@ -336,44 +366,52 @@ if __name__ == '__main__':
         sys.exit()
 
     log(args.pdb1)
-    log(args.pdb2)
     cmd.load(args.pdb1, 'A_')
-    cmd.load(args.pdb2, 'B_')
     coords_a = cmd.get_coords(f'A_ and polymer.protein and name CA and {args.sel1}')
-    coords_b = cmd.get_coords(f'B_ and polymer.protein and name CA and {args.sel2}')
     dmat_a = get_dmat(coords_a)
-    dmat_b = get_dmat(coords_b)
     cmap_a = get_cmap(dmat_a)
-    cmap_b = get_cmap(dmat_b)
-    log(f'cmap_a.shape: {cmap_a.shape}')
-    log(f'cmap_b.shape: {cmap_b.shape}')
-    if args.hpo:
-        sep_x_list = [0, 1, 2]
-        sep_y_list = [1, 2, 3, 8, 16, 32]
-        gap_e_list = [-0.2, -0.1, -0.01, -0.001]
+    if len(args.pdb2) == 1:
+        import logging
+        logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+        logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+        logging.info(f"################ Starting {__file__} ################")
+        log(args.pdb2)
+        cmd.load(args.pdb2[0], 'B_')
+        coords_b = cmd.get_coords(f'B_ and polymer.protein and name CA and {args.sel2}')
+        dmat_b = get_dmat(coords_b)
+        cmap_b = get_cmap(dmat_b)
+        log(f'cmap_a.shape: {cmap_a.shape}')
+        log(f'cmap_b.shape: {cmap_b.shape}')
+        if args.hpo:
+            sep_x_list = [0, 1, 2]
+            sep_y_list = [1, 2, 3, 8, 16, 32]
+            gap_e_list = [-0.2, -0.1, -0.01, -0.001]
+        else:
+            sep_x_list = [args.sep_x]
+            sep_y_list = [args.sep_y]
+            gap_e_list = [args.gap_e]
+        aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a,
+                                                                  cmap_b,
+                                                                  sep_x_list=sep_x_list,
+                                                                  sep_y_list=sep_y_list,
+                                                                  gap_e_list=gap_e_list,
+                                                                  progress=args.hpo)
+        if args.hpo:
+            log(f'sep_x: {sep_x_best}')
+            log(f'sep_y: {sep_y_best}')
+            log(f'gap_e: {gap_e_best}')
+            print(f'sep_x: {sep_x_best}')
+            print(f'sep_y: {sep_y_best}')
+            print(f'gap_e: {gap_e_best}')
+        log(f'score: {score:.4f}')
+        print(f'score: {score:.4f}')
+        native_contacts_score = get_score(cmap_a, cmap_b, aln)
+        log(f'native_contacts_score: {native_contacts_score:.4f}')
+        print(f'native_contacts_score: {native_contacts_score:.4f}')
+        if args.show or args.save is not None:
+            plot_aln(cmap_a, cmap_b, aln, full=args.full, outfilename=args.save)
+        # >>> sep_x_best, sep_y_best, gap_e_best
+        # (2, 16, -0.001)
     else:
-        sep_x_list = [args.sep_x]
-        sep_y_list = [args.sep_y]
-        gap_e_list = [args.gap_e]
-    aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a,
-                                                              cmap_b,
-                                                              sep_x_list=sep_x_list,
-                                                              sep_y_list=sep_y_list,
-                                                              gap_e_list=gap_e_list,
-                                                              progress=args.hpo)
-    if args.hpo:
-        log(f'sep_x: {sep_x_best}')
-        log(f'sep_y: {sep_y_best}')
-        log(f'gap_e: {gap_e_best}')
-        print(f'sep_x: {sep_x_best}')
-        print(f'sep_y: {sep_y_best}')
-        print(f'gap_e: {gap_e_best}')
-    log(f'score: {score:.4f}')
-    print(f'score: {score:.4f}')
-    native_contacts_score = get_score(cmap_a, cmap_b, aln)
-    log(f'native_contacts_score: {native_contacts_score:.4f}')
-    print(f'native_contacts_score: {native_contacts_score:.4f}')
-    if args.show or args.save is not None:
-        plot_aln(cmap_a, cmap_b, aln, full=args.full, outfilename=args.save)
-    # >>> sep_x_best, sep_y_best, gap_e_best
-    # (2, 16, -0.001)
+        print(args.pdb2)
+        batch_mapalign(cmap_a, f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log', pdblist=args.pdb2)

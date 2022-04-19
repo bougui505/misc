@@ -43,42 +43,12 @@ import glob
 from pymol import cmd
 from misc import randomgen
 from misc.mapalign import mapalign
-import logging
+# import logging
 # from misc.pytorch import torchify
 
 
 def collate_fn(batch):
     return batch
-
-
-def batch_mapalign(cmap_a, logfilename, pdblist=[], pdbpath=None, num_workers=None):
-    """
-    >>> cmd.reinitialize()
-    >>> cmd.load('data/3u97_A.pdb', 'A_')
-    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
-    >>> dmat_a = mapalign.get_dmat(coords_a)
-    >>> cmap_a = mapalign.get_cmap(dmat_a)
-    >>> batch_mapalign(cmap_a, 'mapalign_batch.log', pdblist=['data/2pd0_A.pdb', 'data/3u97_A.pdb'])
-    """
-    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    logging.info(f"################ Starting {__file__} ################")
-    if num_workers is None:
-        num_workers = os.cpu_count()
-    logging.info(f"num_workers: {num_workers}")
-    dataset = PDBdataset(pdbpath=pdbpath, pdblist=pdblist, cmap_a=cmap_a)
-    dataloader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=1,
-                                             shuffle=False,
-                                             num_workers=num_workers,
-                                             collate_fn=collate_fn)
-    pbar = tqdm.tqdm(total=dataset.__len__())
-    for i, batch in enumerate(dataloader):
-        for b in batch:
-            for chain_data in b:
-                index, pdb, chain, score, native_contact = chain_data
-                logging.info(f'{index} {pdb} {chain} {score} {native_contact}')
-        pbar.update(1)
-    pbar.close()
 
 
 class PDBdataset(torch.utils.data.Dataset):
@@ -100,7 +70,7 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     1
     >>> batch
-    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 64.0547035603498, 0.31771894093686354)]]
+    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 257.0101993921045, 0.5167785234899329)]]
     """
     def __init__(self,
                  cmap_a,
