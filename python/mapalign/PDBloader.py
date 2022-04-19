@@ -77,7 +77,7 @@ class PDBdataset(torch.utils.data.Dataset):
                  pdbpath=None,
                  pdblist=[],
                  selection='polymer.protein and name CA',
-                 sep_x_list=[2],
+                 sep_x_list=[1],
                  sep_y_list=[16],
                  gap_e_list=[-0.001]):
         if pdbpath is not None:

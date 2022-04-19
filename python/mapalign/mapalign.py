@@ -279,7 +279,14 @@ def plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=None):
         plt.show()
 
 
-def batch_mapalign(cmap_a, logfilename, pdblist=[], pdbpath=None, num_workers=None):
+def batch_mapalign(cmap_a,
+                   logfilename,
+                   pdblist=[],
+                   pdbpath=None,
+                   num_workers=None,
+                   sep_x_list=[1],
+                   sep_y_list=[16],
+                   gap_e_list=[-0.001]):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -295,7 +302,12 @@ def batch_mapalign(cmap_a, logfilename, pdblist=[], pdbpath=None, num_workers=No
     if num_workers is None:
         num_workers = os.cpu_count()
     logging.info(f"num_workers: {num_workers}")
-    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, cmap_a=cmap_a)
+    dataset = PDBloader.PDBdataset(pdbpath=pdbpath,
+                                   pdblist=pdblist,
+                                   cmap_a=cmap_a,
+                                   sep_x_list=sep_x_list,
+                                   sep_y_list=sep_y_list,
+                                   gap_e_list=gap_e_list)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=1,
                                              shuffle=False,
@@ -344,9 +356,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--sep_x',
         type=int,
-        default=2,
+        default=1,
         help=
-        'Parameter to compute the STD of the gaussian: s_std=sep_y*(1+(s_min-2)**sep_x), with s_min the min sequence separation for cmap_a and cmap_b of the considered contacts. (default=2)'
+        'Parameter to compute the STD of the gaussian: s_std=sep_y*(1+(s_min-2)**sep_x), with s_min the min sequence separation for cmap_a and cmap_b of the considered contacts. (default=1)'
     )
     parser.add_argument(
         '--sep_y',
@@ -376,6 +388,14 @@ if __name__ == '__main__':
     coords_a = cmd.get_coords(f'A_ and polymer.protein and name CA and {args.sel1}')
     dmat_a = get_dmat(coords_a)
     cmap_a = get_cmap(dmat_a)
+    if args.hpo:
+        sep_x_list = [0, 1, 2]
+        sep_y_list = [1, 2, 3, 8, 16, 32]
+        gap_e_list = [-0.2, -0.1, -0.01, -0.001]
+    else:
+        sep_x_list = [args.sep_x]
+        sep_y_list = [args.sep_y]
+        gap_e_list = [args.gap_e]
     if args.pdb2 is not None:
         if len(args.pdb2) == 1:
             import logging
@@ -390,14 +410,6 @@ if __name__ == '__main__':
             cmap_b = get_cmap(dmat_b)
             log(f'cmap_a.shape: {cmap_a.shape}')
             log(f'cmap_b.shape: {cmap_b.shape}')
-            if args.hpo:
-                sep_x_list = [0, 1, 2]
-                sep_y_list = [1, 2, 3, 8, 16, 32]
-                gap_e_list = [-0.2, -0.1, -0.01, -0.001]
-            else:
-                sep_x_list = [args.sep_x]
-                sep_y_list = [args.sep_y]
-                gap_e_list = [args.gap_e]
             aln, score, sep_x_best, sep_y_best, gap_e_best = mapalign(cmap_a,
                                                                       cmap_b,
                                                                       sep_x_list=sep_x_list,
@@ -423,6 +435,9 @@ if __name__ == '__main__':
         elif args.pdb2 is not None:
             batch_mapalign(cmap_a,
                            f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log',
-                           pdblist=args.pdb2)
+                           pdblist=args.pdb2,
+                           sep_x_list=sep_x_list,
+                           sep_y_list=sep_y_list,
+                           gap_e_list=gap_e_list)
     elif args.pdbpath is not None:
         batch_mapalign(cmap_a, f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log', pdbpath=args.pdbpath)
