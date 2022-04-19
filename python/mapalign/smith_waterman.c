@@ -77,7 +77,7 @@ double * traceback(int rows, int cols, const double * sco_mtx, double gap_open, 
 double sep_weight(double sep){if(sep <= 4){return 0.50;}else if(sep == 5){return 0.75;}else{return 1.00;}}
 
 double * update_mtx(int na, int nb, const int * aln_in, const double * sco_mtx, double * cmap_a, double * cmap_b, int iter){
-    double * sco_mtx_out = (double *)malloc(sizeof(double) * na*nb);
+    double * sco_mtx_out = malloc(sizeof(double) * na*nb);
     int i = 0;
     for (i = 0; i < na*nb ; i++){
         sco_mtx_out[i] = sco_mtx[i];
