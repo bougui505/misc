@@ -40,8 +40,9 @@ from ctypes import cdll, c_double, c_int, c_void_p
 from numpy.ctypeslib import ndpointer
 import numpy as np
 import tqdm
+import os
 
-LIBRARYPATH = "/home/bougui/source/misc/python/mapalign/lib"
+LIBRARYPATH = os.path.expanduser("~/source/misc/python/mapalign/lib")
 libinit = cdll.LoadLibrary(f"{LIBRARYPATH}/initialize_matrix.so")
 libsw = cdll.LoadLibrary(f"{LIBRARYPATH}/smith_waterman.so")
 initialize_matrix_C = libinit.initialize_matrix
