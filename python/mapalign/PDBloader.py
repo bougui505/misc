@@ -102,15 +102,18 @@ class PDBdataset(torch.utils.data.Dataset):
         scores = []
         for chain in chains:
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
-            cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
-            aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
-                                                                cmap,
-                                                                sep_x_list=self.sep_x_list,
-                                                                sep_y_list=self.sep_y_list,
-                                                                gap_e_list=self.gap_e_list,
-                                                                progress=False)
-            native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
-            scores.append((index, pdbfile, chain, score, native_contacts_score))
+            if len(coords) > 8:
+                cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
+                aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
+                                                                    cmap,
+                                                                    sep_x_list=self.sep_x_list,
+                                                                    sep_y_list=self.sep_y_list,
+                                                                    gap_e_list=self.gap_e_list,
+                                                                    progress=False)
+                native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
+                scores.append((index, pdbfile, chain, score, native_contacts_score))
+            else:
+                scores.append((index, pdbfile, chain, -1, -1))
         cmd.delete(pymolname)
         return scores
 
