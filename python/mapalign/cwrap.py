@@ -41,8 +41,9 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 import tqdm
 
-libinit = cdll.LoadLibrary("lib/initialize_matrix.so")
-libsw = cdll.LoadLibrary("lib/smith_waterman.so")
+LIBRARYPATH = "/home/bougui/source/misc/python/mapalign/lib"
+libinit = cdll.LoadLibrary(f"{LIBRARYPATH}/initialize_matrix.so")
+libsw = cdll.LoadLibrary(f"{LIBRARYPATH}/smith_waterman.so")
 
 
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
