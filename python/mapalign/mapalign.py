@@ -372,7 +372,6 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS)  # | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    log(args.pdb1)
     cmd.load(args.pdb1, 'A_')
     coords_a = cmd.get_coords(f'A_ and polymer.protein and name CA and {args.sel1}')
     dmat_a = get_dmat(coords_a)
@@ -383,6 +382,7 @@ if __name__ == '__main__':
             logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
             logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
             logging.info(f"################ Starting {__file__} ################")
+            log(args.pdb1)
             log(args.pdb2)
             cmd.load(args.pdb2[0], 'B_')
             coords_b = cmd.get_coords(f'B_ and polymer.protein and name CA and {args.sel2}')
