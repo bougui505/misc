@@ -44,6 +44,9 @@ import tqdm
 LIBRARYPATH = "/home/bougui/source/misc/python/mapalign/lib"
 libinit = cdll.LoadLibrary(f"{LIBRARYPATH}/initialize_matrix.so")
 libsw = cdll.LoadLibrary(f"{LIBRARYPATH}/smith_waterman.so")
+initialize_matrix_C = libinit.initialize_matrix
+traceback_C = libsw.traceback
+update_mtx_C = libsw.update_mtx
 
 
 def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
@@ -82,7 +85,6 @@ def initialize_matrix(cmap_a, cmap_b, sep_x, sep_y):
     # >>> _ = plt.show()
 
     """
-    initialize_matrix_C = libinit.initialize_matrix
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
     cmap_a = cmap_a.astype(float)
@@ -128,7 +130,6 @@ def traceback(mtx, gap_open=-1., gap_extension=-0.1):
     >>> (aln == np.arange(88)).all()
     True
     """
-    traceback_C = libsw.traceback
     na, nb = mtx.shape
     # Return shape is na+1 as we add the score as the last element of the returned value
     traceback_C.restype = ndpointer(dtype=c_double, shape=na + 1)
@@ -192,7 +193,6 @@ def get_alignment(cmap_a,
     cmap_b = cmap_b.astype(float)
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
-    update_mtx_C = libsw.update_mtx
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     score_max = 0.
     if progress:
