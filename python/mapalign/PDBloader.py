@@ -43,6 +43,7 @@ import glob
 from pymol import cmd
 from misc import randomgen
 from misc.mapalign import mapalign
+import numpy as np
 # import logging
 # from misc.pytorch import torchify
 
@@ -102,7 +103,9 @@ class PDBdataset(torch.utils.data.Dataset):
         scores = []
         for chain in chains:
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
-            if len(coords) > 8 and coords is not None:
+            if coords is None:
+                coords = np.asarray([[0., 0., 0.]])
+            if len(coords) >= 8:
                 cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
                 aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
                                                                     cmap,
