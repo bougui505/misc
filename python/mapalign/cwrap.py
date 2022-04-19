@@ -206,7 +206,7 @@ def get_alignment(cmap_a,
                 mtx = mtx_ini.copy()
                 aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
                 for i in range(niter):
-                    mtx = update_mtx_C(c_int(na), c_int(nb), c_int(aln.ctypes.data), c_void_p(mtx.ctypes.data),
+                    mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
                                        c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
                     mtx = mtx.reshape((na, nb))
                     aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
