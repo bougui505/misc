@@ -102,7 +102,7 @@ class PDBdataset(torch.utils.data.Dataset):
         scores = []
         for chain in chains:
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
-            if len(coords) > 8:
+            if len(coords) > 8 and coords is not None:
                 cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
                 aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
                                                                     cmap,
