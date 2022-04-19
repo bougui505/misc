@@ -12,8 +12,10 @@ double Falign(double * sco_mtx, int rows, int cols){
     double max_sco = 0;
     double sco[rows+1][cols+1];
     memset(sco, 0, sizeof(sco));
-    for (int i = 1; i <= rows; i++){
-        for (int j = 1; j <= cols; j++){
+    int i = 1;
+    int j = 1;
+    for (i = 1; i <= rows; i++){
+        for (j = 1; j <= cols; j++){
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
             double D = sco[i-1][j];
             double R = sco[i][j-1];
@@ -42,11 +44,16 @@ double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, dou
     int aptr = 0;
     int bptr = 0;
     double score = 0;
-    for (int ai=0; ai< na; ai++){
-        for (int bi=0; bi< nb; bi++){
-            int mtxptr = ai * nb + bi;
-            for (int aj=0; aj< na; aj++){
-                for (int bj=0; bj< nb; bj++){
+    int ai=0;
+    int bi=0;
+    int aj=0;
+    int bj=0;
+    int mtxptr = 0;
+    for (ai=0; ai< na; ai++){
+        for (bi=0; bi< nb; bi++){
+            mtxptr = ai * nb + bi;
+            for (aj=0; aj< na; aj++){
+                for (bj=0; bj< nb; bj++){
                     int ptr = aj * nb + bj;
                     aptr = ai * na + aj;
                     bptr = bi * nb + bj;

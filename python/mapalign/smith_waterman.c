@@ -19,8 +19,10 @@ double * traceback(int rows, int cols, const double * sco_mtx, double gap_open, 
     memset(sco, 0, sizeof(sco));
     int max_i = 0;
     int max_j = 0;
-    for (int i = 1; i <= rows; i++){
-        for (int j = 1; j <= cols; j++){
+    int i = 1;
+    int j = 1;
+    for (i = 1; i <= rows; i++){
+        for (j = 1; j <= cols; j++){
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
             double D = sco[i-1][j];
             double R = sco[i][j-1];
@@ -55,12 +57,12 @@ double * traceback(int rows, int cols, const double * sco_mtx, double gap_open, 
 
     // Store the score in the last element of aln
     double * aln = (double *)malloc(sizeof(double) * (rows + 1));
-    for (int i = 0; i < rows ; i++){
+    for (i = 0; i < rows ; i++){
         aln[i] = -1;
     }
     aln[rows] = max_sco;
 
-    int i = max_i;int j = max_j;
+    i = max_i; j = max_j;
     while(1){
         // printf("%d, %d, %d\n", i, j, label[labelpt]);
         if(label[i][j] == 0){break;}
@@ -76,7 +78,8 @@ double sep_weight(double sep){if(sep <= 4){return 0.50;}else if(sep == 5){return
 
 double * update_mtx(int na, int nb, const int * aln_in, const double * sco_mtx, double * cmap_a, double * cmap_b, int iter){
     double * sco_mtx_out = (double *)malloc(sizeof(double) * na*nb);
-    for (int i = 0; i < na*nb ; i++){
+    int i = 0;
+    for (i = 0; i < na*nb ; i++){
         sco_mtx_out[i] = sco_mtx[i];
     }
     // for (int i=0; i<na; i++){
@@ -93,10 +96,13 @@ double * update_mtx(int na, int nb, const int * aln_in, const double * sco_mtx, 
     int mtxptr = 0;
     double IT = (double)iter + 1;
     double s1 = (IT/(IT+1)); double s2 = (1/(IT+1));
-    for (int ai=0; ai< na; ai++){
-        for (int bi=0; bi< nb; bi++){
+    int ai = 0;
+    int bi = 0;
+    int aj = 0;
+    for (ai=0; ai< na; ai++){
+        for (bi=0; bi< nb; bi++){
             sco = 0.;
-            for (int aj=0; aj< na; aj++){
+            for (aj=0; aj< na; aj++){
                 aptr = ai * na + aj;
                 bj = aln_in[aj];
                 // printf("%d %d %d %d\n", ai, aj, bi, bj);
