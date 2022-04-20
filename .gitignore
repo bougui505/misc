@@ -56,7 +56,6 @@ pytestdebug.log
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -201,3 +200,6 @@ python/protein/cmapfit/fitting_example.pse
 python/point_set_registration/data/1ycr.pdb
 python/point_set_registration/data/1ycr_rot.pdb
 python/point_set_registration/data/out.pdb
+python/gym/mullersac.log
+python/localpeaks.log
+python/protein/cmapfit/cmapfit.log

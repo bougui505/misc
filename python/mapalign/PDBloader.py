@@ -52,6 +52,24 @@ def collate_fn(batch):
     return batch
 
 
+def read_log(logfilename):
+    """
+    >>> logfilename = "mapalign_3u97_A.log"
+    >>> processed_files = read_log(logfilename)
+    >>> processed_files
+    ['data/2pd0_A.pdb', 'data/3u97_A.pdb']
+    """
+    processed_files = []
+    logfile = open(logfilename, 'r')
+    for line in logfile.readlines():
+        line = line.strip()
+        if "#" not in line:
+            v = line.split()
+            if v[2] != "num_workers:":
+                processed_files.append(v[3])
+    return processed_files
+
+
 class PDBdataset(torch.utils.data.Dataset):
     """
     Load pdb files from a PDB database and return coordinates
@@ -71,7 +89,7 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     1
     >>> batch
-    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 257.0101993921045, 0.5167785234899329)]]
+    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 265.03733407173655, 0.5302013422818792)]]
     """
     def __init__(self,
                  cmap_a,
@@ -80,11 +98,16 @@ class PDBdataset(torch.utils.data.Dataset):
                  selection='polymer.protein and name CA',
                  sep_x_list=[1],
                  sep_y_list=[16],
-                 gap_e_list=[-0.001]):
+                 gap_e_list=[-0.001],
+                 logfilename=None):
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         else:
             self.list_IDs = pdblist
+        if logfilename is not None:
+            self.processed_files = read_log(logfilename)
+        else:
+            self.processed_files = []
         self.selection = selection
         self.cmap_a = cmap_a
         self.sep_x_list = sep_x_list
@@ -97,27 +120,30 @@ class PDBdataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
-        pymolname = randomgen.randomstring()
-        cmd.load(filename=pdbfile, object=pymolname)
-        chains = cmd.get_chains(pymolname)
-        scores = []
-        for chain in chains:
-            coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
-            if coords is None:
-                coords = np.asarray([[0., 0., 0.]])
-            if len(coords) >= 8:
-                cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
-                aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
-                                                                    cmap,
-                                                                    sep_x_list=self.sep_x_list,
-                                                                    sep_y_list=self.sep_y_list,
-                                                                    gap_e_list=self.gap_e_list,
-                                                                    progress=False)
-                native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
-                scores.append((index, pdbfile, chain, score, native_contacts_score))
-            else:
-                scores.append((index, pdbfile, chain, -1, -1))
-        cmd.delete(pymolname)
+        if pdbfile not in self.processed_files:
+            pymolname = randomgen.randomstring()
+            cmd.load(filename=pdbfile, object=pymolname)
+            chains = cmd.get_chains(pymolname)
+            scores = []
+            for chain in chains:
+                coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
+                if coords is None:
+                    coords = np.asarray([[0., 0., 0.]])
+                if len(coords) >= 8:
+                    cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
+                    aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
+                                                                        cmap,
+                                                                        sep_x_list=self.sep_x_list,
+                                                                        sep_y_list=self.sep_y_list,
+                                                                        gap_e_list=self.gap_e_list,
+                                                                        progress=False)
+                    native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
+                    scores.append((index, pdbfile, chain, score, native_contacts_score))
+                else:
+                    scores.append((index, pdbfile, chain, -1, -1))
+            cmd.delete(pymolname)
+        else:
+            scores.append((None, None, None, None, None))
         return scores
 
 
