@@ -120,11 +120,11 @@ class PDBdataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
+        scores = []
         if pdbfile not in self.processed_files:
             pymolname = randomgen.randomstring()
             cmd.load(filename=pdbfile, object=pymolname)
             chains = cmd.get_chains(pymolname)
-            scores = []
             for chain in chains:
                 coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
                 if coords is None:

@@ -307,7 +307,8 @@ def batch_mapalign(cmap_a,
                                    cmap_a=cmap_a,
                                    sep_x_list=sep_x_list,
                                    sep_y_list=sep_y_list,
-                                   gap_e_list=gap_e_list)
+                                   gap_e_list=gap_e_list,
+                                   logfilename=logfilename)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=1,
                                              shuffle=False,
@@ -319,7 +320,8 @@ def batch_mapalign(cmap_a,
         for b in batch:
             for chain_data in b:
                 index, pdb, chain, score, native_contact = chain_data
-                logging.info(f'{index} {pdb} {chain} {score:.4f} {native_contact:.4f}')
+                if index is not None:
+                    logging.info(f'{index} {pdb} {chain} {score:.4f} {native_contact:.4f}')
         pbar.update(1)
     pbar.close()
 
