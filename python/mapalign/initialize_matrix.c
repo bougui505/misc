@@ -67,6 +67,9 @@ double * initialize_matrix(int na, int nb, double * cmap_a, double * cmap_b, dou
                             s_min = MIN(abs(sa), abs(sb));
                             s_std = sep_y * (1+ pow(s_min - 2, sep_x));
                             w = sep_weight(s_min) * gaussian(0, s_std, s_dif);
+                            if (!(w==w)){ // is nan
+                                w = 0.;
+                            }
                             //if (s_dif/s_std <6){
                                 Mval = contact_a * contact_b * w;
                             //}

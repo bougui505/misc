@@ -291,8 +291,8 @@ def batch_mapalign(cmap_a,
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
     >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
-    >>> dmat_a = mapalign.get_dmat(coords_a)
-    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> dmat_a = get_dmat(coords_a)
+    >>> cmap_a = get_cmap(dmat_a)
     >>> batch_mapalign(cmap_a, 'mapalign_batch.log', pdblist=['data/2pd0_A.pdb', 'data/3u97_A.pdb'])
     """
     import torch
