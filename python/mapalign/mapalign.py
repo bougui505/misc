@@ -288,7 +288,8 @@ def batch_mapalign(cmap_a,
                    num_workers=None,
                    sep_x_list=[1],
                    sep_y_list=[16],
-                   gap_e_list=[-0.001]):
+                   gap_e_list=[-0.001],
+                   eigen_init=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -310,7 +311,8 @@ def batch_mapalign(cmap_a,
                                    sep_x_list=sep_x_list,
                                    sep_y_list=sep_y_list,
                                    gap_e_list=gap_e_list,
-                                   logfilename=logfilename)
+                                   logfilename=logfilename,
+                                   eigen_init=eigen_init)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=1,
                                              shuffle=False,
@@ -448,6 +450,10 @@ if __name__ == '__main__':
                            pdblist=args.pdb2,
                            sep_x_list=sep_x_list,
                            sep_y_list=sep_y_list,
-                           gap_e_list=gap_e_list)
+                           gap_e_list=gap_e_list,
+                           eigen_init=args.eigen)
     elif args.pdbpath is not None:
-        batch_mapalign(cmap_a, f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log', pdbpath=args.pdbpath)
+        batch_mapalign(cmap_a,
+                       f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log',
+                       pdbpath=args.pdbpath,
+                       eigen_init=args.eigen)

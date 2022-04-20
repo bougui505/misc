@@ -99,7 +99,9 @@ class PDBdataset(torch.utils.data.Dataset):
                  sep_x_list=[1],
                  sep_y_list=[16],
                  gap_e_list=[-0.001],
-                 logfilename=None):
+                 logfilename=None,
+                 eigen_init=False):
+        self.eigen_init = eigen_init
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         else:
@@ -137,7 +139,8 @@ class PDBdataset(torch.utils.data.Dataset):
                                                                             sep_x_list=self.sep_x_list,
                                                                             sep_y_list=self.sep_y_list,
                                                                             gap_e_list=self.gap_e_list,
-                                                                            progress=False)
+                                                                            progress=False,
+                                                                            eigen_init=self.eigen_init)
                         native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
                     except:
                         index, pdbfile, chain, score, native_contacts_score = None, None, None, None, None
