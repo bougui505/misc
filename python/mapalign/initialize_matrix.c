@@ -9,6 +9,8 @@ double sep_weight(double sep){if(sep <= 4){return 0.50;}else if(sep == 5){return
 double gaussian(double mean, double stdev, double x){return exp(-pow((x - mean),2)/(2*(pow(stdev,2))));}
 
 double Falign(double * sco_mtx, int rows, int cols){
+    // double sum = 0;
+    // double max = -INFINITY;
     double max_sco = 0;
     double sco[rows+1][cols+1];
     memset(sco, 0, sizeof(sco));
@@ -16,6 +18,10 @@ double Falign(double * sco_mtx, int rows, int cols){
     int j = 1;
     for (i = 1; i <= rows; i++){
         for (j = 1; j <= cols; j++){
+            // sum += sco_mtx[(i-1)*cols+(j-1)];
+            // if (sco_mtx[(i-1)*cols+(j-1)] > max){
+            //     max = sco_mtx[(i-1)*cols+(j-1)];
+            // }
             double A = sco[i-1][j-1] + sco_mtx[(i-1)*cols+(j-1)];
             double D = sco[i-1][j];
             double R = sco[i][j-1];
@@ -24,6 +30,7 @@ double Falign(double * sco_mtx, int rows, int cols){
             if(sco[i][j] > max_sco){max_sco = sco[i][j];}
         }
     }
+    // printf("%f, %f, %f\n", sum, max, max_sco);
     return(max_sco);
 }
 
