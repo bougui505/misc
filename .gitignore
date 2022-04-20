@@ -203,3 +203,4 @@ python/point_set_registration/data/out.pdb
 python/gym/mullersac.log
 python/localpeaks.log
 python/protein/cmapfit/cmapfit.log
+python/mapalign/mapalign.log
