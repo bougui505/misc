@@ -139,7 +139,7 @@ class PDBdataset(torch.utils.data.Dataset):
                                                                             gap_e_list=self.gap_e_list,
                                                                             progress=False)
                         native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
-                    except RuntimeError:
+                    except:
                         index, pdbfile, chain, score, native_contacts_score = None, None, None, None, None
                     scores.append((index, pdbfile, chain, score, native_contacts_score))
                 else:
