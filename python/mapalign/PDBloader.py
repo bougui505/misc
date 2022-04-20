@@ -131,13 +131,16 @@ class PDBdataset(torch.utils.data.Dataset):
                     coords = np.asarray([[0., 0., 0.]])
                 if len(coords) >= 8:
                     cmap = mapalign.get_cmap(mapalign.get_dmat(coords))
-                    aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
-                                                                        cmap,
-                                                                        sep_x_list=self.sep_x_list,
-                                                                        sep_y_list=self.sep_y_list,
-                                                                        gap_e_list=self.gap_e_list,
-                                                                        progress=False)
-                    native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
+                    try:
+                        aln, score, sep_x, sep_y, gap_e = mapalign.mapalign(self.cmap_a,
+                                                                            cmap,
+                                                                            sep_x_list=self.sep_x_list,
+                                                                            sep_y_list=self.sep_y_list,
+                                                                            gap_e_list=self.gap_e_list,
+                                                                            progress=False)
+                        native_contacts_score = mapalign.get_score(self.cmap_a, cmap, aln)
+                    except RuntimeError:
+                        index, pdbfile, chain, score, native_contacts_score = None, None, None, None, None
                     scores.append((index, pdbfile, chain, score, native_contacts_score))
                 else:
                     scores.append((index, pdbfile, chain, -1, -1))
