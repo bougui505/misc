@@ -41,6 +41,7 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 import tqdm
 import os
+from misc.mapalign import eigen
 
 LIBRARYPATH = os.path.expanduser("~/source/misc/python/mapalign/lib")
 libinit = cdll.LoadLibrary(f"{LIBRARYPATH}/initialize_matrix.so")
@@ -150,7 +151,8 @@ def get_alignment(cmap_a,
                   gap_extension_list=[-0.2, -0.1, -0.01, -0.001],
                   niter=20,
                   progress=False,
-                  return_mtx=False):
+                  return_mtx=False,
+                  eigen_init=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -196,12 +198,18 @@ def get_alignment(cmap_a,
     nb, nb = cmap_b.shape
     update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     score_max = 0.
+    if eigen_init:
+        sep_x_list = [None]
+        sep_y_list = [None]
     if progress:
         total = len(sep_x_list) * len(sep_y_list) * len(gap_extension_list) * niter
         pbar = tqdm.tqdm(total=total)
     for sep_x in sep_x_list:
         for sep_y in sep_y_list:
-            mtx_ini = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
+            if eigen_init:
+                mtx_ini = eigen.initialize_eigen(cmap_a, cmap_b, t=min(na, nb))
+            else:
+                mtx_ini = initialize_matrix(cmap_a, cmap_b, sep_x, sep_y)
             for gap_e in gap_extension_list:
                 mtx = mtx_ini.copy()
                 aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
