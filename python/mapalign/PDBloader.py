@@ -89,7 +89,7 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     1
     >>> batch
-    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 265.03733407173655, 0.5302013422818792)]]
+    [[(0, '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz', 'A', 128.68959218573934, 0.08394160583941605)]]
     """
     def __init__(self,
                  cmap_a,
