@@ -38,43 +38,80 @@
 
 import torch
 from misc import randomgen
-from misc.protein.interpred import maps
+from pymol import cmd
 
 
-class InterPred(torch.nn.Module):
+def get_dmat(coords):
     """
-    >>> coords_A = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-    >>> coords_A.shape
+    >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords.shape
     torch.Size([1, 85, 3])
-    >>> coords_B = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> coords_B.shape
-    torch.Size([1, 13, 3])
 
-    >>> interpred = InterPred()
-    >>> interpred(coords_A, coords_B).shape
-    torch.Size([1, 85, 13])
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape  # batchsize, channel, n, n
+    torch.Size([1, 1, 85, 85])
     """
-    def __init__(self):
-        super(InterPred, self).__init__()
-        self.fcn_a = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
-        self.fcn_b = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
-        self.sigmoid = torch.nn.Sigmoid()
+    dmat = torch.cdist(coords, coords)
+    dmat = dmat[:, None, ...]  # Add the channel dimension
+    return dmat
 
-    def forward(self, coords_a, coords_b):
-        # batchsize, na, spacedim = coords_a.shape
-        dmat_a = maps.get_dmat(coords_a)
-        dmat_b = maps.get_dmat(coords_b)
-        out_a = self.fcn_a(dmat_a)
-        out_a = out_a.sum(axis=-1)
-        out_b = self.fcn_a(dmat_b)
-        out_b = out_b.sum(axis=-1)
-        out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        out = self.sigmoid(out)
-        return out
+
+def get_inter_dmat(coords_a, coords_b):
+    """
+    >>> coords_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_a.shape
+    torch.Size([1, 85, 3])
+    >>> coords_b = get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> coords_b.shape
+    torch.Size([1, 13, 3])
+    >>> dmat = get_inter_dmat(coords_a, coords_b)
+    >>> dmat.shape
+    torch.Size([1, 1, 85, 13])
+    """
+    dmat = torch.cdist(coords_a, coords_b)
+    dmat = dmat[:, None, ...]  # Add the channel dimension
+    return dmat
+
+
+def get_inter_cmap(coords_a, coords_b, threshold=8.):
+    """
+    >>> coords_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_a.shape
+    torch.Size([1, 85, 3])
+    >>> coords_b = get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> coords_b.shape
+    torch.Size([1, 13, 3])
+    >>> cmap = get_inter_cmap(coords_a, coords_b)
+    >>> cmap.shape
+    torch.Size([1, 1, 85, 13])
+    >>> cmap
+    tensor([[[[0., 0., 0.,  ..., 0., 0., 1.],
+              [0., 0., 0.,  ..., 0., 0., 1.],
+              [0., 0., 0.,  ..., 0., 0., 0.],
+              ...,
+              [0., 0., 0.,  ..., 0., 0., 0.],
+              [0., 0., 0.,  ..., 0., 0., 0.],
+              [0., 0., 0.,  ..., 0., 0., 0.]]]], dtype=torch.float64)
+    """
+    dmat = get_inter_dmat(coords_a, coords_b)
+    cmap = (dmat <= threshold)
+    cmap = cmap.to(torch.double)
+    return cmap
+
+
+def get_coords(pdb, selection='polymer.protein'):
+    """
+    >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords.shape
+    torch.Size([1, 85, 3])
+    """
+    cmd.reinitialize()
+    pymolstr = randomgen.randomstring()
+    cmd.load(pdb, pymolstr)
+    coords = cmd.get_coords(f'{pymolstr} and {selection}')
+    coords = coords[None, ...]  # Add the batch dimension
+    coords = torch.tensor(coords)
+    return coords
 
 
 def log(msg):
@@ -88,7 +125,6 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
-    from pymol import cmd
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging

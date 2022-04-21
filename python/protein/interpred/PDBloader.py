@@ -4,7 +4,7 @@
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
-# Copyright (c) 2022 Institut Pasteur                                       #
+# Copyright (c) 2021 Institut Pasteur                                       #
 #                 				                            #
 #                                                                           #
 #  Redistribution and use in source and binary forms, with or without       #
@@ -37,72 +37,93 @@
 #############################################################################
 
 import torch
+import glob
+from pymol import cmd
 from misc import randomgen
+import random
 from misc.protein.interpred import maps
 
 
-class InterPred(torch.nn.Module):
+def collate_fn(batch):
+    return batch
+
+
+class PDBdataset(torch.utils.data.Dataset):
     """
-    >>> coords_A = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-    >>> coords_A.shape
-    torch.Size([1, 85, 3])
-    >>> coords_B = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> coords_B.shape
-    torch.Size([1, 13, 3])
+    Load pdb files from a PDB database and return coordinates
+    See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
-    >>> interpred = InterPred()
-    >>> interpred(coords_A, coords_B).shape
-    torch.Size([1, 85, 13])
+    >>> # randomize must be set to True for real application. Just set to False for testing
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> for i, batch in enumerate(dataloader):
+    ...     if i == 12:
+    ...         break
+    >>> print(len(batch))
+    4
+    >>> [(A.shape, B.shape, cmap.shape) if A is not None else (A, B, cmap) for A, B, cmap in batch]
+    [(None, None, None), (torch.Size([1, 1, 48, 3]), torch.Size([1, 1, 46, 3]), torch.Size([1, 1, 1, 48, 46])), (torch.Size([1, 1, 112, 3]), torch.Size([1, 1, 118, 3]), torch.Size([1, 1, 1, 112, 118])), (None, None, None)]
+
+    In the example above, None is returned for protein with 1 chain only
     """
-    def __init__(self):
-        super(InterPred, self).__init__()
-        self.fcn_a = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
-        self.fcn_b = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
-        self.sigmoid = torch.nn.Sigmoid()
+    def __init__(self, pdbpath, selection='polymer.protein and name CA', randomize=True):
+        self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+        self.randomize = randomize
+        self.selection = selection
+        cmd.reinitialize()
 
-    def forward(self, coords_a, coords_b):
-        # batchsize, na, spacedim = coords_a.shape
-        dmat_a = maps.get_dmat(coords_a)
-        dmat_b = maps.get_dmat(coords_b)
-        out_a = self.fcn_a(dmat_a)
-        out_a = out_a.sum(axis=-1)
-        out_b = self.fcn_a(dmat_b)
-        out_b = out_b.sum(axis=-1)
-        out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        out = self.sigmoid(out)
-        return out
+    def __len__(self):
+        return len(self.list_IDs)
+
+    def __getitem__(self, index):
+        pdbfile = self.list_IDs[index]
+        pymolname = randomgen.randomstring()
+        cmd.load(filename=pdbfile, object=pymolname)
+        coords_a, coords_b, cmap = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        cmd.delete(pymolname)
+        return coords_a, coords_b, cmap
 
 
-def log(msg):
-    try:
-        logging.info(msg)
-    except NameError:
-        pass
+def get_dimer(pymolname, selection, randomize=True):
+    chains = cmd.get_chains(pymolname)
+    if len(chains) <= 1:
+        return None, None, None
+    chain_coords = []
+    for chain in chains:
+        chain_coords.append(cmd.get_coords(selection=f'{pymolname} and {selection} and chain {chain}'))
+    chain_coords = [e for e in chain_coords if e is not None and len(e) > 8]
+    if len(chain_coords) <= 1:
+        return None, None, None
+    if randomize:
+        random.shuffle(chain_coords)
+    dobreak = False
+    for i in range(len(chain_coords) - 1):
+        A = torch.tensor(chain_coords[i][None, None, ...])
+        for j in range(i + 1, len(chain_coords)):
+            B = torch.tensor(chain_coords[j][None, None, ...])
+            cmap = maps.get_inter_cmap(A, B)
+            if cmap.sum() > 0.:
+                dobreak = True
+                break
+        if dobreak:
+            break
+    if cmap.sum() > 0.:
+        return A, B, cmap
+    else:
+        return None, None, None
 
 
 if __name__ == '__main__':
     import sys
-    import doctest
     import argparse
-    from pymol import cmd
-    # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
-    # ### ##################### ####
+    import doctest
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod()
         sys.exit()
