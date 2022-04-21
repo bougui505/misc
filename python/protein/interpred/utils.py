@@ -40,6 +40,7 @@ import torch
 from misc import randomgen
 from pymol import cmd
 import numpy as np
+import itertools
 
 
 def get_dmat(coords):
@@ -153,6 +154,39 @@ def encode_seq(seq):
             j = 20  # (Non-standard residue)
         onehot[i, j] = 1
     return onehot
+
+
+def get_inter_seq(seq_a, seq_b):
+    """
+    >>> coords_a, seq_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> coords_a.shape
+    torch.Size([1, 85, 3])
+    >>> len(seq_a)
+    85
+    >>> coords_b, seq_b = get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
+    >>> coords_b.shape
+    torch.Size([1, 13, 3])
+    >>> len(seq_b)
+    13
+    >>> interseq = get_inter_seq(seq_a, seq_b)
+    >>> interseq.shape
+    torch.Size([85, 13, 42])
+    >>> onehot_a = encode_seq(seq_a)
+    >>> onehot_b = encode_seq(seq_b)
+    >>> (interseq[:, 0, :21] == onehot_a).all()
+    tensor(True)
+    >>> (interseq[0, :, 21:] == onehot_b).all()
+    tensor(True)
+    """
+    na = len(seq_a)
+    nb = len(seq_b)
+    onehot_a = encode_seq(list(seq_a))
+    onehot_b = encode_seq(list(seq_b))
+    cartprod = torch.zeros((na, nb, 21 * 2))
+    for i, aaa in enumerate(onehot_a):
+        for j, aab in enumerate(onehot_b):
+            cartprod[i, j] = torch.cat((aaa, aab))
+    return cartprod
 
 
 def log(msg):
