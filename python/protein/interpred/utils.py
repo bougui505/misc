@@ -39,6 +39,7 @@
 import torch
 from misc import randomgen
 from pymol import cmd
+import numpy as np
 
 
 def get_dmat(coords):
@@ -112,18 +113,46 @@ def get_coords(pdb, selection='polymer.protein', return_seq=False):
     'ETFSDLWKLLPEN'
     """
     cmd.reinitialize()
-    pymolstr = randomgen.randomstring()
-    cmd.load(pdb, pymolstr)
-    coords = cmd.get_coords(f'{pymolstr} and {selection}')
+    pymolname = randomgen.randomstring()
+    cmd.load(pdb, pymolname)
+    coords = cmd.get_coords(f'{pymolname} and {selection}')
     coords = coords[None, ...]  # Add the batch dimension
     coords = torch.tensor(coords)
     if not return_seq:
+        cmd.delete(pymolname)
         return coords
     else:
-        seq = cmd.get_fastastr(f'{pymolstr} and {selection}')
+        seq = cmd.get_fastastr(f'{pymolname} and {selection}')
         seq = seq.split()[1:]
         seq = ''.join(seq)
+        seq = seq.upper()
+        cmd.delete(pymolname)
         return coords, seq
+
+
+def encode_seq(seq):
+    """
+    >>> coords, seq = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> coords.shape
+    torch.Size([1, 85, 3])
+    >>> len(seq)
+    85
+    >>> onehot = encode_seq(seq)
+    >>> onehot.shape
+    torch.Size([85, 21])
+    >>> (onehot.sum(axis=1) == 1.).all()
+    tensor(True)
+    """
+    mapping = dict(zip('RHKDESTNQCGPAVILMFYW', range(20)))
+    n = len(seq)
+    onehot = torch.zeros((n, 21))
+    for i, aa in enumerate(seq):
+        if aa in mapping:
+            j = mapping[aa]
+        else:
+            j = 20  # (Non-standard residue)
+        onehot[i, j] = 1
+    return onehot
 
 
 def log(msg):
