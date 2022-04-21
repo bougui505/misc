@@ -38,15 +38,15 @@
 
 import torch
 from misc import randomgen
-from misc.protein.interpred import maps
+from misc.protein.interpred import utils
 
 
 class InterPred(torch.nn.Module):
     """
-    >>> coords_A = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_A = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
     >>> coords_A.shape
     torch.Size([1, 85, 3])
-    >>> coords_B = maps.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> coords_B = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
     >>> coords_B.shape
     torch.Size([1, 13, 3])
 
@@ -66,8 +66,8 @@ class InterPred(torch.nn.Module):
 
     def forward(self, coords_a, coords_b):
         # batchsize, na, spacedim = coords_a.shape
-        dmat_a = maps.get_dmat(coords_a)
-        dmat_b = maps.get_dmat(coords_b)
+        dmat_a = utils.get_dmat(coords_a)
+        dmat_b = utils.get_dmat(coords_b)
         out_a = self.fcn_a(dmat_a)
         out_a = out_a.mean(axis=-1)
         out_b = self.fcn_a(dmat_b)

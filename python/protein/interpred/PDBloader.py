@@ -41,7 +41,7 @@ import glob
 from pymol import cmd
 from misc import randomgen
 import random
-from misc.protein.interpred import maps
+from misc.protein.interpred import utils
 
 
 def collate_fn(batch):
@@ -54,7 +54,9 @@ class PDBdataset(torch.utils.data.Dataset):
     See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
     >>> # randomize must be set to True for real application. Just set to False for testing
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+
+    # >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataset = PDBdataset(pdbpath='data/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> for i, batch in enumerate(dataloader):
@@ -63,12 +65,25 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> print(len(batch))
     4
     >>> [(A.shape, B.shape, cmap.shape) if A is not None else (A, B, cmap) for A, B, cmap in batch]
-    [(None, None, None), (torch.Size([1, 1, 48, 3]), torch.Size([1, 1, 46, 3]), torch.Size([1, 1, 1, 48, 46])), (torch.Size([1, 1, 112, 3]), torch.Size([1, 1, 118, 3]), torch.Size([1, 1, 1, 112, 118])), (None, None, None)]
+    [(None, None, None), (None, None, None), (None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 1, 327, 327]))]
+
+    # [(None, None, None), (torch.Size([1, 1, 48, 3]), torch.Size([1, 1, 46, 3]), torch.Size([1, 1, 1, 48, 46])), (torch.Size([1, 1, 112, 3]), torch.Size([1, 1, 118, 3]), torch.Size([1, 1, 1, 112, 118])), (None, None, None)]
 
     In the example above, None is returned for protein with 1 chain only
+
+    Try with a list of PDBs:
+    >>> dataset = PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> for batch in dataloader:
+    ...     pass
+    >>> [(A.shape, B.shape, cmap.shape) if A is not None else (A, B, cmap) for A, B, cmap in batch]
+    [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 1, 1, 85, 13]))]
     """
-    def __init__(self, pdbpath, selection='polymer.protein and name CA', randomize=True):
-        self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+    def __init__(self, pdbpath=None, pdblist=None, selection='polymer.protein and name CA', randomize=True):
+        if pdbpath is not None:
+            self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+        if pdblist is not None:
+            self.list_IDs = pdblist
         self.randomize = randomize
         self.selection = selection
         cmd.reinitialize()
@@ -102,7 +117,7 @@ def get_dimer(pymolname, selection, randomize=True):
         A = torch.tensor(chain_coords[i][None, None, ...])
         for j in range(i + 1, len(chain_coords)):
             B = torch.tensor(chain_coords[j][None, None, ...])
-            cmap = maps.get_inter_cmap(A, B)
+            cmap = utils.get_inter_cmap(A, B)
             if cmap.sum() > 0.:
                 dobreak = True
                 break
