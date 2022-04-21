@@ -99,11 +99,17 @@ def get_inter_cmap(coords_a, coords_b, threshold=8.):
     return cmap
 
 
-def get_coords(pdb, selection='polymer.protein'):
+def get_coords(pdb, selection='polymer.protein', return_seq=False):
     """
     >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
     >>> coords.shape
     torch.Size([1, 85, 3])
+    >>> coords, seq = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> seq
+    'ETLVRPKPLLLKLLKSVGAQKDTYTMKEVLFYLGQYIMTKRLYDEKQQHIVYCSNDLLGDLFGVPSFSVKEHRKIYTMIYRNLVV'
+    >>> coords, seq = get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
+    >>> seq
+    'ETFSDLWKLLPEN'
     """
     cmd.reinitialize()
     pymolstr = randomgen.randomstring()
@@ -111,7 +117,13 @@ def get_coords(pdb, selection='polymer.protein'):
     coords = cmd.get_coords(f'{pymolstr} and {selection}')
     coords = coords[None, ...]  # Add the batch dimension
     coords = torch.tensor(coords)
-    return coords
+    if not return_seq:
+        return coords
+    else:
+        seq = cmd.get_fastastr(f'{pymolstr} and {selection}')
+        seq = seq.split()[1:]
+        seq = ''.join(seq)
+        return coords, seq
 
 
 def log(msg):
