@@ -37,6 +37,9 @@
 #############################################################################
 
 import numpy as np
+import tqdm
+from misc.mapalign import cwrap
+from misc.mapalign import mapalign
 
 
 def get_wv(M, t):
@@ -82,6 +85,71 @@ def initialize_eigen(cmap_a, cmap_b, t=None):
     return S
 
 
+def get_alignment(cmap_a,
+                  cmap_b,
+                  gap_open=-1.,
+                  gap_extension_list=[-0.2, -0.1, -0.01, -0.001],
+                  niter=20,
+                  progress=False,
+                  return_mtx=False):
+    """
+    >>> cmd.reinitialize()
+    >>> cmd.load('data/3u97_A.pdb', 'A_')
+    >>> cmd.load('data/2pd0_A.pdb', 'B_')
+    >>> coords_a = cmd.get_coords('A_ and polymer.protein and chain A and name CA')
+    >>> coords_b = cmd.get_coords('B_ and polymer.protein and chain A and name CA')
+    >>> dmat_a = mapalign.get_dmat(coords_a)
+    >>> dmat_b = mapalign.get_dmat(coords_b)
+    >>> cmap_a = mapalign.get_cmap(dmat_a)
+    >>> cmap_b = mapalign.get_cmap(dmat_b)
+    >>> cmap_a.shape, cmap_b.shape
+    ((88, 88), (215, 215))
+
+    >>> aln, score, gap_e = get_alignment(cmap_a, cmap_b, gap_extension_list=[-0.01, -0.001], progress=True, niter=20)
+    >>> aln
+    array([ -1,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,
+            -1,  -1,  -1,  -1,  -1,  54,  55,  56,  57,  58,  59,  60,  61,
+            62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,
+            75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  -1, 103,
+           104, 105, 106, 107, 108, 116, 117, 118, 119, 120, 121, 122, 123,
+           124, 125, 126, 127, 128, 129, 130,  -1,  -1, 151, 152, 153, 154,
+           155, 156, 157, 158, 159, 160, 161, 162, 163, 164], dtype=int32)
+    >>> score
+    14.288268879452984
+    """
+    cmap_a = cmap_a.astype(float)
+    cmap_b = cmap_b.astype(float)
+    na, na = cmap_a.shape
+    nb, nb = cmap_b.shape
+    score_max = 0.
+    if progress:
+        total = len(gap_extension_list) * niter
+        pbar = tqdm.tqdm(total=total)
+    mtx_ini = initialize_eigen(cmap_a, cmap_b, t=min(na, nb))
+    for gap_e in gap_extension_list:
+        mtx = mtx_ini.copy()
+        aln, score = cwrap.traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
+        for i in range(niter):
+            cmap_a_aln, cmap_b_aln = mapalign.get_aligned_maps(cmap_a, cmap_b, aln, full=False)
+            ai_aln = np.where(aln != -1)[0]
+            bi_aln = aln[ai_aln]
+            mtx[ai_aln][:, bi_aln] = initialize_eigen(cmap_a_aln, cmap_b_aln, t=cmap_a_aln.shape[0])
+            aln, score = cwrap.traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
+            if score >= score_max:
+                score_max = score
+                aln_best = aln
+                gap_e_best = gap_e
+            if progress:
+                pbar.set_description(f'score: {score_max:.3f}')
+                pbar.update(1)
+    if progress:
+        pbar.close()
+    if return_mtx:
+        return aln_best, score_max, gap_e_best, mtx
+    else:
+        return aln_best, score_max, gap_e_best
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -90,7 +158,6 @@ def log(msg):
 
 
 if __name__ == '__main__':
-    import mapalign
     from pymol import cmd
     import matplotlib.pyplot as plt
     import sys

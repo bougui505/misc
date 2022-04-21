@@ -42,6 +42,7 @@ import scipy.spatial.distance as scidist
 import tqdm
 import cwrap
 import PDBloader
+import eigen
 
 
 def get_dmat(coords):
@@ -91,7 +92,8 @@ def mapalign(cmap_a,
              gap_e_list=[-0.2, -0.1, -0.01, -0.001],
              niter=20,
              progress=True,
-             eigen_init=False):
+             eigen_init=False,
+             eigen_aln=False):
     """
     >>> cmd.reinitialize()
     >>> cmd.load('data/3u97_A.pdb', 'A_')
@@ -122,14 +124,22 @@ def mapalign(cmap_a,
     >>> sep_x_best, sep_y_best, gap_e_best
     (1, 16, -0.001)
     """
-    aln, score, sep_x_best, sep_y_best, gap_e_best = cwrap.get_alignment(cmap_a,
-                                                                         cmap_b,
-                                                                         sep_x_list=sep_x_list,
-                                                                         sep_y_list=sep_y_list,
-                                                                         gap_extension_list=gap_e_list,
-                                                                         niter=niter,
-                                                                         progress=progress,
-                                                                         eigen_init=eigen_init)
+    if eigen_aln:
+        aln, score, gap_e_best = eigen.get_alignment(cmap_a,
+                                                     cmap_b,
+                                                     gap_extension_list=gap_e_list,
+                                                     niter=niter,
+                                                     progress=progress)
+        sep_x_best, sep_y_best = None, None
+    else:
+        aln, score, sep_x_best, sep_y_best, gap_e_best = cwrap.get_alignment(cmap_a,
+                                                                             cmap_b,
+                                                                             sep_x_list=sep_x_list,
+                                                                             sep_y_list=sep_y_list,
+                                                                             gap_extension_list=gap_e_list,
+                                                                             niter=niter,
+                                                                             progress=progress,
+                                                                             eigen_init=eigen_init)
     return aln, score, sep_x_best, sep_y_best, gap_e_best
 
 
@@ -384,9 +394,14 @@ if __name__ == '__main__':
                         help='Display the full contact map alignemnt. Not only the aligned contacts')
     parser.add_argument('--hpo', help='Hyperparameter optimization for sep_x, sep_y and gap_e', action='store_true')
     parser.add_argument(
-        '--eigen',
+        '--eigen_init',
         help=
         'Initialize the scoring alignment matrix using eigenvector decomposition. Faster but less accurate (see: https://doi.org/10.1093/bioinformatics/btq402)',
+        action='store_true')
+    parser.add_argument(
+        '--eigen_aln',
+        help=
+        'Contact map alignment using alignment of eigen vectors. Even faster but less accurate (see: https://doi.org/10.1093/bioinformatics/btq402)',
         action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
@@ -427,7 +442,8 @@ if __name__ == '__main__':
                                                                       sep_y_list=sep_y_list,
                                                                       gap_e_list=gap_e_list,
                                                                       progress=args.hpo,
-                                                                      eigen_init=args.eigen)
+                                                                      eigen_init=args.eigen_init,
+                                                                      eigen_aln=args.eigen_aln)
             if args.hpo:
                 log(f'sep_x: {sep_x_best}')
                 log(f'sep_y: {sep_y_best}')
@@ -451,9 +467,9 @@ if __name__ == '__main__':
                            sep_x_list=sep_x_list,
                            sep_y_list=sep_y_list,
                            gap_e_list=gap_e_list,
-                           eigen_init=args.eigen)
+                           eigen_init=args.eigen_init)
     elif args.pdbpath is not None:
         batch_mapalign(cmap_a,
                        f'mapalign_{os.path.basename(os.path.splitext(args.pdb1)[0])}.log',
                        pdbpath=args.pdbpath,
-                       eigen_init=args.eigen)
+                       eigen_init=args.eigen_init)

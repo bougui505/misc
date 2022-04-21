@@ -196,7 +196,6 @@ def get_alignment(cmap_a,
     cmap_b = cmap_b.astype(float)
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
-    update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
     score_max = 0.
     if eigen_init:
         sep_x_list = [None]
@@ -214,9 +213,7 @@ def get_alignment(cmap_a,
                 mtx = mtx_ini.copy()
                 aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
                 for i in range(niter):
-                    mtx = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
-                                       c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
-                    mtx = mtx.reshape((na, nb))
+                    mtx = mtx_update(mtx, aln, cmap_a, cmap_b, i)
                     aln, score = traceback(mtx, gap_open=gap_open, gap_extension=gap_e)
                     if score >= score_max:
                         score_max = score
@@ -239,6 +236,15 @@ def get_alignment(cmap_a,
             return aln_best, score_max, sep_x_best, sep_y_best, gap_e_best
     else:
         return aln, score, None, None, None
+
+
+def mtx_update(mtx, aln, cmap_a, cmap_b, i):
+    na, nb = mtx.shape
+    update_mtx_C.restype = ndpointer(dtype=c_double, shape=na * nb)
+    mtx_out = update_mtx_C(c_int(na), c_int(nb), c_void_p(aln.ctypes.data), c_void_p(mtx.ctypes.data),
+                           c_void_p(cmap_a.ctypes.data), c_void_p(cmap_b.ctypes.data), i)
+    mtx_out = mtx_out.reshape((na, nb))
+    return mtx_out
 
 
 def log(msg):
