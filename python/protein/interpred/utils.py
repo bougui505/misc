@@ -123,12 +123,17 @@ def get_coords(pdb, selection='polymer.protein', return_seq=False):
         cmd.delete(pymolname)
         return coords
     else:
-        seq = cmd.get_fastastr(f'{pymolname} and {selection}')
-        seq = seq.split()[1:]
-        seq = ''.join(seq)
-        seq = seq.upper()
+        seq = get_seq(pymolname, selection)
         cmd.delete(pymolname)
         return coords, seq
+
+
+def get_seq(pymolname, selection):
+    seq = cmd.get_fastastr(f'{pymolname} and {selection}')
+    seq = seq.split()[1:]
+    seq = ''.join(seq)
+    seq = seq.upper()
+    return seq
 
 
 def encode_seq(seq):

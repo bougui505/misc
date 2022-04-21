@@ -64,8 +64,8 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     >>> print(len(batch))
     4
-    >>> [(A.shape, B.shape, cmap.shape) if A is not None else (A, B, cmap) for A, B, cmap in batch]
-    [(None, None, None), (None, None, None), (None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 1, 327, 327]))]
+    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    [(None, None, None, None), (None, None, None, None), (None, None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 42, 327, 327]), torch.Size([1, 1, 1, 327, 327]))]
 
     # [(None, None, None), (torch.Size([1, 1, 48, 3]), torch.Size([1, 1, 46, 3]), torch.Size([1, 1, 1, 48, 46])), (torch.Size([1, 1, 112, 3]), torch.Size([1, 1, 118, 3]), torch.Size([1, 1, 1, 112, 118])), (None, None, None)]
 
@@ -76,8 +76,8 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> for batch in dataloader:
     ...     pass
-    >>> [(A.shape, B.shape, cmap.shape) if A is not None else (A, B, cmap) for A, B, cmap in batch]
-    [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 1, 1, 85, 13]))]
+    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 42, 85, 13]), torch.Size([1, 1, 1, 85, 13]))]
     """
     def __init__(self, pdbpath=None, pdblist=None, selection='polymer.protein and name CA', randomize=True):
         if pdbpath is not None:
@@ -92,31 +92,45 @@ class PDBdataset(torch.utils.data.Dataset):
         return len(self.list_IDs)
 
     def __getitem__(self, index):
+        cmd.reinitialize()
         pdbfile = self.list_IDs[index]
         pymolname = randomgen.randomstring()
         cmd.load(filename=pdbfile, object=pymolname)
-        coords_a, coords_b, cmap = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        if coords_a is not None:
+            assert len(
+                seq_a) == coords_a.shape[2], f'seq_a is not of same length of coords_a ({len(seq_a)}, {coords_a.shape})'
+            assert len(
+                seq_b) == coords_b.shape[2], f'seq_b is not of same length of coords_b ({len(seq_b)}, {coords_b.shape})'
         cmd.delete(pymolname)
-        return coords_a, coords_b, cmap
+        if seq_a is not None:
+            interseq = utils.get_inter_seq(seq_a, seq_b)
+        else:
+            interseq = None
+        return coords_a, coords_b, interseq, cmap
 
 
 def get_dimer(pymolname, selection, randomize=True):
     chains = cmd.get_chains(pymolname)
     if len(chains) <= 1:
-        return None, None, None
+        return None, None, None, None, None
     chain_coords = []
+    chain_seqs = []
     for chain in chains:
         chain_coords.append(cmd.get_coords(selection=f'{pymolname} and {selection} and chain {chain}'))
+        chain_seqs.append(utils.get_seq(pymolname, selection=f'{selection} and chain {chain}'))
     chain_coords = [e for e in chain_coords if e is not None and len(e) > 8]
     if len(chain_coords) <= 1:
-        return None, None, None
+        return None, None, None, None, None
     if randomize:
         random.shuffle(chain_coords)
     dobreak = False
     for i in range(len(chain_coords) - 1):
         A = torch.tensor(chain_coords[i][None, None, ...])
+        seq_A = chain_seqs[i]
         for j in range(i + 1, len(chain_coords)):
             B = torch.tensor(chain_coords[j][None, None, ...])
+            seq_B = chain_seqs[j]
             cmap = utils.get_inter_cmap(A, B)
             if cmap.sum() > 0.:
                 dobreak = True
@@ -124,9 +138,9 @@ def get_dimer(pymolname, selection, randomize=True):
         if dobreak:
             break
     if cmap.sum() > 0.:
-        return A, B, cmap
+        return A, B, cmap, seq_A, seq_B
     else:
-        return None, None, None
+        return None, None, None, None, None
 
 
 if __name__ == '__main__':
