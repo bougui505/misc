@@ -387,6 +387,7 @@ if __name__ == '__main__':
                         type=float,
                         default=-0.001,
                         help='Gap extension penalty. MUST BE negative (default=-0.001).')
+    parser.add_argument('--niter', help='Number of iterations (default 20)', default=20, type=int)
     parser.add_argument('--show', action='store_true', help='Show the contact map alignment')
     parser.add_argument('--save', help='Save the contact map alignment in the given filename')
     parser.add_argument('--full',
@@ -443,7 +444,8 @@ if __name__ == '__main__':
                                                                       gap_e_list=gap_e_list,
                                                                       progress=args.hpo,
                                                                       eigen_init=args.eigen_init,
-                                                                      eigen_aln=args.eigen_aln)
+                                                                      eigen_aln=args.eigen_aln,
+                                                                      niter=args.niter)
             if args.hpo:
                 log(f'sep_x: {sep_x_best}')
                 log(f'sep_y: {sep_y_best}')
