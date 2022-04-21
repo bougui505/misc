@@ -170,22 +170,22 @@ def get_inter_seq(seq_a, seq_b):
     13
     >>> interseq = get_inter_seq(seq_a, seq_b)
     >>> interseq.shape
-    torch.Size([85, 13, 42])
+    torch.Size([42, 85, 13])
     >>> onehot_a = encode_seq(seq_a)
     >>> onehot_b = encode_seq(seq_b)
-    >>> (interseq[:, 0, :21] == onehot_a).all()
+    >>> (interseq[:21, :, 0].T == onehot_a).all()
     tensor(True)
-    >>> (interseq[0, :, 21:] == onehot_b).all()
+    >>> (interseq[21:, 0, :].T == onehot_b).all()
     tensor(True)
     """
     na = len(seq_a)
     nb = len(seq_b)
     onehot_a = encode_seq(list(seq_a))
     onehot_b = encode_seq(list(seq_b))
-    cartprod = torch.zeros((na, nb, 21 * 2))
+    cartprod = torch.zeros((21 * 2, na, nb))
     for i, aaa in enumerate(onehot_a):
         for j, aab in enumerate(onehot_b):
-            cartprod[i, j] = torch.cat((aaa, aab))
+            cartprod[:, i, j] = torch.cat((aaa, aab))
     return cartprod
 
 
