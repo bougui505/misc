@@ -43,15 +43,18 @@ from misc.protein.interpred import utils
 
 class InterPred(torch.nn.Module):
     """
-    >>> coords_A = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_A, seq_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
     >>> coords_A.shape
     torch.Size([1, 85, 3])
-    >>> coords_B = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> coords_B, seq_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
     >>> coords_B.shape
     torch.Size([1, 13, 3])
+    >>> interseq = utils.get_inter_seq(seq_a, seq_b)
+    >>> interseq.shape
+    torch.Size([1, 42, 85, 13])
 
     >>> interpred = InterPred()
-    >>> interpred(coords_A, coords_B).shape
+    >>> interpred(coords_A, coords_B, interseq).shape
     torch.Size([1, 85, 13])
     """
     def __init__(self):
@@ -62,9 +65,13 @@ class InterPred(torch.nn.Module):
         self.fcn_b = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
                                          torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
                                          torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
+        self.fcn_seq = torch.nn.Sequential(
+            torch.nn.Conv2d(in_channels=42, out_channels=16, kernel_size=3, padding='same'),
+            torch.nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding='same'),
+            torch.nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, padding='same'))
         self.sigmoid = torch.nn.Sigmoid()
 
-    def forward(self, coords_a, coords_b):
+    def forward(self, coords_a, coords_b, interseq):
         # batchsize, na, spacedim = coords_a.shape
         dmat_a = utils.get_dmat(coords_a)
         dmat_b = utils.get_dmat(coords_b)
@@ -73,6 +80,8 @@ class InterPred(torch.nn.Module):
         out_b = self.fcn_a(dmat_b)
         out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
+        out_seq = self.fcn_seq(interseq)[:, 0, :, :]
+        out = out * out_seq
         out = self.sigmoid(out)
         return out
 
