@@ -329,8 +329,14 @@ def batch_mapalign(cmap_a,
                                              num_workers=num_workers,
                                              collate_fn=PDBloader.collate_fn,
                                              prefetch_factor=8)
+    iterator = iter(dataloader)
     pbar = tqdm.tqdm(total=dataset.__len__())
-    for i, batch in enumerate(dataloader):
+    # for i, batch in enumerate(dataloader):
+    for i in range(dataset.__len__()):
+        try:
+            batch = next(iterator)
+        except RuntimeError:
+            batch = [[(None, None, None, None, None)]]
         for b in batch:
             for chain_data in b:
                 index, pdb, chain, score, native_contact = chain_data
