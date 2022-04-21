@@ -69,9 +69,9 @@ class InterPred(torch.nn.Module):
         dmat_a = maps.get_dmat(coords_a)
         dmat_b = maps.get_dmat(coords_b)
         out_a = self.fcn_a(dmat_a)
-        out_a = out_a.sum(axis=-1)
+        out_a = out_a.mean(axis=-1)
         out_b = self.fcn_a(dmat_b)
-        out_b = out_b.sum(axis=-1)
+        out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out = self.sigmoid(out)
         return out
