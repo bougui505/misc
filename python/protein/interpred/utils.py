@@ -186,10 +186,10 @@ def get_inter_seq(seq_a, seq_b):
     nb = len(seq_b)
     onehot_a = encode_seq(list(seq_a))
     onehot_b = encode_seq(list(seq_b))
-    cartprod = torch.zeros((21 * 2, na, nb))
-    for i, aaa in enumerate(onehot_a):
-        for j, aab in enumerate(onehot_b):
-            cartprod[:, i, j] = torch.cat((aaa, aab))
+    idx_pairs = torch.cartesian_prod(torch.arange(na), torch.arange(nb))
+    cartprod = torch.concat((onehot_a[idx_pairs[:, 0]], onehot_b[idx_pairs[:, 1]]), axis=1)
+    cartprod = cartprod.reshape((na, nb, 21 * 2))
+    cartprod = cartprod.moveaxis(-1, 0)
     return cartprod[None, ...]  # Add the batch dimension
 
 

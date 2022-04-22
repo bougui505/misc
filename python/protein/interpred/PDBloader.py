@@ -42,6 +42,7 @@ from pymol import cmd
 from misc import randomgen
 import random
 from misc.protein.interpred import utils
+import numpy as np
 
 
 def collate_fn(batch):
@@ -55,9 +56,9 @@ class PDBdataset(torch.utils.data.Dataset):
 
     >>> # randomize must be set to True for real application. Just set to False for testing
 
-    # >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
-    >>> dataset = PDBdataset(pdbpath='data/pdb', randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    # >>> dataset = PDBdataset(pdbpath='data/pdb', randomize=False)
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> for i, batch in enumerate(dataloader):
     ...     if i == 12:
@@ -65,9 +66,9 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> print(len(batch))
     4
     >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (None, None, None, None), (None, None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 42, 327, 327]), torch.Size([1, 1, 1, 327, 327]))]
+    [(None, None, None, None), (torch.Size([1, 1, 47, 3]), torch.Size([1, 1, 45, 3]), torch.Size([1, 42, 47, 45]), torch.Size([1, 1, 1, 47, 45])), (torch.Size([1, 1, 110, 3]), torch.Size([1, 1, 116, 3]), torch.Size([1, 42, 110, 116]), torch.Size([1, 1, 1, 110, 116])), (None, None, None, None)]
 
-    # [(None, None, None), (torch.Size([1, 1, 48, 3]), torch.Size([1, 1, 46, 3]), torch.Size([1, 1, 1, 48, 46])), (torch.Size([1, 1, 112, 3]), torch.Size([1, 1, 118, 3]), torch.Size([1, 1, 1, 112, 118])), (None, None, None)]
+    # [(None, None, None, None), (None, None, None, None), (None, None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 42, 327, 327]), torch.Size([1, 1, 1, 327, 327]))]
 
     In the example above, None is returned for protein with 1 chain only
 
@@ -86,22 +87,25 @@ class PDBdataset(torch.utils.data.Dataset):
             self.list_IDs = pdblist
         self.randomize = randomize
         self.selection = selection
-        cmd.reinitialize()
 
     def __len__(self):
         return len(self.list_IDs)
 
     def __getitem__(self, index):
-        cmd.reinitialize()
         pdbfile = self.list_IDs[index]
+        log(f'pdbfile: {pdbfile}')
         pymolname = randomgen.randomstring()
         cmd.load(filename=pdbfile, object=pymolname)
+        # Remove alternate locations (see: https://pymol.org/dokuwiki/doku.php?id=concept:alt)
+        cmd.remove("not alt ''+A")
+        cmd.alter(pymolname, "alt=''")
+        ######################################################################################
         coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
         if coords_a is not None:
             assert len(
-                seq_a) == coords_a.shape[2], f'seq_a is not of same length of coords_a ({len(seq_a)}, {coords_a.shape})'
+                seq_a) == coords_a.shape[2], f'seq_a is not of same length as coords_a ({len(seq_a)}, {coords_a.shape})'
             assert len(
-                seq_b) == coords_b.shape[2], f'seq_b is not of same length of coords_b ({len(seq_b)}, {coords_b.shape})'
+                seq_b) == coords_b.shape[2], f'seq_b is not of same length as coords_b ({len(seq_b)}, {coords_b.shape})'
         cmd.delete(pymolname)
         if seq_a is not None:
             interseq = utils.get_inter_seq(seq_a, seq_b)
@@ -119,16 +123,24 @@ def get_dimer(pymolname, selection, randomize=True):
     for chain in chains:
         chain_coords.append(cmd.get_coords(selection=f'{pymolname} and {selection} and chain {chain}'))
         chain_seqs.append(utils.get_seq(pymolname, selection=f'{selection} and chain {chain}'))
-    chain_coords = [e for e in chain_coords if e is not None and len(e) > 8]
-    if len(chain_coords) <= 1:
+    sel = [i for i, e in enumerate(chain_coords) if e is not None and len(e) > 8]
+    chain_coords = [chain_coords[i] for i in sel]
+    chain_seqs = [chain_seqs[i] for i in sel]
+    nchains = len(chain_coords)
+    log(f'nchains: {nchains}')
+    log(f'chain_coords: {[len(e) for e in chain_coords]}')
+    log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
+    if nchains <= 1:
         return None, None, None, None, None
     if randomize:
-        random.shuffle(chain_coords)
+        order = np.random.choice(nchains, size=nchains, replace=False)
+        chain_coords = chain_coords[order]
+        chain_seqs = chain_seqs[order]
     dobreak = False
-    for i in range(len(chain_coords) - 1):
+    for i in range(nchains - 1):
         A = torch.tensor(chain_coords[i][None, None, ...])
         seq_A = chain_seqs[i]
-        for j in range(i + 1, len(chain_coords)):
+        for j in range(i + 1, nchains):
             B = torch.tensor(chain_coords[j][None, None, ...])
             seq_B = chain_seqs[j]
             cmap = utils.get_inter_cmap(A, B)
@@ -143,10 +155,24 @@ def get_dimer(pymolname, selection, randomize=True):
         return None, None, None, None, None
 
 
+def log(msg):
+    try:
+        logging.info(msg)
+    except NameError:
+        pass
+
+
 if __name__ == '__main__':
     import sys
     import argparse
     import doctest
+    # ### UNCOMMENT FOR LOGGING ####
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
