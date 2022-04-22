@@ -467,3 +467,4 @@ python/protein/interpred/data/pdb/39/pdb439d.ent.gz
 python/protein/interpred/PDBloader.log
 python/protein/interpred/nnet.log
 python/protein/interpred/interpred.log
+python/protein/interpred/models/test.pth
