@@ -126,13 +126,16 @@ def forward_batch(batch, interpred):
     >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
     [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
     >>> interpred = InterPred()
-    >>> out = forward_batch(batch, interpred)
+    >>> out, targets = forward_batch(batch, interpred)
     >>> len(out)
     2
     >>> [e.shape for e in out]
     [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    >>> [e.shape for e in targets]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
     """
     out = []
+    targets = []
     for data in batch:
         coords_a, coords_b, interseq, cmap = data
         if coords_a is not None:
@@ -140,7 +143,39 @@ def forward_batch(batch, interpred):
             coords_b = coords_b[0]
             intercmap = interpred(coords_a, coords_b, interseq)
             out.append(intercmap)
-    return out
+            targets.append(cmap[0, 0, ...])
+    return out, targets
+
+
+def loss(out_batch, targets):
+    """
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
+    >>> interpred = InterPred()
+
+    >>> out_batch, targets = forward_batch(batch, interpred)
+    >>> len(out_batch)
+    2
+    >>> [e.shape for e in out_batch]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    >>> [e.shape for e in targets]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    >>> loss = loss(out_batch, targets)
+    >>> loss
+    tensor(..., dtype=torch.float64, grad_fn=<DivBackward0>)
+    """
+    n = len(out_batch)
+    loss = 0.
+    for i in range(n):
+        inp = out_batch[i]
+        target = targets[i]
+        loss += torch.nn.functional.cross_entropy(inp, target)
+    loss = loss / n
+    return loss
 
 
 def log(msg):
