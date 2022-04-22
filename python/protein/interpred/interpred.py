@@ -140,17 +140,18 @@ def learn(pdbpath=None,
     while epoch < nepoch:
         try:
             batch = next(dataiter)
-            out, targets = forward_batch(batch, interpred)
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            loss = get_loss(out, targets)
-            loss.backward()
-            optimizer.step()
             step += 1
-            if not step % print_each:
-                ncf = get_native_contact_fraction(out, targets)
-                eta_val = eta(step)
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
+            out, targets = forward_batch(batch, interpred)
+            if len(out) > 0:
+                # zero the parameter gradients
+                optimizer.zero_grad()
+                loss = get_loss(out, targets)
+                loss.backward()
+                optimizer.step()
+                if not step % print_each:
+                    ncf = get_native_contact_fraction(out, targets)
+                    eta_val = eta(step)
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -295,6 +296,7 @@ if __name__ == '__main__':
     import argparse
     from pymol import cmd
     import matplotlib.pyplot as plt  # For DOCTESTS
+    from datetime import datetime
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
@@ -308,6 +310,8 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--train', help='Train the interpred model', action='store_true')
+    parser.add_argument('--nepoch', help='Number of epochs for training (default 10)', default=10)
+    parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4)
     parser.add_argument('--pdbpath', help='Path to the pdb database')
     args = parser.parse_args()
 
@@ -315,4 +319,11 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.train:
-        pass
+        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        learn(pdbpath=args.pdbpath,
+              pdblist=None,
+              nepoch=args.nepoch,
+              batch_size=args.batch_size,
+              num_workers=None,
+              print_each=1,
+              modelfilename=f'models/interpred_{current_time}.pth')
