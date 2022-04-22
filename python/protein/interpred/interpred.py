@@ -121,7 +121,7 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
@@ -140,10 +140,7 @@ def learn(pdbpath=None,
     eta = ETA(total_steps=nepoch * len(dataiter))
     while epoch < nepoch:
         try:
-            try:
-                batch = next(dataiter)
-            except:
-                continue
+            batch = next(dataiter)
             step += 1
             out, targets = forward_batch(batch, interpred, device=device)
             if len(out) > 0:
@@ -160,6 +157,9 @@ def learn(pdbpath=None,
             dataiter = iter(dataloader)
             epoch += 1
             save_model(interpred, modelfilename)
+        except:
+            print(f'WARNING: Problem for loading at epoch {epoch} and step {step}')
+            continue
 
 
 def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
