@@ -42,6 +42,7 @@ from misc.protein.interpred import utils
 from misc.protein.interpred import PDBloader
 import os
 from misc.eta import ETA
+import copy
 
 
 class InterPred(torch.nn.Module):
@@ -60,19 +61,25 @@ class InterPred(torch.nn.Module):
     >>> interpred(coords_A, coords_B, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    18
+    26
     """
     def __init__(self):
         super(InterPred, self).__init__()
-        self.fcn_a = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
-        self.fcn_b = torch.nn.Sequential(torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-                                         torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'))
+        self.fcn_a = torch.nn.Sequential(
+            torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding='same'),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding='same'),
+        )
+        self.fcn_b = copy.deepcopy(self.fcn_a)
         self.fcn_seq = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=42, out_channels=16, kernel_size=3, padding='same'),
-            torch.nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding='same'),
+            torch.nn.Conv2d(in_channels=42, out_channels=16, kernel_size=3, padding='same'), torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding='same'), torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, padding='same'))
         self.sigmoid = torch.nn.Sigmoid()
 
@@ -91,9 +98,30 @@ class InterPred(torch.nn.Module):
         return out
 
 
-def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None, print_each=100):
+def save_model(interpred, filename):
+    torch.save(interpred.state_dict(), filename)
+
+
+def load_model(filename):
     """
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=10)
+    >>> interpred = load_model('models/test.pth')
+    """
+    interpred = InterPred()
+    interpred.load_state_dict(torch.load(filename))
+    interpred.eval()
+    return interpred
+
+
+def learn(pdbpath=None,
+          pdblist=None,
+          nepoch=10,
+          batch_size=4,
+          num_workers=None,
+          print_each=100,
+          modelfilename='models/interpred.pth'):
+    """
+    Uncomment the following to test it (about 20s runtime)
+    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
     """
     interpred = InterPred()
     optimizer = torch.optim.Adam(interpred.parameters())
@@ -126,6 +154,37 @@ def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None,
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
+            save_model(interpred, modelfilename)
+
+
+def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
+    """
+    >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
+    >>> intercmap.shape
+    (85, 13)
+    >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> target = utils.get_inter_cmap(coords_a, coords_b)
+    >>> target = torch.squeeze(target.detach().cpu()).numpy()
+    >>> target.shape
+    (85, 13)
+
+    >>> fig, axs = plt.subplots(1, 2)
+    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
+    >>> _ = axs[0].set_title('Prediction')
+    >>> _ = axs[1].matshow(target, cmap='Greys')
+    >>> _ = axs[1].set_title('Ground truth')
+    >>> # plt.colorbar()
+    >>> plt.show()
+    """
+    if modelfilename is not None:
+        interpred = load_model(modelfilename)
+    interpred.eval()
+    coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
+    coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
+    interseq = utils.get_inter_seq(seq_a, seq_b)
+    intercmap = torch.squeeze(interpred(coords_a, coords_b, interseq))
+    return intercmap.detach().cpu().numpy()
 
 
 def forward_batch(batch, interpred):
@@ -235,6 +294,7 @@ if __name__ == '__main__':
     import doctest
     import argparse
     from pymol import cmd
+    import matplotlib.pyplot as plt  # For DOCTESTS
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
@@ -247,8 +307,12 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--train', help='Train the interpred model', action='store_true')
+    parser.add_argument('--pdbpath', help='Path to the pdb database')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+    if args.train:
+        pass

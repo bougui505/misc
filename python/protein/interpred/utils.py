@@ -115,6 +115,10 @@ def get_coords(pdb, selection='polymer.protein', return_seq=False):
     """
     pymolname = randomgen.randomstring()
     cmd.load(pdb, pymolname)
+    # Remove alternate locations (see: https://pymol.org/dokuwiki/doku.php?id=concept:alt)
+    cmd.remove("not alt ''+A")
+    cmd.alter(pymolname, "alt=''")
+    ######################################################################################
     coords = cmd.get_coords(f'{pymolname} and {selection}')
     coords = coords[None, ...]  # Add the batch dimension
     coords = torch.tensor(coords)
