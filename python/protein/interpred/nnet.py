@@ -59,6 +59,8 @@ class InterPred(torch.nn.Module):
     >>> interpred = InterPred()
     >>> interpred(coords_A, coords_B, interseq).shape
     torch.Size([1, 85, 13])
+    >>> len(list(interpred.parameters()))
+    18
     """
     def __init__(self):
         super(InterPred, self).__init__()
@@ -91,8 +93,10 @@ class InterPred(torch.nn.Module):
 
 def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None, print_each=100):
     """
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100)
     """
+    interpred = InterPred()
+    optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
@@ -108,10 +112,16 @@ def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None,
     while epoch < nepoch:
         try:
             batch = next(dataiter)
+            out, targets = forward_batch(batch, interpred)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            loss = get_loss(out, targets)
+            loss.backward()
+            optimizer.step()
             step += 1
             if not step % print_each:
                 eta_val = eta(step)
-                log(f"epoch: {epoch+1}|step: {step}|eta: {eta_val}")
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -147,7 +157,7 @@ def forward_batch(batch, interpred):
     return out, targets
 
 
-def loss(out_batch, targets):
+def get_loss(out_batch, targets):
     """
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
@@ -164,16 +174,16 @@ def loss(out_batch, targets):
     [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
     >>> [e.shape for e in targets]
     [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> loss = loss(out_batch, targets)
+    >>> loss = get_loss(out_batch, targets)
     >>> loss
-    tensor(..., dtype=torch.float64, grad_fn=<DivBackward0>)
+    tensor(..., grad_fn=<DivBackward0>)
     """
     n = len(out_batch)
     loss = 0.
     for i in range(n):
-        inp = out_batch[i]
-        target = targets[i]
-        loss += torch.nn.functional.cross_entropy(inp, target)
+        inp = out_batch[i].float()
+        target = targets[i].float()
+        loss += torch.nn.functional.binary_cross_entropy(inp.flatten()[None, ...], target.flatten()[None, ...])
     loss = loss / n
     return loss
 
