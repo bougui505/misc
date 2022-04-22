@@ -142,7 +142,7 @@ def learn(pdbpath=None,
         try:
             batch = next(dataiter)
             step += 1
-            out, targets = forward_batch(batch, interpred)
+            out, targets = forward_batch(batch, interpred, device=device)
             if len(out) > 0:
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -193,7 +193,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     return intercmap.detach().cpu().numpy()
 
 
-def forward_batch(batch, interpred):
+def forward_batch(batch, interpred, device='cpu'):
     """
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
@@ -215,6 +215,10 @@ def forward_batch(batch, interpred):
     for data in batch:
         coords_a, coords_b, interseq, cmap = data
         if coords_a is not None:
+            coords_a = coords_a.to(device)
+            coords_b = coords_b.to(device)
+            interseq = interseq.to(device)
+            cmap = cmap.to(device)
             coords_a = coords_a[0]  # Remove the extra dimension not required
             coords_b = coords_b[0]
             intercmap = interpred(coords_a, coords_b, interseq)
@@ -320,9 +324,10 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--train', help='Train the interpred model', action='store_true')
-    parser.add_argument('--nepoch', help='Number of epochs for training (default 10)', default=10)
-    parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4)
+    parser.add_argument('--nepoch', help='Number of epochs for training (default 10)', default=10, type=int)
+    parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
     parser.add_argument('--pdbpath', help='Path to the pdb database')
+    parser.add_argument('--print_each', help='Print each given steps in log file', default=100, type=int)
     args = parser.parse_args()
 
     if args.test:
@@ -335,5 +340,5 @@ if __name__ == '__main__':
               nepoch=args.nepoch,
               batch_size=args.batch_size,
               num_workers=None,
-              print_each=1,
+              print_each=args.print_each,
               modelfilename=f'models/interpred_{current_time}.pth')
