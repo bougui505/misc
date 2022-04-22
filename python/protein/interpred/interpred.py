@@ -123,7 +123,8 @@ def learn(pdbpath=None,
     Uncomment the following to test it (about 20s runtime)
     # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
     """
-    interpred = InterPred()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    interpred = InterPred().to(device)
     optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()

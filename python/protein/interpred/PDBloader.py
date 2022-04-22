@@ -88,6 +88,7 @@ class PDBdataset(torch.utils.data.Dataset):
     [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 42, 85, 13]), torch.Size([1, 1, 1, 85, 13]))]
     """
     def __init__(self, pdbpath=None, pdblist=None, selection='polymer.protein and name CA', randomize=True):
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
@@ -113,9 +114,13 @@ class PDBdataset(torch.utils.data.Dataset):
                 seq_a) == coords_a.shape[2], f'seq_a is not of same length as coords_a ({len(seq_a)}, {coords_a.shape})'
             assert len(
                 seq_b) == coords_b.shape[2], f'seq_b is not of same length as coords_b ({len(seq_b)}, {coords_b.shape})'
+            coords_a = coords_a.to(self.device)
+            coords_b = coords_b.to(self.device)
+            cmap = cmap.to(self.device)
         cmd.delete(pymolname)
         if seq_a is not None:
             interseq = utils.get_inter_seq(seq_a, seq_b)
+            interseq = interseq.to(self.device)
         else:
             interseq = None
         return coords_a, coords_b, interseq, cmap
