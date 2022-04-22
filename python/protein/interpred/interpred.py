@@ -174,9 +174,9 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target.shape
     (85, 13)
     >>> get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.9173)
+    tensor(0.8309)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.0142)
+    tensor(0.0174)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap, cmap='Greys')
