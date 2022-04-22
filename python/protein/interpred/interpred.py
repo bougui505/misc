@@ -169,6 +169,10 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target = torch.squeeze(target.detach().cpu()).numpy()
     >>> target.shape
     (85, 13)
+    >>> get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+    tensor(0.9173)
+    >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+    tensor(0.0142)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap, cmap='Greys')
@@ -244,7 +248,9 @@ def get_loss(out_batch, targets):
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
-        loss += torch.nn.functional.binary_cross_entropy(inp.flatten()[None, ...], target.flatten()[None, ...])
+        loss += torch.nn.functional.binary_cross_entropy(inp.flatten()[None, ...],
+                                                         target.flatten()[None, ...],
+                                                         reduction='mean')
     loss = loss / n
     return loss
 
@@ -276,9 +282,12 @@ def get_native_contact_fraction(out_batch, targets):
         for i in range(n):
             inp = out_batch[i].float()
             target = targets[i].float()
-            n_unmatch = abs(inp - target).sum()
-            n_match = inp.numel()
-            ncf += (n_match - n_unmatch) / n_match
+            sel_contact = (target == 1)
+            sel_nocontact = (target == 0)
+            r_contact = (sel_contact.sum() - abs(inp[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
+            r_nocontact = (sel_nocontact.sum() -
+                           abs(inp[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
+            ncf += (r_contact + r_nocontact) / 2.
         ncf = ncf / n
     return ncf
 
