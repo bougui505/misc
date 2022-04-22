@@ -39,6 +39,9 @@
 import torch
 from misc import randomgen
 from misc.protein.interpred import utils
+from misc.protein.interpred import PDBloader
+import os
+from misc.eta import ETA
 
 
 class InterPred(torch.nn.Module):
@@ -86,6 +89,60 @@ class InterPred(torch.nn.Module):
         return out
 
 
+def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None, print_each=100):
+    """
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1)
+    """
+    if num_workers is None:
+        num_workers = os.cpu_count()
+    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=True,
+                                             num_workers=num_workers,
+                                             collate_fn=PDBloader.collate_fn)
+    dataiter = iter(dataloader)
+    epoch = 0
+    step = 0
+    eta = ETA(total_steps=nepoch * len(dataiter))
+    while epoch < nepoch:
+        try:
+            batch = next(dataiter)
+            step += 1
+            if not step % print_each:
+                eta_val = eta(step)
+                log(f"epoch: {epoch+1}|step: {step}|eta: {eta_val}")
+        except StopIteration:
+            dataiter = iter(dataloader)
+            epoch += 1
+
+
+def forward_batch(batch, interpred):
+    """
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
+    >>> interpred = InterPred()
+    >>> out = forward_batch(batch, interpred)
+    >>> len(out)
+    2
+    >>> [e.shape for e in out]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    """
+    out = []
+    for data in batch:
+        coords_a, coords_b, interseq, cmap = data
+        if coords_a is not None:
+            coords_a = coords_a[0]  # Remove the extra dimension not required
+            coords_b = coords_b[0]
+            intercmap = interpred(coords_a, coords_b, interseq)
+            out.append(intercmap)
+    return out
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -99,11 +156,11 @@ if __name__ == '__main__':
     import argparse
     from pymol import cmd
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
