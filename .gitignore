@@ -464,3 +464,4 @@ python/protein/interpred/data/pdb/39/pdb239d.ent.gz
 python/protein/interpred/data/pdb/39/pdb239l.ent.gz
 python/protein/interpred/data/pdb/39/pdb339d.ent.gz
 python/protein/interpred/data/pdb/39/pdb439d.ent.gz
+python/protein/interpred/PDBloader.log
