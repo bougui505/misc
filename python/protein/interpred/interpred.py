@@ -93,7 +93,7 @@ class InterPred(torch.nn.Module):
 
 def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None, print_each=100):
     """
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=10)
     """
     interpred = InterPred()
     optimizer = torch.optim.Adam(interpred.parameters())
@@ -120,8 +120,9 @@ def learn(pdbpath=None, pdblist=None, nepoch=10, batch_size=4, num_workers=None,
             optimizer.step()
             step += 1
             if not step % print_each:
+                ncf = get_native_contact_fraction(out, targets)
                 eta_val = eta(step)
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss}|eta: {eta_val}")
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -186,6 +187,40 @@ def get_loss(out_batch, targets):
         loss += torch.nn.functional.binary_cross_entropy(inp.flatten()[None, ...], target.flatten()[None, ...])
     loss = loss / n
     return loss
+
+
+def get_native_contact_fraction(out_batch, targets):
+    """
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
+    >>> interpred = InterPred()
+
+    >>> out_batch, targets = forward_batch(batch, interpred)
+    >>> len(out_batch)
+    2
+    >>> [e.shape for e in out_batch]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    >>> [e.shape for e in targets]
+    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    >>> ncf = get_native_contact_fraction(out_batch, targets)
+    >>> ncf
+    tensor(...)
+    """
+    n = len(out_batch)
+    ncf = 0.  # Native Contacts Fraction
+    with torch.no_grad():
+        for i in range(n):
+            inp = out_batch[i].float()
+            target = targets[i].float()
+            n_unmatch = abs(inp - target).sum()
+            n_match = inp.numel()
+            ncf += (n_match - n_unmatch) / n_match
+        ncf = ncf / n
+    return ncf
 
 
 def log(msg):
