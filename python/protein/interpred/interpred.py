@@ -140,7 +140,10 @@ def learn(pdbpath=None,
     eta = ETA(total_steps=nepoch * len(dataiter))
     while epoch < nepoch:
         try:
-            batch = next(dataiter)
+            try:
+                batch = next(dataiter)
+            except:
+                continue
             step += 1
             out, targets = forward_batch(batch, interpred, device=device)
             if len(out) > 0:
