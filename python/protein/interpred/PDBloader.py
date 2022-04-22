@@ -56,7 +56,6 @@ class PDBdataset(torch.utils.data.Dataset):
 
     >>> # randomize must be set to True for real application. Just set to False for testing
 
-    # >>> dataset = PDBdataset(pdbpath='data/pdb', randomize=False)
     >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
@@ -68,9 +67,17 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
     [(None, None, None, None), (torch.Size([1, 1, 47, 3]), torch.Size([1, 1, 45, 3]), torch.Size([1, 42, 47, 45]), torch.Size([1, 1, 1, 47, 45])), (torch.Size([1, 1, 110, 3]), torch.Size([1, 1, 116, 3]), torch.Size([1, 42, 110, 116]), torch.Size([1, 1, 1, 110, 116])), (None, None, None, None)]
 
-    # [(None, None, None, None), (None, None, None, None), (None, None, None, None), (torch.Size([1, 1, 327, 3]), torch.Size([1, 1, 327, 3]), torch.Size([1, 42, 327, 327]), torch.Size([1, 1, 1, 327, 327]))]
-
     In the example above, None is returned for protein with 1 chain only
+
+    Try with randomize set to True
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=True)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4, collate_fn=collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> for i, batch in enumerate(dataloader):
+    ...     if i == 12:
+    ...         break
+    >>> print(len(batch))
+    4
 
     Try with a list of PDBs:
     >>> dataset = PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -134,8 +141,8 @@ def get_dimer(pymolname, selection, randomize=True):
         return None, None, None, None, None
     if randomize:
         order = np.random.choice(nchains, size=nchains, replace=False)
-        chain_coords = chain_coords[order]
-        chain_seqs = chain_seqs[order]
+        chain_coords = [chain_coords[i] for i in order]
+        chain_seqs = [chain_seqs[i] for i in order]
     dobreak = False
     for i in range(nchains - 1):
         A = torch.tensor(chain_coords[i][None, None, ...])
