@@ -113,7 +113,6 @@ def get_coords(pdb, selection='polymer.protein', return_seq=False):
     >>> seq
     'ETFSDLWKLLPEN'
     """
-    cmd.reinitialize()
     pymolname = randomgen.randomstring()
     cmd.load(pdb, pymolname)
     coords = cmd.get_coords(f'{pymolname} and {selection}')
@@ -129,7 +128,7 @@ def get_coords(pdb, selection='polymer.protein', return_seq=False):
 
 
 def get_seq(pymolname, selection):
-    seq = cmd.get_fastastr(f'{pymolname} and {selection}')
+    seq = cmd.get_fastastr(f'{pymolname} and {selection} and present')
     seq = seq.split()[1:]
     seq = ''.join(seq)
     seq = seq.upper()
