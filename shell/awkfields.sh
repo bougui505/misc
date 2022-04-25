@@ -65,7 +65,8 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-awk -F '[|:]' -v "KEY=$FIELD" '
+sed 's/ //g' $FILE \
+    | awk -F '[|:]' -v "KEY=$FIELD" '
 BEGIN {
     split(KEY, arr, ",")
 }
@@ -76,4 +77,4 @@ BEGIN {
         }
     }
 printf "\n"
-}' $FILE
+}'
