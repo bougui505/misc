@@ -63,19 +63,18 @@ class InterPred(torch.nn.Module):
     >>> len(list(interpred.parameters()))
     26
     """
-    def __init__(self):
+    def __init__(self, out_channels=[2, 4, 8, 16, 32], verbose=False):
         super(InterPred, self).__init__()
-        self.fcn_a = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, padding='same'),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, padding='same'),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, padding='same'),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding='same'),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding='same'),
-        )
+        in_channels = [1] + out_channels[:-1]
+        layers = []
+        nlayers = len(out_channels)
+        for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
+            layers.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
+            if i < nlayers - 1:
+                layers.append(torch.nn.ReLU())
+        if verbose:
+            print(layers)
+        self.fcn_a = torch.nn.Sequential(*layers)
         self.fcn_b = copy.deepcopy(self.fcn_a)
         self.fcn_seq = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=42, out_channels=16, kernel_size=3, padding='same'), torch.nn.ReLU(),
@@ -122,7 +121,7 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
