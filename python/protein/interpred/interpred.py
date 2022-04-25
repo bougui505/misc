@@ -172,7 +172,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target.shape
     (85, 13)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.6637)
+    tensor(1.2068)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap)

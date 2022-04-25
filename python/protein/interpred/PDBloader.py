@@ -151,12 +151,12 @@ def get_dimer(pymolname, selection, randomize=True):
             B = torch.tensor(chain_coords[j][None, None, ...])
             seq_B = chain_seqs[j]
             dmat = utils.get_inter_dmat(A, B)
-            if dmat.min() > 8.:
+            if dmat.min() < 8.:
                 dobreak = True
                 break
         if dobreak:
             break
-    if dmat.sum() > 0.:
+    if dmat.min() < 8.:
         return A, B, dmat, seq_A, seq_B
     else:
         return None, None, None, None, None
