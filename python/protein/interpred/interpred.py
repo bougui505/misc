@@ -43,6 +43,7 @@ from misc.protein.interpred import PDBloader
 import os
 from misc.eta import ETA
 import copy
+import numpy as np
 
 
 class InterPred(torch.nn.Module):
@@ -67,11 +68,9 @@ class InterPred(torch.nn.Module):
         super(InterPred, self).__init__()
         in_channels = [1] + out_channels[:-1]
         layers = []
-        nlayers = len(out_channels)
         for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
             layers.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
-            if i < nlayers - 1:
-                layers.append(torch.nn.ReLU())
+            layers.append(torch.nn.ReLU())
         if verbose:
             print(layers)
         self.fcn_a = torch.nn.Sequential(*layers)
@@ -88,12 +87,11 @@ class InterPred(torch.nn.Module):
         dmat_b = utils.get_dmat(coords_b)
         out_a = self.fcn_a(dmat_a)
         out_a = out_a.mean(axis=-1)
-        out_b = self.fcn_a(dmat_b)
+        out_b = self.fcn_b(dmat_b)
         out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
         out = out * self.sigmoid(out_seq)
-        # out = self.sigmoid(out)
         return out
 
 
@@ -174,7 +172,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target.shape
     (85, 13)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(2.0025)
+    tensor(0.6637)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap)
@@ -191,7 +189,10 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
     interseq = utils.get_inter_seq(seq_a, seq_b)
     intercmap = torch.squeeze(interpred(coords_a, coords_b, interseq))
-    return intercmap.detach().cpu().numpy()
+    # mask = get_mask(intercmap)
+    intercmap = intercmap.detach().cpu().numpy()
+    # intercmap = np.ma.masked_array(intercmap, mask)
+    return intercmap
 
 
 def forward_batch(batch, interpred, device='cpu'):
@@ -254,9 +255,19 @@ def get_loss(out_batch, targets):
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
-        loss += torch.nn.functional.mse_loss(inp.flatten()[None, ...], target.flatten()[None, ...], reduction='mean')
+        mask = get_mask(target)
+        loss_on = torch.nn.functional.mse_loss(inp[~mask][None, ...], target[~mask][None, ...], reduction='mean')
+        loss_off = torch.nn.functional.mse_loss(inp[mask][None, ...], target[mask][None, ...], reduction='mean')
+        w_on = 1.
+        w_off = 1.
+        loss += (w_on * loss_on + w_off * loss_off) / (w_on + w_off)
     loss = loss / n
     return loss
+
+
+def get_mask(intercmap, threshold=8.):
+    mask = intercmap > threshold
+    return mask
 
 
 def get_native_contact_fraction(out_batch, targets):
