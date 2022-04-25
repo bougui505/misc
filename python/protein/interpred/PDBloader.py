@@ -65,7 +65,7 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> print(len(batch))
     4
     >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (torch.Size([1, 1, 47, 3]), torch.Size([1, 1, 45, 3]), torch.Size([1, 42, 47, 45]), torch.Size([1, 1, 1, 47, 45])), (torch.Size([1, 1, 110, 3]), torch.Size([1, 1, 116, 3]), torch.Size([1, 42, 110, 116]), torch.Size([1, 1, 1, 110, 116])), (None, None, None, None)]
+    [(None, None, None, None), (torch.Size([1, 1, 58, 3]), torch.Size([1, 1, 44, 3]), torch.Size([1, 42, 58, 44]), torch.Size([1, 1, 1, 58, 44])), (torch.Size([1, 1, 116, 3]), torch.Size([1, 1, 107, 3]), torch.Size([1, 42, 116, 107]), torch.Size([1, 1, 1, 116, 107])), (None, None, None, None)]
 
     In the example above, None is returned for protein with 1 chain only
 
@@ -107,7 +107,7 @@ class PDBdataset(torch.utils.data.Dataset):
         cmd.remove("not alt ''+A")
         cmd.alter(pymolname, "alt=''")
         ######################################################################################
-        coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        coords_a, coords_b, dmat, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
         if coords_a is not None:
             assert len(
                 seq_a) == coords_a.shape[2], f'seq_a is not of same length as coords_a ({len(seq_a)}, {coords_a.shape})'
@@ -118,7 +118,7 @@ class PDBdataset(torch.utils.data.Dataset):
             interseq = utils.get_inter_seq(seq_a, seq_b)
         else:
             interseq = None
-        return coords_a, coords_b, interseq, cmap
+        return coords_a, coords_b, interseq, dmat
 
 
 def get_dimer(pymolname, selection, randomize=True):
@@ -150,14 +150,14 @@ def get_dimer(pymolname, selection, randomize=True):
         for j in range(i + 1, nchains):
             B = torch.tensor(chain_coords[j][None, None, ...])
             seq_B = chain_seqs[j]
-            cmap = utils.get_inter_cmap(A, B)
-            if cmap.sum() > 0.:
+            dmat = utils.get_inter_dmat(A, B)
+            if dmat.min() > 8.:
                 dobreak = True
                 break
         if dobreak:
             break
-    if cmap.sum() > 0.:
-        return A, B, cmap, seq_A, seq_B
+    if dmat.sum() > 0.:
+        return A, B, dmat, seq_A, seq_B
     else:
         return None, None, None, None, None
 

@@ -61,7 +61,7 @@ class InterPred(torch.nn.Module):
     >>> interpred(coords_A, coords_B, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    26
+    38
     """
     def __init__(self, out_channels=[2, 4, 8, 16, 32, 64, 128, 256], verbose=False):
         super(InterPred, self).__init__()
@@ -92,8 +92,8 @@ class InterPred(torch.nn.Module):
         out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
-        out = out * out_seq
-        out = self.sigmoid(out)
+        out = out * self.sigmoid(out_seq)
+        # out = self.sigmoid(out)
         return out
 
 
@@ -121,7 +121,7 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=100, modelfilename='models/test.pth')
+    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=500, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
@@ -150,9 +150,9 @@ def learn(pdbpath=None,
                 loss.backward()
                 optimizer.step()
                 if not step % print_each:
-                    ncf = get_native_contact_fraction(out, targets)
                     eta_val = eta(step)
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|resolution: {torch.sqrt(loss):.4f} Å|eta: {eta_val}"
+                        )
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -169,19 +169,17 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     (85, 13)
     >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
     >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> target = utils.get_inter_cmap(coords_a, coords_b)
+    >>> target = utils.get_inter_dmat(coords_a, coords_b)
     >>> target = torch.squeeze(target.detach().cpu()).numpy()
     >>> target.shape
     (85, 13)
-    >>> get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.8309)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.0174)
+    tensor(2.0025)
 
     >>> fig, axs = plt.subplots(1, 2)
-    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
+    >>> _ = axs[0].matshow(intercmap)
     >>> _ = axs[0].set_title('Prediction')
-    >>> _ = axs[1].matshow(target, cmap='Greys')
+    >>> _ = axs[1].matshow(target)
     >>> _ = axs[1].set_title('Ground truth')
     >>> # plt.colorbar()
     >>> plt.show()
@@ -256,9 +254,7 @@ def get_loss(out_batch, targets):
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
-        loss += torch.nn.functional.binary_cross_entropy(inp.flatten()[None, ...],
-                                                         target.flatten()[None, ...],
-                                                         reduction='mean')
+        loss += torch.nn.functional.mse_loss(inp.flatten()[None, ...], target.flatten()[None, ...], reduction='mean')
     loss = loss / n
     return loss
 
@@ -339,9 +335,7 @@ if __name__ == '__main__':
     parser.add_argument('--sel1', help='First selection', default='all')
     parser.add_argument('--sel2', help='Second selection', default='all')
     parser.add_argument('--ground_truth', help='Compute ground truth from the given pdb', action='store_true')
-    parser.add_argument('--model',
-                        help='pth filename for the model to load',
-                        default='models/interpred_20220422_173638.pth')
+    parser.add_argument('--model', help='pth filename for the model to load', default='models/test.pth')
     args = parser.parse_args()
 
     if args.test:
@@ -365,17 +359,18 @@ if __name__ == '__main__':
         if args.ground_truth:
             coords_a = utils.get_coords(args.pdb1, selection=f'polymer.protein and name CA and {args.sel1}')
             coords_b = utils.get_coords(args.pdb2, selection=f'polymer.protein and name CA and {args.sel2}')
-            target = utils.get_inter_cmap(coords_a, coords_b)
+            target = utils.get_inter_dmat(coords_a, coords_b)
             target = torch.squeeze(target.detach().cpu()).numpy()
-            ncf = get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-            print(f'ncf: {ncf:.4f}')
+            loss = get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+            resolution = torch.sqrt(loss)
+            print(f'resolution: {resolution:.4f} Å')
             fig, axs = plt.subplots(1, 2)
-            _ = axs[1].matshow(target, cmap='Greys')
+            _ = axs[1].matshow(target)
             _ = axs[1].set_title('Ground truth')
-            _ = axs[0].matshow(intercmap, cmap='Greys')
+            _ = axs[0].matshow(intercmap)
             _ = axs[0].set_title('Prediction')
         else:
             fig, axs = plt.subplots(1, 1)
-            axs.matshow(intercmap, cmap='Greys')
+            axs.matshow(intercmap)
             axs.set_title('Prediction')
         plt.show()
