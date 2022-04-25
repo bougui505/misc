@@ -46,9 +46,11 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 function usage () {
     cat << EOF
 Extract fields by name in the following format:
+
 field1: value|field2: value|...
+
     -h, --help print this help message and exit
-    -F, --field field name to extract
+    -F, --field field name to extract. If multiple, the format is: key1,key2,...
     -f, --file file to read
 EOF
 }
@@ -63,9 +65,15 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-awk -F '[|:]' -v "KEY=$FIELD" '{
-    for (i=1;i<=NF;i++){
-        if ($i==KEY){print $(i+1)}
+awk -F '[|:]' -v "KEY=$FIELD" '
+BEGIN {
+    split(KEY, arr, ",")
+}
+{
+    for (id=1;id<=length(arr);id++){
+        for (i=1;i<=NF;i++){
+            if ($i==arr[id]){printf $(i+1); printf " "}
+        }
     }
-}' $FILE \
-    | tr -d " "
+printf "\n"
+}' $FILE
