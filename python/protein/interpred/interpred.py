@@ -63,7 +63,7 @@ class InterPred(torch.nn.Module):
     >>> len(list(interpred.parameters()))
     26
     """
-    def __init__(self, out_channels=[2, 4, 8, 16, 32], verbose=False):
+    def __init__(self, out_channels=[2, 4, 8, 16, 32, 64, 128, 256], verbose=False):
         super(InterPred, self).__init__()
         in_channels = [1] + out_channels[:-1]
         layers = []
