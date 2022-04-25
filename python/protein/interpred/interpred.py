@@ -106,8 +106,9 @@ def load_model(filename):
     """
     >>> interpred = load_model('models/test.pth')
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred()
-    interpred.load_state_dict(torch.load(filename))
+    interpred.load_state_dict(torch.load(filename, map_location=torch.device(device)))
     interpred.eval()
     return interpred
 
@@ -331,6 +332,17 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
     parser.add_argument('--pdbpath', help='Path to the pdb database')
     parser.add_argument('--print_each', help='Print each given steps in log file', default=100, type=int)
+    parser.add_argument('--predict',
+                        help='Predict for the given pdb files (see pdb1, pdb2 options)',
+                        action='store_true')
+    parser.add_argument('--pdb1', help='First PDB for predicrion')
+    parser.add_argument('--pdb2', help='Second PDB for predicrion')
+    parser.add_argument('--sel1', help='First selection', default='all')
+    parser.add_argument('--sel2', help='Second selection', default='all')
+    parser.add_argument('--ground_truth', help='Compute ground truth from the given pdb', action='store_true')
+    parser.add_argument('--model',
+                        help='pth filename for the model to load',
+                        default='models/interpred_20220422_173638.pth')
     args = parser.parse_args()
 
     if args.test:
@@ -345,3 +357,26 @@ if __name__ == '__main__':
               num_workers=None,
               print_each=args.print_each,
               modelfilename=f'models/interpred_{current_time}.pth')
+    if args.predict:
+        intercmap = predict(pdb_a=args.pdb1,
+                            pdb_b=args.pdb2,
+                            sel_a=args.sel1,
+                            sel_b=args.sel2,
+                            modelfilename=args.model)
+        if args.ground_truth:
+            coords_a = utils.get_coords(args.pdb1, selection=f'polymer.protein and name CA and {args.sel1}')
+            coords_b = utils.get_coords(args.pdb2, selection=f'polymer.protein and name CA and {args.sel2}')
+            target = utils.get_inter_cmap(coords_a, coords_b)
+            target = torch.squeeze(target.detach().cpu()).numpy()
+            ncf = get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+            print(f'ncf: {ncf:.4f}')
+            fig, axs = plt.subplots(1, 2)
+            _ = axs[1].matshow(target, cmap='Greys')
+            _ = axs[1].set_title('Ground truth')
+            _ = axs[0].matshow(intercmap, cmap='Greys')
+            _ = axs[0].set_title('Prediction')
+        else:
+            fig, axs = plt.subplots(1, 1)
+            axs.matshow(intercmap, cmap='Greys')
+            axs.set_title('Prediction')
+        plt.show()
