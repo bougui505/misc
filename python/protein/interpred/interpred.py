@@ -44,6 +44,7 @@ import os
 from misc.eta import ETA
 import copy
 import numpy as np
+import SquashLayer
 
 
 class InterPred(torch.nn.Module):
@@ -62,11 +63,9 @@ class InterPred(torch.nn.Module):
     >>> interpred(coords_A, coords_B, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    38
+    50
     """
-    def __init__(self,
-                 out_channels=[32, 32, 32, 32, 64, 64, 64, 64, 128, 128, 128, 128, 256, 256, 256, 256],
-                 verbose=False):
+    def __init__(self, out_channels=[32, 32, 64, 64, 128, 128, 256, 256], verbose=False):
         super(InterPred, self).__init__()
         in_channels = [1] + out_channels[:-1]
         layers = []
@@ -87,15 +86,19 @@ class InterPred(torch.nn.Module):
         ]
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
         self.sigmoid = torch.nn.Sigmoid()
+        self.squashlayer_a = SquashLayer.SquashLayer()
+        self.squashlayer_b = SquashLayer.SquashLayer()
 
     def forward(self, coords_a, coords_b, interseq):
         # batchsize, na, spacedim = coords_a.shape
         dmat_a = utils.get_dmat(coords_a)
         dmat_b = utils.get_dmat(coords_b)
         out_a = self.fcn_a(dmat_a)
-        out_a = out_a.mean(axis=-1)
+        # print(out_a.shape)  # torch.Size([1, 256, 85, 85])
+        out_a = self.squashlayer_a(out_a)
         out_b = self.fcn_b(dmat_b)
-        out_b = out_b.mean(axis=-1)
+        # print(out_b.shape)  # torch.Size([1, 256, 13, 13])
+        out_b = self.squashlayer_b(out_b)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
         out = out * self.sigmoid(out_seq)
@@ -179,7 +182,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target.shape
     (85, 13)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(1.2068)
+    tensor(0.1505)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap)
