@@ -134,6 +134,10 @@ def get_dimer(pymolname, selection, randomize=True):
     chain_coords = [chain_coords[i] for i in sel]
     chain_seqs = [chain_seqs[i] for i in sel]
     nchains = len(chain_coords)
+    # Cannot train on chain length larger than 1000:
+    chainlengths = [len(e) for e in chain_coords]
+    if max(chainlengths) > 1000:
+        return None, None, None, None, None
     log(f'nchains: {nchains}')
     log(f'chain_coords: {[len(e) for e in chain_coords]}')
     log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
