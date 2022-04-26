@@ -64,7 +64,9 @@ class InterPred(torch.nn.Module):
     >>> len(list(interpred.parameters()))
     38
     """
-    def __init__(self, out_channels=[2, 4, 8, 16, 32, 64, 128, 256], verbose=False):
+    def __init__(self,
+                 out_channels=[32, 32, 32, 32, 64, 64, 64, 64, 128, 128, 128, 128, 256, 256, 256, 256],
+                 verbose=False):
         super(InterPred, self).__init__()
         in_channels = [1] + out_channels[:-1]
         layers = []
@@ -75,10 +77,15 @@ class InterPred(torch.nn.Module):
             print(layers)
         self.fcn_a = torch.nn.Sequential(*layers)
         self.fcn_b = copy.deepcopy(self.fcn_a)
-        self.fcn_seq = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=42, out_channels=16, kernel_size=3, padding='same'), torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding='same'), torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, padding='same'))
+        in_channels = [42] + out_channels[:-1]
+        layers_seq = []
+        for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
+            layers_seq.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
+            layers_seq.append(torch.nn.ReLU())
+        layers_seq = layers_seq + [
+            torch.nn.Conv2d(in_channels=out_channels[-1], out_channels=1, kernel_size=3, padding='same')
+        ]
+        self.fcn_seq = torch.nn.Sequential(*layers_seq)
         self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, coords_a, coords_b, interseq):
