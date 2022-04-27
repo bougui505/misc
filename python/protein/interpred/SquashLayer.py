@@ -54,15 +54,15 @@ class SquashLayer(torch.nn.Module):
         super(SquashLayer, self).__init__()
         self.size_in = size_in
         # weights = torch.randn(size_out, size_in)
-        weights = torch.Tensor(size_out, size_in)
+        weights = torch.ones(size_out, size_in) / size_in
         self.weights = torch.nn.Parameter(weights)
-        bias = torch.Tensor(size_out)
+        bias = torch.zeros(size_out)
         self.bias = torch.nn.Parameter(bias)
         # initialize weights and biases
-        torch.nn.init.kaiming_uniform_(self.weights, a=math.sqrt(5))  # weight init
-        fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(self.weights)
-        bound = 1 / math.sqrt(fan_in)
-        torch.nn.init.uniform_(self.bias, -bound, bound)  # bias init
+        # torch.nn.init.kaiming_uniform_(self.weights, a=math.sqrt(5))  # weight init
+        # fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(self.weights)
+        # bound = 1 / math.sqrt(fan_in)
+        # torch.nn.init.uniform_(self.bias, -bound, bound)  # bias init
 
     def forward(self, x):
         n = x.shape[-1]

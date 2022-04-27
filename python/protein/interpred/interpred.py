@@ -59,11 +59,14 @@ class InterPred(torch.nn.Module):
     >>> interseq.shape
     torch.Size([1, 42, 85, 13])
 
-    >>> interpred = InterPred()
-    >>> interpred(coords_A, coords_B, interseq).shape
+    >>> interpred = InterPred(verbose=True)
+    [Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU()]
+    [Conv2d(42, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 1, kernel_size=(3, 3), stride=(1, 1), padding=same), Sigmoid()]
+    >>> dmat_a, dmat_b, maxab = get_input_mats(coords_A, coords_B)
+    >>> interpred(dmat_a, dmat_b, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    50
+    54
     """
     def __init__(self, out_channels=[32, 32, 64, 64, 128, 128, 256, 256], verbose=False):
         super(InterPred, self).__init__()
@@ -84,25 +87,36 @@ class InterPred(torch.nn.Module):
         layers_seq = layers_seq + [
             torch.nn.Conv2d(in_channels=out_channels[-1], out_channels=1, kernel_size=3, padding='same')
         ]
+        layers_seq.append(torch.nn.Sigmoid())
+        if verbose:
+            print(layers_seq)
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
-        self.sigmoid = torch.nn.Sigmoid()
         self.squashlayer_a = SquashLayer.SquashLayer()
         self.squashlayer_b = SquashLayer.SquashLayer()
 
-    def forward(self, coords_a, coords_b, interseq):
+    def forward(self, mat_a, mat_b, interseq):
         # batchsize, na, spacedim = coords_a.shape
-        dmat_a = utils.get_dmat(coords_a)
-        dmat_b = utils.get_dmat(coords_b)
-        out_a = self.fcn_a(dmat_a)
+        out_a = self.fcn_a(mat_a)
         # print(out_a.shape)  # torch.Size([1, 256, 85, 85])
         out_a = self.squashlayer_a(out_a)
-        out_b = self.fcn_b(dmat_b)
+        # out_a = out_a.mean(axis=-1)
+        out_b = self.fcn_b(mat_b)
         # print(out_b.shape)  # torch.Size([1, 256, 13, 13])
         out_b = self.squashlayer_b(out_b)
+        # out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
-        out = out * self.sigmoid(out_seq)
+        out = out * out_seq
         return out
+
+
+def get_input_mats(coords_a, coords_b):
+    dmat_a = utils.get_dmat(coords_a)
+    dmat_b = utils.get_dmat(coords_b)
+    maxab = max(dmat_a.max(), dmat_b.max())
+    dmat_a = dmat_a / maxab
+    dmat_b = dmat_b / maxab
+    return dmat_a, dmat_b, maxab
 
 
 def save_model(interpred, filename):
@@ -129,11 +143,11 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=500, modelfilename='models/test.pth')
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=500, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
-    optimizer = torch.optim.Adam(interpred.parameters())
+    optimizer = torch.optim.Adam(interpred.parameters(), lr=1e-3, weight_decay=1e-5)
     if num_workers is None:
         num_workers = os.cpu_count()
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
@@ -198,7 +212,8 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
     interseq = utils.get_inter_seq(seq_a, seq_b)
-    intercmap = torch.squeeze(interpred(coords_a, coords_b, interseq))
+    dmat_a, dmat_b, maxab = get_input_mats(coords_a, coords_b)
+    intercmap = torch.squeeze(interpred(dmat_a, dmat_b, interseq)) * maxab
     # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
     # intercmap = np.ma.masked_array(intercmap, mask)
@@ -233,7 +248,8 @@ def forward_batch(batch, interpred, device='cpu'):
             cmap = cmap.to(device)
             coords_a = coords_a[0]  # Remove the extra dimension not required
             coords_b = coords_b[0]
-            intercmap = interpred(coords_a, coords_b, interseq)
+            dmat_a, dmat_b, maxab = get_input_mats(coords_a, coords_b)
+            intercmap = interpred(dmat_a, dmat_b, interseq) * maxab
             out.append(intercmap)
             targets.append(cmap[0, 0, ...])
     return out, targets
@@ -282,24 +298,24 @@ def get_mask(intercmap, threshold=8.):
 
 def get_native_contact_fraction(out_batch, targets):
     """
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = next(dataiter)
-    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
-    >>> interpred = InterPred()
+    # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    # >>> dataiter = iter(dataloader)
+    # >>> batch = next(dataiter)
+    # >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
+    # [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
+    # >>> interpred = InterPred()
 
-    >>> out_batch, targets = forward_batch(batch, interpred)
-    >>> len(out_batch)
-    2
-    >>> [e.shape for e in out_batch]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> [e.shape for e in targets]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> ncf = get_native_contact_fraction(out_batch, targets)
-    >>> ncf
-    tensor(...)
+    # >>> out_batch, targets = forward_batch(batch, interpred)
+    # >>> len(out_batch)
+    # 2
+    # >>> [e.shape for e in out_batch]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    # >>> [e.shape for e in targets]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    # >>> ncf = get_native_contact_fraction(out_batch, targets)
+    # >>> ncf
+    # tensor(...)
     """
     n = len(out_batch)
     ncf = 0.  # Native Contacts Fraction
