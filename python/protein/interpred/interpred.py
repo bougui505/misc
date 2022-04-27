@@ -137,7 +137,7 @@ def load_model(filename):
 def learn(pdbpath=None,
           pdblist=None,
           nepoch=10,
-          batch_size=1,
+          batch_size=4,
           num_workers=None,
           print_each=100,
           modelfilename='models/interpred.pth'):
