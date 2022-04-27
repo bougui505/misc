@@ -285,7 +285,7 @@ def get_loss(out_batch, targets):
         loss_on = torch.nn.functional.mse_loss(inp[~mask][None, ...], target[~mask][None, ...], reduction='mean')
         loss_off = torch.nn.functional.mse_loss(inp[mask][None, ...], target[mask][None, ...], reduction='mean')
         w_on = 1.
-        w_off = 1.
+        w_off = 0.001
         loss += (w_on * loss_on + w_off * loss_off) / (w_on + w_off)
     loss = loss / n
     return loss
