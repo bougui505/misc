@@ -58,6 +58,13 @@ def get_dmat(coords):
     return dmat
 
 
+def get_cmap(coords, threshold=8.):
+    dmat = get_dmat(coords)
+    cmap = (dmat <= threshold)
+    cmap = cmap.to(torch.float)
+    return cmap
+
+
 def get_inter_dmat(coords_a, coords_b):
     """
     >>> coords_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')

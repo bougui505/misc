@@ -107,7 +107,7 @@ class PDBdataset(torch.utils.data.Dataset):
         cmd.remove("not alt ''+A")
         cmd.alter(pymolname, "alt=''")
         ######################################################################################
-        coords_a, coords_b, dmat, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
         if coords_a is not None:
             assert len(
                 seq_a) == coords_a.shape[2], f'seq_a is not of same length as coords_a ({len(seq_a)}, {coords_a.shape})'
@@ -118,7 +118,7 @@ class PDBdataset(torch.utils.data.Dataset):
             interseq = utils.get_inter_seq(seq_a, seq_b)
         else:
             interseq = None
-        return coords_a, coords_b, interseq, dmat
+        return coords_a, coords_b, interseq, cmap
 
 
 def get_dimer(pymolname, selection, randomize=True):
@@ -154,14 +154,14 @@ def get_dimer(pymolname, selection, randomize=True):
         for j in range(i + 1, nchains):
             B = torch.tensor(chain_coords[j][None, None, ...])
             seq_B = chain_seqs[j]
-            dmat = utils.get_inter_dmat(A, B)
-            if dmat.min() < 8.:
+            cmap = utils.get_inter_cmap(A, B)
+            if cmap.sum() > 0:
                 dobreak = True
                 break
         if dobreak:
             break
-    if dmat.min() < 8.:
-        return A, B, dmat, seq_A, seq_B
+    if cmap.sum() > 0:
+        return A, B, cmap, seq_A, seq_B
     else:
         return None, None, None, None, None
 

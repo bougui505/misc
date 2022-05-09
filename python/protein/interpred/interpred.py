@@ -62,11 +62,11 @@ class InterPred(torch.nn.Module):
     >>> interpred = InterPred(verbose=True)
     [Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU()]
     [Conv2d(42, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 1, kernel_size=(3, 3), stride=(1, 1), padding=same), Sigmoid()]
-    >>> dmat_a, dmat_b, maxab = get_input_mats(coords_A, coords_B)
-    >>> interpred(dmat_a, dmat_b, interseq).shape
+    >>> cmap_a, cmap_b = get_input_mats(coords_A, coords_B)
+    >>> interpred(cmap_a, cmap_b, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    54
+    50
     """
     def __init__(self, out_channels=[32, 32, 64, 64, 128, 128, 256, 256], verbose=False):
         super(InterPred, self).__init__()
@@ -91,32 +91,33 @@ class InterPred(torch.nn.Module):
         if verbose:
             print(layers_seq)
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
-        self.squashlayer_a = SquashLayer.SquashLayer()
-        self.squashlayer_b = SquashLayer.SquashLayer()
+        # self.squashlayer_a = SquashLayer.SquashLayer()
+        # self.squashlayer_b = SquashLayer.SquashLayer()
 
     def forward(self, mat_a, mat_b, interseq):
         # batchsize, na, spacedim = coords_a.shape
         out_a = self.fcn_a(mat_a)
         # print(out_a.shape)  # torch.Size([1, 256, 85, 85])
-        out_a = self.squashlayer_a(out_a)
-        # out_a = out_a.mean(axis=-1)
+        # out_a = self.squashlayer_a(out_a)
+        out_a = out_a.mean(axis=-1)
         out_b = self.fcn_b(mat_b)
         # print(out_b.shape)  # torch.Size([1, 256, 13, 13])
-        out_b = self.squashlayer_b(out_b)
-        # out_b = out_b.mean(axis=-1)
+        # out_b = self.squashlayer_b(out_b)
+        out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
+        out = torch.sigmoid(out)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
         out = out * out_seq
         return out
 
 
 def get_input_mats(coords_a, coords_b):
-    dmat_a = utils.get_dmat(coords_a)
-    dmat_b = utils.get_dmat(coords_b)
-    maxab = max(dmat_a.max(), dmat_b.max())
-    dmat_a = dmat_a / maxab
-    dmat_b = dmat_b / maxab
-    return dmat_a, dmat_b, maxab
+    cmap_a = utils.get_cmap(coords_a)
+    cmap_b = utils.get_cmap(coords_b)
+    # maxab = max(dmat_a.max(), dmat_b.max())
+    # dmat_a = dmat_a / maxab
+    # dmat_b = dmat_b / maxab
+    return cmap_a, cmap_b
 
 
 def save_model(interpred, filename):
@@ -143,11 +144,11 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=500, modelfilename='models/test.pth')
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=200, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
-    optimizer = torch.optim.Adam(interpred.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
@@ -173,8 +174,8 @@ def learn(pdbpath=None,
                 optimizer.step()
                 if not step % print_each:
                     eta_val = eta(step)
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|resolution: {torch.sqrt(loss):.4f} Å|eta: {eta_val}"
-                        )
+                    ncf = get_native_contact_fraction(out, targets)
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -191,17 +192,17 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     (85, 13)
     >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
     >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> target = utils.get_inter_dmat(coords_a, coords_b)
+    >>> target = utils.get_inter_cmap(coords_a, coords_b)
     >>> target = torch.squeeze(target.detach().cpu()).numpy()
     >>> target.shape
     (85, 13)
     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.1505)
+    tensor(0.1103)
 
     >>> fig, axs = plt.subplots(1, 2)
-    >>> _ = axs[0].matshow(intercmap)
+    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
     >>> _ = axs[0].set_title('Prediction')
-    >>> _ = axs[1].matshow(target)
+    >>> _ = axs[1].matshow(target, cmap='Greys')
     >>> _ = axs[1].set_title('Ground truth')
     >>> # plt.colorbar()
     >>> plt.show()
@@ -212,8 +213,8 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
     interseq = utils.get_inter_seq(seq_a, seq_b)
-    dmat_a, dmat_b, maxab = get_input_mats(coords_a, coords_b)
-    intercmap = torch.squeeze(interpred(dmat_a, dmat_b, interseq)) * maxab
+    cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
+    intercmap = torch.squeeze(interpred(cmap_a, cmap_b, interseq))
     # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
     # intercmap = np.ma.masked_array(intercmap, mask)
@@ -248,14 +249,14 @@ def forward_batch(batch, interpred, device='cpu'):
             cmap = cmap.to(device)
             coords_a = coords_a[0]  # Remove the extra dimension not required
             coords_b = coords_b[0]
-            dmat_a, dmat_b, maxab = get_input_mats(coords_a, coords_b)
-            intercmap = interpred(dmat_a, dmat_b, interseq) * maxab
+            cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
+            intercmap = interpred(cmap_a, cmap_b, interseq)
             out.append(intercmap)
             targets.append(cmap[0, 0, ...])
     return out, targets
 
 
-def get_loss(out_batch, targets):
+def get_loss(out_batch, targets, reweight=True):
     """
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
@@ -281,18 +282,25 @@ def get_loss(out_batch, targets):
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
-        mask = get_mask(target)
-        loss_on = torch.nn.functional.mse_loss(inp[~mask][None, ...], target[~mask][None, ...], reduction='mean')
-        loss_off = torch.nn.functional.mse_loss(inp[mask][None, ...], target[mask][None, ...], reduction='mean')
-        w_on = 1.
-        w_off = 0.001
-        loss += (w_on * loss_on + w_off * loss_off) / (w_on + w_off)
+        if reweight:
+            mask = get_mask(target)
+            loss_on = torch.nn.functional.binary_cross_entropy(inp[~mask][None, ...],
+                                                               target[~mask][None, ...],
+                                                               reduction='mean')
+            loss_off = torch.nn.functional.binary_cross_entropy(inp[mask][None, ...],
+                                                                target[mask][None, ...],
+                                                                reduction='mean')
+            w_on = 1.
+            w_off = 1.
+            loss += (w_on * loss_on + w_off * loss_off) / (w_on + w_off)
+        else:
+            loss = torch.nn.functional.binary_cross_entropy(inp, target, reduction='mean')
     loss = loss / n
     return loss
 
 
-def get_mask(intercmap, threshold=8.):
-    mask = intercmap > threshold
+def get_mask(intercmap):
+    mask = intercmap == 0
     return mask
 
 
