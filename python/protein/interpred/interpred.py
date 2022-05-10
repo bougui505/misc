@@ -66,7 +66,7 @@ class InterPred(torch.nn.Module):
     >>> interpred(cmap_a, cmap_b, interseq).shape
     torch.Size([1, 85, 13])
     >>> len(list(interpred.parameters()))
-    50
+    46
     """
     def __init__(self, out_channels=[32, 32, 64, 64, 128, 128, 256, 256], verbose=False):
         super(InterPred, self).__init__()
@@ -78,7 +78,7 @@ class InterPred(torch.nn.Module):
         if verbose:
             print(layers)
         self.fcn_a = torch.nn.Sequential(*layers)
-        self.fcn_b = copy.deepcopy(self.fcn_a)
+        self.fcn_b = self.fcn_a
         in_channels = [42] + out_channels[:-1]
         layers_seq = []
         for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
@@ -91,19 +91,21 @@ class InterPred(torch.nn.Module):
         if verbose:
             print(layers_seq)
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
-        # self.squashlayer_a = SquashLayer.SquashLayer()
-        # self.squashlayer_b = SquashLayer.SquashLayer()
+        self.squashlayer_a = torch.nn.Sequential(SquashLayer.SquashLayer(size_in=1000, size_out=500),
+                                                 SquashLayer.SquashLayer(size_in=500, size_out=250),
+                                                 SquashLayer.SquashLayer(size_in=250, size_out=1))
+        self.squashlayer_b = copy.deepcopy(self.squashlayer_a)
 
     def forward(self, mat_a, mat_b, interseq):
         # batchsize, na, spacedim = coords_a.shape
         out_a = self.fcn_a(mat_a)
         # print(out_a.shape)  # torch.Size([1, 256, 85, 85])
-        # out_a = self.squashlayer_a(out_a)
-        out_a = out_a.mean(axis=-1)
+        out_a = self.squashlayer_a(out_a)
+        # out_a = out_a.mean(axis=-1)
         out_b = self.fcn_b(mat_b)
         # print(out_b.shape)  # torch.Size([1, 256, 13, 13])
-        # out_b = self.squashlayer_b(out_b)
-        out_b = out_b.mean(axis=-1)
+        out_b = self.squashlayer_b(out_b)
+        # out_b = out_b.mean(axis=-1)
         out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out = torch.sigmoid(out)
         out_seq = self.fcn_seq(interseq)[:, 0, :, :]
