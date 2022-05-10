@@ -91,8 +91,8 @@ class InterPred(torch.nn.Module):
         if verbose:
             print(layers_seq)
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
-        self.squashlayer_a = torch.nn.Sequential(SquashLayer.SquashLayer(size_in=1000, size_out=500),
-                                                 SquashLayer.SquashLayer(size_in=500, size_out=250),
+        self.squashlayer_a = torch.nn.Sequential(SquashLayer.SquashLayer(size_in=1000, size_out=500), torch.nn.ReLU(),
+                                                 SquashLayer.SquashLayer(size_in=500, size_out=250), torch.nn.ReLU(),
                                                  SquashLayer.SquashLayer(size_in=250, size_out=1))
         self.squashlayer_b = copy.deepcopy(self.squashlayer_a)
 
