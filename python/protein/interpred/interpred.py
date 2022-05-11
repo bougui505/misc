@@ -87,6 +87,7 @@ def learn(pdbpath=None,
     optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
+    save_model(interpred, modelfilename)
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
