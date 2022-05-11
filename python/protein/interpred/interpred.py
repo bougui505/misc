@@ -44,73 +44,7 @@ import os
 from misc.eta import ETA
 import copy
 import numpy as np
-import SquashLayer
-
-
-class InterPred(torch.nn.Module):
-    """
-    >>> coords_A, seq_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
-    >>> coords_A.shape
-    torch.Size([1, 85, 3])
-    >>> coords_B, seq_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
-    >>> coords_B.shape
-    torch.Size([1, 13, 3])
-    >>> interseq = utils.get_inter_seq(seq_a, seq_b)
-    >>> interseq.shape
-    torch.Size([1, 42, 85, 13])
-
-    >>> interpred = InterPred(verbose=True)
-    [Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU()]
-    [Conv2d(42, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=same), ReLU(), Conv2d(256, 1, kernel_size=(3, 3), stride=(1, 1), padding=same), Sigmoid()]
-    >>> cmap_a, cmap_b = get_input_mats(coords_A, coords_B)
-    >>> interpred(cmap_a, cmap_b, interseq).shape
-    torch.Size([1, 85, 13])
-    >>> len(list(interpred.parameters()))
-    46
-    """
-    def __init__(self, out_channels=[32, 32, 64, 64, 128, 128, 256, 256], verbose=False):
-        super(InterPred, self).__init__()
-        in_channels = [1] + out_channels[:-1]
-        layers = []
-        for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
-            layers.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
-            layers.append(torch.nn.ReLU())
-        if verbose:
-            print(layers)
-        self.fcn_a = torch.nn.Sequential(*layers)
-        self.fcn_b = self.fcn_a
-        in_channels = [42] + out_channels[:-1]
-        layers_seq = []
-        for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
-            layers_seq.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
-            layers_seq.append(torch.nn.ReLU())
-        layers_seq = layers_seq + [
-            torch.nn.Conv2d(in_channels=out_channels[-1], out_channels=1, kernel_size=3, padding='same')
-        ]
-        layers_seq.append(torch.nn.Sigmoid())
-        if verbose:
-            print(layers_seq)
-        self.fcn_seq = torch.nn.Sequential(*layers_seq)
-        self.squashlayer_a = torch.nn.Sequential(SquashLayer.SquashLayer(size_in=1000, size_out=500), torch.nn.ReLU(),
-                                                 SquashLayer.SquashLayer(size_in=500, size_out=250), torch.nn.ReLU(),
-                                                 SquashLayer.SquashLayer(size_in=250, size_out=1))
-        self.squashlayer_b = copy.deepcopy(self.squashlayer_a)
-
-    def forward(self, mat_a, mat_b, interseq):
-        # batchsize, na, spacedim = coords_a.shape
-        out_a = self.fcn_a(mat_a)
-        # print(out_a.shape)  # torch.Size([1, 256, 85, 85])
-        out_a = self.squashlayer_a(out_a)
-        # out_a = out_a.mean(axis=-1)
-        out_b = self.fcn_b(mat_b)
-        # print(out_b.shape)  # torch.Size([1, 256, 13, 13])
-        out_b = self.squashlayer_b(out_b)
-        # out_b = out_b.mean(axis=-1)
-        out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        out = torch.sigmoid(out)
-        out_seq = self.fcn_seq(interseq)[:, 0, :, :]
-        out = out * out_seq
-        return out
+from nnet import InterPred
 
 
 def get_input_mats(coords_a, coords_b):
@@ -146,7 +80,7 @@ def learn(pdbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=200, modelfilename='models/test.pth')
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=30, modelfilename='models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred().to(device)
