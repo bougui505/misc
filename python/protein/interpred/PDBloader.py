@@ -87,13 +87,19 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
     [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 42, 85, 13]), torch.Size([1, 1, 1, 85, 13]))]
     """
-    def __init__(self, pdbpath=None, pdblist=None, selection='polymer.protein and name CA', randomize=True):
+    def __init__(self,
+                 pdbpath=None,
+                 pdblist=None,
+                 selection='polymer.protein and name CA',
+                 randomize=True,
+                 return_name=False):
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
             self.list_IDs = pdblist
         self.randomize = randomize
         self.selection = selection
+        self.return_name = return_name
 
     def __len__(self):
         return len(self.list_IDs)
@@ -118,7 +124,10 @@ class PDBdataset(torch.utils.data.Dataset):
             interseq = utils.get_inter_seq(seq_a, seq_b)
         else:
             interseq = None
-        return coords_a, coords_b, interseq, cmap
+        if self.return_name:
+            return coords_a, coords_b, interseq, cmap, pdbfile
+        else:
+            return coords_a, coords_b, interseq, cmap
 
 
 def get_dimer(pymolname, selection, randomize=True):
@@ -136,6 +145,8 @@ def get_dimer(pymolname, selection, randomize=True):
     nchains = len(chain_coords)
     # Cannot train on chain length larger than 1000:
     chainlengths = [len(e) for e in chain_coords]
+    if len(chainlengths) == 0:
+        return None, None, None, None, None
     if max(chainlengths) > 1000:
         return None, None, None, None, None
     log(f'nchains: {nchains}')
