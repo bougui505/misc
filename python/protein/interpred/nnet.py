@@ -61,13 +61,9 @@ class InterPred(torch.nn.Module):
     out_dense: torch.Size([1, 10000])
     out: torch.Size([1, 85, 13])
     """
-    def __init__(self, out_channels=[96, 256, 384, 384, 256], kernel_size=[11, 5, 3, 3, 3], verbose=False):
+    def __init__(self, out_channels=[96, 256, 384, 384, 256], verbose=False):
         super(InterPred, self).__init__()
         in_channels = [1] + out_channels[:-1]
-        # layers = []
-        # for i, (ic, oc, ks) in enumerate(zip(in_channels, out_channels, kernel_size)):
-        #     layers.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=ks, padding='same'))
-        #     layers.append(torch.nn.ReLU())
         # AlexNet Convolutions
         layers = [
             torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4),
@@ -89,13 +85,13 @@ class InterPred(torch.nn.Module):
         # Fully connected of AlexNet
         layers = [
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=12800, out_features=4096),
+            torch.nn.Linear(in_features=12800, out_features=10000),
             torch.nn.ReLU(),
             torch.nn.Dropout(p=0.5),
-            torch.nn.Linear(in_features=4096, out_features=4096),
+            torch.nn.Linear(in_features=10000, out_features=10000),
             torch.nn.ReLU(),
             torch.nn.Dropout(p=0.5),
-            torch.nn.Linear(in_features=4096, out_features=10000),
+            torch.nn.Linear(in_features=10000, out_features=10000),
             torch.nn.Sigmoid()
         ]
         self.fc = torch.nn.Sequential(*layers)
