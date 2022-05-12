@@ -37,6 +37,7 @@
 #############################################################################
 
 import torch
+import copy
 import utils
 
 
@@ -56,14 +57,13 @@ class InterPred(torch.nn.Module):
     >>> out = interpred(cmap_a, cmap_b, interseq)
     out_a: torch.Size([1, 256, 5, 5])
     out_b: torch.Size([1, 256, 5, 5])
-    out_seq: torch.Size([1, 85, 13])
-    out_stack: torch.Size([1, 512, 5, 5])
+    out_seq: torch.Size([1, 256, 5, 5])
+    out_stack: torch.Size([1, 768, 5, 5])
     out_dense: torch.Size([1, 10000])
     out: torch.Size([1, 85, 13])
     """
-    def __init__(self, out_channels=[96, 256, 384, 384, 256], verbose=False):
+    def __init__(self, verbose=False):
         super(InterPred, self).__init__()
-        in_channels = [1] + out_channels[:-1]
         # AlexNet Convolutions
         layers = [
             torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4),
@@ -81,11 +81,11 @@ class InterPred(torch.nn.Module):
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
         ]
         self.fcn_a = torch.nn.Sequential(*layers)
-        self.fcn_b = self.fcn_a
+        self.fcn_b = copy.deepcopy(self.fcn_a)
         # Fully connected of AlexNet
         layers = [
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=12800, out_features=10000),
+            torch.nn.Linear(in_features=19200, out_features=10000),
             torch.nn.ReLU(),
             torch.nn.Dropout(p=0.5),
             torch.nn.Linear(in_features=10000, out_features=10000),
@@ -95,17 +95,21 @@ class InterPred(torch.nn.Module):
             torch.nn.Sigmoid()
         ]
         self.fc = torch.nn.Sequential(*layers)
-        in_channels = [42] + out_channels[:-1]
-        layers_seq = []
-        for i, (ic, oc) in enumerate(zip(in_channels, out_channels)):
-            layers_seq.append(torch.nn.Conv2d(in_channels=ic, out_channels=oc, kernel_size=3, padding='same'))
-            layers_seq.append(torch.nn.ReLU())
-        layers_seq = layers_seq + [
-            torch.nn.Conv2d(in_channels=out_channels[-1], out_channels=1, kernel_size=3, padding='same')
+        layers_seq = [
+            torch.nn.Conv2d(in_channels=42, out_channels=96, kernel_size=11, stride=4),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=3, stride=2),
+            torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, padding=2),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=3, stride=2),
+            torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=384, out_channels=384, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=3, stride=2),
         ]
-        layers_seq.append(torch.nn.Sigmoid())
-        # if verbose:
-        #     print(layers_seq)
         self.fcn_seq = torch.nn.Sequential(*layers_seq)
         self.verbose = verbose
 
@@ -114,16 +118,17 @@ class InterPred(torch.nn.Module):
         _, _, nb, nb = mat_b.shape
         mat_a = torch.nn.functional.interpolate(mat_a, size=224)
         mat_b = torch.nn.functional.interpolate(mat_b, size=224)
+        interseq = torch.nn.functional.interpolate(interseq, size=224)
         out_a = self.fcn_a(mat_a)
         if self.verbose:
             print('out_a:', out_a.shape)
         out_b = self.fcn_b(mat_b)
         if self.verbose:
             print('out_b:', out_b.shape)
-        out_seq = self.fcn_seq(interseq)[:, 0, :, :]
+        out_seq = self.fcn_seq(interseq)
         if self.verbose:
             print('out_seq:', out_seq.shape)
-        out_stack = torch.cat((out_a, out_b), dim=1)
+        out_stack = torch.cat((out_a, out_b, out_seq), dim=1)
         if self.verbose:
             print('out_stack:', out_stack.shape)
         out_dense = self.fc(out_stack)
@@ -131,7 +136,6 @@ class InterPred(torch.nn.Module):
             print('out_dense:', out_dense.shape)
         out = out_dense.reshape((1, 1, 100, 100))
         out = torch.nn.functional.interpolate(out, size=(na, nb))
-        out = out * out_seq
         out = out[0, ...]
         if self.verbose:
             print('out:', out.shape)
