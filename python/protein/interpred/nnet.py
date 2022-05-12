@@ -66,7 +66,7 @@ class InterPred(torch.nn.Module):
         super(InterPred, self).__init__()
         # AlexNet Convolutions
         layers = [
-            torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4),
+            torch.nn.Conv2d(in_channels=44, out_channels=96, kernel_size=11, stride=4),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, padding=2),
@@ -80,12 +80,11 @@ class InterPred(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
         ]
-        self.fcn_a = torch.nn.Sequential(*layers)
-        self.fcn_b = copy.deepcopy(self.fcn_a)
+        self.fcn = torch.nn.Sequential(*layers)
         # Fully connected of AlexNet
         layers = [
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=19200, out_features=10000),
+            torch.nn.Linear(in_features=6400, out_features=10000),
             torch.nn.ReLU(),
             torch.nn.Dropout(p=0.5),
             torch.nn.Linear(in_features=10000, out_features=10000),
@@ -95,22 +94,6 @@ class InterPred(torch.nn.Module):
             torch.nn.Sigmoid()
         ]
         self.fc = torch.nn.Sequential(*layers)
-        layers_seq = [
-            torch.nn.Conv2d(in_channels=42, out_channels=96, kernel_size=11, stride=4),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, padding=2),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=384, out_channels=384, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-        ]
-        self.fcn_seq = torch.nn.Sequential(*layers_seq)
         self.verbose = verbose
 
     def forward(self, mat_a, mat_b, interseq):
@@ -119,22 +102,16 @@ class InterPred(torch.nn.Module):
         mat_a = torch.nn.functional.interpolate(mat_a, size=224)
         mat_b = torch.nn.functional.interpolate(mat_b, size=224)
         interseq = torch.nn.functional.interpolate(interseq, size=224)
-        out_a = self.fcn_a(mat_a)
+        mat_in = torch.cat((mat_a, mat_b, interseq), dim=1)
         if self.verbose:
-            print('out_a:', out_a.shape)
-        out_b = self.fcn_b(mat_b)
+            print('mat_in:', mat_in.shape)
+        out = self.fcn(mat_in)
         if self.verbose:
-            print('out_b:', out_b.shape)
-        out_seq = self.fcn_seq(interseq)
+            print('out_fcn:', out.shape)
+        out = self.fc(out)
         if self.verbose:
-            print('out_seq:', out_seq.shape)
-        out_stack = torch.cat((out_a, out_b, out_seq), dim=1)
-        if self.verbose:
-            print('out_stack:', out_stack.shape)
-        out_dense = self.fc(out_stack)
-        if self.verbose:
-            print('out_dense:', out_dense.shape)
-        out = out_dense.reshape((1, 1, 100, 100))
+            print('out_dense:', out.shape)
+        out = out.reshape((1, 1, 100, 100))
         out = torch.nn.functional.interpolate(out, size=(na, nb))
         out = out[0, ...]
         if self.verbose:
