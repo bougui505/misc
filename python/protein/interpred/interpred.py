@@ -193,7 +193,7 @@ def forward_batch(batch, interpred, device='cpu'):
     return out, targets
 
 
-def get_loss(out_batch, targets, reweight=True):
+def get_loss(out_batch, targets, reweight=False):
     """
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
