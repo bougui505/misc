@@ -62,8 +62,9 @@ class InterPred(torch.nn.Module):
     out_dense: torch.Size([1, 10000])
     out: torch.Size([1, 85, 13])
     """
-    def __init__(self, verbose=False):
+    def __init__(self, interpolate=True, verbose=False):
         super(InterPred, self).__init__()
+        self.interpolate = interpolate
         # AlexNet Convolutions
         layers = [
             torch.nn.Conv2d(in_channels=44, out_channels=96, kernel_size=11, stride=4),
@@ -97,11 +98,12 @@ class InterPred(torch.nn.Module):
         self.verbose = verbose
 
     def forward(self, mat_a, mat_b, interseq):
-        _, _, na, na = mat_a.shape
-        _, _, nb, nb = mat_b.shape
-        mat_a = torch.nn.functional.interpolate(mat_a, size=224)
-        mat_b = torch.nn.functional.interpolate(mat_b, size=224)
-        interseq = torch.nn.functional.interpolate(interseq, size=224)
+        batch_size, nchannels, na, na = mat_a.shape
+        batch_size, nchannels, nb, nb = mat_b.shape
+        if self.interpolate:
+            mat_a = torch.nn.functional.interpolate(mat_a, size=224)
+            mat_b = torch.nn.functional.interpolate(mat_b, size=224)
+            interseq = torch.nn.functional.interpolate(interseq, size=224)
         mat_in = torch.cat((mat_a, mat_b, interseq), dim=1)
         if self.verbose:
             print('mat_in:', mat_in.shape)
@@ -111,9 +113,10 @@ class InterPred(torch.nn.Module):
         out = self.fc(out)
         if self.verbose:
             print('out_dense:', out.shape)
-        out = out.reshape((1, 1, 100, 100))
-        out = torch.nn.functional.interpolate(out, size=(na, nb))
-        out = out[0, ...]
+        out = out.reshape((batch_size, 1, 100, 100))
+        if self.interpolate:
+            out = torch.nn.functional.interpolate(out, size=(na, nb))
+        out = out[:, 0, ...]
         if self.verbose:
             print('out:', out.shape)
         return out

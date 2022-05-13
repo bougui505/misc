@@ -41,7 +41,6 @@ import torch
 from misc.eta import ETA
 import numpy as np
 import os
-from interpred import get_input_mats
 import glob
 
 
@@ -102,7 +101,7 @@ def collate_fn(batch):
     cmap_a = torch.cat([torch.tensor(e[0]) for e in batch])
     cmap_b = torch.cat([torch.tensor(e[1]) for e in batch])
     interseq = torch.cat([torch.tensor(e[2]) for e in batch])
-    intercmap = [e[3] for e in batch]
+    intercmap = [torch.tensor(e[3]) for e in batch]
     return cmap_a, cmap_b, interseq, intercmap
 
 
@@ -154,6 +153,7 @@ if __name__ == '__main__':
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
+    from interpred import get_input_mats
     logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
     logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
     logging.info(f"################ Starting {__file__} ################")

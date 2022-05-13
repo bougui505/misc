@@ -45,6 +45,7 @@ from misc.eta import ETA
 import copy
 import numpy as np
 from nnet import InterPred
+import DB
 
 
 def get_input_mats(coords_a, coords_b):
@@ -71,29 +72,25 @@ def load_model(filename):
     return interpred
 
 
-def learn(pdbpath=None,
-          pdblist=None,
-          nepoch=10,
-          batch_size=4,
-          num_workers=None,
-          print_each=100,
-          modelfilename='models/interpred.pth'):
+def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100, modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=30, modelfilename='models/test.pth')
+    >>> DB.prepare_db('.', pdblist=['data/1ycr.pdb'])
+
+    >>> learn(dbpath='.', print_each=1, nepoch=30, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    interpred = InterPred().to(device)
+    interpred = InterPred(interpolate=False).to(device)
     optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
     save_model(interpred, modelfilename)
-    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, randomize=True)
+    dataset = DB.CmapDataset(dbpath)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=True,
                                              num_workers=num_workers,
-                                             collate_fn=PDBloader.collate_fn)
+                                             collate_fn=DB.collate_fn)
     dataiter = iter(dataloader)
     epoch = 0
     step = 0
@@ -102,24 +99,21 @@ def learn(pdbpath=None,
         try:
             batch = next(dataiter)
             step += 1
-            out, targets = forward_batch(batch, interpred, device=device)
-            if len(out) > 0:
-                # zero the parameter gradients
-                optimizer.zero_grad()
-                loss = get_loss(out, targets)
-                loss.backward()
-                optimizer.step()
-                if not step % print_each:
-                    eta_val = eta(step)
-                    ncf = get_native_contact_fraction(out, targets)
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
+            cmap_a, cmap_b, interseq, intercmap = batch
+            out = interpred(cmap_a, cmap_b, interseq)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            loss = get_loss(out, intercmap, interpolate=True)
+            loss.backward()
+            optimizer.step()
+            if not step % print_each:
+                eta_val = eta(step)
+                ncf = get_native_contact_fraction(out, intercmap, interpolate=True)
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
             save_model(interpred, modelfilename)
-        except:
-            print(f'WARNING: Problem for loading at epoch {epoch} and step {step}')
-            continue
 
 
 def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
@@ -193,7 +187,7 @@ def forward_batch(batch, interpred, device='cpu'):
     return out, targets
 
 
-def get_loss(out_batch, targets, reweight=True):
+def get_loss(out_batch, targets, reweight=True, interpolate=False):
     """
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
@@ -214,11 +208,13 @@ def get_loss(out_batch, targets, reweight=True):
     >>> loss
     tensor(..., grad_fn=<DivBackward0>)
     """
-    n = len(out_batch)
+    n = len(targets)
     loss = 0.
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
+        if interpolate:
+            inp = interpolate_intercmap(inp, target)
         if reweight:
             mask = get_mask(target)
             loss_on = torch.nn.functional.binary_cross_entropy(inp[~mask][None, ...],
@@ -236,12 +232,18 @@ def get_loss(out_batch, targets, reweight=True):
     return loss
 
 
+def interpolate_intercmap(inp, target):
+    _, na, nb = target.shape
+    out = torch.nn.functional.interpolate(inp[None, None, ...], size=(na, nb))
+    return out[0]
+
+
 def get_mask(intercmap):
     mask = intercmap == 0
     return mask
 
 
-def get_native_contact_fraction(out_batch, targets):
+def get_native_contact_fraction(out_batch, targets, interpolate=False):
     """
     # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
     # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
@@ -268,6 +270,8 @@ def get_native_contact_fraction(out_batch, targets):
         for i in range(n):
             inp = out_batch[i].float()
             target = targets[i].float()
+            if interpolate:
+                inp = interpolate_intercmap(inp, target)
             sel_contact = (target == 1)
             sel_nocontact = (target == 0)
             r_contact = (sel_contact.sum() - abs(inp[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
@@ -307,7 +311,7 @@ if __name__ == '__main__':
     parser.add_argument('--train', help='Train the interpred model', action='store_true')
     parser.add_argument('--nepoch', help='Number of epochs for training (default 10)', default=10, type=int)
     parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
-    parser.add_argument('--pdbpath', help='Path to the pdb database')
+    parser.add_argument('--dbpath', help='Path to the learning database')
     parser.add_argument('--print_each', help='Print each given steps in log file', default=100, type=int)
     parser.add_argument('--predict',
                         help='Predict for the given pdb files (see pdb1, pdb2 options)',
@@ -325,8 +329,7 @@ if __name__ == '__main__':
         sys.exit()
     if args.train:
         current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-        learn(pdbpath=args.pdbpath,
-              pdblist=None,
+        learn(dbpath=args.dbpath,
               nepoch=args.nepoch,
               batch_size=args.batch_size,
               num_workers=None,
