@@ -100,6 +100,8 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
             batch = next(dataiter)
             step += 1
             cmap_a, cmap_b, interseq, intercmap = batch
+            cmap_a, cmap_b, interseq = todevice(cmap_a, cmap_b, interseq, device=device)
+            intercmap = todevice(*intercmap, device=device)
             out = interpred(cmap_a, cmap_b, interseq)
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -114,6 +116,12 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
             dataiter = iter(dataloader)
             epoch += 1
             save_model(interpred, modelfilename)
+
+def todevice(*args, device):
+    out = []
+    for arg in args:
+        out.append(arg.to(device))
+    return out
 
 
 def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
