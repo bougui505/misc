@@ -80,7 +80,14 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
     >>> learn(dbpath='.', print_each=1, nepoch=30, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    interpred = InterPred(interpolate=False).to(device)
+    if not os.path.exists(modelfilename):
+        interpred = InterPred(interpolate=False).to(device)
+    else:
+        msg = f'# Loading model: {modelfilename}'
+        print(msg)
+        log(msg)
+        interpred = load_model(modelfilename)
+        interpred.train()  # set model in train mode
     optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
@@ -116,6 +123,7 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
             dataiter = iter(dataloader)
             epoch += 1
             save_model(interpred, modelfilename)
+
 
 def todevice(*args, device):
     out = []
@@ -314,7 +322,6 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--train', help='Train the interpred model', action='store_true')
     parser.add_argument('--nepoch', help='Number of epochs for training (default 10)', default=10, type=int)
@@ -329,7 +336,7 @@ if __name__ == '__main__':
     parser.add_argument('--sel1', help='First selection', default='all')
     parser.add_argument('--sel2', help='Second selection', default='all')
     parser.add_argument('--ground_truth', help='Compute ground truth from the given pdb', action='store_true')
-    parser.add_argument('--model', help='pth filename for the model to load', default='models/test.pth')
+    parser.add_argument('--model', help='pth filename for the model to load', default=None)
     args = parser.parse_args()
 
     if args.test:
@@ -337,12 +344,16 @@ if __name__ == '__main__':
         sys.exit()
     if args.train:
         current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        if args.model is None:
+            modelfilename = f'models/interpred_{current_time}.pth'
+        else:
+            modelfilename = args.model
         learn(dbpath=args.dbpath,
               nepoch=args.nepoch,
               batch_size=args.batch_size,
               num_workers=None,
               print_each=args.print_each,
-              modelfilename=f'models/interpred_{current_time}.pth')
+              modelfilename=modelfilename)
     if args.predict:
         intercmap = predict(pdb_a=args.pdb1,
                             pdb_b=args.pdb2,
