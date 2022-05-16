@@ -56,7 +56,7 @@ class InterPred(torch.nn.Module):
     >>> interpred = InterPred(verbose=True)
     >>> out = interpred(cmap_a, cmap_b, interseq)
     mat_in: torch.Size([1, 44, 224, 224])
-    out_fcn: torch.Size([1, 512, 5, 5])
+    out_fcn: torch.Size([1, 512, 12, 12])
     out_dense: torch.Size([1, 10000])
     out: torch.Size([1, 85, 13])
     """
@@ -77,13 +77,13 @@ class InterPred(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=384, out_channels=512, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
+            # torch.nn.MaxPool2d(kernel_size=3, stride=2),
         ]
         self.fcn = torch.nn.Sequential(*layers)
         # Fully connected of AlexNet
         layers = [
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=12800, out_features=10000),
+            torch.nn.Linear(in_features=73728, out_features=10000),
             torch.nn.ReLU(),
             torch.nn.Dropout(p=0.5),
             torch.nn.Linear(in_features=10000, out_features=10000),
