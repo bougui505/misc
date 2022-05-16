@@ -80,11 +80,11 @@ def prepare_db(outpath, pdbpath=None, pdblist=None, num_workers=None, dobreak=np
                 cmap_a = torch.nn.functional.interpolate(cmap_a, size=224)
                 cmap_b = torch.nn.functional.interpolate(cmap_b, size=224)
                 interseq = torch.nn.functional.interpolate(interseq, size=224)
-                np.savez(f'{outdir}/{name}.cmap.npz',
-                         cmap_a=cmap_a,
-                         cmap_b=cmap_b,
-                         interseq=interseq,
-                         intercmap=intercmap)
+                np.savez_compressed(f'{outdir}/{name}.cmap.npz',
+                                    cmap_a=cmap_a,
+                                    cmap_b=cmap_b,
+                                    interseq=interseq,
+                                    intercmap=intercmap)
             step += 1
             if step >= dobreak:
                 break
