@@ -56,7 +56,7 @@ class InterPred(torch.nn.Module):
     >>> interpred = InterPred(verbose=True)
     >>> out = interpred(cmap_a, cmap_b, interseq)
     mat_in: torch.Size([1, 44, 224, 224])
-    out_fcn: torch.Size([1, 512, 12, 12])
+    out_fcn: torch.Size([1, 128, 54, 54])
     out_dense: torch.Size([1, 10000])
     out: torch.Size([1, 85, 13])
     """
