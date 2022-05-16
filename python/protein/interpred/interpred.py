@@ -86,7 +86,7 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
         msg = f'# Loading model: {modelfilename}'
         print(msg)
         log(msg)
-        interpred = load_model(modelfilename)
+        interpred = load_model(modelfilename).to(device)
         interpred.train()  # set model in train mode
     optimizer = torch.optim.Adam(interpred.parameters())
     if num_workers is None:
