@@ -481,3 +481,4 @@ python/protein/interpred/DB.log
 python/protein/interpred/data/1ycr.cmap.npz
 python/protein/interpred/models/interpred_20220513_094135.pth
 python/protein/interpred/models/interpred_20220513_103948.pth
+python/protein/interpred/models/interpred_20220516_145126.pt
