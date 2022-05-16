@@ -44,7 +44,7 @@ import os
 from misc.eta import ETA
 import copy
 import numpy as np
-from nnet import InterPred
+from unet import InterPred
 import DB
 
 
@@ -77,7 +77,7 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
     Uncomment the following to test it (about 20s runtime)
     >>> DB.prepare_db('.', pdblist=['data/1ycr.pdb'])
 
-    >>> learn(dbpath='.', print_each=1, nepoch=30, modelfilename='models/test.pth', batch_size=1)
+    >>> learn(dbpath='.', print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
