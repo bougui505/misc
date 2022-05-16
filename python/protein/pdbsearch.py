@@ -54,7 +54,12 @@ def __print_response__(r):
     print(json.dumps(pretty_json, indent=2))
 
 
-def structure(entry_id, url=URL, operator='relaxed_shape_match', verbose=False):
+def max_result(n):
+    params = {"request_options": {"paginate": {"start": 0, "rows": n}}}
+    return params
+
+
+def structure(entry_id, url=URL, operator='relaxed_shape_match', max_results=10, verbose=False):
     """
     Performs fast searches matching a global 3D shape of assemblies or chains of a given entry (identified by PDB ID), in either strict (strict_shape_match) or relaxed (relaxed_shape_match) modes, using a BioZernike descriptor strategy.
 
@@ -66,7 +71,7 @@ def structure(entry_id, url=URL, operator='relaxed_shape_match', verbose=False):
             "service": "structure",
             "parameters": {
                 "value": {
-                    "entry_id": "1CLL",
+                    "entry_id": entry_id,
                     "assembly_id": "1"
                 },
                 "operator": operator
@@ -74,6 +79,7 @@ def structure(entry_id, url=URL, operator='relaxed_shape_match', verbose=False):
         },
         "return_type": "entry"
     }
+    params.update(max_result(max_results))
     # See: https://github.com/sbliven/rcsbsearch/blob/c7f8cb7e9f26ed5c78af1688af972fd345de8978/rcsbsearch/search.py#L1024
     r = __make_request__(params, url=url)
     if verbose:
@@ -111,11 +117,16 @@ if __name__ == '__main__':
         help=
         'Performs fast searches matching a global 3D shape of assemblies or chains of a given entry (identified by PDB ID), in either strict (strict_shape_match) or relaxed (relaxed_shape_match) modes, using a BioZernike descriptor strategy.',
         action='store_true')
+    parser.add_argument('-n',
+                        '--max_results',
+                        help='maximum number of results to return (default=10)',
+                        type=int,
+                        default=10)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.structure:
-        r = structure(args.pdb, operator='relaxed_shape_match', verbose=True)
+        r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
