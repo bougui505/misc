@@ -70,14 +70,14 @@ class Filter(object):
         coords1 = cmd.get_coords(f'{self.mol} and polymer.protein and name CA and chain {chain1}')
         coords2 = cmd.get_coords(f'{self.mol} and polymer.protein and name CA and chain {chain2}')
         if coords1 is None or coords2 is None:
-            return False, None
+            return False, 0
         if coords1.ndim == 2 and coords2.ndim == 2:
             interdist = scidist.cdist(coords1, coords2)
             contacts = interdist < distance_thr
             ncontacts = contacts.sum()
             return contacts.any(), ncontacts
         else:
-            return False, None
+            return False, 0
 
     def checkseq(self):
         chains = cmd.get_chains(f'{self.mol} and polymer.protein')
