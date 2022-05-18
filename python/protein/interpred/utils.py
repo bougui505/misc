@@ -171,6 +171,31 @@ def encode_seq(seq):
     return onehot
 
 
+def get_cmap_seq(coords, seq, threshold=8.):
+    """
+    >>> coords, seq = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> cmap_seq = get_cmap_seq(coords, seq)
+    >>> cmap_seq.shape
+    torch.Size([1, 21, 85, 85])
+    >>> cmap_seq.sum(axis=1)
+    tensor([[[2., 2., 2.,  ..., 0., 0., 0.],
+             [2., 2., 2.,  ..., 0., 0., 0.],
+             [2., 2., 2.,  ..., 0., 0., 2.],
+             ...,
+             [0., 0., 0.,  ..., 2., 2., 2.],
+             [0., 0., 0.,  ..., 2., 2., 2.],
+             [0., 0., 2.,  ..., 2., 2., 2.]]])
+    """
+    interseq = get_inter_seq(seq, seq)
+    # interseq.shape: torch.Size([1, 42, 85, 85])
+    interseq = interseq[:, :21, ...] + interseq[:, 21:, ...]
+    # interseq.shape: torch.Size([1, 21, 85, 85])
+    cmap = get_cmap(coords, threshold)
+    # cmap.shape: torch.Size([1, 1, 85, 85])
+    cmap_seq = cmap * interseq
+    return cmap_seq
+
+
 def get_inter_seq(seq_a, seq_b):
     """
     >>> coords_a, seq_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
@@ -215,13 +240,13 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
-    # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
-    # ### ##################### ####
+    ### UNCOMMENT FOR LOGGING ####
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
