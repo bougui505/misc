@@ -56,7 +56,7 @@ class PDBdataset(torch.utils.data.Dataset):
 
     >>> # randomize must be set to True for real application. Just set to False for testing
 
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=False)
+    >>> dataset = PDBdataset('/media/bougui/scratch/dimerdb')
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> for i, batch in enumerate(dataloader):
@@ -64,28 +64,18 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     >>> print(len(batch))
     4
-    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (torch.Size([1, 1, 58, 3]), torch.Size([1, 1, 44, 3]), torch.Size([1, 42, 58, 44]), torch.Size([1, 1, 1, 58, 44])), (torch.Size([1, 1, 116, 3]), torch.Size([1, 1, 107, 3]), torch.Size([1, 42, 116, 107]), torch.Size([1, 1, 1, 116, 107])), (None, None, None, None)]
-
-    In the example above, None is returned for protein with 1 chain only
-
-    Try with randomize set to True
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', randomize=True)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4, collate_fn=collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> for i, batch in enumerate(dataloader):
-    ...     if i == 12:
-    ...         break
-    >>> print(len(batch))
-    4
+    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
+    [(torch.Size([1, 21, 21, 21]), torch.Size([1, 21, 28, 28]), torch.Size([1, 1, 21, 28])), (torch.Size([1, 21, 245, 245]), torch.Size([1, 21, 242, 242]), torch.Size([1, 1, 245, 242])), (torch.Size([1, 21, 28, 28]), torch.Size([1, 21, 28, 28]), torch.Size([1, 1, 28, 28])), (torch.Size([1, 21, 188, 188]), torch.Size([1, 21, 188, 188]), torch.Size([1, 1, 188, 188]))]
 
     Try with a list of PDBs:
     >>> dataset = PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> for batch in dataloader:
     ...     pass
-    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(torch.Size([1, 1, 85, 3]), torch.Size([1, 1, 13, 3]), torch.Size([1, 42, 85, 13]), torch.Size([1, 1, 1, 85, 13]))]
+    >>> print(len(batch))
+    1
+    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
+    [(torch.Size([1, 21, 85, 85]), torch.Size([1, 21, 13, 13]), torch.Size([1, 1, 85, 13]))]
     """
     def __init__(self,
                  pdbpath=None,
@@ -114,67 +104,33 @@ class PDBdataset(torch.utils.data.Dataset):
         cmd.alter(pymolname, "alt=''")
         ######################################################################################
         coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
-        if coords_a is not None:
-            assert len(
-                seq_a) == coords_a.shape[2], f'seq_a is not of same length as coords_a ({len(seq_a)}, {coords_a.shape})'
-            assert len(
-                seq_b) == coords_b.shape[2], f'seq_b is not of same length as coords_b ({len(seq_b)}, {coords_b.shape})'
         cmd.delete(pymolname)
-        if seq_a is not None:
-            interseq = utils.get_inter_seq(seq_a, seq_b)
-        else:
-            interseq = None
+        log(f'coords_a.shape: {coords_a.shape}')
+        cmap_seq_a = utils.get_cmap_seq(coords_a[None, ...], seq_a)
+        cmap_seq_b = utils.get_cmap_seq(coords_b[None, ...], seq_b)
         if self.return_name:
-            return coords_a, coords_b, interseq, cmap, pdbfile
+            return cmap_seq_a, cmap_seq_b, cmap, pdbfile
         else:
-            return coords_a, coords_b, interseq, cmap
+            return cmap_seq_a, cmap_seq_b, cmap
 
 
 def get_dimer(pymolname, selection, randomize=True):
-    chains = cmd.get_chains(pymolname)
-    if len(chains) <= 1:
-        return None, None, None, None, None
+    chains = cmd.get_chains(f'{pymolname} and {selection}')
+    nchains = len(chains)
+    log(f'nchains: {nchains}')
+    assert nchains == 2, f'The number of chains ({nchains}) is not 2'
     chain_coords = []
     chain_seqs = []
     for chain in chains:
         chain_coords.append(cmd.get_coords(selection=f'{pymolname} and {selection} and chain {chain}'))
         chain_seqs.append(utils.get_seq(pymolname, selection=f'{selection} and chain {chain}'))
-    sel = [i for i, e in enumerate(chain_coords) if e is not None and len(e) > 8]
-    chain_coords = [chain_coords[i] for i in sel]
-    chain_seqs = [chain_seqs[i] for i in sel]
-    nchains = len(chain_coords)
-    # Cannot train on chain length larger than 1000:
-    chainlengths = [len(e) for e in chain_coords]
-    if len(chainlengths) == 0:
-        return None, None, None, None, None
-    if max(chainlengths) > 1000:
-        return None, None, None, None, None
     log(f'nchains: {nchains}')
     log(f'chain_coords: {[len(e) for e in chain_coords]}')
     log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
-    if nchains <= 1:
-        return None, None, None, None, None
-    if randomize:
-        order = np.random.choice(nchains, size=nchains, replace=False)
-        chain_coords = [chain_coords[i] for i in order]
-        chain_seqs = [chain_seqs[i] for i in order]
-    dobreak = False
-    for i in range(nchains - 1):
-        A = torch.tensor(chain_coords[i][None, None, ...])
-        seq_A = chain_seqs[i]
-        for j in range(i + 1, nchains):
-            B = torch.tensor(chain_coords[j][None, None, ...])
-            seq_B = chain_seqs[j]
-            cmap = utils.get_inter_cmap(A, B)
-            if cmap.sum() > 0:
-                dobreak = True
-                break
-        if dobreak:
-            break
-    if cmap.sum() > 0:
-        return A, B, cmap, seq_A, seq_B
-    else:
-        return None, None, None, None, None
+    A, B = [torch.Tensor(c) for c in chain_coords]
+    seq_A, seq_B = chain_seqs
+    cmap = utils.get_inter_cmap(A[None, ...], B[None, ...])
+    return A, B, cmap, seq_A, seq_B
 
 
 def log(msg):

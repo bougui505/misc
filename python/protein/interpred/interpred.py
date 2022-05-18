@@ -48,22 +48,13 @@ from unet import InterPred
 import DB
 
 
-def get_input_mats(coords_a, coords_b):
-    cmap_a = utils.get_cmap(coords_a)
-    cmap_b = utils.get_cmap(coords_b)
-    # maxab = max(dmat_a.max(), dmat_b.max())
-    # dmat_a = dmat_a / maxab
-    # dmat_b = dmat_b / maxab
-    return cmap_a, cmap_b
-
-
 def save_model(interpred, filename):
     torch.save(interpred.state_dict(), filename)
 
 
 def load_model(filename):
     """
-    >>> interpred = load_model('models/test.pth')
+    # >>> interpred = load_model('models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     interpred = InterPred()
@@ -72,16 +63,20 @@ def load_model(filename):
     return interpred
 
 
-def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100, modelfilename='models/interpred.pth'):
+def learn(dbpath=None,
+          pdblist=None,
+          nepoch=10,
+          batch_size=4,
+          num_workers=None,
+          print_each=100,
+          modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> DB.prepare_db('.', pdblist=['data/1ycr.pdb'])
-
-    >>> learn(dbpath='.', print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
-        interpred = InterPred(interpolate=False).to(device)
+        interpred = InterPred().to(device)
     else:
         msg = f'# Loading model: {modelfilename}'
         print(msg)
@@ -92,12 +87,12 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
     if num_workers is None:
         num_workers = os.cpu_count()
     save_model(interpred, modelfilename)
-    dataset = DB.CmapDataset(dbpath)
+    dataset = PDBloader.PDBdataset(pdbpath=dbpath, pdblist=pdblist)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=True,
                                              num_workers=num_workers,
-                                             collate_fn=DB.collate_fn)
+                                             collate_fn=PDBloader.collate_fn)
     dataiter = iter(dataloader)
     epoch = 0
     step = 0
@@ -106,18 +101,15 @@ def learn(dbpath=None, nepoch=10, batch_size=4, num_workers=None, print_each=100
         try:
             batch = next(dataiter)
             step += 1
-            cmap_a, cmap_b, interseq, intercmap = batch
-            cmap_a, cmap_b, interseq = todevice(cmap_a, cmap_b, interseq, device=device)
-            intercmap = todevice(*intercmap, device=device)
-            out = interpred(cmap_a, cmap_b, interseq)
+            out, targets = forward_batch(batch, interpred, device=device)
             # zero the parameter gradients
             optimizer.zero_grad()
-            loss = get_loss(out, intercmap, interpolate=True)
+            loss = get_loss(out, targets)
             loss.backward()
             optimizer.step()
             if not step % print_each:
                 eta_val = eta(step)
-                ncf = get_native_contact_fraction(out, intercmap, interpolate=True)
+                ncf = get_native_contact_fraction(out, targets)
                 log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
@@ -132,105 +124,110 @@ def todevice(*args, device):
     return out
 
 
-def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
-    """
-    >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
-    >>> intercmap.shape
-    (85, 13)
-    >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-    >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> target = utils.get_inter_cmap(coords_a, coords_b)
-    >>> target = torch.squeeze(target.detach().cpu()).numpy()
-    >>> target.shape
-    (85, 13)
-    >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.1103)
-
-    >>> fig, axs = plt.subplots(1, 2)
-    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
-    >>> _ = axs[0].set_title('Prediction')
-    >>> _ = axs[1].matshow(target, cmap='Greys')
-    >>> _ = axs[1].set_title('Ground truth')
-    >>> # plt.colorbar()
-    >>> plt.show()
-    """
-    if modelfilename is not None:
-        interpred = load_model(modelfilename)
-    interpred.eval()
-    coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
-    coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
-    interseq = utils.get_inter_seq(seq_a, seq_b)
-    cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
-    intercmap = torch.squeeze(interpred(cmap_a, cmap_b, interseq))
-    # mask = get_mask(intercmap)
-    intercmap = intercmap.detach().cpu().numpy()
-    # intercmap = np.ma.masked_array(intercmap, mask)
-    return intercmap
+# def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
+#     """
+#     >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
+#     >>> intercmap.shape
+#     (85, 13)
+#     >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+#     >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+#     >>> target = utils.get_inter_cmap(coords_a, coords_b)
+#     >>> target = torch.squeeze(target.detach().cpu()).numpy()
+#     >>> target.shape
+#     (85, 13)
+#     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+#     tensor(0.1103)
+#
+#     >>> fig, axs = plt.subplots(1, 2)
+#     >>> _ = axs[0].matshow(intercmap, cmap='Greys')
+#     >>> _ = axs[0].set_title('Prediction')
+#     >>> _ = axs[1].matshow(target, cmap='Greys')
+#     >>> _ = axs[1].set_title('Ground truth')
+#     >>> # plt.colorbar()
+#     >>> plt.show()
+#     """
+#     if modelfilename is not None:
+#         interpred = load_model(modelfilename)
+#     interpred.eval()
+#     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
+#     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
+#     interseq = utils.get_inter_seq(seq_a, seq_b)
+#     cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
+#     intercmap = torch.squeeze(interpred(cmap_a, cmap_b, interseq))
+#     # mask = get_mask(intercmap)
+#     intercmap = intercmap.detach().cpu().numpy()
+#     # intercmap = np.ma.masked_array(intercmap, mask)
+#     return intercmap
 
 
 def forward_batch(batch, interpred, device='cpu'):
     """
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = next(dataiter)
-    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
-    >>> interpred = InterPred()
-    >>> out, targets = forward_batch(batch, interpred)
-    >>> len(out)
-    2
-    >>> [e.shape for e in out]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> [e.shape for e in targets]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
+    # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
+    # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    # >>> dataiter = iter(dataloader)
+    # >>> batch = next(dataiter)
+    # >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
+    # [(torch.Size([1, 21, 639, 639]), torch.Size([1, 21, 639, 639]), torch.Size([1, 1, 639, 639])), (torch.Size([1, 21, 339, 339]), torch.Size([1, 21, 339, 339]), torch.Size([1, 1, 339, 339]))]
+    # >>> interpred = InterPred()
+    # >>> out, targets = forward_batch(batch, interpred)
+    # >>> len(out)
+    # 2
+    # >>> [e.shape for e in out]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
+    # >>> [e.shape for e in targets]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
     """
     out = []
     targets = []
     for data in batch:
-        coords_a, coords_b, interseq, cmap = data
-        if coords_a is not None:
-            coords_a = coords_a.to(device)
-            coords_b = coords_b.to(device)
-            interseq = interseq.to(device)
-            cmap = cmap.to(device)
-            coords_a = coords_a[0]  # Remove the extra dimension not required
-            coords_b = coords_b[0]
-            cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
-            intercmap = interpred(cmap_a, cmap_b, interseq)
-            out.append(intercmap)
-            targets.append(cmap[0, 0, ...])
+        cmap_a, cmap_b, cmap = data
+        cmap_a = cmap_a.to(device)
+        cmap_b = cmap_b.to(device)
+        cmap = cmap.to(device)
+        # Forward ab and ba
+        intercmap_ab = interpred(cmap_a, cmap_b)
+        intercmap_ba = interpred(cmap_b, cmap_a)
+        # and keep the order with the minimal loss
+        loss_ab = get_loss(intercmap_ab, cmap[0, ...])
+        loss_ba = get_loss(intercmap_ba, cmap[0, 0, ...].T[None, ...])
+        if loss_ab <= loss_ba:
+            out.append(intercmap_ab)
+            targets.append(cmap[0, ...])
+        else:
+            out.append(intercmap_ba)
+            targets.append(cmap[0, 0, ...].T[None, ...])
     return out, targets
 
 
-def get_loss(out_batch, targets, reweight=True, interpolate=False):
+def get_loss(out_batch, targets, reweight=True):
     """
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = next(dataiter)
-    >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
-    >>> interpred = InterPred()
+    # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
+    # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    # >>> dataiter = iter(dataloader)
+    # >>> batch = next(dataiter)
+    # >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
+    # [(torch.Size([1, 21, 639, 639]), torch.Size([1, 21, 639, 639]), torch.Size([1, 1, 639, 639])), (torch.Size([1, 21, 339, 339]), torch.Size([1, 21, 339, 339]), torch.Size([1, 1, 339, 339]))]
+    # >>> interpred = InterPred()
 
-    >>> out_batch, targets = forward_batch(batch, interpred)
-    >>> len(out_batch)
-    2
-    >>> [e.shape for e in out_batch]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> [e.shape for e in targets]
-    [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    >>> loss = get_loss(out_batch, targets)
-    >>> loss
-    tensor(..., grad_fn=<DivBackward0>)
+    # >>> out_batch, targets = forward_batch(batch, interpred)
+    # >>> len(out_batch)
+    # 2
+    # >>> [e.shape for e in out_batch]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
+    # >>> [e.shape for e in targets]
+    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
+    # >>> loss = get_loss(out_batch, targets)
+    # >>> loss
+    # tensor(..., grad_fn=<DivBackward0>)
+    # >>> ncf = get_native_contact_fraction(out_batch, targets)
+    # >>> ncf
+    # tensor(...)
     """
     n = len(targets)
     loss = 0.
     for i in range(n):
         inp = out_batch[i].float()
         target = targets[i].float()
-        if interpolate:
-            inp = interpolate_intercmap(inp, target)
         if reweight:
             mask = get_mask(target)
             loss_on = torch.nn.functional.binary_cross_entropy(inp[~mask][None, ...],
@@ -248,37 +245,14 @@ def get_loss(out_batch, targets, reweight=True, interpolate=False):
     return loss
 
 
-def interpolate_intercmap(inp, target):
-    _, na, nb = target.shape
-    out = torch.nn.functional.interpolate(inp[None, None, ...], size=(na, nb))
-    return out[0]
-
-
 def get_mask(intercmap):
     mask = intercmap == 0
     return mask
 
 
-def get_native_contact_fraction(out_batch, targets, interpolate=False):
+def get_native_contact_fraction(out_batch, targets):
     """
-    # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', randomize=False)
-    # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    # >>> dataiter = iter(dataloader)
-    # >>> batch = next(dataiter)
-    # >>> [(A.shape, B.shape, interseq.shape, cmap.shape) if A is not None else (A, B, interseq, cmap) for A, B, interseq, cmap in batch]
-    # [(None, None, None, None), (torch.Size([1, 1, 639, 3]), torch.Size([1, 1, 639, 3]), torch.Size([1, 42, 639, 639]), torch.Size([1, 1, 1, 639, 639])), (torch.Size([1, 1, 390, 3]), torch.Size([1, 1, 390, 3]), torch.Size([1, 42, 390, 390]), torch.Size([1, 1, 1, 390, 390])), (None, None, None, None)]
-    # >>> interpred = InterPred()
-
-    # >>> out_batch, targets = forward_batch(batch, interpred)
-    # >>> len(out_batch)
-    # 2
-    # >>> [e.shape for e in out_batch]
-    # [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    # >>> [e.shape for e in targets]
-    # [torch.Size([1, 639, 639]), torch.Size([1, 390, 390])]
-    # >>> ncf = get_native_contact_fraction(out_batch, targets)
-    # >>> ncf
-    # tensor(...)
+    See get_loss docstring
     """
     n = len(out_batch)
     ncf = 0.  # Native Contacts Fraction
@@ -286,8 +260,6 @@ def get_native_contact_fraction(out_batch, targets, interpolate=False):
         for i in range(n):
             inp = out_batch[i].float()
             target = targets[i].float()
-            if interpolate:
-                inp = interpolate_intercmap(inp, target)
             sel_contact = (target == 1)
             sel_nocontact = (target == 0)
             r_contact = (sel_contact.sum() - abs(inp[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()

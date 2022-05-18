@@ -39,11 +39,71 @@
 import torch
 import torch.nn as nn
 import utils
+import numpy as np
 
 
 def double_conv(in_channels, out_channels):
     return nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1), nn.ReLU(inplace=True),
                          nn.Conv2d(out_channels, out_channels, 3, padding=1), nn.ReLU(inplace=True))
+
+
+class UNet(nn.Module):
+    """
+    >>> coords_A, seq_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> coords_A.shape
+    torch.Size([1, 85, 3])
+    >>> cmap_seq_a = utils.get_cmap_seq(coords_A, seq_a)
+    >>> cmap_seq_a.shape
+    torch.Size([1, 21, 85, 85])
+    >>> unet = UNet(n_class=128)
+    >>> out = unet(cmap_seq_a)
+    >>> out.shape
+    torch.Size([1, 128, 85, 85])
+
+    # with the smallest input matrix:
+    >>> cmap_seq_a = torch.ones((1, 21, 2, 2))
+    >>> unet = UNet(n_class=128)
+    >>> out = unet(cmap_seq_a)
+    >>> out.shape
+    torch.Size([1, 128, 2, 2])
+    """
+    def __init__(self, n_class=1):
+        super().__init__()
+        self.dconv_down1 = double_conv(21, 64)
+        self.dconv_down2 = double_conv(64, 128)
+        self.dconv_down3 = double_conv(128, 256)
+        self.dconv_down4 = double_conv(256, 512)
+        self.maxpool = nn.MaxPool2d(2)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.dconv_up3 = double_conv(256 + 512, 256)
+        self.dconv_up2 = double_conv(128 + 256, 128)
+        self.dconv_up1 = double_conv(128 + 64, 64)
+        self.conv_last = nn.Conv2d(64, n_class, 1)
+
+    def forward(self, mat_a):
+        batch_size, nchannels, na, na = mat_a.shape
+        x = pad2n(mat_a)
+        conv1 = self.dconv_down1(x)
+        x = self.maxpool(conv1)
+        conv2 = self.dconv_down2(x)
+        x = self.maxpool(conv2)
+        conv3 = self.dconv_down3(x)
+        x = self.maxpool(conv3)
+        x = self.dconv_down4(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv3], dim=1)
+        x = self.dconv_up3(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv2], dim=1)
+        x = self.dconv_up2(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv1], dim=1)
+        x = self.dconv_up1(x)
+        out = self.conv_last(x)
+        # out = torch.sigmoid(out)
+        out = unpad(out, na)
+        # out = out[:, 0, ...]
+        return out
 
 
 class InterPred(nn.Module):
@@ -54,72 +114,57 @@ class InterPred(nn.Module):
     >>> coords_B, seq_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
     >>> coords_B.shape
     torch.Size([1, 13, 3])
-    >>> interseq = utils.get_inter_seq(seq_a, seq_b)
-    >>> interseq.shape
-    torch.Size([1, 42, 85, 13])
-    >>> cmap_a, cmap_b = interpred.get_input_mats(coords_A, coords_B)
+    >>> cmap_seq_a = utils.get_cmap_seq(coords_A, seq_a)
+    >>> cmap_seq_a.shape
+    torch.Size([1, 21, 85, 85])
+    >>> cmap_seq_b = utils.get_cmap_seq(coords_B, seq_b)
+    >>> cmap_seq_b.shape
+    torch.Size([1, 21, 13, 13])
     >>> interpred = InterPred()
-    >>> out = interpred(cmap_a, cmap_b, interseq)
+    >>> out = interpred(cmap_seq_a, cmap_seq_b)
     >>> out.shape
     torch.Size([1, 85, 13])
     """
-    def __init__(self, n_class=1, interpolate=True):
+    def __init__(self, n_class=128):
         super().__init__()
-        self.interpolate = interpolate
-        self.dconv_down1 = double_conv(44, 64)
-        self.dconv_down2 = double_conv(64, 128)
-        self.dconv_down3 = double_conv(128, 256)
-        self.dconv_down4 = double_conv(256, 512)
+        self.unet_a = UNet(n_class=n_class)
+        self.unet_b = UNet(n_class=n_class)
 
-        self.maxpool = nn.MaxPool2d(2)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
-        self.dconv_up3 = double_conv(256 + 512, 256)
-        self.dconv_up2 = double_conv(128 + 256, 128)
-        self.dconv_up1 = double_conv(128 + 64, 64)
-
-        self.conv_last = nn.Conv2d(64, n_class, 1)
-
-    def forward(self, mat_a, mat_b, interseq):
-        batch_size, nchannels, na, na = mat_a.shape
-        batch_size, nchannels, nb, nb = mat_b.shape
-        if self.interpolate:
-            mat_a = torch.nn.functional.interpolate(mat_a, size=224)
-            mat_b = torch.nn.functional.interpolate(mat_b, size=224)
-            interseq = torch.nn.functional.interpolate(interseq, size=224)
-        x = torch.cat((mat_a, mat_b, interseq), dim=1)
-        conv1 = self.dconv_down1(x)
-        x = self.maxpool(conv1)
-
-        conv2 = self.dconv_down2(x)
-        x = self.maxpool(conv2)
-
-        conv3 = self.dconv_down3(x)
-        x = self.maxpool(conv3)
-
-        x = self.dconv_down4(x)
-
-        x = self.upsample(x)
-        x = torch.cat([x, conv3], dim=1)
-
-        x = self.dconv_up3(x)
-        x = self.upsample(x)
-        x = torch.cat([x, conv2], dim=1)
-
-        x = self.dconv_up2(x)
-        x = self.upsample(x)
-        x = torch.cat([x, conv1], dim=1)
-
-        x = self.dconv_up1(x)
-
-        out = self.conv_last(x)
+    def forward(self, mat_a, mat_b):
+        out_a = self.unet_a(mat_a)
+        out_b = self.unet_a(mat_b)
+        # log(f'out_a.shape: {out_a.shape}')
+        # torch.Size([1, 128, 85, 85])
+        # log(f'out_b.shape: {out_b.shape}')
+        # torch.Size([1, 128, 13, 13])
+        out_a = out_a.mean(axis=-1)
+        out_b = out_b.mean(axis=-1)
+        out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         out = torch.sigmoid(out)
-
-        if self.interpolate:
-            out = torch.nn.functional.interpolate(out, size=(na, nb))
-        out = out[:, 0, ...]
-
         return out
+
+
+def pad2n(x, minsize=8):
+    """
+    >>> x = torch.ones((1, 21, 85, 85))
+    >>> out = pad2n(x)
+    >>> out.shape
+    torch.Size([1, 21, 128, 128])
+    """
+    batch, nchannels, n, n = x.shape
+    expval = np.ceil(np.log(n) / np.log(2))
+    targetsize = max(2**(expval), minsize)
+    padlen = int(targetsize - n)
+    if padlen > 0:
+        x = torch.nn.functional.pad(x, (0, padlen, 0, padlen))
+    return x
+
+
+def unpad(x, n):
+    """
+    >>> x = torch.ones((1, 21, 128, 128))
+    """
+    return x[..., :n, :n]
 
 
 def log(msg):
@@ -133,13 +178,13 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
-    import interpred
+    # import interpred
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')

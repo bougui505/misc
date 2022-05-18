@@ -174,6 +174,8 @@ def encode_seq(seq):
 def get_cmap_seq(coords, seq, threshold=8.):
     """
     >>> coords, seq = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
+    >>> coords.shape
+    torch.Size([1, 85, 3])
     >>> cmap_seq = get_cmap_seq(coords, seq)
     >>> cmap_seq.shape
     torch.Size([1, 21, 85, 85])
