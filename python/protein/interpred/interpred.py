@@ -72,7 +72,7 @@ def learn(dbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=160, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
@@ -185,15 +185,18 @@ def forward_batch(batch, interpred, device='cpu'):
         cmap_b = cmap_b.to(device)
         cmap = cmap.to(device)
         # Forward ab and ba
-        intercmap_ab = interpred(cmap_a, cmap_b)
-        intercmap_ba = interpred(cmap_b, cmap_a)
+        with torch.no_grad():
+            intercmap_ab = interpred(cmap_a, cmap_b)
+            intercmap_ba = interpred(cmap_b, cmap_a)
         # and keep the order with the minimal loss
         loss_ab = get_loss(intercmap_ab, cmap[0, ...])
         loss_ba = get_loss(intercmap_ba, cmap[0, 0, ...].T[None, ...])
         if loss_ab <= loss_ba:
+            intercmap_ab = interpred(cmap_a, cmap_b)
             out.append(intercmap_ab)
             targets.append(cmap[0, ...])
         else:
+            intercmap_ba = interpred(cmap_b, cmap_a)
             out.append(intercmap_ba)
             targets.append(cmap[0, 0, ...].T[None, ...])
     return out, targets
