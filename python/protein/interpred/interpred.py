@@ -72,7 +72,7 @@ def learn(dbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
+    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=80, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
@@ -124,40 +124,40 @@ def todevice(*args, device):
     return out
 
 
-# def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
-#     """
-#     >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
-#     >>> intercmap.shape
-#     (85, 13)
-#     >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-#     >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-#     >>> target = utils.get_inter_cmap(coords_a, coords_b)
-#     >>> target = torch.squeeze(target.detach().cpu()).numpy()
-#     >>> target.shape
-#     (85, 13)
-#     >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-#     tensor(0.1103)
-#
-#     >>> fig, axs = plt.subplots(1, 2)
-#     >>> _ = axs[0].matshow(intercmap, cmap='Greys')
-#     >>> _ = axs[0].set_title('Prediction')
-#     >>> _ = axs[1].matshow(target, cmap='Greys')
-#     >>> _ = axs[1].set_title('Ground truth')
-#     >>> # plt.colorbar()
-#     >>> plt.show()
-#     """
-#     if modelfilename is not None:
-#         interpred = load_model(modelfilename)
-#     interpred.eval()
-#     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
-#     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
-#     interseq = utils.get_inter_seq(seq_a, seq_b)
-#     cmap_a, cmap_b = get_input_mats(coords_a, coords_b)
-#     intercmap = torch.squeeze(interpred(cmap_a, cmap_b, interseq))
-#     # mask = get_mask(intercmap)
-#     intercmap = intercmap.detach().cpu().numpy()
-#     # intercmap = np.ma.masked_array(intercmap, mask)
-#     return intercmap
+def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
+    """
+    >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
+    >>> intercmap.shape
+    (85, 13)
+    >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> target = utils.get_inter_cmap(coords_a, coords_b)
+    >>> target = torch.squeeze(target.detach().cpu()).numpy()
+    >>> target.shape
+    (85, 13)
+    >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
+    tensor(0.1103)
+
+    >>> fig, axs = plt.subplots(1, 2)
+    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
+    >>> _ = axs[0].set_title('Prediction')
+    >>> _ = axs[1].matshow(target, cmap='Greys')
+    >>> _ = axs[1].set_title('Ground truth')
+    >>> # plt.colorbar()
+    >>> plt.show()
+    """
+    if modelfilename is not None:
+        interpred = load_model(modelfilename)
+    interpred.eval()
+    coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
+    coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
+    cmap_a = utils.get_cmap_seq(coords_a, seq_a)
+    cmap_b = utils.get_cmap_seq(coords_b, seq_b)
+    intercmap = torch.squeeze(interpred(cmap_a, cmap_b))
+    # mask = get_mask(intercmap)
+    intercmap = intercmap.detach().cpu().numpy()
+    # intercmap = np.ma.masked_array(intercmap, mask)
+    return intercmap
 
 
 def forward_batch(batch, interpred, device='cpu'):
