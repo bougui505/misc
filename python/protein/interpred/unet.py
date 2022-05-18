@@ -132,7 +132,7 @@ class InterPred(nn.Module):
 
     def forward(self, mat_a, mat_b):
         out_a = self.unet_a(mat_a)
-        out_b = self.unet_a(mat_b)
+        out_b = self.unet_b(mat_b)
         # log(f'out_a.shape: {out_a.shape}')
         # torch.Size([1, 128, 85, 85])
         # log(f'out_b.shape: {out_b.shape}')
