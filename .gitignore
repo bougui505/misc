@@ -483,3 +483,4 @@ python/protein/interpred/models/interpred_20220513_094135.pth
 python/protein/interpred/models/interpred_20220513_103948.pth
 python/protein/interpred/models/interpred_20220516_145126.pt
 python/protein/interpred/utils.log
+python/protein/interpred/unet.log
