@@ -153,7 +153,14 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
     cmap_a = utils.get_cmap_seq(coords_a, seq_a)
     cmap_b = utils.get_cmap_seq(coords_b, seq_b)
-    intercmap = torch.squeeze(interpred(cmap_a, cmap_b))
+    intercmap_ab = torch.squeeze(interpred(cmap_a, cmap_b))
+    p_ab = intercmap_ab.sum()
+    intercmap_ba = torch.squeeze(interpred(cmap_b, cmap_a))
+    p_ba = intercmap_ba.sum()
+    if p_ab >= p_ba:
+        intercmap = intercmap_ab
+    else:
+        intercmap = intercmap_ba.T
     # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
     # intercmap = np.ma.masked_array(intercmap, mask)
