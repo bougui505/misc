@@ -82,6 +82,23 @@ def get_inter_dmat(coords_a, coords_b):
     return dmat
 
 
+def get_interpred(out_a, out_b):
+    """
+    >>> out_a = torch.ones(1, 64, 83)
+    >>> out_b = torch.ones(1, 64, 78)
+    >>> out = get_interpred(out_a, out_b)
+    >>> out.shape
+    torch.Size([1, 83, 78])
+    >>> out.min()
+    tensor(1.)
+    >>> out.max()
+    tensor(1.)
+    """
+    n_class = out_a.shape[1]
+    out = torch.einsum('ijk,lmn->ikn', out_a, out_b) / n_class**2
+    return out
+
+
 def get_inter_cmap(coords_a, coords_b, threshold=8.):
     """
     >>> coords_a = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')

@@ -72,14 +72,14 @@ def learn(dbpath=None,
           modelfilename='models/interpred.pth'):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=160, modelfilename='models/test.pth', batch_size=1)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=200, modelfilename='models/test.pth', batch_size=1)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
         interpred = InterPred().to(device)
     else:
         msg = f'# Loading model: {modelfilename}'
-        print(msg)
+        # print(msg)
         log(msg)
         interpred = load_model(modelfilename).to(device)
         interpred.train()  # set model in train mode
@@ -135,8 +135,6 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> target = torch.squeeze(target.detach().cpu()).numpy()
     >>> target.shape
     (85, 13)
-    >>> get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-    tensor(0.1103)
 
     >>> fig, axs = plt.subplots(1, 2)
     >>> _ = axs[0].matshow(intercmap, cmap='Greys')
@@ -153,14 +151,8 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
     cmap_a = utils.get_cmap_seq(coords_a, seq_a)
     cmap_b = utils.get_cmap_seq(coords_b, seq_b)
-    intercmap_ab = torch.squeeze(interpred(cmap_a, cmap_b))
-    p_ab = intercmap_ab.sum()
-    intercmap_ba = torch.squeeze(interpred(cmap_b, cmap_a))
-    p_ba = intercmap_ba.sum()
-    if p_ab >= p_ba:
-        intercmap = intercmap_ab
-    else:
-        intercmap = intercmap_ba.T
+    out_a, out_b = interpred(cmap_a, cmap_b)
+    intercmap = torch.squeeze(utils.get_interpred(out_a, out_b))
     # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
     # intercmap = np.ma.masked_array(intercmap, mask)
@@ -173,14 +165,16 @@ def forward_batch(batch, interpred, device='cpu'):
     # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
     # >>> dataiter = iter(dataloader)
     # >>> batch = next(dataiter)
+    # >>> len(batch)
+    # 2
     # >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
     # [(torch.Size([1, 21, 639, 639]), torch.Size([1, 21, 639, 639]), torch.Size([1, 1, 639, 639])), (torch.Size([1, 21, 339, 339]), torch.Size([1, 21, 339, 339]), torch.Size([1, 1, 339, 339]))]
     # >>> interpred = InterPred()
     # >>> out, targets = forward_batch(batch, interpred)
     # >>> len(out)
     # 2
-    # >>> [e.shape for e in out]
-    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
+    # >>> [(out_a.shape, out_b.shape) for (out_a, out_b) in out]
+    # [(torch.Size([1, 1, 639]), torch.Size([1, 1, 639])), (torch.Size([1, 1, 339]), torch.Size([1, 1, 339]))]
     # >>> [e.shape for e in targets]
     # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
     """
@@ -191,66 +185,56 @@ def forward_batch(batch, interpred, device='cpu'):
         cmap_a = cmap_a.to(device)
         cmap_b = cmap_b.to(device)
         cmap = cmap.to(device)
-        # Forward ab and ba
-        with torch.no_grad():
-            intercmap_ab = interpred(cmap_a, cmap_b)
-            intercmap_ba = interpred(cmap_b, cmap_a)
-        # and keep the order with the minimal loss
-        loss_ab = get_loss(intercmap_ab, cmap[0, ...])
-        loss_ba = get_loss(intercmap_ba, cmap[0, 0, ...].T[None, ...])
-        if loss_ab <= loss_ba:
-            intercmap_ab = interpred(cmap_a, cmap_b)
-            out.append(intercmap_ab)
-            targets.append(cmap[0, ...])
-        else:
-            intercmap_ba = interpred(cmap_b, cmap_a)
-            out.append(intercmap_ba)
-            targets.append(cmap[0, 0, ...].T[None, ...])
+        out_a, out_b = interpred(cmap_a, cmap_b)
+        out.append((out_a, out_b))
+        targets.append(cmap[0, ...])
     return out, targets
 
 
 def get_loss(out_batch, targets, reweight=True):
     """
     # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
-    # >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    # >>> dataiter = iter(dataloader)
-    # >>> batch = next(dataiter)
-    # >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
-    # [(torch.Size([1, 21, 639, 639]), torch.Size([1, 21, 639, 639]), torch.Size([1, 1, 639, 639])), (torch.Size([1, 21, 339, 339]), torch.Size([1, 21, 339, 339]), torch.Size([1, 1, 339, 339]))]
-    # >>> interpred = InterPred()
+    >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> len(batch)
+    1
+    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
+    [(torch.Size([1, 21, 85, 85]), torch.Size([1, 21, 13, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> interpred = InterPred()
+    >>> out, targets = forward_batch(batch, interpred)
+    >>> len(out)
+    1
+    >>> [(out_a.shape, out_b.shape) for (out_a, out_b) in out]
+    [(torch.Size([1, 1, 85]), torch.Size([1, 1, 13]))]
+    >>> [e.shape for e in targets]
+    [torch.Size([1, 85, 13])]
 
-    # >>> out_batch, targets = forward_batch(batch, interpred)
-    # >>> len(out_batch)
-    # 2
-    # >>> [e.shape for e in out_batch]
-    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
-    # >>> [e.shape for e in targets]
-    # [torch.Size([1, 639, 639]), torch.Size([1, 339, 339])]
-    # >>> loss = get_loss(out_batch, targets)
-    # >>> loss
-    # tensor(..., grad_fn=<DivBackward0>)
-    # >>> ncf = get_native_contact_fraction(out_batch, targets)
-    # >>> ncf
-    # tensor(...)
+    >>> loss = get_loss(out, targets)
+    >>> loss
+    tensor(..., grad_fn=<DivBackward0>)
+
+    >>> ncf = get_native_contact_fraction(out, targets)
+    >>> ncf
+    tensor(...)
     """
     n = len(targets)
     loss = 0.
     for i in range(n):
-        inp = out_batch[i].float()
+        out_a, out_b = out_batch[i]
+        out_a, out_b = out_a.float(), out_b.float()
         target = targets[i].float()
-        if reweight:
-            mask = get_mask(target)
-            loss_on = torch.nn.functional.binary_cross_entropy(inp[~mask][None, ...],
-                                                               target[~mask][None, ...],
-                                                               reduction='mean')
-            loss_off = torch.nn.functional.binary_cross_entropy(inp[mask][None, ...],
-                                                                target[mask][None, ...],
-                                                                reduction='mean')
-            w_on = 1.
-            w_off = 1.
-            loss += (w_on * loss_on + w_off * loss_off) / (w_on + w_off)
-        else:
-            loss = torch.nn.functional.binary_cross_entropy(inp, target, reduction='mean')
+        loss_a = torch.nn.functional.binary_cross_entropy(out_a.max(axis=1).values,
+                                                          target.max(axis=-1).values,
+                                                          reduction='mean')
+        loss_b = torch.nn.functional.binary_cross_entropy(out_b.max(axis=1).values,
+                                                          target.max(axis=-2).values,
+                                                          reduction='mean')
+        # intercmap_pred = utils.get_interpred(out_a, out_b)
+        # loss_ab = torch.nn.functional.binary_cross_entropy(intercmap_pred, target, reduction='mean')
+        # loss += (loss_a + loss_b + loss_ab) / 3.
+        loss += (loss_a + loss_b) / 2.
     loss = loss / n
     return loss
 
@@ -268,13 +252,16 @@ def get_native_contact_fraction(out_batch, targets):
     ncf = 0.  # Native Contacts Fraction
     with torch.no_grad():
         for i in range(n):
-            inp = out_batch[i].float()
+            out_a, out_b = out_batch[i]
+            out_a, out_b = out_a.float(), out_b.float()
+            intercmap_pred = utils.get_interpred(out_a, out_b)
             target = targets[i].float()
             sel_contact = (target == 1)
             sel_nocontact = (target == 0)
-            r_contact = (sel_contact.sum() - abs(inp[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
+            r_contact = (sel_contact.sum() -
+                         abs(intercmap_pred[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
             r_nocontact = (sel_nocontact.sum() -
-                           abs(inp[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
+                           abs(intercmap_pred[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
             ncf += (r_contact + r_nocontact) / 2.
         ncf = ncf / n
     return ncf

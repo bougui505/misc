@@ -100,7 +100,7 @@ class UNet(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         out = self.conv_last(x)
-        # out = torch.sigmoid(out)
+        out = torch.sigmoid(out)
         out = unpad(out, na)
         # out = out[:, 0, ...]
         return out
@@ -121,27 +121,27 @@ class InterPred(nn.Module):
     >>> cmap_seq_b.shape
     torch.Size([1, 21, 13, 13])
     >>> interpred = InterPred()
-    >>> out = interpred(cmap_seq_a, cmap_seq_b)
-    >>> out.shape
-    torch.Size([1, 85, 13])
+    >>> out_a, out_b = interpred(cmap_seq_a, cmap_seq_b)
+    >>> out_a.shape
+    torch.Size([1, 64, 85])
+    >>> out_b.shape
+    torch.Size([1, 64, 13])
     """
-    def __init__(self, n_class=128):
+    def __init__(self, n_class=1):
         super().__init__()
-        self.unet_a = UNet(n_class=n_class)
-        self.unet_b = UNet(n_class=n_class)
+        self.unet = UNet(n_class=n_class)
 
     def forward(self, mat_a, mat_b):
-        out_a = self.unet_a(mat_a)
-        out_b = self.unet_b(mat_b)
+        out_a = self.unet(mat_a)
+        out_b = self.unet(mat_b)
         # log(f'out_a.shape: {out_a.shape}')
         # torch.Size([1, 128, 85, 85])
         # log(f'out_b.shape: {out_b.shape}')
         # torch.Size([1, 128, 13, 13])
-        out_a = out_a.mean(axis=-1)
-        out_b = out_b.mean(axis=-1)
-        out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        out = torch.sigmoid(out)
-        return out
+        out_a = out_a.max(axis=-1).values
+        out_b = out_b.max(axis=-1).values
+        # out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
+        return out_a, out_b
 
 
 def pad2n(x, minsize=8):
