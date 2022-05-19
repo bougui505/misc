@@ -104,12 +104,13 @@ def learn(dbpath=None,
             batch = next(dataiter)
             step += 1
             out, targets = forward_batch(batch, interpred, device=device)
-            interweight = torch.sigmoid(torch.tensor(step * 10. / total_steps - 5.))
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            loss = get_loss(out, targets, interweight=interweight)
-            loss.backward()
-            optimizer.step()
+            if len(out) > 0 and len(targets) > 0:
+                interweight = torch.sigmoid(torch.tensor(step * 10. / total_steps - 5.))
+                # zero the parameter gradients
+                optimizer.zero_grad()
+                loss = get_loss(out, targets, interweight=interweight)
+                loss.backward()
+                optimizer.step()
             if not step % print_each:
                 eta_val = eta(step)
                 ncf = get_native_contact_fraction(out, targets)
@@ -165,7 +166,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     return intercmap
 
 
-def forward_batch(batch, interpred, device='cpu'):
+def forward_batch(batch, interpred, device='cpu', max_nres=500):
     """
     # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
     >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -189,12 +190,15 @@ def forward_batch(batch, interpred, device='cpu'):
     targets = []
     for data in batch:
         cmap_a, cmap_b, cmap = data
-        cmap_a = cmap_a.to(device)
-        cmap_b = cmap_b.to(device)
-        cmap = cmap.to(device)
-        out_a, out_b, interpred_ab = interpred(cmap_a, cmap_b)
-        out.append((out_a, out_b, interpred_ab))
-        targets.append(cmap[0, ...])
+        na = cmap_a.shape[-1]
+        nb = cmap_b.shape[-1]
+        if na <= max_nres and nb <= max_nres:
+            cmap_a = cmap_a.to(device)
+            cmap_b = cmap_b.to(device)
+            cmap = cmap.to(device)
+            out_a, out_b, interpred_ab = interpred(cmap_a, cmap_b)
+            out.append((out_a, out_b, interpred_ab))
+            targets.append(cmap[0, ...])
     return out, targets
 
 
