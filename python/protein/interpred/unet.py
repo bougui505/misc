@@ -69,39 +69,67 @@ class UNet(nn.Module):
     """
     def __init__(self, n_class=1):
         super().__init__()
+
+        self.maxpool = nn.MaxPool2d(2)
+
         self.dconv_down1 = double_conv(21, 64)
         self.dconv_down2 = double_conv(64, 128)
         self.dconv_down3 = double_conv(128, 256)
         self.dconv_down4 = double_conv(256, 512)
-        self.upsample_down4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
-        self.maxpool = nn.MaxPool2d(2)
-        # self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.dconv_up3 = double_conv(256 + 512, 256)
+
+        self.dconv_down5 = double_conv(512, 1024)
+        self.upsample_down5 = nn.ConvTranspose2d(1024, 1024, 2, stride=2)
+
+        self.dconv_up4 = double_conv(1024 + 512, 512)
+        self.upsample_up4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
+
+        self.dconv_up3 = double_conv(512 + 256, 256)
         self.upsample_up3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
-        self.dconv_up2 = double_conv(128 + 256, 128)
+
+        self.dconv_up2 = double_conv(256 + 128, 128)
         self.upsample_up2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
+
         self.dconv_up1 = double_conv(128 + 64, 64)
+        self.upsample_up1 = nn.ConvTranspose2d(64, 64, 2, stride=2)
+
         self.conv_last = nn.Conv2d(64, n_class, 1)
 
     def forward(self, mat_a):
         batch_size, nchannels, na, na = mat_a.shape
         x = pad2n(mat_a)
-        conv1 = self.dconv_down1(x)
+
+        conv1 = self.dconv_down1(x)  # 64
         x = self.maxpool(conv1)
-        conv2 = self.dconv_down2(x)
+
+        conv2 = self.dconv_down2(x)  # 128
         x = self.maxpool(conv2)
-        conv3 = self.dconv_down3(x)
+
+        conv3 = self.dconv_down3(x)  # 256
         x = self.maxpool(conv3)
-        x = self.dconv_down4(x)
-        x = self.upsample_down4(x)
-        x = torch.cat([x, conv3], dim=1)
-        x = self.dconv_up3(x)
+
+        conv4 = self.dconv_down4(x)  # 512
+        x = self.maxpool(conv4)
+
+        conv5 = self.dconv_down5(conv4)  # 1024
+        x = self.maxpool(conv5)
+        x = self.upsample_down5(x)
+
+        x = torch.cat([x, conv4], dim=1)  # 1024 + 512
+        x = self.dconv_up4(x)  # 512
+        x = self.upsample_up4(x)
+
+        x = torch.cat([x, conv3], dim=1)  # 512 + 256
+        x = self.dconv_up3(x)  # 256
         x = self.upsample_up3(x)
-        x = torch.cat([x, conv2], dim=1)
-        x = self.dconv_up2(x)
+
+        x = torch.cat([x, conv2], dim=1)  # 256 + 128
+        x = self.dconv_up2(x)  # 128
         x = self.upsample_up2(x)
-        x = torch.cat([x, conv1], dim=1)
-        x = self.dconv_up1(x)
+
+        x = torch.cat([x, conv1], dim=1)  # 128 + 64
+        x = self.dconv_up1(x)  # 64
+        x = self.upsample_up1(x)
+
         out = self.conv_last(x)
         out = torch.sigmoid(out)
         out = unpad(out, na)
@@ -147,7 +175,7 @@ class InterPred(nn.Module):
         return out_a, out_b
 
 
-def pad2n(x, minsize=8):
+def pad2n(x, minsize=16):
     """
     >>> x = torch.ones((1, 21, 85, 85))
     >>> out = pad2n(x)
