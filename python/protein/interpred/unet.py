@@ -73,10 +73,13 @@ class UNet(nn.Module):
         self.dconv_down2 = double_conv(64, 128)
         self.dconv_down3 = double_conv(128, 256)
         self.dconv_down4 = double_conv(256, 512)
+        self.upsample_down4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
         self.maxpool = nn.MaxPool2d(2)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        # self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.dconv_up3 = double_conv(256 + 512, 256)
+        self.upsample_up3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
         self.dconv_up2 = double_conv(128 + 256, 128)
+        self.upsample_up2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
         self.dconv_up1 = double_conv(128 + 64, 64)
         self.conv_last = nn.Conv2d(64, n_class, 1)
 
@@ -90,13 +93,13 @@ class UNet(nn.Module):
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)
         x = self.dconv_down4(x)
-        x = self.upsample(x)
+        x = self.upsample_down4(x)
         x = torch.cat([x, conv3], dim=1)
         x = self.dconv_up3(x)
-        x = self.upsample(x)
+        x = self.upsample_up3(x)
         x = torch.cat([x, conv2], dim=1)
         x = self.dconv_up2(x)
-        x = self.upsample(x)
+        x = self.upsample_up2(x)
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         out = self.conv_last(x)
@@ -123,9 +126,9 @@ class InterPred(nn.Module):
     >>> interpred = InterPred()
     >>> out_a, out_b = interpred(cmap_seq_a, cmap_seq_b)
     >>> out_a.shape
-    torch.Size([1, 64, 85])
+    torch.Size([1, 1, 85])
     >>> out_b.shape
-    torch.Size([1, 64, 13])
+    torch.Size([1, 1, 13])
     """
     def __init__(self, n_class=1):
         super().__init__()
@@ -150,13 +153,23 @@ def pad2n(x, minsize=8):
     >>> out = pad2n(x)
     >>> out.shape
     torch.Size([1, 21, 128, 128])
+
+    >>> x = torch.ones((1, 21, 85, 131))
+    >>> out = pad2n(x)
+    >>> out.shape
+    torch.Size([1, 21, 128, 256])
     """
-    batch, nchannels, n, n = x.shape
-    expval = np.ceil(np.log(n) / np.log(2))
-    targetsize = max(2**(expval), minsize)
-    padlen = int(targetsize - n)
-    if padlen > 0:
-        x = torch.nn.functional.pad(x, (0, padlen, 0, padlen))
+    def get_padlen(n):
+        expval = np.ceil(np.log(n) / np.log(2))
+        targetsize = max(2**(expval), minsize)
+        padlen = int(targetsize - n)
+        return padlen
+
+    batch, nchannels, na, nb = x.shape
+    padlen_a = get_padlen(na)
+    padlen_b = get_padlen(nb)
+    if padlen_a > 0 or padlen_b > 0:
+        x = torch.nn.functional.pad(x, (0, padlen_b, 0, padlen_a))
     return x
 
 
