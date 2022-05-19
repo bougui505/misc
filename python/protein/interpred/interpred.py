@@ -165,7 +165,7 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     return intercmap
 
 
-def forward_batch(batch, interpred, device='cpu'):
+def forward_batch(batch, interpred_ab, device='cpu'):
     """
     # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
     >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -192,8 +192,8 @@ def forward_batch(batch, interpred, device='cpu'):
         cmap_a = cmap_a.to(device)
         cmap_b = cmap_b.to(device)
         cmap = cmap.to(device)
-        out_a, out_b, interpred = interpred(cmap_a, cmap_b)
-        out.append((out_a, out_b, interpred))
+        out_a, out_b, interpred_ab = interpred_ab(cmap_a, cmap_b)
+        out.append((out_a, out_b, interpred_ab))
         targets.append(cmap[0, ...])
     return out, targets
 
