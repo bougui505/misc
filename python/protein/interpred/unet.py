@@ -67,12 +67,12 @@ class UNet(nn.Module):
     >>> out.shape
     torch.Size([1, 128, 2, 2])
     """
-    def __init__(self, n_class=1):
+    def __init__(self, n_class=1, in_features=21):
         super().__init__()
 
         self.maxpool = nn.MaxPool2d(2)
 
-        self.dconv_down1 = double_conv(21, 64)
+        self.dconv_down1 = double_conv(in_features, 64)
         self.dconv_down2 = double_conv(64, 128)
         self.dconv_down3 = double_conv(128, 256)
         self.dconv_down4 = double_conv(256, 512)
@@ -95,7 +95,7 @@ class UNet(nn.Module):
         self.conv_last = nn.Conv2d(64, n_class, 1)
 
     def forward(self, mat_a):
-        batch_size, nchannels, na, na = mat_a.shape
+        batch_size, nchannels, na, nb = mat_a.shape
         x = pad2n(mat_a)
 
         conv1 = self.dconv_down1(x)  # 64
@@ -132,7 +132,7 @@ class UNet(nn.Module):
 
         out = self.conv_last(x)
         out = torch.sigmoid(out)
-        out = unpad(out, na)
+        out = unpad(out, na, nb)
         # out = out[:, 0, ...]
         return out
 
@@ -152,15 +152,18 @@ class InterPred(nn.Module):
     >>> cmap_seq_b.shape
     torch.Size([1, 21, 13, 13])
     >>> interpred = InterPred()
-    >>> out_a, out_b = interpred(cmap_seq_a, cmap_seq_b)
+    >>> out_a, out_b, out_ab = interpred(cmap_seq_a, cmap_seq_b)
     >>> out_a.shape
     torch.Size([1, 1, 85])
     >>> out_b.shape
     torch.Size([1, 1, 13])
+    >>> out_ab.shape
+    torch.Size([1, 1, 85, 13])
     """
     def __init__(self, n_class=1):
         super().__init__()
         self.unet = UNet(n_class=n_class)
+        self.unet_inter = UNet(n_class=1, in_features=1)
 
     def forward(self, mat_a, mat_b):
         out_a = self.unet(mat_a)
@@ -171,8 +174,11 @@ class InterPred(nn.Module):
         # torch.Size([1, 128, 13, 13])
         out_a = out_a.max(axis=-1).values
         out_b = out_b.max(axis=-1).values
+        out_ab = utils.get_interpred(out_a, out_b)[None, ...]
+        log(f'out_ab: {out_ab.shape}')
+        out_ab = self.unet_inter(out_ab)
         # out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        return out_a, out_b
+        return out_a, out_b, out_ab
 
 
 def pad2n(x, minsize=16):
@@ -201,11 +207,11 @@ def pad2n(x, minsize=16):
     return x
 
 
-def unpad(x, n):
+def unpad(x, na, nb):
     """
     >>> x = torch.ones((1, 21, 128, 128))
     """
-    return x[..., :n, :n]
+    return x[..., :na, :nb]
 
 
 def log(msg):
