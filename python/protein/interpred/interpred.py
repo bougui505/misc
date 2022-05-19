@@ -69,10 +69,11 @@ def learn(dbpath=None,
           batch_size=4,
           num_workers=None,
           print_each=100,
-          modelfilename='models/interpred.pth'):
+          modelfilename='models/interpred.pth',
+          save_each_epoch=True):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=200, modelfilename='models/test.pth', batch_size=1)
+    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=200, modelfilename='models/test.pth', batch_size=1, save_each_epoch=False)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
@@ -114,7 +115,9 @@ def learn(dbpath=None,
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
-            save_model(interpred, modelfilename)
+            if save_each_epoch:
+                save_model(interpred, modelfilename)
+    save_model(interpred, modelfilename)
 
 
 def todevice(*args, device):
