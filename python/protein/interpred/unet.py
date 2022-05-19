@@ -67,7 +67,7 @@ class UNet(nn.Module):
     >>> out.shape
     torch.Size([1, 128, 2, 2])
     """
-    def __init__(self, n_class=1, in_features=21):
+    def __init__(self, n_class=1, in_features=21, upsample_conv=False):
         super().__init__()
 
         self.maxpool = nn.MaxPool2d(2)
@@ -78,19 +78,34 @@ class UNet(nn.Module):
         self.dconv_down4 = double_conv(256, 512)
 
         self.dconv_down5 = double_conv(512, 1024)
-        self.upsample_down5 = nn.ConvTranspose2d(1024, 1024, 2, stride=2)
+        if upsample_conv:
+            self.upsample_down5 = nn.ConvTranspose2d(1024, 1024, 2, stride=2)
+        else:
+            self.upsample_down5 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.dconv_up4 = double_conv(1024 + 512, 512)
-        self.upsample_up4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
+        if upsample_conv:
+            self.upsample_up4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
+        else:
+            self.upsample_up4 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.dconv_up3 = double_conv(512 + 256, 256)
-        self.upsample_up3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
+        if upsample_conv:
+            self.upsample_up3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
+        else:
+            self.upsample_up3 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.dconv_up2 = double_conv(256 + 128, 128)
-        self.upsample_up2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
+        if upsample_conv:
+            self.upsample_up2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
+        else:
+            self.upsample_up2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.dconv_up1 = double_conv(128 + 64, 64)
-        self.upsample_up1 = nn.ConvTranspose2d(64, 64, 2, stride=2)
+        if upsample_conv:
+            self.upsample_up1 = nn.ConvTranspose2d(64, 64, 2, stride=2)
+        else:
+            self.upsample_up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.conv_last = nn.Conv2d(64, n_class, 1)
 
