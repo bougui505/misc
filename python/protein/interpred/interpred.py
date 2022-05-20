@@ -70,14 +70,15 @@ def learn(dbpath=None,
           num_workers=None,
           print_each=100,
           modelfilename='models/interpred.pth',
-          save_each_epoch=True):
+          save_each_epoch=True,
+          internet=False):
     """
     Uncomment the following to test it (about 20s runtime)
     >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=120, modelfilename='models/test.pth', batch_size=1, save_each_epoch=False)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
-        interpred = InterPred().to(device)
+        interpred = InterPred(internet=internet, ).to(device)
     else:
         msg = f'# Loading model: {modelfilename}'
         # print(msg)
@@ -108,14 +109,17 @@ def learn(dbpath=None,
                 interweight = torch.sigmoid(torch.tensor(step * 10. / total_steps - 5.))
                 # zero the parameter gradients
                 optimizer.zero_grad()
-                loss = get_loss(out, targets, interweight=interweight)
+                loss = get_loss(out, targets, interweight=interweight, interloss=internet)
                 loss.backward()
                 optimizer.step()
                 if not step % print_each:
                     eta_val = eta(step)
                     ncf = get_native_contact_fraction(out, targets)
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|interw: {interweight:.4f}|ncf: {ncf:.4f}|eta: {eta_val}"
-                        )
+                    if internet:
+                        log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|interw: {interweight:.4f}|ncf: {ncf:.4f}|eta: {eta_val}"
+                            )
+                    else:
+                        log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -202,7 +206,7 @@ def forward_batch(batch, interpred, device='cpu', max_nres=500):
     return out, targets
 
 
-def get_loss(out_batch, targets, interweight=1.):
+def get_loss(out_batch, targets, interweight=1., interloss=False):
     """
     # # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
     >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -243,18 +247,21 @@ def get_loss(out_batch, targets, interweight=1.):
         loss_b = torch.nn.functional.binary_cross_entropy(out_b.max(axis=1).values,
                                                           target.max(axis=-2).values,
                                                           reduction='mean')
-        # # INTERLOSS #
-        mask = get_mask(target)
-        loss_on = torch.nn.functional.binary_cross_entropy(intercmap_pred[~mask][None, ...],
-                                                           target[~mask][None, ...],
-                                                           reduction='mean')
-        loss_off = torch.nn.functional.binary_cross_entropy(intercmap_pred[mask][None, ...],
-                                                            target[mask][None, ...],
-                                                            reduction='mean')
-        loss_ab = (loss_on + loss_off) / 2.
-        # loss_ab = torch.nn.functional.binary_cross_entropy(intercmap_pred, target, reduction='mean')
+        if interloss:
+            # # INTERLOSS #
+            mask = get_mask(target)
+            loss_on = torch.nn.functional.binary_cross_entropy(intercmap_pred[~mask][None, ...],
+                                                               target[~mask][None, ...],
+                                                               reduction='mean')
+            loss_off = torch.nn.functional.binary_cross_entropy(intercmap_pred[mask][None, ...],
+                                                                target[mask][None, ...],
+                                                                reduction='mean')
+            loss_ab = (loss_on + loss_off) / 2.
+            # loss_ab = torch.nn.functional.binary_cross_entropy(intercmap_pred, target, reduction='mean')
 
-        loss += (loss_a + loss_b + interweight * loss_ab) / (2 + interweight)
+            loss += (loss_a + loss_b + interweight * loss_ab) / (2 + interweight)
+        else:
+            loss += (loss_a + loss_b) / 2.
     loss = loss / n
     return loss
 

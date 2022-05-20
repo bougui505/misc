@@ -67,7 +67,7 @@ class UNet(nn.Module):
     >>> out.shape
     torch.Size([1, 128, 2, 2])
     """
-    def __init__(self, n_class=1, in_features=21, upsample_conv=False):
+    def __init__(self, n_class=1, in_features=21, upsample_conv=True):
         super().__init__()
 
         self.maxpool = nn.MaxPool2d(2)
@@ -175,10 +175,12 @@ class InterPred(nn.Module):
     >>> out_ab.shape
     torch.Size([1, 1, 85, 13])
     """
-    def __init__(self, n_class=1):
+    def __init__(self, n_class=1, internet=False):
         super().__init__()
         self.unet = UNet(n_class=n_class)
-        self.unet_inter = UNet(n_class=1, in_features=1)
+        self.internet = internet
+        if internet:
+            self.unet_inter = UNet(n_class=1, in_features=1)
 
     def forward(self, mat_a, mat_b):
         out_a = self.unet(mat_a)
@@ -191,7 +193,8 @@ class InterPred(nn.Module):
         out_b = out_b.max(axis=-1).values
         out_ab = utils.get_interpred(out_a, out_b)[None, ...]
         log(f'out_ab: {out_ab.shape}')
-        out_ab = self.unet_inter(out_ab)
+        if self.internet:
+            out_ab = self.unet_inter(out_ab)
         # out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
         return out_a, out_b, out_ab
 
