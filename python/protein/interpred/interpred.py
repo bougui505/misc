@@ -111,11 +111,11 @@ def learn(dbpath=None,
                 loss = get_loss(out, targets, interweight=interweight)
                 loss.backward()
                 optimizer.step()
-            if not step % print_each:
-                eta_val = eta(step)
-                ncf = get_native_contact_fraction(out, targets)
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|interw: {interweight:.4f}|ncf: {ncf:.4f}|eta: {eta_val}"
-                    )
+                if not step % print_each:
+                    eta_val = eta(step)
+                    ncf = get_native_contact_fraction(out, targets)
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|interw: {interweight:.4f}|ncf: {ncf:.4f}|eta: {eta_val}"
+                        )
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
