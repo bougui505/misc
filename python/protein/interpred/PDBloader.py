@@ -96,7 +96,6 @@ class PDBdataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
-        log(f'pdbfile: {pdbfile}')
         pymolname = randomgen.randomstring()
         cmd.load(filename=pdbfile, object=pymolname)
         # Remove alternate locations (see: https://pymol.org/dokuwiki/doku.php?id=concept:alt)
@@ -105,7 +104,7 @@ class PDBdataset(torch.utils.data.Dataset):
         ######################################################################################
         coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
         cmd.delete(pymolname)
-        log(f'coords_a.shape: {coords_a.shape}')
+        log(f'pdbfile: {pdbfile}|coords_a.shape: {coords_a.shape}|coords_b.shape: {coords_b.shape}')
         inp = utils.get_input(coords_a, coords_b)
         if self.return_name:
             return inp, cmap, pdbfile
@@ -116,16 +115,16 @@ class PDBdataset(torch.utils.data.Dataset):
 def get_dimer(pymolname, selection, randomize=True):
     chains = cmd.get_chains(f'{pymolname} and {selection}')
     nchains = len(chains)
-    log(f'nchains: {nchains}')
+    # log(f'nchains: {nchains}')
     assert nchains == 2, f'The number of chains ({nchains}) is not 2'
     chain_coords = []
     chain_seqs = []
     for chain in chains:
         chain_coords.append(cmd.get_coords(selection=f'{pymolname} and {selection} and chain {chain}'))
         chain_seqs.append(utils.get_seq(pymolname, selection=f'{selection} and chain {chain}'))
-    log(f'nchains: {nchains}')
-    log(f'chain_coords: {[len(e) for e in chain_coords]}')
-    log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
+    # log(f'nchains: {nchains}')
+    # log(f'chain_coords: {[len(e) for e in chain_coords]}')
+    # log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
     A, B = [torch.Tensor(c) for c in chain_coords]
     seq_A, seq_B = chain_seqs
     cmap = utils.get_inter_cmap(A[None, ...], B[None, ...])
@@ -165,7 +164,7 @@ if __name__ == '__main__':
         num_workers = os.cpu_count()
         dataset = PDBdataset(pdbpath=args.load)
         dataloader = torch.utils.data.DataLoader(dataset,
-                                                 batch_size=4,
+                                                 batch_size=1,
                                                  shuffle=False,
                                                  num_workers=num_workers,
                                                  collate_fn=collate_fn)
