@@ -143,6 +143,7 @@ if __name__ == '__main__':
     import sys
     import argparse
     import doctest
+    from misc.eta import ETA
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
@@ -154,8 +155,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--load', help='Load a db for testing')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod()
         sys.exit()
+    if args.load is not None:
+        num_workers = os.cpu_count()
+        dataset = PDBdataset(pdbpath=args.load)
+        dataloader = torch.utils.data.DataLoader(dataset,
+                                                 batch_size=4,
+                                                 shuffle=False,
+                                                 num_workers=num_workers,
+                                                 collate_fn=collate_fn)
+        eta = ETA(len(dataloader))
+        for i, _ in enumerate(dataloader):
+            eta_val = eta(i + 1)
+            log(f"step: {i}|eta: {eta_val}")
