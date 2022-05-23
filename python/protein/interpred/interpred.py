@@ -44,7 +44,7 @@ import os
 from misc.eta import ETA
 import copy
 import numpy as np
-from unet import InterPred
+from unet import UNet
 import DB
 
 
@@ -57,10 +57,10 @@ def load_model(filename):
     # >>> interpred = load_model('models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    interpred = InterPred()
-    interpred.load_state_dict(torch.load(filename, map_location=torch.device(device)))
-    interpred.eval()
-    return interpred
+    unet = UNet()
+    unet.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+    unet.eval()
+    return unet
 
 
 def learn(dbpath=None,
@@ -70,25 +70,24 @@ def learn(dbpath=None,
           num_workers=None,
           print_each=100,
           modelfilename='models/interpred.pth',
-          save_each_epoch=True,
-          internet=False):
+          save_each_epoch=True):
     """
     Uncomment the following to test it (about 20s runtime)
-    >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=120, modelfilename='models/test.pth', batch_size=1, save_each_epoch=False)
+    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=120, modelfilename='models/test.pth', batch_size=1, save_each_epoch=False)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
-        interpred = InterPred(internet=internet, ).to(device)
+        unet = UNet().to(device)
     else:
         msg = f'# Loading model: {modelfilename}'
         # print(msg)
         log(msg)
-        interpred = load_model(modelfilename).to(device)
-        interpred.train()  # set model in train mode
-    optimizer = torch.optim.Adam(interpred.parameters())
+        unet = load_model(modelfilename).to(device)
+        unet.train()  # set model in train mode
+    optimizer = torch.optim.Adam(unet.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
-    save_model(interpred, modelfilename)
+    save_model(unet, modelfilename)
     dataset = PDBloader.PDBdataset(pdbpath=dbpath, pdblist=pdblist)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -104,28 +103,24 @@ def learn(dbpath=None,
         try:
             batch = next(dataiter)
             step += 1
-            out, targets = forward_batch(batch, interpred, device=device)
+            out, targets = forward_batch(batch, unet, device=device)
             if len(out) > 0 and len(targets) > 0:
                 interweight = torch.sigmoid(torch.tensor(step * 10. / total_steps - 5.))
                 # zero the parameter gradients
                 optimizer.zero_grad()
-                loss = get_loss(out, targets, interweight=interweight, interloss=internet)
+                loss = get_loss(out, targets, interweight=interweight)
                 loss.backward()
                 optimizer.step()
                 if not step % print_each:
                     eta_val = eta(step)
                     ncf = get_native_contact_fraction(out, targets)
-                    if internet:
-                        log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|interw: {interweight:.4f}|ncf: {ncf:.4f}|eta: {eta_val}"
-                            )
-                    else:
-                        log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
             if save_each_epoch:
-                save_model(interpred, modelfilename)
-    save_model(interpred, modelfilename)
+                save_model(unet, modelfilename)
+    save_model(unet, modelfilename)
 
 
 def todevice(*args, device):
@@ -135,7 +130,7 @@ def todevice(*args, device):
     return out
 
 
-def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilename=None):
+def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', unet=None, modelfilename=None):
     """
     >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
     >>> intercmap.shape
@@ -156,21 +151,20 @@ def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', interpred=None, modelfilenam
     >>> plt.show()
     """
     if modelfilename is not None:
-        interpred = load_model(modelfilename)
-    interpred.eval()
+        unet = load_model(modelfilename)
+    unet.eval()
     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
-    cmap_a = utils.get_cmap_seq(coords_a, seq_a)
-    cmap_b = utils.get_cmap_seq(coords_b, seq_b)
-    out_a, out_b, intercmap = interpred(cmap_a, cmap_b)
-    intercmap = torch.squeeze(intercmap)
+    inp = utils.get_input(coords_a, coords_b)
+    out = unet(inp)
+    intercmap = torch.squeeze(out)
     # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
     # intercmap = np.ma.masked_array(intercmap, mask)
     return intercmap
 
 
-def forward_batch(batch, interpred, device='cpu', max_nres=500):
+def forward_batch(batch, unet, device='cpu', max_nres=500):
     """
     # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
     >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -179,34 +173,33 @@ def forward_batch(batch, interpred, device='cpu', max_nres=500):
     >>> batch = next(dataiter)
     >>> len(batch)
     1
-    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
-    [(torch.Size([1, 21, 85, 85]), torch.Size([1, 21, 13, 13]), torch.Size([1, 1, 85, 13]))]
-    >>> interpred = InterPred()
-    >>> out, targets = forward_batch(batch, interpred)
+    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
+    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> unet = UNet()
+    >>> out, targets = forward_batch(batch, unet)
     >>> len(out)
     1
-    >>> [(out_a.shape, out_b.shape, interpred.shape) for (out_a, out_b, interpred) in out]
-    [(torch.Size([1, 1, 85]), torch.Size([1, 1, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> [o.shape for o in out]
+    [torch.Size([1, 1, 85, 13])]
     >>> [e.shape for e in targets]
     [torch.Size([1, 85, 13])]
     """
-    out = []
+    outlist = []
     targets = []
     for data in batch:
-        cmap_a, cmap_b, cmap = data
-        na = cmap_a.shape[-1]
-        nb = cmap_b.shape[-1]
+        inp, cmap = data
+        na = inp.shape[-2]
+        nb = inp.shape[-1]
         if na <= max_nres and nb <= max_nres:
-            cmap_a = cmap_a.to(device)
-            cmap_b = cmap_b.to(device)
+            inp = inp.to(device)
             cmap = cmap.to(device)
-            out_a, out_b, interpred_ab = interpred(cmap_a, cmap_b)
-            out.append((out_a, out_b, interpred_ab))
+            out = unet(inp)
+            outlist.append(out)
             targets.append(cmap[0, ...])
-    return out, targets
+    return outlist, targets
 
 
-def get_loss(out_batch, targets, interweight=1., interloss=False):
+def get_loss(out_batch, targets, interweight=1.):
     """
     # # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
     >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -215,14 +208,14 @@ def get_loss(out_batch, targets, interweight=1., interloss=False):
     >>> batch = next(dataiter)
     >>> len(batch)
     1
-    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
-    [(torch.Size([1, 21, 85, 85]), torch.Size([1, 21, 13, 13]), torch.Size([1, 1, 85, 13]))]
-    >>> interpred = InterPred()
-    >>> out, targets = forward_batch(batch, interpred)
+    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
+    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> unet = UNet()
+    >>> out, targets = forward_batch(batch, unet)
     >>> len(out)
     1
-    >>> [(out_a.shape, out_b.shape, interpred.shape) for (out_a, out_b, interpred) in out]
-    [(torch.Size([1, 1, 85]), torch.Size([1, 1, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> [o.shape for o in out]
+    [torch.Size([1, 1, 85, 13])]
     >>> [e.shape for e in targets]
     [torch.Size([1, 85, 13])]
 
@@ -237,31 +230,17 @@ def get_loss(out_batch, targets, interweight=1., interloss=False):
     n = len(targets)
     loss = 0.
     for i in range(n):
-        out_a, out_b, intercmap_pred = out_batch[i]
-        out_a, out_b = out_a.float(), out_b.float()
-        intercmap_pred = intercmap_pred.float()[0, ...]
+        out = out_batch[i][0]
+        out = out.float()
         target = targets[i].float()
-        loss_a = torch.nn.functional.binary_cross_entropy(out_a.max(axis=1).values,
-                                                          target.max(axis=-1).values,
-                                                          reduction='mean')
-        loss_b = torch.nn.functional.binary_cross_entropy(out_b.max(axis=1).values,
-                                                          target.max(axis=-2).values,
-                                                          reduction='mean')
-        if interloss:
-            # # INTERLOSS #
-            mask = get_mask(target)
-            loss_on = torch.nn.functional.binary_cross_entropy(intercmap_pred[~mask][None, ...],
-                                                               target[~mask][None, ...],
-                                                               reduction='mean')
-            loss_off = torch.nn.functional.binary_cross_entropy(intercmap_pred[mask][None, ...],
-                                                                target[mask][None, ...],
-                                                                reduction='mean')
-            loss_ab = (loss_on + loss_off) / 2.
-            # loss_ab = torch.nn.functional.binary_cross_entropy(intercmap_pred, target, reduction='mean')
-
-            loss += (loss_a + loss_b + interweight * loss_ab) / (2 + interweight)
-        else:
-            loss += (loss_a + loss_b) / 2.
+        mask = get_mask(target)
+        loss_on = torch.nn.functional.binary_cross_entropy(out[~mask][None, ...],
+                                                           target[~mask][None, ...],
+                                                           reduction='mean')
+        loss_off = torch.nn.functional.binary_cross_entropy(out[mask][None, ...],
+                                                            target[mask][None, ...],
+                                                            reduction='mean')
+        loss += (loss_on + loss_off) / 2.
     loss = loss / n
     return loss
 
@@ -279,15 +258,14 @@ def get_native_contact_fraction(out_batch, targets):
     ncf = 0.  # Native Contacts Fraction
     with torch.no_grad():
         for i in range(n):
-            out_a, out_b, intercmap_pred = out_batch[i]
-            out_a, out_b, intercmap_pred = out_a.float(), out_b.float(), intercmap_pred.float()[0, ...]
+            out = out_batch[i][0]
+            out = out.float()
             target = targets[i].float()
             sel_contact = (target == 1)
             sel_nocontact = (target == 0)
-            r_contact = (sel_contact.sum() -
-                         abs(intercmap_pred[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
+            r_contact = (sel_contact.sum() - abs(out[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
             r_nocontact = (sel_nocontact.sum() -
-                           abs(intercmap_pred[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
+                           abs(out[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
             ncf += (r_contact + r_nocontact) / 2.
         ncf = ncf / n
     return ncf

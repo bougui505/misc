@@ -58,6 +58,59 @@ def get_dmat(coords):
     return dmat
 
 
+def PCA(X, p):
+    """
+    >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
+    >>> coords.shape
+    torch.Size([1, 85, 3])
+    >>> dmat = get_dmat(coords)
+    >>> dmat.shape
+    torch.Size([1, 1, 85, 85])
+    >>> dmat = torch.squeeze(dmat)
+
+    # >>> plt.matshow(dmat)
+    # >>> plt.show()
+
+    >>> dmat.shape
+    torch.Size([85, 85])
+    >>> T_a = PCA(dmat, p=8)
+    >>> T_a.shape
+    torch.Size([85, 8])
+
+    >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
+    >>> dmat = get_dmat(coords)
+    >>> dmat = torch.squeeze(dmat)
+    >>> T_b = PCA(dmat, p=8)
+
+    # >>> out = torch.matmul(T_a, T_b.T)
+    # >>> plt.matshow(out)
+    # >>> plt.colorbar()
+    # >>> plt.show()
+
+    """
+    n = X.shape[0]
+    u = X.mean(axis=0)
+    sigma = X.std(axis=0)
+    B = (X - u) / sigma**2
+    C = (1 / (n - 1)) * torch.matmul(B, B.T)
+    Lambda, V = torch.linalg.eigh(C)
+    Lambda = torch.flip(Lambda, dims=(0, ))
+    V = torch.flip(V, dims=(1, ))
+    W = V[:, :p]
+    T = torch.matmul(B, W)
+    return T
+
+
+def get_input(coords_a, coords_b, p=16):
+    dmat_a = torch.squeeze(get_dmat(coords_a))
+    dmat_b = torch.squeeze(get_dmat(coords_b))
+    p = min(dmat_a.shape[-1], dmat_b.shape[-1], p)
+    T_a = PCA(dmat_a, p=p)
+    T_b = PCA(dmat_b, p=p)
+    inp = torch.matmul(T_a, T_b.T)[None, None, ...]
+    return inp
+
+
 def get_cmap(coords, threshold=8.):
     dmat = get_dmat(coords)
     cmap = (dmat <= threshold)
@@ -259,6 +312,7 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    import matplotlib.pyplot as plt
     ### UNCOMMENT FOR LOGGING ####
     import os
     import logging

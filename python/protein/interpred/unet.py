@@ -52,22 +52,18 @@ class UNet(nn.Module):
     >>> coords_A, seq_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
     >>> coords_A.shape
     torch.Size([1, 85, 3])
-    >>> cmap_seq_a = utils.get_cmap_seq(coords_A, seq_a)
-    >>> cmap_seq_a.shape
-    torch.Size([1, 21, 85, 85])
-    >>> unet = UNet(n_class=128)
-    >>> out = unet(cmap_seq_a)
+    >>> coords_B, seq_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
+    >>> coords_B.shape
+    torch.Size([1, 13, 3])
+    >>> inp = utils.get_input(coords_A, coords_B)
+    >>> inp.shape
+    torch.Size([1, 1, 85, 13])
+    >>> unet = UNet()
+    >>> out = unet(inp)
     >>> out.shape
-    torch.Size([1, 128, 85, 85])
-
-    # with the smallest input matrix:
-    >>> cmap_seq_a = torch.ones((1, 21, 2, 2))
-    >>> unet = UNet(n_class=128)
-    >>> out = unet(cmap_seq_a)
-    >>> out.shape
-    torch.Size([1, 128, 2, 2])
+    torch.Size([1, 1, 85, 13])
     """
-    def __init__(self, n_class=1, in_features=21, upsample_conv=True):
+    def __init__(self, n_class=1, in_features=1, upsample_conv=True):
         super().__init__()
 
         self.maxpool = nn.MaxPool2d(2)
@@ -150,53 +146,6 @@ class UNet(nn.Module):
         out = unpad(out, na, nb)
         # out = out[:, 0, ...]
         return out
-
-
-class InterPred(nn.Module):
-    """
-    >>> coords_A, seq_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA', return_seq=True)
-    >>> coords_A.shape
-    torch.Size([1, 85, 3])
-    >>> coords_B, seq_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA', return_seq=True)
-    >>> coords_B.shape
-    torch.Size([1, 13, 3])
-    >>> cmap_seq_a = utils.get_cmap_seq(coords_A, seq_a)
-    >>> cmap_seq_a.shape
-    torch.Size([1, 21, 85, 85])
-    >>> cmap_seq_b = utils.get_cmap_seq(coords_B, seq_b)
-    >>> cmap_seq_b.shape
-    torch.Size([1, 21, 13, 13])
-    >>> interpred = InterPred()
-    >>> out_a, out_b, out_ab = interpred(cmap_seq_a, cmap_seq_b)
-    >>> out_a.shape
-    torch.Size([1, 1, 85])
-    >>> out_b.shape
-    torch.Size([1, 1, 13])
-    >>> out_ab.shape
-    torch.Size([1, 1, 85, 13])
-    """
-    def __init__(self, n_class=1, internet=False):
-        super().__init__()
-        self.unet = UNet(n_class=n_class)
-        self.internet = internet
-        if internet:
-            self.unet_inter = UNet(n_class=1, in_features=1)
-
-    def forward(self, mat_a, mat_b):
-        out_a = self.unet(mat_a)
-        out_b = self.unet(mat_b)
-        # log(f'out_a.shape: {out_a.shape}')
-        # torch.Size([1, 128, 85, 85])
-        # log(f'out_b.shape: {out_b.shape}')
-        # torch.Size([1, 128, 13, 13])
-        out_a = out_a.max(axis=-1).values
-        out_b = out_b.max(axis=-1).values
-        out_ab = utils.get_interpred(out_a, out_b)[None, ...]
-        log(f'out_ab: {out_ab.shape}')
-        if self.internet:
-            out_ab = self.unet_inter(out_ab)
-        # out = torch.einsum('ijk,lmn->ikn', out_a, out_b)
-        return out_a, out_b, out_ab
 
 
 def pad2n(x, minsize=16):

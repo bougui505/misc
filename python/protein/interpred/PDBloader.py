@@ -64,8 +64,8 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     >>> print(len(batch))
     4
-    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
-    [(torch.Size([1, 21, 21, 21]), torch.Size([1, 21, 28, 28]), torch.Size([1, 1, 21, 28])), (torch.Size([1, 21, 245, 245]), torch.Size([1, 21, 242, 242]), torch.Size([1, 1, 245, 242])), (torch.Size([1, 21, 28, 28]), torch.Size([1, 21, 28, 28]), torch.Size([1, 1, 28, 28])), (torch.Size([1, 21, 188, 188]), torch.Size([1, 21, 188, 188]), torch.Size([1, 1, 188, 188]))]
+    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
+    [(torch.Size([1, 1, 21, 28]), torch.Size([1, 1, 21, 28])), (torch.Size([1, 1, 245, 242]), torch.Size([1, 1, 245, 242])), (torch.Size([1, 1, 28, 28]), torch.Size([1, 1, 28, 28])), (torch.Size([1, 1, 188, 188]), torch.Size([1, 1, 188, 188]))]
 
     Try with a list of PDBs:
     >>> dataset = PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -74,8 +74,8 @@ class PDBdataset(torch.utils.data.Dataset):
     ...     pass
     >>> print(len(batch))
     1
-    >>> [(cmap_a.shape, cmap_b.shape, intercmap.shape) for (cmap_a, cmap_b, intercmap) in batch]
-    [(torch.Size([1, 21, 85, 85]), torch.Size([1, 21, 13, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
+    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
     """
     def __init__(self,
                  pdbpath=None,
@@ -106,12 +106,11 @@ class PDBdataset(torch.utils.data.Dataset):
         coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
         cmd.delete(pymolname)
         log(f'coords_a.shape: {coords_a.shape}')
-        cmap_seq_a = utils.get_cmap_seq(coords_a[None, ...], seq_a)
-        cmap_seq_b = utils.get_cmap_seq(coords_b[None, ...], seq_b)
+        inp = utils.get_input(coords_a, coords_b)
         if self.return_name:
-            return cmap_seq_a, cmap_seq_b, cmap, pdbfile
+            return inp, cmap, pdbfile
         else:
-            return cmap_seq_a, cmap_seq_b, cmap
+            return inp, cmap
 
 
 def get_dimer(pymolname, selection, randomize=True):
