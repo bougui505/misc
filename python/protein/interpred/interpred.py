@@ -190,7 +190,7 @@ def forward_batch(batch, unet, device='cpu', max_nres=500):
         inp, cmap = data
         na = inp.shape[-2]
         nb = inp.shape[-1]
-        if na <= max_nres and nb <= max_nres:
+        if na <= max_nres and nb <= max_nres and na >= 2 and nb >= 2:
             inp = inp.to(device)
             cmap = cmap.to(device)
             out = unet(inp)
