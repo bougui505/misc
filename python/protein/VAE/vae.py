@@ -70,13 +70,16 @@ class Encoder(torch.nn.Module):
                                           self.conv4, self.relu, self.conv5, self.relu, self.flatten, self.linear1,
                                           self.relu, self.linear2, self.relu)
         self.N = torch.distributions.Normal(0, 1)
-        self.kl = 0
+        self.reset_kl()
+
+    def reset_kl(self):
+        self.kl = []
 
     def forward(self, x):
         x = torch.nn.functional.interpolate(x, size=self.input_size)
         out = self.layers(x)
         mu = self.linear_mu(out)
-        sigma = self.linear_mu(out)
+        sigma = self.linear_sigma(out)
         z = mu + sigma * self.N.sample(mu.shape)
         # See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
         self.kl = ((1 / 2) * (sigma**2 + mu**2 - 1 - torch.log(sigma**2)).sum(axis=1)).mean()
@@ -115,10 +118,15 @@ class Decoder(torch.nn.Module):
         out = self.relu(out)
         out = torch.reshape(out, (B, 256, 5, 5))
         out = self.upconv1(out)
+        out = self.relu(out)
         out = self.conv2(out)
+        out = self.relu(out)
         out = self.upconv3(out)
+        out = self.relu(out)
         out = self.upconv4(out)
+        out = self.relu(out)
         out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
+        out = self.relu(out)
         out = torch.nn.functional.interpolate(out, size=output_size)
         return out
 
