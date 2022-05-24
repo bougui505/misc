@@ -69,6 +69,10 @@ class Encoder(torch.nn.Module):
                                           self.conv4, self.relu, self.conv5, self.relu, self.flatten, self.linear1,
                                           self.relu, self.linear2, self.relu)
         self.N = torch.distributions.Normal(0, 1)
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if device == 'cuda':
+            self.N.loc = self.N.loc.cuda()  # hack to get sampling on the GPU
+            self.N.scale = self.N.scale.cuda()
         self.reset_kl()
 
     def reset_kl(self):
