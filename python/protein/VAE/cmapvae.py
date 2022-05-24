@@ -270,6 +270,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int)
     parser.add_argument('--print_each', type=int, default=100)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
+    parser.add_argument('--latent_dims', default=10, type=int)
     parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
     parser.add_argument('--sel', default='polymer.protein and name CA')
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -280,7 +281,11 @@ if __name__ == '__main__':
         sys.exit()
 
     if args.train:
-        train(pdbpath=args.pdbpath, n_epochs=args.epochs, modelfilename=args.model, print_each=args.print_each)
+        train(pdbpath=args.pdbpath,
+              n_epochs=args.epochs,
+              modelfilename=args.model,
+              print_each=args.print_each,
+              latent_dims=args.latent_dims)
 
     if args.predict is not None:
         model = load_model(args.model)
