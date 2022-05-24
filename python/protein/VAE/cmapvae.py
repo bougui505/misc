@@ -96,7 +96,7 @@ def train(
                 model.encoder.reset_kl()
                 inputs, outputs = forward_batch(batch, model)
                 loss_rec = get_reconstruction_loss(inputs, outputs)
-                loss_kl = torch.mean(torch.Tensor(model.encoder.kl))
+                loss_kl = torch.mean(torch.tensor(model.encoder.kl))
                 loss = loss_rec + loss_kl
                 loss.backward()
                 opt.step()
@@ -140,8 +140,8 @@ class Normalizer(object):
         [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
         """
         self.batch = [e for e in batch if e is not None]
-        self.mu = torch.Tensor([e.mean() for e in self.batch])
-        self.sigma = torch.Tensor([e.std() for e in self.batch])
+        self.mu = torch.tensor([e.mean() for e in self.batch])
+        self.sigma = torch.tensor([e.std() for e in self.batch])
 
     def transform(self, x):
         n = len(x)

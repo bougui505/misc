@@ -102,7 +102,7 @@ class PDBdataset(torch.utils.data.Dataset):
         else:
             chain = np.random.choice(chains)
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
-            coords = torch.Tensor(coords[None, ...])
+            coords = torch.tensor(coords[None, ...])
             dmat = utils.get_dmat(coords)
             if self.interpolate:
                 dmat = torch.nn.functional.interpolate(dmat, size=self.interpolate_size)
