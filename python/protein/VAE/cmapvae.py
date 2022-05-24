@@ -147,7 +147,10 @@ class Normalizer(object):
         n = len(x)
         out = []
         for i in range(n):
-            out.append((x[i] - self.mu[i]) / self.sigma[i])
+            if self.sigma[i] > 0:
+                out.append((x[i] - self.mu[i]) / self.sigma[i])
+            else:
+                out.append(x[i] - self.mu[i])
         return out
 
     def inverse_transform(self, x):
