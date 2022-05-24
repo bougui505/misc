@@ -86,9 +86,9 @@ def train(
     while epoch < n_epochs:
         try:
             batch = next(dataiter)
+            batch = [e.to(device) for e in batch if e is not None]
             normalizer = Normalizer(batch)
             batch = normalizer.transform(normalizer.batch)
-            batch = [e.to(device) for e in batch]
             step += 1
             opt.zero_grad()
             model.encoder.reset_kl()
