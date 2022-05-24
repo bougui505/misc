@@ -42,6 +42,7 @@ import torch
 import os
 from misc.eta import ETA
 import time
+import datetime
 
 
 def train(
@@ -49,13 +50,13 @@ def train(
         pdblist=None,
         batch_size=4,
         n_epochs=20,
-        latent_dims=3,
+        latent_dims=10,
         save_each_epoch=True,
         print_each=100,
         save_each=30,  # in minutes
         modelfilename='models/cmapvae.pt'):
     """
-    >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200)
+    >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
     """
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist)
     num_workers = os.cpu_count()
@@ -90,7 +91,9 @@ def train(
                 save_model(model, modelfilename)
             if not step % print_each:
                 eta_val = eta(step)
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|eta: {eta_val}"
+                last_saved = (time.time() - t_0)
+                last_saved = str(datetime.timedelta(seconds=last_saved))
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|last_saved: {last_saved}| eta: {eta_val}"
                     )
         except StopIteration:
             dataiter = iter(dataloader)

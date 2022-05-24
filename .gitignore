@@ -491,3 +491,5 @@ python/protein/interpred/models/interpred_20220519_1456.pt
 python/protein/interpred/models/interpred_20220523_1038.pt
 python/protein/VAE/data/1ycr.pdb
 python/protein/VAE/models/cmapvae.pt
+python/protein/VAE/cmapvae.log
+python/protein/VAE/models/test.pt
