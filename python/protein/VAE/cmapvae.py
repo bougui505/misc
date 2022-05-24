@@ -91,13 +91,14 @@ def train(
             normalizer = Normalizer(batch)
             batch = normalizer.transform(normalizer.batch)
             bs = len(batch)
+            klw = torch.sigmoid(torch.tensor(step * 10 / total_steps - 5.))
             if bs > 0:
                 opt.zero_grad()
                 model.encoder.reset_kl()
                 inputs, outputs = forward_batch(batch, model)
                 loss_rec = get_reconstruction_loss(inputs, outputs)
                 loss_kl = torch.mean(torch.tensor(model.encoder.kl))
-                loss = loss_rec + loss_kl
+                loss = loss_rec + klw * loss_kl
                 loss.backward()
                 opt.step()
             if (time.time() - t_0) / 60 >= save_each:
@@ -107,7 +108,7 @@ def train(
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|klw: {klw:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
                     )
         except StopIteration:
             dataiter = iter(dataloader)
