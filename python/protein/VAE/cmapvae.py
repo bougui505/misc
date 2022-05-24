@@ -60,6 +60,7 @@ def train(
     """
     # >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, interpolate=False)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
@@ -74,6 +75,7 @@ def train(
         model.train()
     else:
         model = vae.VariationalAutoencoder(latent_dims=latent_dims)
+    model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     t_0 = time.time()
     save_model(model, modelfilename)
@@ -86,6 +88,7 @@ def train(
             batch = next(dataiter)
             normalizer = Normalizer(batch)
             batch = normalizer.transform(normalizer.batch)
+            batch = [e.to(device) for e in batch]
             step += 1
             opt.zero_grad()
             model.encoder.reset_kl()
