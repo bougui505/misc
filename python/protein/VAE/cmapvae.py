@@ -85,7 +85,7 @@ def train(
         try:
             batch = next(dataiter)
             normalizer = Normalizer(batch)
-            batch = normalizer.transform(batch)
+            batch = normalizer.transform(normalizer.batch)
             step += 1
             opt.zero_grad()
             model.encoder.reset_kl()
@@ -135,9 +135,9 @@ class Normalizer(object):
         >>> [torch.round(e.std()) for e in x]
         [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
         """
-        self.batch = batch
-        self.mu = torch.Tensor([e.mean() for e in batch])
-        self.sigma = torch.Tensor([e.std() for e in batch])
+        self.batch = [e for e in batch if e is not None]
+        self.mu = torch.Tensor([e.mean() for e in self.batch])
+        self.sigma = torch.Tensor([e.std() for e in self.batch])
 
     def transform(self, x):
         n = len(x)
@@ -258,10 +258,18 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--train', help='Train the VAE', action='store_true')
+    parser.add_argument('--pdbpath', help='Path to the PDB database')
+    parser.add_argument('--epochs', type=int)
+    parser.add_argument('--print_each', type=int, default=100)
+    parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
+    parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    if args.train:
+        train(pdbpath=args.pdbpath, n_epochs=args.epochs, modelfilename=args.model, print_each=args.print_each)
