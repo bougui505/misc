@@ -85,20 +85,21 @@ def train(
     eta = ETA(total_steps=total_steps)
     while epoch < n_epochs:
         try:
+            step += 1
             batch = next(dataiter)
             batch = [e.to(device) for e in batch if e is not None]
             normalizer = Normalizer(batch)
             batch = normalizer.transform(normalizer.batch)
-            step += 1
-            opt.zero_grad()
-            model.encoder.reset_kl()
-            inputs, outputs = forward_batch(batch, model)
-            bs = len(inputs)
-            loss_rec = get_reconstruction_loss(inputs, outputs)
-            loss_kl = torch.mean(torch.Tensor(model.encoder.kl))
-            loss = loss_rec + loss_kl
-            loss.backward()
-            opt.step()
+            bs = len(batch)
+            if bs > 0:
+                opt.zero_grad()
+                model.encoder.reset_kl()
+                inputs, outputs = forward_batch(batch, model)
+                loss_rec = get_reconstruction_loss(inputs, outputs)
+                loss_kl = torch.mean(torch.Tensor(model.encoder.kl))
+                loss = loss_rec + loss_kl
+                loss.backward()
+                opt.step()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
