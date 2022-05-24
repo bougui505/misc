@@ -83,7 +83,7 @@ class Encoder(torch.nn.Module):
             x = torch.nn.functional.interpolate(x, size=self.input_size)
         out = self.layers(x)
         mu = self.linear_mu(out)
-        log_sigma_sq = torch.clamp(self.linear_sigma(out), max=10.)
+        log_sigma_sq = torch.clamp(self.linear_sigma(out), max=5.)
         sigma_sq = torch.exp(log_sigma_sq)
         z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
         # See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
