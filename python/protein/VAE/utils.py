@@ -43,7 +43,7 @@ import numpy as np
 import itertools
 
 
-def get_dmat(coords):
+def get_dmat(coords, normalize=False):
     """
     >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
     >>> coords.shape

@@ -49,12 +49,11 @@ class Encoder(torch.nn.Module):
     >>> out = encoder(inp)
     >>> out.shape
     torch.Size([3, 10])
-    >>> encoder.kl <= 60.
-    tensor(True)
     """
-    def __init__(self, latent_dims, input_size=(224, 224)):
+    def __init__(self, latent_dims, input_size=(224, 224), interpolate=True):
         super().__init__()
         self.input_size = input_size
+        self.interpolate = interpolate
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4)
         self.conv2 = torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=2)
         self.conv3 = torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=2)
@@ -76,18 +75,20 @@ class Encoder(torch.nn.Module):
         self.kl = []
 
     def forward(self, x):
-        x = torch.nn.functional.interpolate(x, size=self.input_size)
+        if self.interpolate:
+            x = torch.nn.functional.interpolate(x, size=self.input_size)
         out = self.layers(x)
         mu = self.linear_mu(out)
-        sigma = self.linear_sigma(out)
-        z = mu + sigma * self.N.sample(mu.shape)
+        log_sigma_sq = self.linear_sigma(out)
+        sigma_sq = torch.exp(log_sigma_sq)
+        z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
         # See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
-        self.kl = ((1 / 2) * (sigma**2 + mu**2 - 1 - torch.log(sigma**2)).sum(axis=1)).mean()
+        self.kl.append(((1 / 2) * (sigma_sq + mu**2 - 1 - log_sigma_sq).sum(axis=1)).mean())
         return z
 
 
 class Decoder(torch.nn.Module):
-    def __init__(self, latent_dims):
+    def __init__(self, latent_dims, interpolate=True):
         """
         >>> batch = 3
         >>> latent_dims = 10
@@ -98,6 +99,7 @@ class Decoder(torch.nn.Module):
         torch.Size([3, 1, 50, 50])
         """
         super().__init__()
+        self.interpolate = interpolate
         self.linear1 = torch.nn.Linear(in_features=latent_dims, out_features=4096)
         self.linear2 = torch.nn.Linear(in_features=4096, out_features=4096)
         self.linear3 = torch.nn.Linear(in_features=4096, out_features=6400)
@@ -126,8 +128,9 @@ class Decoder(torch.nn.Module):
         out = self.upconv4(out)
         out = self.relu(out)
         out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
-        out = self.relu(out)
-        out = torch.nn.functional.interpolate(out, size=output_size)
+        # out = self.relu(out)
+        if self.interpolate:
+            out = torch.nn.functional.interpolate(out, size=output_size)
         return out
 
 
@@ -140,10 +143,10 @@ class VariationalAutoencoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 1, 50, 50])
     """
-    def __init__(self, latent_dims):
+    def __init__(self, latent_dims, interpolate=True):
         super().__init__()
-        self.encoder = Encoder(latent_dims)
-        self.decoder = Decoder(latent_dims)
+        self.encoder = Encoder(latent_dims, interpolate=interpolate)
+        self.decoder = Decoder(latent_dims, interpolate=interpolate)
 
     def forward(self, x):
         output_size = x.shape[-2:]

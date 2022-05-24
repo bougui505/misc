@@ -58,9 +58,9 @@ def train(
         save_each=30,  # in minutes
         modelfilename='models/cmapvae.pt'):
     """
-    >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
+    # >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
     """
-    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist)
+    dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, interpolate=False)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -68,7 +68,12 @@ def train(
                                              num_workers=num_workers,
                                              collate_fn=PDBloader.collate_fn)
     dataiter = iter(dataloader)
-    model = vae.VariationalAutoencoder(latent_dims=latent_dims)
+    if os.path.exists(modelfilename):
+        log(f'# Loading model from {modelfilename}')
+        model = load_model(filename=modelfilename, latent_dims=latent_dims)
+        model.train()
+    else:
+        model = vae.VariationalAutoencoder(latent_dims=latent_dims)
     opt = torch.optim.Adam(model.parameters())
     t_0 = time.time()
     save_model(model, modelfilename)
@@ -79,10 +84,13 @@ def train(
     while epoch < n_epochs:
         try:
             batch = next(dataiter)
+            normalizer = Normalizer(batch)
+            batch = normalizer.transform(batch)
             step += 1
             opt.zero_grad()
             model.encoder.reset_kl()
             inputs, outputs = forward_batch(batch, model)
+            bs = len(inputs)
             loss_rec = get_reconstruction_loss(inputs, outputs)
             loss_kl = torch.mean(torch.Tensor(model.encoder.kl))
             loss = loss_rec + loss_kl
@@ -95,7 +103,7 @@ def train(
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|last_saved: {last_saved}| eta: {eta_val}"
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|rec: {loss_rec:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
                     )
         except StopIteration:
             dataiter = iter(dataloader)
@@ -107,15 +115,60 @@ def train(
     save_model(model, modelfilename)
 
 
+class Normalizer(object):
+    def __init__(self, batch):
+        """
+        >>> batch = [1 + torch.randn(1, 1, 249, 249), 2 + 2* torch.randn(1, 1, 639, 639), 3 + 3 * torch.randn(1, 1, 390, 390), 4 + 4 * torch.randn(1, 1, 131, 131)]
+        >>> normalizer = Normalizer(batch)
+        >>> [torch.round(e) for e in normalizer.mu]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e) for e in normalizer.sigma]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> out = normalizer.transform(batch)
+        >>> [torch.round(e.mean()).abs() for e in out]
+        [tensor(0.), tensor(0.), tensor(0.), tensor(0.)]
+        >>> [torch.round(e.std()) for e in out]
+        [tensor(1.), tensor(1.), tensor(1.), tensor(1.)]
+        >>> x = normalizer.inverse_transform(out)
+        >>> [torch.round(e.mean()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e.std()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        """
+        self.batch = batch
+        self.mu = torch.Tensor([e.mean() for e in batch])
+        self.sigma = torch.Tensor([e.std() for e in batch])
+
+    def transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            out.append((x[i] - self.mu[i]) / self.sigma[i])
+        return out
+
+    def inverse_transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            out.append(x[i] * self.sigma[i] + self.mu[i])
+        return out
+
+
 def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name CA'):
     """
     >>> model = load_model('models/test.pt')
     >>> plot_reconstructed('data/1ycr.pdb', model, selection='polymer.protein and name CA and chain A')
     """
-    dataset = PDBloader.PDBdataset(pdblist=[pdbfilename], selection=selection)
+    dataset = PDBloader.PDBdataset(pdblist=[pdbfilename], selection=selection, interpolate=False)
     inp = dataset.__getitem__(0)
+    inp = [e[None, ...] for e in inp]
+    normalizer = Normalizer(inp)
+    inp = normalizer.transform(inp)
     model.eval()
-    out = model(inp)
+    model.interpolate = True
+    inp, out = forward_batch(inp, model)
+    inp = normalizer.inverse_transform(inp)[0]
+    out = normalizer.inverse_transform(out)[0]
     inp = np.squeeze(inp.detach().cpu().numpy())
     out = np.squeeze(out.detach().cpu().numpy())
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -131,10 +184,12 @@ def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name C
 def forward_batch(batch, model):
     """
     >>> model = vae.VariationalAutoencoder(latent_dims=10)
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb')
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
     >>> dataiter = iter(dataloader)
     >>> batch = dataiter.__next__()
+    >>> [e.shape for e in batch]
+    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
     >>> inputs, outputs = forward_batch(batch, model)
     >>> [e.shape for e in inputs]
     [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
@@ -152,7 +207,7 @@ def forward_batch(batch, model):
 def get_reconstruction_loss(inputs, targets):
     """
     >>> model = vae.VariationalAutoencoder(latent_dims=10)
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb')
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
     >>> dataiter = iter(dataloader)
     >>> batch = dataiter.__next__()

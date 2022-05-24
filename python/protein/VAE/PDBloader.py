@@ -55,7 +55,7 @@ class PDBdataset(torch.utils.data.Dataset):
     See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
     >>> # Generate random datapoints for testing
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb')
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> for i, batch in enumerate(dataloader):
@@ -65,13 +65,27 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     4
     [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', interpolate=True)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> batch.shape
+    torch.Size([4, 1, 224, 224])
     """
-    def __init__(self, pdbpath=None, pdblist=None, selection='polymer.protein and name CA'):
+    def __init__(self,
+                 pdbpath=None,
+                 pdblist=None,
+                 selection='polymer.protein and name CA',
+                 interpolate=True,
+                 interpolate_size=(224, 224)):
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
             self.list_IDs = pdblist
         self.selection = selection
+        self.interpolate = interpolate
+        self.interpolate_size = interpolate_size
         cmd.reinitialize()
 
     def __len__(self):
@@ -90,6 +104,9 @@ class PDBdataset(torch.utils.data.Dataset):
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
             coords = torch.Tensor(coords[None, ...])
             dmat = utils.get_dmat(coords)
+            if self.interpolate:
+                dmat = torch.nn.functional.interpolate(dmat, size=self.interpolate_size)
+                dmat = dmat[0]
         cmd.delete(pymolname)
         return dmat
 
