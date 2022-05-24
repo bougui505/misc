@@ -43,6 +43,8 @@ import os
 from misc.eta import ETA
 import time
 import datetime
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def train(
@@ -68,12 +70,12 @@ def train(
     dataiter = iter(dataloader)
     model = vae.VariationalAutoencoder(latent_dims=latent_dims)
     opt = torch.optim.Adam(model.parameters())
+    t_0 = time.time()
     save_model(model, modelfilename)
     epoch = 0
     step = 0
     total_steps = n_epochs * len(dataiter)
     eta = ETA(total_steps=total_steps)
-    t_0 = time.time()
     while epoch < n_epochs:
         try:
             batch = next(dataiter)
@@ -99,8 +101,31 @@ def train(
             dataiter = iter(dataloader)
             epoch += 1
             if save_each_epoch:
+                t_0 = time.time()
                 save_model(model, modelfilename)
+    t_0 = time.time()
     save_model(model, modelfilename)
+
+
+def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name CA'):
+    """
+    >>> model = load_model('models/test.pt')
+    >>> plot_reconstructed('data/1ycr.pdb', model, selection='polymer.protein and name CA and chain A')
+    """
+    dataset = PDBloader.PDBdataset(pdblist=[pdbfilename], selection=selection)
+    inp = dataset.__getitem__(0)
+    model.eval()
+    out = model(inp)
+    inp = np.squeeze(inp.detach().cpu().numpy())
+    out = np.squeeze(out.detach().cpu().numpy())
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    m1 = ax1.matshow(inp)
+    ax1.set_title('Original')
+    fig.colorbar(m1, ax=ax1, shrink=.5)
+    m2 = ax2.matshow(out)
+    ax2.set_title('Reconstructed')
+    fig.colorbar(m2, ax=ax2, shrink=.5)
+    plt.show()
 
 
 def forward_batch(batch, model):
