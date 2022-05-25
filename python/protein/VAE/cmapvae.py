@@ -45,6 +45,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+from utils import Normalizer
+from vae import forward_batch, load_model
 
 
 def train(
@@ -52,14 +54,14 @@ def train(
         pdblist=None,
         batch_size=4,
         n_epochs=20,
-        latent_dims=10,
+        latent_dims=512,
         save_each_epoch=True,
         print_each=100,
         save_each=30,  # in minutes
         modelfilename='models/cmapvae.pt',
         klwscheduler=False):
     """
-    # >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
+    >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist, interpolate=False)
@@ -125,48 +127,6 @@ def train(
     save_model(model, modelfilename)
 
 
-class Normalizer(object):
-    def __init__(self, batch):
-        """
-        >>> batch = [1 + torch.randn(1, 1, 249, 249), 2 + 2* torch.randn(1, 1, 639, 639), 3 + 3 * torch.randn(1, 1, 390, 390), 4 + 4 * torch.randn(1, 1, 131, 131)]
-        >>> normalizer = Normalizer(batch)
-        >>> [torch.round(e) for e in normalizer.mu]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> [torch.round(e) for e in normalizer.sigma]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> out = normalizer.transform(batch)
-        >>> [torch.round(e.mean()).abs() for e in out]
-        [tensor(0.), tensor(0.), tensor(0.), tensor(0.)]
-        >>> [torch.round(e.std()) for e in out]
-        [tensor(1.), tensor(1.), tensor(1.), tensor(1.)]
-        >>> x = normalizer.inverse_transform(out)
-        >>> [torch.round(e.mean()) for e in x]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> [torch.round(e.std()) for e in x]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        """
-        self.batch = [e for e in batch if e is not None]
-        self.mu = torch.tensor([e.mean() for e in self.batch])
-        self.sigma = torch.tensor([e.std() for e in self.batch])
-
-    def transform(self, x):
-        n = len(x)
-        out = []
-        for i in range(n):
-            if self.sigma[i] > 0:
-                out.append((x[i] - self.mu[i]) / self.sigma[i])
-            else:
-                out.append(x[i] - self.mu[i])
-        return out
-
-    def inverse_transform(self, x):
-        n = len(x)
-        out = []
-        for i in range(n):
-            out.append(x[i] * self.sigma[i] + self.mu[i])
-        return out
-
-
 def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name CA'):
     """
     >>> model = load_model('models/test.pt')
@@ -175,13 +135,7 @@ def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name C
     dataset = PDBloader.PDBdataset(pdblist=[pdbfilename], selection=selection, interpolate=False)
     inp = dataset.__getitem__(0)
     inp = [e[None, ...] for e in inp]
-    normalizer = Normalizer(inp)
-    inp = normalizer.transform(inp)
-    model.eval()
-    model.interpolate = True
-    inp, out = forward_batch(inp, model)
-    inp = normalizer.inverse_transform(inp)[0]
-    out = normalizer.inverse_transform(out)[0]
+    inp, out = vae.reconstruct(inp, model)
     inp = np.squeeze(inp.detach().cpu().numpy())
     out = np.squeeze(out.detach().cpu().numpy())
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -194,32 +148,9 @@ def plot_reconstructed(pdbfilename, model, selection='polymer.protein and name C
     plt.show()
 
 
-def forward_batch(batch, model):
-    """
-    >>> model = vae.VariationalAutoencoder(latent_dims=10)
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = dataiter.__next__()
-    >>> [e.shape for e in batch]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-    >>> inputs, outputs = forward_batch(batch, model)
-    >>> [e.shape for e in inputs]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-    >>> [e.shape for e in outputs]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-    """
-    inputs = [e for e in batch if e is not None]
-    outputs = []
-    for data in inputs:
-        out = model(data)
-        outputs.append(out)
-    return inputs, outputs
-
-
 def get_reconstruction_loss(inputs, targets):
     """
-    >>> model = vae.VariationalAutoencoder(latent_dims=10)
+    >>> model = vae.VariationalAutoencoder(latent_dims=512)
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
     >>> dataiter = iter(dataloader)
@@ -239,16 +170,6 @@ def get_reconstruction_loss(inputs, targets):
 
 def save_model(model, filename):
     torch.save(model.state_dict(), filename)
-
-
-def load_model(filename, latent_dims=10):
-    """
-    """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = vae.VariationalAutoencoder(latent_dims=latent_dims)
-    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
-    model.eval()
-    return model
 
 
 def log(msg):
@@ -282,7 +203,7 @@ if __name__ == '__main__':
                         type=int,
                         default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
-    parser.add_argument('--latent_dims', default=10, type=int)
+    parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
     parser.add_argument('--sel', default='polymer.protein and name CA')
     parser.add_argument('--test', help='Test the code', action='store_true')

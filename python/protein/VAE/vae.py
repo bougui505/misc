@@ -39,6 +39,8 @@
 # See: https://avandekleut.github.io/vae/
 
 import torch
+from utils import Normalizer
+import PDBloader
 
 
 class Encoder(torch.nn.Module):
@@ -156,6 +158,55 @@ class VariationalAutoencoder(torch.nn.Module):
         output_size = x.shape[-2:]
         z = self.encoder(x)
         return self.decoder(z, output_size=output_size)
+
+
+def reconstruct(inp, model):
+    """
+    >>> model = load_model('models/test.pt')
+    >>> inp = [torch.randn(1, 1, 83, 83)]
+    >>> inp, out = reconstruct(inp, model)
+    """
+    normalizer = Normalizer(inp)
+    inp = normalizer.transform(inp)
+    model.eval()
+    model.interpolate = True
+    inp, out = forward_batch(inp, model)
+    inp = normalizer.inverse_transform(inp)[0]
+    out = normalizer.inverse_transform(out)[0]
+    return inp, out
+
+
+def forward_batch(batch, model):
+    """
+    >>> model = VariationalAutoencoder(latent_dims=512)
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = dataiter.__next__()
+    >>> [e.shape for e in batch]
+    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+    >>> inputs, outputs = forward_batch(batch, model)
+    >>> [e.shape for e in inputs]
+    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+    >>> [e.shape for e in outputs]
+    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+    """
+    inputs = [e for e in batch if e is not None]
+    outputs = []
+    for data in inputs:
+        out = model(data)
+        outputs.append(out)
+    return inputs, outputs
+
+
+def load_model(filename, latent_dims=512):
+    """
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = VariationalAutoencoder(latent_dims=latent_dims)
+    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+    model.eval()
+    return model
 
 
 def log(msg):

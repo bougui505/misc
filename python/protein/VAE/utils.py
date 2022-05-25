@@ -43,19 +43,54 @@ import numpy as np
 import itertools
 
 
-def get_dmat(coords, normalize=False):
+def get_dmat(coords):
     """
-    >>> coords = get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-    >>> coords.shape
-    torch.Size([1, 85, 3])
-
-    >>> dmat = get_dmat(coords)
-    >>> dmat.shape  # batchsize, channel, n, n
-    torch.Size([1, 1, 85, 85])
     """
     dmat = torch.cdist(coords, coords)
     dmat = dmat[:, None, ...]  # Add the channel dimension
     return dmat
+
+
+class Normalizer(object):
+    def __init__(self, batch):
+        """
+        >>> batch = [1 + torch.randn(1, 1, 249, 249), 2 + 2* torch.randn(1, 1, 639, 639), 3 + 3 * torch.randn(1, 1, 390, 390), 4 + 4 * torch.randn(1, 1, 131, 131)]
+        >>> normalizer = Normalizer(batch)
+        >>> [torch.round(e) for e in normalizer.mu]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e) for e in normalizer.sigma]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> out = normalizer.transform(batch)
+        >>> [torch.round(e.mean()).abs() for e in out]
+        [tensor(0.), tensor(0.), tensor(0.), tensor(0.)]
+        >>> [torch.round(e.std()) for e in out]
+        [tensor(1.), tensor(1.), tensor(1.), tensor(1.)]
+        >>> x = normalizer.inverse_transform(out)
+        >>> [torch.round(e.mean()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e.std()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        """
+        self.batch = [e for e in batch if e is not None]
+        self.mu = torch.tensor([e.mean() for e in self.batch])
+        self.sigma = torch.tensor([e.std() for e in self.batch])
+
+    def transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            if self.sigma[i] > 0:
+                out.append((x[i] - self.mu[i]) / self.sigma[i])
+            else:
+                out.append(x[i] - self.mu[i])
+        return out
+
+    def inverse_transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            out.append(x[i] * self.sigma[i] + self.mu[i])
+        return out
 
 
 def log(msg):
