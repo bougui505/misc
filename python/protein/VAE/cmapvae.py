@@ -271,6 +271,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='Train the VAE', action='store_true')
+    parser.add_argument('--bs', help='Batch size', type=int, default=4)
     parser.add_argument('--klw', help='Switch on weight scheduler for kl divergence', action='store_true')
     parser.add_argument('--pdbpath', help='Path to the PDB database')
     parser.add_argument('--epochs', type=int)
@@ -297,7 +298,8 @@ if __name__ == '__main__':
               print_each=args.print_each,
               latent_dims=args.latent_dims,
               klwscheduler=args.klw,
-              save_each=args.save_every)
+              save_each=args.save_every,
+              batch_size=args.bs)
 
     if args.predict is not None:
         model = load_model(args.model, latent_dims=args.latent_dims)
