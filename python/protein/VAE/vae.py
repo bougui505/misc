@@ -176,7 +176,7 @@ def reconstruct(inp, model):
     return inp, out
 
 
-def forward_batch(batch, model):
+def forward_batch(batch, model, encode_only=False):
     """
     >>> model = VariationalAutoencoder(latent_dims=512)
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
@@ -185,17 +185,29 @@ def forward_batch(batch, model):
     >>> batch = dataiter.__next__()
     >>> [e.shape for e in batch]
     [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+
     >>> inputs, outputs = forward_batch(batch, model)
     >>> [e.shape for e in inputs]
     [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
     >>> [e.shape for e in outputs]
     [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+
+    >>> inputs, outputs = forward_batch(batch, model, encode_only=True)
+    >>> [e.shape for e in inputs]
+    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
+    >>> outputs.shape
+    torch.Size([4, 512])
     """
     inputs = [e for e in batch if e is not None]
     outputs = []
     for data in inputs:
-        out = model(data)
+        if encode_only:
+            out = model.encoder(data)
+        else:
+            out = model(data)
         outputs.append(out)
+    if encode_only:
+        outputs = torch.stack(outputs)[:, 0, :]
     return inputs, outputs
 
 
