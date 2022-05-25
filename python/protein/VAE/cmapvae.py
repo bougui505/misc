@@ -56,7 +56,8 @@ def train(
         save_each_epoch=True,
         print_each=100,
         save_each=30,  # in minutes
-        modelfilename='models/cmapvae.pt'):
+        modelfilename='models/cmapvae.pt',
+        klwscheduler=False):
     """
     # >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=200, modelfilename='models/test.pt')
     """
@@ -91,7 +92,10 @@ def train(
             normalizer = Normalizer(batch)
             batch = normalizer.transform(normalizer.batch)
             bs = len(batch)
-            klw = torch.sigmoid(torch.tensor(step * 10 / total_steps - 5.))
+            if klwscheduler:
+                klw = torch.sigmoid(torch.tensor(step * 10 / total_steps - 5.))
+            else:
+                klw = 1.
             if bs > 0:
                 opt.zero_grad()
                 model.encoder.reset_kl()
@@ -267,9 +271,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='Train the VAE', action='store_true')
+    parser.add_argument('--klw', help='Switch on weight scheduler for kl divergence', action='store_true')
     parser.add_argument('--pdbpath', help='Path to the PDB database')
     parser.add_argument('--epochs', type=int)
     parser.add_argument('--print_each', type=int, default=100)
+    parser.add_argument('--save_every',
+                        help='Save the model every given number of minutes (default: 30 min)',
+                        type=int,
+                        default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
     parser.add_argument('--latent_dims', default=10, type=int)
     parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
@@ -286,8 +295,10 @@ if __name__ == '__main__':
               n_epochs=args.epochs,
               modelfilename=args.model,
               print_each=args.print_each,
-              latent_dims=args.latent_dims)
+              latent_dims=args.latent_dims,
+              klwscheduler=args.klw,
+              save_each=args.save_every)
 
     if args.predict is not None:
-        model = load_model(args.model)
+        model = load_model(args.model, latent_dims=args.latent_dims)
         plot_reconstructed(args.predict, model, selection=args.sel)
