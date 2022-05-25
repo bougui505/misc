@@ -493,3 +493,8 @@ python/protein/VAE/data/1ycr.pdb
 python/protein/VAE/models/cmapvae.pt
 python/protein/VAE/cmapvae.log
 python/protein/VAE/models/test.pt
+python/protein/VAE/cmapvae.log~20220525-083123~
+python/protein/VAE/models/1.pt
+python/protein/VAE/models/cmapvae_20220524_2255.pt
+python/protein/VAE/models/cmapvae_20220525_0843.pt
+python/protein/VAE/utils.log
