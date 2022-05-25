@@ -498,3 +498,5 @@ python/protein/VAE/models/1.pt
 python/protein/VAE/models/cmapvae_20220524_2255.pt
 python/protein/VAE/models/cmapvae_20220525_0843.pt
 python/protein/VAE/utils.log
+python/protein/VAE/models/somtest.p
+python/protein/VAE/somvae.log

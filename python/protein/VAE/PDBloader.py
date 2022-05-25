@@ -72,13 +72,24 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> batch = next(dataiter)
     >>> batch.shape
     torch.Size([4, 1, 224, 224])
+
+    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', return_name=True, interpolate=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> len(batch)
+    4
+    >>> [(dmat.shape, name) for dmat, name in batch]
+    [(torch.Size([1, 1, 249, 249]), '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz'), (torch.Size([1, 1, 639, 639]), '/media/bougui/scratch/pdb/a9/pdb4a92.ent.gz'), (torch.Size([1, 1, 390, 390]), '/media/bougui/scratch/pdb/a9/pdb4a9g.ent.gz'), (torch.Size([1, 1, 131, 131]), '/media/bougui/scratch/pdb/a9/pdb3a93.ent.gz')]
     """
     def __init__(self,
                  pdbpath=None,
                  pdblist=None,
                  selection='polymer.protein and name CA',
                  interpolate=True,
-                 interpolate_size=(224, 224)):
+                 interpolate_size=(224, 224),
+                 return_name=False):
+        self.return_name = return_name
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
@@ -108,7 +119,10 @@ class PDBdataset(torch.utils.data.Dataset):
                 dmat = torch.nn.functional.interpolate(dmat, size=self.interpolate_size)
                 dmat = dmat[0]
         cmd.delete(pymolname)
-        return dmat
+        if self.return_name:
+            return dmat, pdbfile
+        else:
+            return dmat
 
 
 if __name__ == '__main__':
