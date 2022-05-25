@@ -95,7 +95,8 @@ def train(
             if klwscheduler:
                 klw = torch.sigmoid(torch.tensor(step * 10 / total_steps - 5.))
             else:
-                klw = 1.
+                # See: https://qr.ae/pGSwAn and https://arxiv.org/pdf/1312.6114.pdf
+                klw = len(dataiter) / batch_size
             if bs > 0:
                 opt.zero_grad()
                 model.encoder.reset_kl()
