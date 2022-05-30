@@ -109,6 +109,7 @@ def learn(
     while epoch < nepoch:
         try:
             batch = next(dataiter)
+            batch = [(inp.to(device), intercmap.to(device)) for (inp, intercmap) in batch]
             step += 1
             out, targets = vae.forward_batch(batch, model)
             if len(out) > 0 and len(targets) > 0:
