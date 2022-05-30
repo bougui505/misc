@@ -37,14 +37,16 @@
 #############################################################################
 
 import torch
+import time
+import datetime
 from misc import randomgen
 from misc.protein.interpred import utils
 from misc.protein.interpred import PDBloader
+from misc.protein.interpred import vae
 import os
 from misc.eta import ETA
 import copy
 import numpy as np
-from unet import UNet
 import DB
 
 
@@ -52,42 +54,46 @@ def save_model(interpred, filename):
     torch.save(interpred.state_dict(), filename)
 
 
-def load_model(filename):
+def load_model(filename, latent_dims=512):
     """
     # >>> interpred = load_model('models/test.pth')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    unet = UNet()
-    unet.load_state_dict(torch.load(filename, map_location=torch.device(device)))
-    unet.eval()
-    return unet
+    model = vae.VariationalAutoencoder(latent_dims=latent_dims)
+    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+    model.eval()
+    return model
 
 
-def learn(dbpath=None,
-          pdblist=None,
-          nepoch=10,
-          batch_size=4,
-          num_workers=None,
-          print_each=100,
-          modelfilename='models/interpred.pth',
-          save_each_epoch=True):
+def learn(
+        dbpath=None,
+        pdblist=None,
+        nepoch=10,
+        batch_size=4,
+        num_workers=None,
+        print_each=100,
+        modelfilename='models/interpred.pt',
+        save_each=30,  # in minutes
+        latent_dims=512,
+        save_each_epoch=True):
     """
     Uncomment the following to test it (about 20s runtime)
-    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=120, modelfilename='models/test.pth', batch_size=1, save_each_epoch=False)
+    # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=60, modelfilename='models/test.pt', batch_size=1, save_each_epoch=False)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if not os.path.exists(modelfilename):
-        unet = UNet().to(device)
+        model = vae.VariationalAutoencoder(latent_dims=latent_dims).to(device)
     else:
         msg = f'# Loading model: {modelfilename}'
         # print(msg)
         log(msg)
-        unet = load_model(modelfilename).to(device)
-        unet.train()  # set model in train mode
-    optimizer = torch.optim.Adam(unet.parameters())
+        model = load_model(modelfilename).to(device)
+        model.train()  # set model in train mode
+    optimizer = torch.optim.Adam(model.parameters())
     if num_workers is None:
         num_workers = os.cpu_count()
-    save_model(unet, modelfilename)
+    t_0 = time.time()
+    save_model(model, modelfilename)
     dataset = PDBloader.PDBdataset(pdbpath=dbpath, pdblist=pdblist)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -99,28 +105,35 @@ def learn(dbpath=None,
     step = 0
     total_steps = nepoch * len(dataiter)
     eta = ETA(total_steps=total_steps)
+    klw = len(dataiter) / batch_size
     while epoch < nepoch:
         try:
             batch = next(dataiter)
             step += 1
-            out, targets = forward_batch(batch, unet, device=device)
+            out, targets = vae.forward_batch(batch, model)
             if len(out) > 0 and len(targets) > 0:
-                interweight = torch.sigmoid(torch.tensor(step * 10. / total_steps - 5.))
                 # zero the parameter gradients
                 optimizer.zero_grad()
-                loss = get_loss(out, targets, interweight=interweight)
+                loss_rec = get_loss(out, targets)
+                loss_kl = model.encoder.kl
+                loss = loss_rec + klw * loss_kl
                 loss.backward()
                 optimizer.step()
+                if (time.time() - t_0) / 60 >= save_each:
+                    t_0 = time.time()
+                    save_model(model, modelfilename)
                 if not step % print_each:
                     eta_val = eta(step)
-                    ncf = get_native_contact_fraction(out, targets)
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|ncf: {ncf:.4f}|eta: {eta_val}")
+                    last_saved = (time.time() - t_0)
+                    last_saved = str(datetime.timedelta(seconds=last_saved))
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|kl: {loss_kl:.4f}|loss_rec: {loss_rec:.4f}|klw: {klw:.4f}|last_saved: {last_saved}|eta: {eta_val}"
+                        )
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
             if save_each_epoch:
-                save_model(unet, modelfilename)
-    save_model(unet, modelfilename)
+                save_model(model, modelfilename)
+    save_model(model, modelfilename)
 
 
 def todevice(*args, device):
@@ -130,102 +143,73 @@ def todevice(*args, device):
     return out
 
 
-def predict(pdb_a, pdb_b, sel_a='all', sel_b='all', unet=None, modelfilename=None):
+def predict(pdb_a,
+            pdb_b,
+            sel_a='all',
+            sel_b='all',
+            model=None,
+            modelfilename=None,
+            input_size=(224, 224),
+            doplot=False):
     """
-    >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pth')
+    >>> intercmap = predict(pdb_a='data/1ycr.pdb', pdb_b='data/1ycr.pdb', sel_a='chain A', sel_b='chain B', modelfilename='models/test.pt', doplot=True)
     >>> intercmap.shape
     (85, 13)
-    >>> coords_a = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain A and name CA')
-    >>> coords_b = utils.get_coords('data/1ycr.pdb', selection='polymer.protein and chain B and name CA')
-    >>> target = utils.get_inter_cmap(coords_a, coords_b)
-    >>> target = torch.squeeze(target.detach().cpu()).numpy()
-    >>> target.shape
-    (85, 13)
-
-    >>> fig, axs = plt.subplots(1, 2)
-    >>> _ = axs[0].matshow(intercmap, cmap='Greys')
-    >>> _ = axs[0].set_title('Prediction')
-    >>> _ = axs[1].matshow(target, cmap='Greys')
-    >>> _ = axs[1].set_title('Ground truth')
-    >>> # plt.colorbar()
-    >>> plt.show()
     """
     if modelfilename is not None:
-        unet = load_model(modelfilename)
-    unet.eval()
+        model = load_model(modelfilename)
+    model.eval()
     coords_a, seq_a = utils.get_coords(pdb_a, selection=f'polymer.protein and name CA and {sel_a}', return_seq=True)
     coords_b, seq_b = utils.get_coords(pdb_b, selection=f'polymer.protein and name CA and {sel_b}', return_seq=True)
-    inp = utils.get_input(coords_a, coords_b)
-    out = unet(inp)
+    log(f'coords_a.shape: {coords_a.shape}')
+    log(f'coords_b.shape: {coords_b.shape}')
+    na = coords_a.shape[1]
+    nb = coords_b.shape[1]
+    inp, normalizer = utils.get_input(coords_a[0], coords_b[0], input_size=input_size, return_normalizer=True)
+    out = model(inp)
+    out = torch.nn.functional.interpolate(out, size=(na, nb))
+    out, = normalizer.inverse_transform([out])
+    log(f'out.shape: {out.shape}')
     intercmap = torch.squeeze(out)
-    # mask = get_mask(intercmap)
     intercmap = intercmap.detach().cpu().numpy()
-    # intercmap = np.ma.masked_array(intercmap, mask)
+    if doplot:
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        target = utils.get_inter_dmat(coords_a, coords_b)
+        target = torch.squeeze(target.detach().cpu()).numpy()
+        m1 = ax1.matshow(target)
+        ax1.set_title('Original')
+        fig.colorbar(m1, ax=ax1, shrink=.5)
+        m2 = ax2.matshow(intercmap)
+        ax2.set_title('Reconstructed')
+        fig.colorbar(m2, ax=ax2, shrink=.5)
+        plt.show()
     return intercmap
 
 
-def forward_batch(batch, unet, device='cpu', max_nres=500):
+def get_loss(out_batch, targets):
     """
-    # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
-    >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
+    # >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
+
+    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
+
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
     >>> dataiter = iter(dataloader)
     >>> batch = next(dataiter)
     >>> len(batch)
-    1
+    4
     >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
-    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
-    >>> unet = UNet()
-    >>> out, targets = forward_batch(batch, unet)
+    [(torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 639, 639])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 339, 339])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 491, 491])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 1323, 57]))]
+    >>> model = vae.VariationalAutoencoder(latent_dims=512)
+    >>> out, targets = vae.forward_batch(batch, model)
     >>> len(out)
-    1
+    4
     >>> [o.shape for o in out]
-    [torch.Size([1, 1, 85, 13])]
+    [torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 339, 339]), torch.Size([1, 1, 491, 491]), torch.Size([1, 1, 1323, 57])]
     >>> [e.shape for e in targets]
-    [torch.Size([1, 85, 13])]
-    """
-    outlist = []
-    targets = []
-    for data in batch:
-        inp, cmap = data
-        na = inp.shape[-2]
-        nb = inp.shape[-1]
-        if na <= max_nres and nb <= max_nres and na >= 2 and nb >= 2:
-            inp = inp.to(device)
-            cmap = cmap.to(device)
-            out = unet(inp)
-            outlist.append(out)
-            targets.append(cmap[0, ...])
-    return outlist, targets
-
-
-def get_loss(out_batch, targets, interweight=1.):
-    """
-    # # >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/dimerdb', randomize=False)
-    >>> dataset = PDBloader.PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = next(dataiter)
-    >>> len(batch)
-    1
-    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
-    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
-    >>> unet = UNet()
-    >>> out, targets = forward_batch(batch, unet)
-    >>> len(out)
-    1
-    >>> [o.shape for o in out]
-    [torch.Size([1, 1, 85, 13])]
-    >>> [e.shape for e in targets]
-    [torch.Size([1, 85, 13])]
-
+    [torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 339, 339]), torch.Size([1, 1, 491, 491]), torch.Size([1, 1, 1323, 57])]
     >>> loss = get_loss(out, targets)
     >>> loss
     tensor(..., grad_fn=<DivBackward0>)
-
-    >>> ncf = get_native_contact_fraction(out, targets)
-    >>> ncf
-    tensor(...)
     """
     n = len(targets)
     loss = 0.
@@ -233,42 +217,9 @@ def get_loss(out_batch, targets, interweight=1.):
         out = out_batch[i][0]
         out = out.float()
         target = targets[i].float()
-        mask = get_mask(target)
-        loss_on = torch.nn.functional.binary_cross_entropy(out[~mask][None, ...],
-                                                           target[~mask][None, ...],
-                                                           reduction='mean')
-        loss_off = torch.nn.functional.binary_cross_entropy(out[mask][None, ...],
-                                                            target[mask][None, ...],
-                                                            reduction='mean')
-        loss += (loss_on + loss_off) / 2.
+        loss += ((out - target)**2).mean()
     loss = loss / n
     return loss
-
-
-def get_mask(intercmap):
-    mask = intercmap == 0
-    return mask
-
-
-def get_native_contact_fraction(out_batch, targets):
-    """
-    See get_loss docstring
-    """
-    n = len(out_batch)
-    ncf = 0.  # Native Contacts Fraction
-    with torch.no_grad():
-        for i in range(n):
-            out = out_batch[i][0]
-            out = out.float()
-            target = targets[i].float()
-            sel_contact = (target == 1)
-            sel_nocontact = (target == 0)
-            r_contact = (sel_contact.sum() - abs(out[sel_contact] - target[sel_contact]).sum()) / sel_contact.sum()
-            r_nocontact = (sel_nocontact.sum() -
-                           abs(out[sel_nocontact] - target[sel_nocontact]).sum()) / sel_nocontact.sum()
-            ncf += (r_contact + r_nocontact) / 2.
-        ncf = ncf / n
-    return ncf
 
 
 def log(msg):
@@ -284,7 +235,6 @@ if __name__ == '__main__':
     import argparse
     from pymol import cmd
     import matplotlib.pyplot as plt  # For DOCTESTS
-    from datetime import datetime
     # ### UNCOMMENT FOR LOGGING ####
     import os
     import logging
@@ -301,6 +251,10 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
     parser.add_argument('--dbpath', help='Path to the learning database')
     parser.add_argument('--print_each', help='Print each given steps in log file', default=100, type=int)
+    parser.add_argument('--save_every',
+                        help='Save the model every given number of minutes (default: 30 min)',
+                        type=int,
+                        default=30)
     parser.add_argument('--predict',
                         help='Predict for the given pdb files (see pdb1, pdb2 options)',
                         action='store_true')
@@ -308,7 +262,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdb2', help='Second PDB for predicrion')
     parser.add_argument('--sel1', help='First selection', default='all')
     parser.add_argument('--sel2', help='Second selection', default='all')
-    parser.add_argument('--ground_truth', help='Compute ground truth from the given pdb', action='store_true')
+    # parser.add_argument('--ground_truth', help='Compute ground truth from the given pdb', action='store_true')
     parser.add_argument('--model', help='pth filename for the model to load', default=None)
     args = parser.parse_args()
 
@@ -316,7 +270,7 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.train:
-        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         if args.model is None:
             modelfilename = f'models/interpred_{current_time}.pth'
         else:
@@ -326,28 +280,12 @@ if __name__ == '__main__':
               batch_size=args.batch_size,
               num_workers=None,
               print_each=args.print_each,
-              modelfilename=modelfilename)
+              modelfilename=modelfilename,
+              save_each=args.save_every)
     if args.predict:
         intercmap = predict(pdb_a=args.pdb1,
                             pdb_b=args.pdb2,
                             sel_a=args.sel1,
                             sel_b=args.sel2,
-                            modelfilename=args.model)
-        if args.ground_truth:
-            coords_a = utils.get_coords(args.pdb1, selection=f'polymer.protein and name CA and {args.sel1}')
-            coords_b = utils.get_coords(args.pdb2, selection=f'polymer.protein and name CA and {args.sel2}')
-            target = utils.get_inter_cmap(coords_a, coords_b)
-            target = torch.squeeze(target.detach().cpu()).numpy()
-            # loss = get_loss([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-            # ncf = get_native_contact_fraction([torch.tensor(intercmap)[None, ...]], [torch.tensor(target)[None, ...]])
-            # print(f'ncf: {ncf:.4f}')
-            fig, axs = plt.subplots(1, 2)
-            _ = axs[1].matshow(target, cmap='Greys')
-            _ = axs[1].set_title('Ground truth')
-            _ = axs[0].matshow(intercmap, cmap='Greys')
-            _ = axs[0].set_title('Prediction')
-        else:
-            fig, axs = plt.subplots(1, 1)
-            axs.matshow(intercmap)
-            axs.set_title('Prediction')
-        plt.show()
+                            modelfilename=args.model,
+                            doplot=True)

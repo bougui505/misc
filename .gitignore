@@ -500,3 +500,7 @@ python/protein/VAE/models/cmapvae_20220525_0843.pt
 python/protein/VAE/utils.log
 python/protein/VAE/models/somtest.p
 python/protein/VAE/somvae.log
+python/protein/interpred/models/interpred_20220530_171553.pth
+python/protein/interpred/models/interpred_20220530_171614.pth
+python/protein/interpred/models/interpred_20220530_171827.pth
+python/protein/interpred/models/test.pt

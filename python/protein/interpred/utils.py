@@ -101,14 +101,20 @@ def PCA(X, p):
     return T
 
 
-def get_input(coords_a, coords_b, p=16):
-    dmat_a = torch.squeeze(get_dmat(coords_a))
-    dmat_b = torch.squeeze(get_dmat(coords_b))
-    p = min(dmat_a.shape[-1], dmat_b.shape[-1], p)
-    T_a = PCA(dmat_a, p=p)
-    T_b = PCA(dmat_b, p=p)
-    inp = torch.matmul(T_a, T_b.T)[None, None, ...]
-    return inp
+def get_input(coords_a, coords_b, input_size, return_normalizer=False):
+    dmat_a = get_dmat(coords_a[None, ...])
+    dmat_b = get_dmat(coords_b[None, ...])
+    # Normalize the distance matrices
+    normalizer = Normalizer([dmat_a, dmat_b])
+    dmat_a, dmat_b = normalizer.transform([dmat_a, dmat_b])
+    #################################
+    dmat_a = torch.nn.functional.interpolate(dmat_a, size=input_size)
+    dmat_b = torch.nn.functional.interpolate(dmat_b, size=input_size)
+    inp = torch.cat((dmat_a, dmat_b), dim=1)
+    if return_normalizer:
+        return inp, normalizer
+    else:
+        return inp
 
 
 def get_cmap(coords, threshold=8.):
@@ -299,6 +305,48 @@ def get_inter_seq(seq_a, seq_b):
     cartprod = cartprod.reshape((na, nb, 21 * 2))
     cartprod = cartprod.moveaxis(-1, 0)
     return cartprod[None, ...]  # Add the batch dimension
+
+
+class Normalizer(object):
+    def __init__(self, batch):
+        """
+        >>> batch = [1 + torch.randn(1, 1, 249, 249), 2 + 2* torch.randn(1, 1, 639, 639), 3 + 3 * torch.randn(1, 1, 390, 390), 4 + 4 * torch.randn(1, 1, 131, 131)]
+        >>> normalizer = Normalizer(batch)
+        >>> [torch.round(e) for e in normalizer.mu]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e) for e in normalizer.sigma]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> out = normalizer.transform(batch)
+        >>> [torch.round(e.mean()).abs() for e in out]
+        [tensor(0.), tensor(0.), tensor(0.), tensor(0.)]
+        >>> [torch.round(e.std()) for e in out]
+        [tensor(1.), tensor(1.), tensor(1.), tensor(1.)]
+        >>> x = normalizer.inverse_transform(out)
+        >>> [torch.round(e.mean()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        >>> [torch.round(e.std()) for e in x]
+        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
+        """
+        self.batch = [e for e in batch if e is not None]
+        self.mu = torch.tensor([e.mean() for e in self.batch])
+        self.sigma = torch.tensor([e.std() for e in self.batch])
+
+    def transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            if self.sigma[i] > 0:
+                out.append((x[i] - self.mu[i]) / self.sigma[i])
+            else:
+                out.append(x[i] - self.mu[i])
+        return out
+
+    def inverse_transform(self, x):
+        n = len(x)
+        out = []
+        for i in range(n):
+            out.append(x[i] * self.sigma[i] + self.mu[i])
+        return out
 
 
 def log(msg):

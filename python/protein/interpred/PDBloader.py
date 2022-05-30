@@ -64,8 +64,8 @@ class PDBdataset(torch.utils.data.Dataset):
     ...         break
     >>> print(len(batch))
     4
-    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
-    [(torch.Size([1, 1, 21, 28]), torch.Size([1, 1, 21, 28])), (torch.Size([1, 1, 245, 242]), torch.Size([1, 1, 245, 242])), (torch.Size([1, 1, 28, 28]), torch.Size([1, 1, 28, 28])), (torch.Size([1, 1, 188, 188]), torch.Size([1, 1, 188, 188]))]
+    >>> [(inp.shape, interdmat.shape) for (inp, interdmat) in batch]
+    [(torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 21, 28])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 245, 242])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 28, 28])), (torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 188, 188]))]
 
     Try with a list of PDBs:
     >>> dataset = PDBdataset(pdblist=['data/1ycr.pdb'], randomize=False)
@@ -74,15 +74,16 @@ class PDBdataset(torch.utils.data.Dataset):
     ...     pass
     >>> print(len(batch))
     1
-    >>> [(inp.shape, intercmap.shape) for (inp, intercmap) in batch]
-    [(torch.Size([1, 1, 85, 13]), torch.Size([1, 1, 85, 13]))]
+    >>> [(inp.shape, interdmat.shape) for (inp, interdmat) in batch]
+    [(torch.Size([1, 2, 224, 224]), torch.Size([1, 1, 85, 13]))]
     """
     def __init__(self,
                  pdbpath=None,
                  pdblist=None,
                  selection='polymer.protein and name CA',
                  randomize=True,
-                 return_name=False):
+                 return_name=False,
+                 input_size=(224, 224)):
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
@@ -90,6 +91,7 @@ class PDBdataset(torch.utils.data.Dataset):
         self.randomize = randomize
         self.selection = selection
         self.return_name = return_name
+        self.input_size = input_size
 
     def __len__(self):
         return len(self.list_IDs)
@@ -102,14 +104,18 @@ class PDBdataset(torch.utils.data.Dataset):
         cmd.remove("not alt ''+A")
         cmd.alter(pymolname, "alt=''")
         ######################################################################################
-        coords_a, coords_b, cmap, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        coords_a, coords_b, interdmat, seq_a, seq_b = get_dimer(pymolname, self.selection, randomize=self.randomize)
+        # Normalize the distance matrices
+        normalizer = utils.Normalizer([interdmat])
+        interdmat, = normalizer.transform([interdmat])
+        #################################
         cmd.delete(pymolname)
         log(f'pdbfile: {pdbfile}|coords_a.shape: {coords_a.shape}|coords_b.shape: {coords_b.shape}')
-        inp = utils.get_input(coords_a, coords_b)
+        inp = utils.get_input(coords_a, coords_b, self.input_size)
         if self.return_name:
-            return inp, cmap, pdbfile
+            return inp, interdmat, pdbfile
         else:
-            return inp, cmap
+            return inp, interdmat
 
 
 def get_dimer(pymolname, selection, randomize=True):
@@ -127,8 +133,8 @@ def get_dimer(pymolname, selection, randomize=True):
     # log(f'chain_seqs : {[len(e) for e in chain_seqs]}')
     A, B = [torch.Tensor(c) for c in chain_coords]
     seq_A, seq_B = chain_seqs
-    cmap = utils.get_inter_cmap(A[None, ...], B[None, ...])
-    return A, B, cmap, seq_A, seq_B
+    interdmat = utils.get_inter_dmat(A[None, ...], B[None, ...])
+    return A, B, interdmat, seq_A, seq_B
 
 
 def log(msg):
