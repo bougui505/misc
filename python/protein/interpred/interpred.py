@@ -75,7 +75,8 @@ def learn(
         modelfilename='models/interpred.pt',
         save_each=30,  # in minutes
         latent_dims=512,
-        save_each_epoch=True):
+        save_each_epoch=True,
+        klwscheduler=True):
     """
     Uncomment the following to test it (about 20s runtime)
     # >>> learn(pdblist=['data/1ycr.pdb'], print_each=1, nepoch=60, modelfilename='models/test.pt', batch_size=1, save_each_epoch=False)
@@ -105,7 +106,6 @@ def learn(
     step = 0
     total_steps = nepoch * len(dataiter)
     eta = ETA(total_steps=total_steps)
-    klw = len(dataiter) / batch_size
     while epoch < nepoch:
         try:
             batch = next(dataiter)
@@ -117,6 +117,10 @@ def learn(
                 optimizer.zero_grad()
                 loss_rec = get_loss(out, targets)
                 loss_kl = model.encoder.kl
+                if klwscheduler:
+                    klw = torch.sigmoid(torch.tensor(step * 100. / total_steps - 50.))
+                else:
+                    klw = len(dataiter) / batch_size
                 loss = loss_rec + klw * loss_kl
                 loss.backward()
                 optimizer.step()
