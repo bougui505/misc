@@ -62,6 +62,7 @@ def fit(pdbpath=None,
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.eval()
+    model = model.to(device)
     som = quicksom.SOM(m=somsize[0], n=somsize[1], dim=latent_dims, n_epoch=n_epochs, device=device)
     if num_workers is None:
         num_workers = os.cpu_count()
@@ -90,7 +91,7 @@ def fit(pdbpath=None,
             batch = next(dataiter)
             batch = [e for e in batch if e is not None]
             names = [name for dmat, name in batch if dmat is not None]
-            batch = [dmat for dmat, name in batch if dmat is not None]
+            batch = [dmat.to(device) for dmat, name in batch if dmat is not None]
             batch, latent = forward_batch(batch, model, encode_only=True)
             latent = latent.to(som.device, non_blocking=True)
             latent = latent.float()
