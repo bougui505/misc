@@ -76,7 +76,7 @@ def fit(pdbpath=None,
     if som.alpha is None:
         som.alpha = float((som.m * som.n) / nbatch)
     log(f'som.alpha: {som.alpha}')
-    log(f'som.alpha: {som.sigma}')
+    log(f'som.sigma: {som.sigma}')
     dataiter = iter(dataloader)
     epoch = 0
     som.step = 0
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--vae', help='Filename for the traine VAE model')
+    parser.add_argument('--vae', help='Filename for the trained VAE model')
     parser.add_argument('--epochs', type=int)
     parser.add_argument('--pdbpath', help='Path to the PDB database')
     parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
