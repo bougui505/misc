@@ -92,10 +92,11 @@ def fit(pdbpath=None,
             batch = [e for e in batch if e is not None]
             names = [name for dmat, name in batch if dmat is not None]
             batch = [dmat.to(device) for dmat, name in batch if dmat is not None]
-            batch, latent = forward_batch(batch, model, encode_only=True)
-            latent = latent.to(som.device, non_blocking=True)
-            latent = latent.float()
-            bmu_loc, error = som.__call__(latent, learning_rate_op=lr_step)
+            if len(batch) > 0:
+                batch, latent = forward_batch(batch, model, encode_only=True)
+                latent = latent.to(som.device, non_blocking=True)
+                latent = latent.float()
+                bmu_loc, error = som.__call__(latent, learning_rate_op=lr_step)
             if not som.step % print_each:
                 eta_val = eta(som.step)
                 log(f"epoch: {epoch+1}|step: {som.step}|alpha: {som.alpha_op:4f}|sigma: {som.sigma_op:.4f}|error: {error:.4f}|eta: {eta_val}"
