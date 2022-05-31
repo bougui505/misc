@@ -86,7 +86,7 @@ def fit(pdbpath=None,
         if som.step >= dobreak:
             break
         try:
-            som.step += batch_size
+            som.step += 1
             lr_step = som.scheduler(som.step, total_steps)
             data = next(dataiter)
             data = [e for e in data if e is not None]
