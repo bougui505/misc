@@ -514,3 +514,4 @@ python/protein/VAE/index.faiss/ids.npy
 python/protein/VAE/index.faiss/index.faiss
 python/protein/filter_pdb.log
 python/protein/test.log
+python/protein/VAE/pdb
