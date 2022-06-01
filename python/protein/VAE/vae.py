@@ -52,7 +52,7 @@ class Encoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 10])
     """
-    def __init__(self, latent_dims, input_size=(224, 224), interpolate=True):
+    def __init__(self, latent_dims, input_size=(1024, 1024), interpolate=True):
         super().__init__()
         self.input_size = input_size
         self.interpolate = interpolate
@@ -63,7 +63,7 @@ class Encoder(torch.nn.Module):
         self.conv5 = torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, stride=2)
         self.relu = torch.nn.ReLU()
         self.flatten = torch.nn.Flatten()
-        self.linear1 = torch.nn.Linear(in_features=6400, out_features=4096)
+        self.linear1 = torch.nn.LazyLinear(out_features=4096)
         self.linear2 = torch.nn.Linear(in_features=4096, out_features=4096)
         self.linear_mu = torch.nn.Linear(in_features=4096, out_features=latent_dims)
         self.linear_sigma = torch.nn.Linear(in_features=4096, out_features=latent_dims)
