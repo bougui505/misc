@@ -507,3 +507,4 @@ python/protein/interpred/models/test.pt
 python/faiss/index.faiss
 python/protein/VAE/som_20220525_0843.p
 python/protein/VAE/som_20220525_0843.p~20220531-124843~
+python/protein/VAE/models/cmapvae_20220601_0941.pt
