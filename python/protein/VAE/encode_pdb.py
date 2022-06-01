@@ -81,7 +81,8 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
             break
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
         names.extend([name for dmat, name in data if dmat is not None])
-        _, latent_vectors = vae.forward_batch(batch, model, encode_only=True)
+        with torch.no_grad():
+            _, latent_vectors = vae.forward_batch(batch, model, encode_only=True)
         index.add(latent_vectors.detach().cpu().numpy())
         eta_val = eta(i + 1)
         log(f"step: {i+1}|eta: {eta_val}")
