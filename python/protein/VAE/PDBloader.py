@@ -80,7 +80,7 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> len(batch)
     4
     >>> [(dmat.shape, name) for dmat, name in batch]
-    [(torch.Size([1, 1, 162, 162]), '/media/bougui/scratch/pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), '/media/bougui/scratch/pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), '/media/bougui/scratch/pdb/02/pdb102l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), '/media/bougui/scratch/pdb/02/pdb102m.ent.gz_A')]
+    [(torch.Size([1, 1, 162, 162]), 'pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/02/pdb102m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), 'pdb/02/pdb102l.ent.gz_A')]
     """
     def __init__(
             self,
@@ -119,11 +119,19 @@ class PDBdataset(torch.utils.data.Dataset):
         chains = cmd.get_chains(f'{pymolname} and {self.selection}')
         nchains = len(chains)
         if nchains == 0:
-            return None
+            if self.return_name:
+                return None, pdbfile
+            else:
+                return None
         else:
             if not self.chain_from_list:
                 chain = np.random.choice(chains)
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
+            if coords is None:
+                if self.return_name:
+                    return None, pdbfile + "_" + chain
+                else:
+                    return None
             coords = torch.tensor(coords[None, ...])
             dmat = utils.get_dmat(coords)
             if self.interpolate:
