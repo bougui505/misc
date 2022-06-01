@@ -52,7 +52,7 @@ class Encoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 10])
     """
-    def __init__(self, latent_dims, input_size=(1024, 1024), interpolate=True):
+    def __init__(self, latent_dims, input_size=(512, 512), interpolate=True):
         super().__init__()
         self.input_size = input_size
         self.interpolate = interpolate
