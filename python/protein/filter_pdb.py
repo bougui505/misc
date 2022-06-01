@@ -136,19 +136,20 @@ class PDBdataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
         self.logfile.seek(0)
+        features = {}
         if pdbfile not in self.logfile:
             pymolname = randomgen.randomstring()
             cmd.load(filename=pdbfile, object=pymolname)
             properties = Properties(pymolname)
-            seqOK = properties.checkseq()
-            n_chains = properties.n_chains()
+            features['seqOK'] = properties.checkseq()
+            features['n_chains'] = properties.n_chains()
             chains = properties.chains()
-            ncontacts = properties.n_contacts()
+            features['chains'] = ','.join([f'{e}' for e in chains])
+            features['ncontacts'] = properties.n_contacts()
             nres = properties.nres()
-            nres_str = ','.join([f'{e:d}' for e in nres])
-            chains_str = ','.join([f'{e}' for e in chains])
-            log(f'pdbfile: {pdbfile}|seqOK: {seqOK:d}|n_chains: {n_chains}|chains: {chains_str}|nres: {nres_str}|n_contacts: {ncontacts}'
-                )
+            features['nres'] = ','.join([f'{e:d}' for e in nres])
+            outstr = "|".join([f'{k}: {v}' for k, v in features.items()])
+            log(f'pdbfile: {pdbfile}|{outstr}')
             cmd.delete(pymolname)
 
 
