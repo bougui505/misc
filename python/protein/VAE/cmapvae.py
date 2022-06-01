@@ -50,16 +50,17 @@ from vae import forward_batch, load_model
 
 
 def train(
-        pdbpath=None,
-        pdblist=None,
-        batch_size=4,
-        n_epochs=20,
-        latent_dims=512,
-        save_each_epoch=True,
-        print_each=100,
-        save_each=30,  # in minutes
-        modelfilename='models/cmapvae.pt',
-        klwscheduler=False):
+    pdbpath=None,
+    pdblist=None,
+    batch_size=4,
+    n_epochs=20,
+    latent_dims=512,
+    save_each_epoch=True,
+    print_each=100,
+    save_each=30,  # in minutes
+    modelfilename='models/cmapvae.pt',
+    klwscheduler=False,
+    input_size=(512, 512)):
     """
     >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt')
     """
@@ -77,7 +78,7 @@ def train(
         model = load_model(filename=modelfilename, latent_dims=latent_dims)
         model.train()
     else:
-        model = vae.VariationalAutoencoder(latent_dims=latent_dims)
+        model = vae.VariationalAutoencoder(latent_dims=latent_dims, input_size=input_size)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     t_0 = time.time()
@@ -204,6 +205,7 @@ if __name__ == '__main__':
                         default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
+    parser.add_argument('--input_size', default=512, type=int)
     parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
     parser.add_argument('--sel', default='polymer.protein and name CA')
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -212,6 +214,7 @@ if __name__ == '__main__':
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+    input_size = (args.input_size, args.input_size)
 
     if args.train:
         train(pdbpath=args.pdbpath,
@@ -221,8 +224,10 @@ if __name__ == '__main__':
               latent_dims=args.latent_dims,
               klwscheduler=args.klw,
               save_each=args.save_every,
-              batch_size=args.bs)
+              batch_size=args.bs,
+              input_size=input_size)
 
     if args.predict is not None:
         model = load_model(args.model, latent_dims=args.latent_dims)
+        model.encoder.input_size = input_size
         plot_reconstructed(args.predict, model, selection=args.sel)

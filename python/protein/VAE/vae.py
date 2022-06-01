@@ -149,10 +149,11 @@ class VariationalAutoencoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 1, 50, 50])
     """
-    def __init__(self, latent_dims, interpolate=True):
+    def __init__(self, latent_dims, interpolate=True, input_size=(512, 512)):
         super().__init__()
         self.encoder = Encoder(latent_dims, interpolate=interpolate)
         self.decoder = Decoder(latent_dims, interpolate=interpolate)
+        self.encoder.input_size = input_size
 
     def forward(self, x):
         output_size = x.shape[-2:]
