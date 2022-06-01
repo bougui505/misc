@@ -122,13 +122,18 @@ class PDBdataset(torch.utils.data.Dataset):
     See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
     """
-    def __init__(self, pdbpath, selection='all', return_name=False):
+    def __init__(self,
+                 pdbpath,
+                 selection='all',
+                 return_name=False,
+                 feature_list=['seqOK', 'n_chains', 'chains', 'ncontacts', 'nres']):
         self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         self.return_name = return_name
         self.selection = selection
         cmd.reinitialize()
         self.logfilename = logging.getLogger().handlers[0].baseFilename
         self.logfile = open(self.logfilename, 'r')
+        self.feature_list = feature_list
 
     def __len__(self):
         return len(self.list_IDs)
@@ -141,13 +146,18 @@ class PDBdataset(torch.utils.data.Dataset):
             pymolname = randomgen.randomstring()
             cmd.load(filename=pdbfile, object=pymolname)
             properties = Properties(pymolname)
-            features['seqOK'] = properties.checkseq()
-            features['n_chains'] = properties.n_chains()
-            chains = properties.chains()
-            features['chains'] = ','.join([f'{e}' for e in chains])
-            features['ncontacts'] = properties.n_contacts()
-            nres = properties.nres()
-            features['nres'] = ','.join([f'{e:d}' for e in nres])
+            if 'seqOK' in self.feature_list:
+                features['seqOK'] = properties.checkseq()
+            if 'n_chains' in self.feature_list:
+                features['n_chains'] = properties.n_chains()
+            if 'chains' in self.feature_list:
+                chains = properties.chains()
+                features['chains'] = ','.join([f'{e}' for e in chains])
+            if 'ncontacts' in self.feature_list:
+                features['ncontacts'] = properties.n_contacts()
+            if 'nres' in self.feature_list:
+                nres = properties.nres()
+                features['nres'] = ','.join([f'{e:d}' for e in nres])
             outstr = "|".join([f'{k}: {v}' for k, v in features.items()])
             log(f'pdbfile: {pdbfile}|{outstr}')
             cmd.delete(pymolname)
@@ -170,9 +180,13 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--pdb', help='Path to the pdb database')
+    feature_list = ['seqOK', 'n_chains', 'chains', 'ncontacts', 'nres']
+    parser.add_argument('--features',
+                        help=f'list of features to return. Can be: {feature_list}',
+                        nargs='+',
+                        default=feature_list)
     args = parser.parse_args()
     # ### UNCOMMENT FOR LOGGING ####
-    import os
     import logging
     logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
     logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
@@ -182,7 +196,7 @@ if __name__ == '__main__':
     if args.test:
         doctest.testmod()
         sys.exit()
-    dataset = PDBdataset(args.pdb)
+    dataset = PDBdataset(args.pdb, feature_list=args.features)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=1,
                                              shuffle=False,
