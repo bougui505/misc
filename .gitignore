@@ -508,3 +508,9 @@ python/faiss/index.faiss
 python/protein/VAE/som_20220525_0843.p
 python/protein/VAE/som_20220525_0843.p~20220531-124843~
 python/protein/VAE/models/cmapvae_20220601_0941.pt
+python/protein/VAE/encode_pdb.log
+python/protein/VAE/filter_pdb.log~20220601-154849~
+python/protein/VAE/index.faiss/ids.npy
+python/protein/VAE/index.faiss/index.faiss
+python/protein/filter_pdb.log
+python/protein/test.log
