@@ -142,25 +142,24 @@ class PDBdataset(torch.utils.data.Dataset):
         pdbfile = self.list_IDs[index]
         self.logfile.seek(0)
         features = {}
-        if pdbfile not in self.logfile:
-            pymolname = randomgen.randomstring()
-            cmd.load(filename=pdbfile, object=pymolname)
-            properties = Properties(pymolname)
-            if 'seqOK' in self.feature_list:
-                features['seqOK'] = properties.checkseq()
-            if 'n_chains' in self.feature_list:
-                features['n_chains'] = properties.n_chains()
-            if 'chains' in self.feature_list:
-                chains = properties.chains()
-                features['chains'] = ','.join([f'{e}' for e in chains])
-            if 'ncontacts' in self.feature_list:
-                features['ncontacts'] = properties.n_contacts()
-            if 'nres' in self.feature_list:
-                nres = properties.nres()
-                features['nres'] = ','.join([f'{e:d}' for e in nres])
-            outstr = "|".join([f'{k}: {v}' for k, v in features.items()])
-            log(f'pdbfile: {pdbfile}|{outstr}')
-            cmd.delete(pymolname)
+        pymolname = randomgen.randomstring()
+        cmd.load(filename=pdbfile, object=pymolname)
+        properties = Properties(pymolname)
+        if 'seqOK' in self.feature_list:
+            features['seqOK'] = properties.checkseq()
+        if 'n_chains' in self.feature_list:
+            features['n_chains'] = properties.n_chains()
+        if 'chains' in self.feature_list:
+            chains = properties.chains()
+            features['chains'] = ','.join([f'{e}' for e in chains])
+        if 'ncontacts' in self.feature_list:
+            features['ncontacts'] = properties.n_contacts()
+        if 'nres' in self.feature_list:
+            nres = properties.nres()
+            features['nres'] = ','.join([f'{e:d}' for e in nres])
+        outstr = "|".join([f'{k}: {v}' for k, v in features.items()])
+        log(f'pdbfile: {pdbfile}|{outstr}')
+        cmd.delete(pymolname)
 
 
 def log(msg):
