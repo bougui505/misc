@@ -82,7 +82,10 @@ class Properties(object):
         nres = []
         for chain in chains:
             coords = cmd.get_coords(f'{self.mol} and polymer.protein and name CA and chain {chain}')
-            nres.append(len(coords))
+            if coords is not None:
+                nres.append(len(coords))
+            else:
+                nres.append(0)
         return nres
 
     def chains(self):
@@ -124,25 +127,29 @@ class PDBdataset(torch.utils.data.Dataset):
         self.return_name = return_name
         self.selection = selection
         cmd.reinitialize()
+        self.logfilename = logging.getLogger().handlers[0].baseFilename
+        self.logfile = open(self.logfilename, 'r')
 
     def __len__(self):
         return len(self.list_IDs)
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
-        pymolname = randomgen.randomstring()
-        cmd.load(filename=pdbfile, object=pymolname)
-        properties = Properties(pymolname)
-        seqOK = properties.checkseq()
-        n_chains = properties.n_chains()
-        chains = properties.chains()
-        ncontacts = properties.n_contacts()
-        nres = properties.nres()
-        nres_str = ','.join([f'{e:d}' for e in nres])
-        chains_str = ','.join([f'{e}' for e in chains])
-        log(f'pdbfile: {pdbfile}|seqOK: {seqOK:d}|n_chains: {n_chains}|chains: {chains_str}|nres: {nres_str}|n_contacts: {ncontacts}'
-            )
-        cmd.delete(pymolname)
+        self.logfile.seek(0)
+        if pdbfile not in self.logfile:
+            pymolname = randomgen.randomstring()
+            cmd.load(filename=pdbfile, object=pymolname)
+            properties = Properties(pymolname)
+            seqOK = properties.checkseq()
+            n_chains = properties.n_chains()
+            chains = properties.chains()
+            ncontacts = properties.n_contacts()
+            nres = properties.nres()
+            nres_str = ','.join([f'{e:d}' for e in nres])
+            chains_str = ','.join([f'{e}' for e in chains])
+            log(f'pdbfile: {pdbfile}|seqOK: {seqOK:d}|n_chains: {n_chains}|chains: {chains_str}|nres: {nres_str}|n_contacts: {ncontacts}'
+                )
+            cmd.delete(pymolname)
 
 
 def log(msg):
