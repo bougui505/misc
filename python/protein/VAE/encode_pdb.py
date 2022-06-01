@@ -44,6 +44,8 @@ import vae
 import cmapvae
 import faiss
 from misc.eta import ETA
+import time
+import datetime
 
 
 def log(msg):
@@ -53,7 +55,7 @@ def log(msg):
         pass
 
 
-def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf, latent_dims=512):
+def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf, latent_dims=512, save_each=10):
     """
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
     >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index.faiss', do_break=3)
@@ -76,6 +78,7 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
                                              collate_fn=PDBloader.collate_fn)
     names = []
     eta = ETA(total_steps=len(dataloader))
+    t_0 = time.time()
     for i, data in enumerate(dataloader):
         if i >= do_break:
             break
@@ -85,7 +88,13 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True)
         index.add(latent_vectors.detach().cpu().numpy())
         eta_val = eta(i + 1)
-        log(f"step: {i+1}|eta: {eta_val}")
+        if (time.time() - t_0) / 60 >= save_each:
+            t_0 = time.time()
+            faiss.write_index(index, f'{indexfilename}/{indexfilename}')
+            np.save(f'{indexfilename}/ids.npy', np.asarray(names))
+        last_saved = (time.time() - t_0)
+        last_saved = str(datetime.timedelta(seconds=last_saved))
+        log(f"step: {i+1}|last_saved: {last_saved}|eta: {eta_val}")
     npdb = index.ntotal
     print(f'Total number of pdb in the FAISS index: {npdb}')
     faiss.write_index(index, f'{indexfilename}/{indexfilename}')
@@ -116,10 +125,16 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', help='Batch size (default 4)', default=4, type=int)
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--save_every', help='Save the index every given number of minutes', default=10, type=int)
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     model = cmapvae.load_model(filename=args.model, latent_dims=args.latent_dims)
-    encode_pdb(args.pdbfilelist, model, args.index, batch_size=args.batch_size, latent_dims=args.latent_dims)
+    encode_pdb(args.pdbfilelist,
+               model,
+               args.index,
+               batch_size=args.batch_size,
+               latent_dims=args.latent_dims,
+               save_each=args.save_every)
