@@ -73,27 +73,34 @@ class PDBdataset(torch.utils.data.Dataset):
     >>> batch.shape
     torch.Size([4, 1, 224, 224])
 
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb', return_name=True, interpolate=False)
+    >>> dataset = PDBdataset(pdblistfile='pdbfilelist.txt', return_name=True, interpolate=False)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> batch = next(dataiter)
     >>> len(batch)
     4
     >>> [(dmat.shape, name) for dmat, name in batch]
-    [(torch.Size([1, 1, 249, 249]), '/media/bougui/scratch/pdb/a9/pdb5a96.ent.gz'), (torch.Size([1, 1, 639, 639]), '/media/bougui/scratch/pdb/a9/pdb4a92.ent.gz'), (torch.Size([1, 1, 390, 390]), '/media/bougui/scratch/pdb/a9/pdb4a9g.ent.gz'), (torch.Size([1, 1, 131, 131]), '/media/bougui/scratch/pdb/a9/pdb3a93.ent.gz')]
+    [(torch.Size([1, 1, 162, 162]), '/media/bougui/scratch/pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), '/media/bougui/scratch/pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), '/media/bougui/scratch/pdb/02/pdb102l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), '/media/bougui/scratch/pdb/02/pdb102m.ent.gz_A')]
     """
-    def __init__(self,
-                 pdbpath=None,
-                 pdblist=None,
-                 selection='polymer.protein and name CA',
-                 interpolate=True,
-                 interpolate_size=(224, 224),
-                 return_name=False):
+    def __init__(
+            self,
+            pdbpath=None,
+            pdblist=None,
+            pdblistfile=None,  # format: pdbfilename chain
+            selection='polymer.protein and name CA',
+            interpolate=True,
+            interpolate_size=(224, 224),
+            return_name=False):
+        self.chain_from_list = False
         self.return_name = return_name
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
             self.list_IDs = pdblist
+        if pdblistfile is not None:
+            with open(pdblistfile, 'r') as filelist:
+                self.list_IDs = filelist.read().splitlines()
+            self.chain_from_list = True
         self.selection = selection
         self.interpolate = interpolate
         self.interpolate_size = interpolate_size
@@ -103,7 +110,10 @@ class PDBdataset(torch.utils.data.Dataset):
         return len(self.list_IDs)
 
     def __getitem__(self, index):
-        pdbfile = self.list_IDs[index]
+        if not self.chain_from_list:
+            pdbfile = self.list_IDs[index]
+        else:
+            pdbfile, chain = self.list_IDs[index].split()
         pymolname = randomgen.randomstring()
         cmd.load(filename=pdbfile, object=pymolname)
         chains = cmd.get_chains(f'{pymolname} and {self.selection}')
@@ -111,7 +121,8 @@ class PDBdataset(torch.utils.data.Dataset):
         if nchains == 0:
             return None
         else:
-            chain = np.random.choice(chains)
+            if not self.chain_from_list:
+                chain = np.random.choice(chains)
             coords = cmd.get_coords(selection=f'{pymolname} and {self.selection} and chain {chain}')
             coords = torch.tensor(coords[None, ...])
             dmat = utils.get_dmat(coords)
@@ -120,7 +131,7 @@ class PDBdataset(torch.utils.data.Dataset):
                 dmat = dmat[0]
         cmd.delete(pymolname)
         if self.return_name:
-            return dmat, pdbfile
+            return dmat, pdbfile + "_" + chain
         else:
             return dmat
 
