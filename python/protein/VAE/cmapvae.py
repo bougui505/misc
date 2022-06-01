@@ -205,7 +205,7 @@ if __name__ == '__main__':
                         default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
-    parser.add_argument('--input_size', default=512, type=int)
+    parser.add_argument('--input_size', default=224, type=int)
     parser.add_argument('--predict', help='Reconstruction from the given pdb', metavar='filename.pdb')
     parser.add_argument('--sel', default='polymer.protein and name CA')
     parser.add_argument('--test', help='Test the code', action='store_true')
