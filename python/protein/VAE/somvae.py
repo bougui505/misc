@@ -119,6 +119,8 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    from misc.pytorch import cpu_unpickler
+    import matplotlib.pyplot as plt
     # ### UNCOMMENT FOR LOGGING ####
     import logging
     logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
@@ -129,6 +131,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--vae', help='Filename for the trained VAE model')
+    parser.add_argument('--fit', action='store_true')
     parser.add_argument('--epochs', type=int)
     parser.add_argument('--pdbpath', help='Path to the PDB database')
     parser.add_argument('--batch_size', help='Batch size for training (default 4)', default=4, type=int)
@@ -136,22 +139,32 @@ if __name__ == '__main__':
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--somx', help='size of x axis of the SOM', type=int, default=50)
     parser.add_argument('--somy', help='size of y axis of the SOM', type=int, default=50)
-    parser.add_argument('--somfile', help='SOM file name to dump')
+    parser.add_argument('--somfile', help='SOM file name to dump or load')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
-    model = load_model(args.vae)
-    fit(pdbpath=args.pdbpath,
-        pdblist=None,
-        model=model,
-        n_epochs=args.epochs,
-        batch_size=args.batch_size,
-        num_workers=None,
-        dobreak=np.inf,
-        print_each=args.print_each,
-        somsize=(args.somx, args.somy),
-        latent_dims=args.latent_dims,
-        outfilename=args.somfile)
+    if args.fit:
+        model = load_model(args.vae)
+        fit(pdbpath=args.pdbpath,
+            pdblist=None,
+            model=model,
+            n_epochs=args.epochs,
+            batch_size=args.batch_size,
+            num_workers=None,
+            dobreak=np.inf,
+            print_each=args.print_each,
+            somsize=(args.somx, args.somy),
+            latent_dims=args.latent_dims,
+            outfilename=args.somfile)
+    else:
+        som = cpu_unpickler.CPU_Unpickler(open(args.somfile, 'rb')).load()
+        som.device = 'cpu'
+        if som.umat is None:
+            smap = som.centroids.cpu().numpy().reshape((som.m, som.n, -1))
+            som.umat = som._get_umat(smap, periodic=False)
+        plt.matshow(som.umat, vmax=30)
+        plt.colorbar()
+        plt.show()

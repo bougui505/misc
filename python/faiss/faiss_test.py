@@ -70,7 +70,7 @@ if __name__ == '__main__':
         sys.exit()
 
     d = 64  # dimension
-    nb = 100000  # database size
+    nb = 1000000  # database size
     nq = 10000  # nb of queries
     # np.random.seed(1234)  # make reproducible
     xb = np.random.random((nb, d)).astype('float32')
@@ -88,6 +88,5 @@ if __name__ == '__main__':
     D, I = index.search(xb[:5], k)  # sanity check
     print(I)
     print(D)
-    D, I = index.search(xq, k)  # actual search
+    D, I = index.search(xq[:5], k)  # actual search
     print(I[:5])  # neighbors of the 5 first queries
-    print(I[-5:])  # neighbors of the 5 last queries

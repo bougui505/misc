@@ -85,6 +85,10 @@ class Properties(object):
             nres.append(len(coords))
         return nres
 
+    def chains(self):
+        chains = cmd.get_chains(f'{self.mol} and polymer.protein')
+        return chains
+
     def isinteracting(self, chain1, chain2, distance_thr=8.):
         coords1 = cmd.get_coords(f'{self.mol} and polymer.protein and name CA and chain {chain1}')
         coords2 = cmd.get_coords(f'{self.mol} and polymer.protein and name CA and chain {chain2}')
@@ -131,10 +135,13 @@ class PDBdataset(torch.utils.data.Dataset):
         properties = Properties(pymolname)
         seqOK = properties.checkseq()
         n_chains = properties.n_chains()
+        chains = properties.chains()
         ncontacts = properties.n_contacts()
         nres = properties.nres()
         nres_str = ','.join([f'{e:d}' for e in nres])
-        log(f'pdbfile: {pdbfile}|seqOK: {seqOK:d}|n_chains: {n_chains}|nres: {nres_str}|n_contacts: {ncontacts}')
+        chains_str = ','.join([f'{e}' for e in chains])
+        log(f'pdbfile: {pdbfile}|seqOK: {seqOK:d}|n_chains: {n_chains}|chains: {chains_str}|nres: {nres_str}|n_contacts: {ncontacts}'
+            )
         cmd.delete(pymolname)
 
 
