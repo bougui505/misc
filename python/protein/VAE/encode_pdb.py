@@ -59,10 +59,12 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
     >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index.faiss', do_break=3)
     Total number of pdb in the FAISS index: 12
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     try:
         os.mkdir(indexfilename)
     except FileExistsError:
         pass
+    model = model.to(device)
     model.eval()
     index = faiss.IndexFlatL2(latent_dims)  # build the index
     dataset = PDBloader.PDBdataset(pdblistfile=pdbfilelist, return_name=True, interpolate=False)
@@ -77,7 +79,7 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
     for i, data in enumerate(dataloader):
         if i >= do_break:
             break
-        batch = [dmat for dmat, name in data if dmat is not None]
+        batch = [dmat.to(device) for dmat, name in data if dmat is not None]
         names.extend([name for dmat, name in data if dmat is not None])
         _, latent_vectors = vae.forward_batch(batch, model, encode_only=True)
         index.add(latent_vectors.detach().cpu().numpy())
