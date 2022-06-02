@@ -515,3 +515,11 @@ python/protein/VAE/index.faiss/index.faiss
 python/protein/filter_pdb.log
 python/protein/test.log
 python/protein/VAE/pdb
+python/protein/VAE/mapalign.log
+python/protein/VAE/pdbfetch/1ycr.cif
+python/protein/VAE/pdbfetch/2wj8.cif
+python/protein/VAE/pdbfetch/4ci0.cif
+python/protein/VAE/pdbfetch/4ucc.cif
+python/protein/VAE/pdbfetch/6lzg.cif
+python/protein/VAE/pdbfetch/6ueb.cif
+python/protein/VAE/pdbfetch
