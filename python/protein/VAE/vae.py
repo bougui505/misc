@@ -132,8 +132,8 @@ class Encoder(torch.nn.Module):
 
     def forward(self, x):
         if self.interpolate:
-            # x = torch.nn.functional.interpolate(x, size=self.input_size)
-            x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
+            x = torch.nn.functional.interpolate(x, size=self.input_size)
+            # x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
         out = self.layers(x)
         mu = self.linear_mu(out)
         log_sigma_sq = torch.clamp(self.linear_sigma(out), min=-50., max=10.)
@@ -221,8 +221,8 @@ class Decoder(torch.nn.Module):
         out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
         # out = self.relu(out)
         if self.interpolate:
-            # out = torch.nn.functional.interpolate(out, size=output_size)
-            out = utils.back_transform(out, size=output_size)
+            out = torch.nn.functional.interpolate(out, size=output_size)
+            # out = utils.back_transform(out, size=output_size)
         return out
 
 
