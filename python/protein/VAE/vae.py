@@ -41,16 +41,64 @@
 import torch
 from utils import Normalizer
 import PDBloader
+from torchsummary import summary
 
 
 class Encoder(torch.nn.Module):
     """
     >>> batch = 3
     >>> inp = torch.ones(batch, 1, 50, 50)
-    >>> encoder = Encoder(10)
+    >>> encoder = Encoder(512)
+    >>> summary(encoder, (1, 50, 50))
+    ----------------------------------------------------------------
+            Layer (type)               Output Shape         Param #
+    ================================================================
+                Conv2d-1           [-1, 96, 54, 54]          11,712
+                Conv2d-2           [-1, 96, 54, 54]          11,712
+                  ReLU-3           [-1, 96, 54, 54]               0
+                  ReLU-4           [-1, 96, 54, 54]               0
+                Conv2d-5          [-1, 256, 25, 25]         614,656
+                Conv2d-6          [-1, 256, 25, 25]         614,656
+                  ReLU-7          [-1, 256, 25, 25]               0
+                  ReLU-8          [-1, 256, 25, 25]               0
+                Conv2d-9          [-1, 384, 12, 12]         885,120
+               Conv2d-10          [-1, 384, 12, 12]         885,120
+                 ReLU-11          [-1, 384, 12, 12]               0
+                 ReLU-12          [-1, 384, 12, 12]               0
+               Conv2d-13          [-1, 384, 12, 12]       1,327,488
+               Conv2d-14          [-1, 384, 12, 12]       1,327,488
+                 ReLU-15          [-1, 384, 12, 12]               0
+                 ReLU-16          [-1, 384, 12, 12]               0
+               Conv2d-17            [-1, 256, 5, 5]         884,992
+               Conv2d-18            [-1, 256, 5, 5]         884,992
+                 ReLU-19            [-1, 256, 5, 5]               0
+                 ReLU-20            [-1, 256, 5, 5]               0
+              Flatten-21                 [-1, 6400]               0
+              Flatten-22                 [-1, 6400]               0
+               Linear-23                 [-1, 4096]      26,218,496
+               Linear-24                 [-1, 4096]      26,218,496
+                 ReLU-25                 [-1, 4096]               0
+                 ReLU-26                 [-1, 4096]               0
+               Linear-27                 [-1, 4096]      16,781,312
+               Linear-28                 [-1, 4096]      16,781,312
+                 ReLU-29                 [-1, 4096]               0
+                 ReLU-30                 [-1, 4096]               0
+               Linear-31                  [-1, 512]       2,097,664
+               Linear-32                  [-1, 512]       2,097,664
+    ================================================================
+    Total params: 97,642,880
+    Trainable params: 97,642,880
+    Non-trainable params: 0
+    ----------------------------------------------------------------
+    Input size (MB): 0.01
+    Forward/backward pass size (MB): 17.35
+    Params size (MB): 372.48
+    Estimated Total Size (MB): 389.84
+    ----------------------------------------------------------------
+
     >>> out = encoder(inp)
     >>> out.shape
-    torch.Size([3, 10])
+    torch.Size([3, 512])
     """
     def __init__(self, latent_dims, input_size=(224, 224), interpolate=True, sample=True):
         super().__init__()
@@ -167,9 +215,9 @@ class VariationalAutoencoder(torch.nn.Module):
 
 def reconstruct(inp, model):
     """
-    >>> model = load_model('models/test.pt')
-    >>> inp = [torch.randn(1, 1, 83, 83)]
-    >>> inp, out = reconstruct(inp, model)
+    # >>> model = load_model('models/test.pt')
+    # >>> inp = [torch.randn(1, 1, 83, 83)]
+    # >>> inp, out = reconstruct(inp, model)
     """
     normalizer = Normalizer(inp)
     inp = normalizer.transform(inp)
