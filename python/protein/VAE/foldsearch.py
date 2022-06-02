@@ -45,6 +45,7 @@ from pymol import cmd
 import os
 from misc import randomgen
 import numpy as np
+import scipy.spatial.distance as scidist
 
 
 def foldsearch(pdbcode=None,
@@ -54,12 +55,20 @@ def foldsearch(pdbcode=None,
                model=cmapvae.load_model('models/cmapvae_20220525_0843.pt'),
                selection='all',
                batch_size=4,
-               n_neighbors=5):
+               n_neighbors=5,
+               return_latent=False,
+               print_latent=False):
     """
     >>> index = faiss.read_index('index.faiss/index.faiss')
     >>> ids = np.load('index.faiss/ids.npy')
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
-    >>> foldsearch(pdbcode='1ycr', index=index, ids=ids, model=model, selection='chain A')
+    >>> foldsearch(pdbcode=['1ycr'], index=index, ids=ids, model=model, selection='chain A')
+    query: pdbfetch/1ycr.cif_A
+        1ycr A 0.0000
+        5vk0 G 16.1960
+        3lnz A 17.1650
+        6t2f A 20.0276
+        5vk0 K 26.9365
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
@@ -69,10 +78,12 @@ def foldsearch(pdbcode=None,
             os.mkdir('pdbfetch')
         except FileExistsError:
             pass
-        pymolname = randomgen.randomstring()
-        cmd.fetch(pdbcode, name=pymolname, file=f'pdbfetch/{pdbcode}.cif', type='cif')
-        cmd.delete(pymolname)
-        pdblist = [f'pdbfetch/{pdbcode}.cif']
+        pdblist = []
+        for pdb in pdbcode:
+            pymolname = randomgen.randomstring()
+            cmd.fetch(pdb, name=pymolname, file=f'pdbfetch/{pdb}.cif', type='cif')
+            cmd.delete(pymolname)
+            pdblist.append(f'pdbfetch/{pdb}.cif')
     dataset = PDBloader.PDBdataset(pdblist=pdblist,
                                    interpolate=False,
                                    selection=f'polymer.protein and name CA and {selection}',
@@ -88,8 +99,43 @@ def foldsearch(pdbcode=None,
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)
         latent_vectors = latent_vectors.detach().cpu().numpy()
+        if return_latent:
+            if print_latent:
+                print_vector(latent_vectors[0])
+            return latent_vectors
         Dmat, Imat = index.search(latent_vectors, n_neighbors)
+        Dmat = np.sqrt(Dmat)  # faiss returns the square distance
         print_foldsearch_results(Imat, Dmat, names, ids)
+
+
+def get_distance(pdbcode=None,
+                 pdblist=None,
+                 index=faiss.read_index('index.faiss/index.faiss'),
+                 ids=np.load('index.faiss/ids.npy'),
+                 model=cmapvae.load_model('models/cmapvae_20220525_0843.pt'),
+                 selection=None):
+    """
+    >>> index = faiss.read_index('index.faiss/index.faiss')
+    >>> ids = np.load('index.faiss/ids.npy')
+    >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
+    >>> get_distance(pdbcode=['1ycr', '5vk0'], index=index, ids=ids, model=model, selection=['chain A', 'chain G'])
+    array([4.0244217])
+    """
+    latent_vectors = []
+    for sel, pdb in zip(selection, pdbcode):
+        v = foldsearch(pdbcode=[pdb],
+                       pdblist=pdblist,
+                       index=index,
+                       ids=ids,
+                       model=model,
+                       selection=sel,
+                       return_latent=True)
+        latent_vectors.append(np.squeeze(v))
+    latent_vectors = np.asarray(latent_vectors)
+    # print(latent_vectors.shape)
+    # (2, 512)
+    pdist = scidist.pdist(latent_vectors)
+    return pdist
 
 
 def print_foldsearch_results(Imat, Dmat, query_names, ids):
@@ -101,7 +147,11 @@ def print_foldsearch_results(Imat, Dmat, query_names, ids):
             pdbcode = os.path.basename(pdb)
             pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
             chain = pdb.split('_')[1]
-            print(f'\t{pdbcode} {chain} {d:.4f}')
+            print(f'    {pdbcode} {chain} {d:.4f}')
+
+
+def print_vector(v):
+    print(' '.join([f'{e:.4f}' for e in v]))
 
 
 def log(msg):
@@ -125,12 +175,16 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--pdb', help='PDB code of the query')
+    parser.add_argument(
+        '--pdb',
+        help='PDB code of the query. If 2 or more PDB codes are given compute the distance between those PDBs',
+        nargs='+')
     parser.add_argument('--pdbfile', help='pdb filename of the query')
     parser.add_argument('--index', help='path to the directory containing the index and ids', default='index.faiss')
     parser.add_argument('--model', help='VAE model to use', default='models/cmapvae_20220525_0843.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
-    parser.add_argument('--sel', help='Selection for the query in pymol selection language', default='all')
+    parser.add_argument('--sel', help='Selection for the query in pymol selection language', default='all', nargs='+')
+    parser.add_argument('--print_latent', help='Print on stdout the latent vector of the query', action='store_true')
     parser.add_argument('--n_neighbors', help='Number of neighbors to return (default:5)', default=5, type=int)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
@@ -145,9 +199,15 @@ if __name__ == '__main__':
     index = faiss.read_index(f'{args.index}/index.faiss')
     ids = np.load(f'{args.index}/ids.npy')
     model = cmapvae.load_model(filename=args.model, latent_dims=args.latent_dims)
-    foldsearch(pdbcode=args.pdb,
-               pdblist=pdblist,
-               index=index,
-               ids=ids,
-               selection=args.sel,
-               n_neighbors=args.n_neighbors)
+    if len(args.pdb) == 1:
+        foldsearch(pdbcode=args.pdb,
+                   pdblist=pdblist,
+                   index=index,
+                   ids=ids,
+                   selection=args.sel[0],
+                   n_neighbors=args.n_neighbors,
+                   return_latent=args.print_latent,
+                   print_latent=args.print_latent)
+    else:
+        pdist = get_distance(pdbcode=args.pdb, pdblist=pdblist, index=index, ids=ids, model=model, selection=args.sel)
+        print_vector(pdist)

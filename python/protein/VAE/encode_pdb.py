@@ -68,7 +68,8 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
         pass
     model = model.to(device)
     model.eval()
-    index = faiss.IndexFlatL2(latent_dims)  # build the index
+    # index = faiss.IndexFlatL2(latent_dims)  # build the index in euclidean space (L2-norm)
+    index = faiss.IndexFlatIP(latent_dims)  # build the index in cosine similarity (IP: Inner Product)
     dataset = PDBloader.PDBdataset(pdblistfile=pdbfilelist, return_name=True, interpolate=False)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
