@@ -93,6 +93,73 @@ class Normalizer(object):
         return out
 
 
+def compute_pad(inp_size, out_size):
+    """
+    >>> A = torch.randn(78, 83)
+    >>> out_size = (224, 224)
+    >>> compute_pad(A.shape, out_size)
+    (70, 71, 73, 73)
+    """
+    na, nb = inp_size
+    nat, nbt = out_size
+    assert na <= nat
+    assert nb <= nbt
+    narest, nbrest = nat - na, nbt - nb
+    padtop = narest // 2
+    padbottom = narest - padtop
+    padleft = nbrest // 2
+    padright = nbrest - padleft
+    return (padleft, padright, padtop, padbottom)
+
+
+def pad(mat, size):
+    """
+    >>> A = torch.randn(78, 83)
+    >>> B = pad(A, size=(224, 224))
+    >>> B.shape
+    torch.Size([224, 224])
+    """
+    padlen = compute_pad(mat.shape, size)
+    return torch.nn.functional.pad(mat, padlen)
+
+
+def unpad(mat, size):
+    """
+    >>> A = torch.randn(78, 83)
+    >>> B = pad(A, size=(224, 224))
+    >>> B.shape
+    torch.Size([224, 224])
+    >>> A2 = unpad(B, (78, 83))
+    >>> A2.shape
+    torch.Size([78, 83])
+    >>> (A2 == A).all()
+    tensor(True)
+    """
+    na, nb = mat.shape
+    padlen = compute_pad(size, (na, nb))
+    padleft, padright, padtop, padbottom = padlen
+    return mat[padtop:na - padbottom, padleft:nb - padright]
+
+
+def resize(mat, size):
+    """
+    >>> A = torch.randn(78, 78)
+    >>> size = (224, 224)
+    >>> B = resize(A, size=size)
+    >>> B.shape
+    torch.Size([224, 224])
+    """
+    na, nb = mat.shape
+    nat, nbt = size
+    if na < nat and nb < nbt:
+        out = pad(mat, size)
+    elif na > nat and nb > nbt:
+        out = torch.nn.functional.interpolate(out, size=size)
+    else:
+        out = mat
+    return out
+
+
 def log(msg):
     try:
         logging.info(msg)
