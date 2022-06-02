@@ -114,47 +114,85 @@ def compute_pad(inp_size, out_size):
 
 def pad(mat, size):
     """
-    >>> A = torch.randn(78, 83)
+    >>> A = torch.randn(3, 1, 78, 83)
     >>> B = pad(A, size=(224, 224))
     >>> B.shape
-    torch.Size([224, 224])
+    torch.Size([3, 1, 224, 224])
     """
-    padlen = compute_pad(mat.shape, size)
+    padlen = compute_pad(mat.shape[-2:], size)
     return torch.nn.functional.pad(mat, padlen)
 
 
 def unpad(mat, size):
     """
-    >>> A = torch.randn(78, 83)
+    >>> A = torch.randn(3, 1, 78, 83)
     >>> B = pad(A, size=(224, 224))
     >>> B.shape
-    torch.Size([224, 224])
+    torch.Size([3, 1, 224, 224])
     >>> A2 = unpad(B, (78, 83))
     >>> A2.shape
-    torch.Size([78, 83])
+    torch.Size([3, 1, 78, 83])
     >>> (A2 == A).all()
     tensor(True)
     """
-    na, nb = mat.shape
+    na, nb = mat.shape[-2:]
     padlen = compute_pad(size, (na, nb))
     padleft, padright, padtop, padbottom = padlen
-    return mat[padtop:na - padbottom, padleft:nb - padright]
+    return mat[..., padtop:na - padbottom, padleft:nb - padright]
 
 
 def resize(mat, size):
     """
-    >>> A = torch.randn(78, 78)
+    >>> A = torch.randn(3, 1, 78, 78)
     >>> size = (224, 224)
     >>> B = resize(A, size=size)
     >>> B.shape
-    torch.Size([224, 224])
+    torch.Size([3, 1, 224, 224])
+
+    >>> A = torch.randn(3, 1, 278, 278)
+    >>> B = resize(A, size=size)
+    >>> B.shape
+    torch.Size([3, 1, 224, 224])
     """
-    na, nb = mat.shape
+    na, nb = mat.shape[-2:]
     nat, nbt = size
     if na < nat and nb < nbt:
         out = pad(mat, size)
     elif na > nat and nb > nbt:
-        out = torch.nn.functional.interpolate(out, size=size)
+        out = torch.nn.functional.interpolate(mat, size=size)
+    else:
+        out = mat
+    return out
+
+
+def back_transform(mat, size):
+    """
+    >>> A = torch.randn(3, 1, 78, 78)
+    >>> A_resize = resize(A, (224, 224))  # Here padding is applied
+    >>> A_resize.shape
+    torch.Size([3, 1, 224, 224])
+    >>> A_back = back_transform(A_resize, (78, 78))  # and unpadding
+    >>> A_back.shape
+    torch.Size([3, 1, 78, 78])
+    >>> (A_back == A).all()  # Therefore we retrieve the same A matrix
+    tensor(True)
+
+    >>> A = torch.randn(3, 1, 378, 378)
+    >>> A_resize = resize(A, (224, 224))  # Here interpolation is applied to reduce the size
+    >>> A_resize.shape
+    torch.Size([3, 1, 224, 224])
+    >>> A_back = back_transform(A_resize, (378, 378))  # and back interpolation
+    >>> A_back.shape
+    torch.Size([3, 1, 378, 378])
+    >>> (A_back == A).all()  # therefore some information is lost
+    tensor(False)
+    """
+    na, nb = mat.shape[-2:]
+    nat, nbt = size
+    if nat < na and nbt < nb:
+        out = unpad(mat, size)
+    elif nat > na and nbt > nb:
+        out = torch.nn.functional.interpolate(mat, size=size)
     else:
         out = mat
     return out
