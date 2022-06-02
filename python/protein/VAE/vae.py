@@ -52,10 +52,11 @@ class Encoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 10])
     """
-    def __init__(self, latent_dims, input_size=(224, 224), interpolate=True):
+    def __init__(self, latent_dims, input_size=(224, 224), interpolate=True, sample=True):
         super().__init__()
         self.input_size = input_size
         self.interpolate = interpolate
+        self.sample = sample
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4)
         self.conv2 = torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=2)
         self.conv3 = torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=2)
@@ -87,7 +88,10 @@ class Encoder(torch.nn.Module):
         mu = self.linear_mu(out)
         log_sigma_sq = self.linear_sigma(out)
         sigma_sq = torch.exp(log_sigma_sq)
-        z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
+        if self.sample:
+            z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
+        else:
+            z = mu
         # See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
         self.kl.append(((1 / 2) * (sigma_sq + mu**2 - 1 - log_sigma_sq).sum(axis=1)).mean())
         return z
@@ -149,9 +153,9 @@ class VariationalAutoencoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 1, 50, 50])
     """
-    def __init__(self, latent_dims, interpolate=True, input_size=(224, 224)):
+    def __init__(self, latent_dims, interpolate=True, input_size=(224, 224), sample=True):
         super().__init__()
-        self.encoder = Encoder(latent_dims, interpolate=interpolate)
+        self.encoder = Encoder(latent_dims, interpolate=interpolate, sample=sample)
         self.decoder = Decoder(latent_dims, interpolate=interpolate)
         self.encoder.input_size = input_size
 
@@ -177,7 +181,7 @@ def reconstruct(inp, model):
     return inp, out
 
 
-def forward_batch(batch, model, encode_only=False):
+def forward_batch(batch, model, encode_only=False, sample=True):
     """
     >>> model = VariationalAutoencoder(latent_dims=512)
     >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
@@ -199,6 +203,7 @@ def forward_batch(batch, model, encode_only=False):
     >>> outputs.shape
     torch.Size([4, 512])
     """
+    model.encoder.sample = sample
     inputs = [e for e in batch if e is not None]
     outputs = []
     for data in inputs:

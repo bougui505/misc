@@ -85,7 +85,7 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
         names.extend([name for dmat, name in data if dmat is not None])
         with torch.no_grad():
-            _, latent_vectors = vae.forward_batch(batch, model, encode_only=True)
+            _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)
         index.add(latent_vectors.detach().cpu().numpy())
         eta_val = eta(i + 1)
         if (time.time() - t_0) / 60 >= save_each:
