@@ -149,12 +149,43 @@ class Decoder(torch.nn.Module):
     def __init__(self, latent_dims, interpolate=True):
         """
         >>> batch = 3
-        >>> latent_dims = 10
+        >>> latent_dims = 512
         >>> z = torch.randn(batch, latent_dims)
         >>> decoder = Decoder(latent_dims=latent_dims)
         >>> out = decoder(z, output_size=(50,50))
         >>> out.shape
         torch.Size([3, 1, 50, 50])
+        >>> decoder = Decoder(latent_dims=latent_dims, interpolate=False)
+        >>> summary(decoder, (512,))
+        ----------------------------------------------------------------
+                Layer (type)               Output Shape         Param #
+        ================================================================
+                    Linear-1                 [-1, 4096]       2,101,248
+                      ReLU-2                 [-1, 4096]               0
+                    Linear-3                 [-1, 4096]      16,781,312
+                      ReLU-4                 [-1, 4096]               0
+                    Linear-5                 [-1, 6400]      26,220,800
+                      ReLU-6                 [-1, 6400]               0
+           ConvTranspose2d-7          [-1, 384, 12, 12]       1,573,248
+                      ReLU-8          [-1, 384, 12, 12]               0
+                    Conv2d-9          [-1, 384, 12, 12]       1,327,488
+                     ReLU-10          [-1, 384, 12, 12]               0
+          ConvTranspose2d-11          [-1, 256, 26, 26]       1,573,120
+                     ReLU-12          [-1, 256, 26, 26]               0
+          ConvTranspose2d-13           [-1, 96, 54, 54]         393,312
+                     ReLU-14           [-1, 96, 54, 54]               0
+          ConvTranspose2d-15          [-1, 1, 224, 224]          13,825
+        ================================================================
+        Total params: 49,984,353
+        Trainable params: 49,984,353
+        Non-trainable params: 0
+        ----------------------------------------------------------------
+        Input size (MB): 0.00
+        Forward/backward pass size (MB): 9.21
+        Params size (MB): 190.68
+        Estimated Total Size (MB): 199.88
+        ----------------------------------------------------------------
+
         """
         super().__init__()
         self.interpolate = interpolate
@@ -168,7 +199,7 @@ class Decoder(torch.nn.Module):
         self.upconv5 = torch.nn.ConvTranspose2d(in_channels=96, out_channels=1, kernel_size=12, stride=4)
         self.relu = torch.nn.ReLU()
 
-    def forward(self, z, output_size):
+    def forward(self, z, output_size=None):
         B = z.shape[0]  # batch size
         out = self.linear1(z)
         out = self.relu(out)
