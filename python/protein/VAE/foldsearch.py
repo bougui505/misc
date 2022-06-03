@@ -50,8 +50,8 @@ import scipy.spatial.distance as scidist
 
 def foldsearch(pdbcode=None,
                pdblist=None,
-               index=faiss.read_index('index.faiss/index.faiss'),
-               ids=np.load('index.faiss/ids.npy'),
+               index=faiss.read_index('index_20220603_1045.faiss/index.faiss'),
+               ids=np.load('index_20220603_1045.faiss/ids.npy'),
                model=cmapvae.load_model('models/cmapvae_20220525_0843.pt'),
                selection='all',
                batch_size=4,
@@ -59,16 +59,16 @@ def foldsearch(pdbcode=None,
                return_latent=False,
                print_latent=False):
     """
-    >>> index = faiss.read_index('index.faiss/index.faiss')
-    >>> ids = np.load('index.faiss/ids.npy')
+    >>> index = faiss.read_index('index_20220603_1045.faiss/index.faiss')
+    >>> ids = np.load('index_20220603_1045.faiss/ids.npy')
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
     >>> foldsearch(pdbcode=['1ycr'], index=index, ids=ids, model=model, selection='chain A')
     query: pdbfetch/1ycr.cif_A
-        1ycr A 0.0000
-        5vk0 G 16.1960
-        3lnz A 17.1650
-        6t2f A 20.0276
-        5vk0 K 26.9365
+        1ycr A 1.0000
+        5vk0 G 0.9993
+        3lnz A 0.9993
+        6t2f A 0.9992
+        6t2e A 0.9989
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
@@ -110,16 +110,16 @@ def foldsearch(pdbcode=None,
 
 def get_distance(pdbcode=None,
                  pdblist=None,
-                 index=faiss.read_index('index.faiss/index.faiss'),
-                 ids=np.load('index.faiss/ids.npy'),
+                 index=faiss.read_index('index_20220603_1045.faiss/index.faiss'),
+                 ids=np.load('index_20220603_1045.faiss/ids.npy'),
                  model=cmapvae.load_model('models/cmapvae_20220525_0843.pt'),
                  selection=None):
     """
-    >>> index = faiss.read_index('index.faiss/index.faiss')
-    >>> ids = np.load('index.faiss/ids.npy')
+    >>> index = faiss.read_index('index_20220603_1045.faiss/index.faiss')
+    >>> ids = np.load('index_20220603_1045.faiss/ids.npy')
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
     >>> get_distance(pdbcode=['1ycr', '5vk0'], index=index, ids=ids, model=model, selection=['chain A', 'chain G'])
-    array([4.0244217])
+    array([0.99931141])
     """
     latent_vectors = []
     for sel, pdb in zip(selection, pdbcode):
@@ -180,7 +180,9 @@ if __name__ == '__main__':
         help='PDB code of the query. If 2 or more PDB codes are given compute the distance between those PDBs',
         nargs='+')
     parser.add_argument('--pdbfile', help='pdb filename of the query')
-    parser.add_argument('--index', help='path to the directory containing the index and ids', default='index.faiss')
+    parser.add_argument('--index',
+                        help='path to the directory containing the index and ids',
+                        default='index_20220603_1045.faiss')
     parser.add_argument('--model', help='VAE model to use', default='models/cmapvae_20220525_0843.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--sel', help='Selection for the query in pymol selection language', default='all', nargs='+')
