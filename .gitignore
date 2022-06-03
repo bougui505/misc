@@ -523,3 +523,10 @@ python/protein/VAE/pdbfetch/4ucc.cif
 python/protein/VAE/pdbfetch/6lzg.cif
 python/protein/VAE/pdbfetch/6ueb.cif
 python/protein/VAE/pdbfetch
+python/protein/VAE/index.faiss~20220602-094951~/ids.npy
+python/protein/VAE/index.faiss~20220602-094951~/index.faiss
+python/protein/VAE/index_L2.faiss/ids.npy
+python/protein/VAE/index_L2.faiss/index.faiss
+python/protein/VAE/index_test.faiss/ids.npy
+python/protein/VAE/index_test.faiss/index_test.faiss
+python/protein/VAE/latent.txt
