@@ -46,6 +46,7 @@ import faiss
 from misc.eta import ETA
 import time
 import datetime
+from utils import Normalizer
 
 
 def log(msg):
@@ -84,6 +85,8 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
         if i >= do_break:
             break
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
+        normalizer = Normalizer(batch)
+        batch = normalizer.transform(normalizer.batch)
         names.extend([name for dmat, name in data if dmat is not None])
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)

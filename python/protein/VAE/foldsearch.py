@@ -46,6 +46,7 @@ import os
 from misc import randomgen
 import numpy as np
 import scipy.spatial.distance as scidist
+from utils import Normalizer
 
 
 def foldsearch(pdbcode=None,
@@ -95,6 +96,8 @@ def foldsearch(pdbcode=None,
                                              collate_fn=PDBloader.collate_fn)
     for i, data in enumerate(dataloader):
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
+        normalizer = Normalizer(batch)
+        batch = normalizer.transform(normalizer.batch)
         names = [name for dmat, name in data if dmat is not None]
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)
