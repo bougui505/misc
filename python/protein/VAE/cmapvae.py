@@ -107,6 +107,8 @@ def train(
                 loss_rec = get_reconstruction_loss(inputs, outputs)
                 loss_kl = torch.mean(torch.tensor(model.encoder.kl))
                 loss = loss_rec + klw * loss_kl
+                if torch.isnan(loss):
+                    break
                 loss.backward()
                 opt.step()
             if (time.time() - t_0) / 60 >= save_each:
