@@ -58,7 +58,7 @@ def log(msg):
 def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf, latent_dims=512, save_each=10):
     """
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
-    >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index.faiss', do_break=3)
+    >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index_test.faiss', do_break=3)
     Total number of pdb in the FAISS index: 12
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -87,7 +87,10 @@ def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf,
         names.extend([name for dmat, name in data if dmat is not None])
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)
-        index.add(latent_vectors.detach().cpu().numpy())
+        latent_vectors = latent_vectors.detach().cpu().numpy()
+        # print(latent_vectors.shape)  # (4, 512)
+        latent_vectors = latent_vectors / np.linalg.norm(latent_vectors, axis=1)[:, None]
+        index.add(latent_vectors)
         eta_val = eta(i + 1)
         if (time.time() - t_0) / 60 >= save_each:
             t_0 = time.time()
