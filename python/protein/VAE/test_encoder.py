@@ -36,13 +36,7 @@
 #                                                                           #
 #############################################################################
 
-# See: https://avandekleut.github.io/vae/
-
 import torch
-from misc.protein.VAE.utils import Normalizer
-import misc.protein.VAE.utils as utils
-import misc.protein.VAE.PDBloader as PDBloader
-from torchsummary import summary
 
 
 class Encoder(torch.nn.Module):
@@ -147,168 +141,6 @@ class Encoder(torch.nn.Module):
         return z
 
 
-class Decoder(torch.nn.Module):
-    def __init__(self, latent_dims, interpolate=True):
-        """
-        >>> batch = 3
-        >>> latent_dims = 512
-        >>> z = torch.randn(batch, latent_dims)
-        >>> decoder = Decoder(latent_dims=latent_dims)
-        >>> out = decoder(z, output_size=(50,50))
-        >>> out.shape
-        torch.Size([3, 1, 50, 50])
-        >>> decoder = Decoder(latent_dims=latent_dims, interpolate=False)
-        >>> summary(decoder, (512,))
-        ----------------------------------------------------------------
-                Layer (type)               Output Shape         Param #
-        ================================================================
-                    Linear-1                 [-1, 4096]       2,101,248
-                      ReLU-2                 [-1, 4096]               0
-                    Linear-3                 [-1, 4096]      16,781,312
-                      ReLU-4                 [-1, 4096]               0
-                    Linear-5                 [-1, 6400]      26,220,800
-                      ReLU-6                 [-1, 6400]               0
-           ConvTranspose2d-7          [-1, 384, 12, 12]       1,573,248
-                      ReLU-8          [-1, 384, 12, 12]               0
-                    Conv2d-9          [-1, 384, 12, 12]       1,327,488
-                     ReLU-10          [-1, 384, 12, 12]               0
-          ConvTranspose2d-11          [-1, 256, 26, 26]       1,573,120
-                     ReLU-12          [-1, 256, 26, 26]               0
-          ConvTranspose2d-13           [-1, 96, 54, 54]         393,312
-                     ReLU-14           [-1, 96, 54, 54]               0
-          ConvTranspose2d-15          [-1, 1, 224, 224]          13,825
-        ================================================================
-        Total params: 49,984,353
-        Trainable params: 49,984,353
-        Non-trainable params: 0
-        ----------------------------------------------------------------
-        Input size (MB): 0.00
-        Forward/backward pass size (MB): 9.21
-        Params size (MB): 190.68
-        Estimated Total Size (MB): 199.88
-        ----------------------------------------------------------------
-
-        """
-        super().__init__()
-        self.interpolate = interpolate
-        self.linear1 = torch.nn.Linear(in_features=latent_dims, out_features=4096)
-        self.linear2 = torch.nn.Linear(in_features=4096, out_features=4096)
-        self.linear3 = torch.nn.Linear(in_features=4096, out_features=6400)
-        self.upconv1 = torch.nn.ConvTranspose2d(in_channels=256, out_channels=384, kernel_size=4, stride=2)
-        self.conv2 = torch.nn.Conv2d(in_channels=384, out_channels=384, kernel_size=3, padding='same', stride=1)
-        self.upconv3 = torch.nn.ConvTranspose2d(in_channels=384, out_channels=256, kernel_size=4, stride=2)
-        self.upconv4 = torch.nn.ConvTranspose2d(in_channels=256, out_channels=96, kernel_size=4, stride=2)
-        self.upconv5 = torch.nn.ConvTranspose2d(in_channels=96, out_channels=1, kernel_size=12, stride=4)
-        self.relu = torch.nn.ReLU()
-
-    def forward(self, z, output_size=None):
-        B = z.shape[0]  # batch size
-        out = self.linear1(z)
-        out = self.relu(out)
-        out = self.linear2(out)
-        out = self.relu(out)
-        out = self.linear3(out)
-        out = self.relu(out)
-        out = torch.reshape(out, (B, 256, 5, 5))
-        out = self.upconv1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.relu(out)
-        out = self.upconv3(out)
-        out = self.relu(out)
-        out = self.upconv4(out)
-        out = self.relu(out)
-        out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
-        # out = self.relu(out)
-        if self.interpolate:
-            out = torch.nn.functional.interpolate(out, size=output_size)
-            # out = utils.back_transform(out, size=output_size)
-        return out
-
-
-class VariationalAutoencoder(torch.nn.Module):
-    """
-    >>> batch = 3
-    >>> inp = torch.ones(batch, 1, 50, 50)
-    >>> vae = VariationalAutoencoder(10)
-    >>> out = vae(inp)
-    >>> out.shape
-    torch.Size([3, 1, 50, 50])
-    """
-    def __init__(self, latent_dims, interpolate=True, input_size=(224, 224), sample=True):
-        super().__init__()
-        self.encoder = Encoder(latent_dims, interpolate=interpolate, sample=sample)
-        self.decoder = Decoder(latent_dims, interpolate=interpolate)
-        self.encoder.input_size = input_size
-
-    def forward(self, x):
-        output_size = x.shape[-2:]
-        z = self.encoder(x)
-        return self.decoder(z, output_size=output_size)
-
-
-def reconstruct(inp, model):
-    """
-    # >>> model = load_model('models/test.pt')
-    # >>> inp = [torch.randn(1, 1, 83, 83)]
-    # >>> inp, out = reconstruct(inp, model)
-    """
-    normalizer = Normalizer(inp)
-    inp = normalizer.transform(inp)
-    model.eval()
-    model.interpolate = True
-    inp, out = forward_batch(inp, model)
-    inp = normalizer.inverse_transform(inp)[0]
-    out = normalizer.inverse_transform(out)[0]
-    return inp, out
-
-
-def forward_batch(batch, model, encode_only=False, sample=True):
-    """
-    >>> model = VariationalAutoencoder(latent_dims=512)
-    >>> dataset = PDBloader.PDBdataset('/media/bougui/scratch/pdb', interpolate=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=PDBloader.collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = dataiter.__next__()
-    >>> [e.shape for e in batch]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-
-    >>> inputs, outputs = forward_batch(batch, model)
-    >>> [e.shape for e in inputs]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-    >>> [e.shape for e in outputs]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-
-    >>> inputs, outputs = forward_batch(batch, model, encode_only=True)
-    >>> [e.shape for e in inputs]
-    [torch.Size([1, 1, 249, 249]), torch.Size([1, 1, 639, 639]), torch.Size([1, 1, 390, 390]), torch.Size([1, 1, 131, 131])]
-    >>> outputs.shape
-    torch.Size([4, 512])
-    """
-    model.encoder.sample = sample
-    inputs = [e for e in batch if e is not None]
-    outputs = []
-    for data in inputs:
-        if encode_only:
-            out = model.encoder(data)
-        else:
-            out = model(data)
-        outputs.append(out)
-    if encode_only:
-        outputs = torch.stack(outputs)[:, 0, :]
-    return inputs, outputs
-
-
-def load_model(filename, latent_dims=512):
-    """
-    """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = VariationalAutoencoder(latent_dims=latent_dims)
-    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
-    model.eval()
-    return model
-
-
 def log(msg):
     try:
         logging.info(msg)
@@ -316,10 +148,24 @@ def log(msg):
         pass
 
 
+def plot_latent(A, encoder):
+    z = encoder(A)
+    z = z.detach().cpu().numpy()
+    z = np.squeeze(z)
+    # z = z / z.max(axis=-1)
+    # z = (z - z.mean(axis=-1)) / z.std(axis=-1)
+    z = z / np.linalg.norm(z, axis=-1)
+    plt.plot(z[:20])
+    return z
+
+
 if __name__ == '__main__':
     import sys
     import doctest
     import argparse
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from misc.protein.VAE import cmapvae, PDBloader
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -337,3 +183,28 @@ if __name__ == '__main__':
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    # A = torch.randn((1, 1, 78, 78))
+    pdbdataset = PDBloader.PDBdataset(pdblist=['/home/bougui/source/misc/python/protein/VAE/data/1ycr.pdb'],
+                                      selection='polymer.protein and name CA and chain A',
+                                      interpolate=False)
+    A = pdbdataset.__getitem__(0)
+    nref = A.shape[-1]
+    model = cmapvae.load_model(filename='/home/bougui/source/misc/python/protein/VAE/models/cmapvae_20220525_0843.pt',
+                               latent_dims=512)
+    # encoder = Encoder(512, sample=False)
+    encoder = model.encoder
+    pdbdataset = PDBloader.PDBdataset(pdblist=['/home/bougui/source/misc/python/protein/VAE/data/4ci0.pdb'],
+                                      selection='polymer.protein and name CA and chain A',
+                                      interpolate=False)
+    A_rand = pdbdataset.__getitem__(0)[..., :nref, :nref]
+    z_rand = plot_latent(torch.randn(A.shape), encoder)
+    z_ori = plot_latent(A, encoder)
+    sim_rand = z_rand.dot(z_ori)
+    dist_rand = np.linalg.norm(z_rand - z_ori)
+    for i in range(1, 20):
+        z = plot_latent(A[..., i:-i, i:-i], encoder)
+        sim = z.dot(z_ori)
+        dist = np.linalg.norm(z - z_ori)
+        print(i, sim, dist, sim_rand, dist_rand)
+    plt.show()

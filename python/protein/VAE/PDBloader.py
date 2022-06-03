@@ -41,7 +41,7 @@ import glob
 from pymol import cmd
 from misc import randomgen
 from misc.pytorch import torchify
-import utils
+import misc.protein.VAE.utils as utils
 import numpy as np
 
 

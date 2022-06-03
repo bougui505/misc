@@ -36,8 +36,8 @@
 #                                                                           #
 #############################################################################
 
-import vae
-import PDBloader
+import misc.protein.VAE.vae as vae
+import misc.protein.VAE.PDBloader as PDBloader
 import torch
 import os
 from misc.eta import ETA
@@ -45,8 +45,8 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
-from utils import Normalizer
-from vae import forward_batch, load_model
+from misc.protein.VAE.utils import Normalizer
+from misc.protein.VAE.vae import forward_batch, load_model
 
 
 def train(
