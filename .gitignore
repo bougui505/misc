@@ -531,3 +531,5 @@ python/protein/VAE/index.faiss/ids.npy
 python/protein/VAE/index.faiss/index.faiss
 python/protein/VAE/models/cmapvae_20220525_0843.pt
 python/protein/VAE/models/cmapvae_20220525_0843.pt~20220525-170542~
+python/protein/VAE/index_20220603_1045.faiss/ids.npy
+python/protein/VAE/index_20220603_1045.faiss/index.faiss
