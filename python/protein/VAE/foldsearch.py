@@ -99,12 +99,12 @@ def foldsearch(pdbcode=None,
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)
         latent_vectors = latent_vectors.detach().cpu().numpy()
+        latent_vectors = latent_vectors / np.linalg.norm(latent_vectors, axis=1)[:, None]
         if return_latent:
             if print_latent:
                 print_vector(latent_vectors[0])
             return latent_vectors
         Dmat, Imat = index.search(latent_vectors, n_neighbors)
-        Dmat = np.sqrt(Dmat)  # faiss returns the square distance
         print_foldsearch_results(Imat, Dmat, names, ids)
 
 
@@ -134,7 +134,7 @@ def get_distance(pdbcode=None,
     latent_vectors = np.asarray(latent_vectors)
     # print(latent_vectors.shape)
     # (2, 512)
-    pdist = scidist.pdist(latent_vectors)
+    pdist = 1. - scidist.pdist(latent_vectors, metric='cosine')
     return pdist
 
 
