@@ -110,6 +110,7 @@ def train(
                 loss_kl = torch.mean(torch.tensor(model.encoder.kl))
                 loss = loss_rec + klw * loss_kl
                 if torch.isnan(loss):
+                    log('NAN-loss break!')
                     break
                 loss.backward()
                 opt.step()
