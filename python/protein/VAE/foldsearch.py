@@ -58,8 +58,7 @@ def foldsearch(pdbcode=None,
                batch_size=4,
                n_neighbors=5,
                return_latent=False,
-               print_latent=False,
-               normalize=True):
+               print_latent=False):
     """
     >>> index = faiss.read_index('index_20220603_1045.faiss/index.faiss')
     >>> ids = np.load('index_20220603_1045.faiss/ids.npy')
@@ -97,9 +96,8 @@ def foldsearch(pdbcode=None,
                                              collate_fn=PDBloader.collate_fn)
     for i, data in enumerate(dataloader):
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
-        if normalize:
-            normalizer = Normalizer(batch)
-            batch = normalizer.transform(normalizer.batch)
+        normalizer = Normalizer(batch)
+        batch = normalizer.transform(normalizer.batch)
         names = [name for dmat, name in data if dmat is not None]
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)

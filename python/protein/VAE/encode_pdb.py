@@ -56,14 +56,7 @@ def log(msg):
         pass
 
 
-def encode_pdb(pdbfilelist,
-               model,
-               indexfilename,
-               batch_size=4,
-               do_break=np.inf,
-               latent_dims=512,
-               save_each=10,
-               normalize=True):
+def encode_pdb(pdbfilelist, model, indexfilename, batch_size=4, do_break=np.inf, latent_dims=512, save_each=10):
     """
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
     >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index_test.faiss', do_break=3)
@@ -92,9 +85,8 @@ def encode_pdb(pdbfilelist,
         if i >= do_break:
             break
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
-        if normalize:
-            normalizer = Normalizer(batch)
-            batch = normalizer.transform(normalizer.batch)
+        normalizer = Normalizer(batch)
+        batch = normalizer.transform(normalizer.batch)
         names.extend([name for dmat, name in data if dmat is not None])
         with torch.no_grad():
             _, latent_vectors = vae.forward_batch(batch, model, encode_only=True, sample=False)

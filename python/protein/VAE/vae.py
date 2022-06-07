@@ -136,7 +136,7 @@ class Encoder(torch.nn.Module):
             # x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
         out = self.layers(x)
         mu = self.linear_mu(out)
-        log_sigma_sq = torch.clamp(self.linear_sigma(out), min=-50., max=10.)
+        log_sigma_sq = self.linear_sigma(out)
         sigma_sq = torch.exp(log_sigma_sq)
         if self.sample:
             z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
@@ -200,7 +200,6 @@ class Decoder(torch.nn.Module):
         self.upconv4 = torch.nn.ConvTranspose2d(in_channels=256, out_channels=96, kernel_size=4, stride=2)
         self.upconv5 = torch.nn.ConvTranspose2d(in_channels=96, out_channels=1, kernel_size=12, stride=4)
         self.relu = torch.nn.ReLU()
-        self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, z, output_size=None):
         B = z.shape[0]  # batch size
@@ -220,7 +219,7 @@ class Decoder(torch.nn.Module):
         out = self.upconv4(out)
         out = self.relu(out)
         out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
-        out = self.sigmoid(out)
+        # out = self.relu(out)
         if self.interpolate:
             out = torch.nn.functional.interpolate(out, size=output_size)
             # out = utils.back_transform(out, size=output_size)
@@ -248,20 +247,19 @@ class VariationalAutoencoder(torch.nn.Module):
         return self.decoder(z, output_size=output_size)
 
 
-def reconstruct(inp, model, normalize=True):
+def reconstruct(inp, model):
     """
     # >>> model = load_model('models/test.pt')
     # >>> inp = [torch.randn(1, 1, 83, 83)]
     # >>> inp, out = reconstruct(inp, model)
     """
-    if normalize:
-        normalizer = Normalizer(inp)
-        inp = normalizer.transform(inp)
+    normalizer = Normalizer(inp)
+    inp = normalizer.transform(inp)
     model.eval()
     model.interpolate = True
     inp, out = forward_batch(inp, model)
-    # inp = normalizer.inverse_transform(inp)[0]
-    # out = normalizer.inverse_transform(out)[0]
+    inp = normalizer.inverse_transform(inp)[0]
+    out = normalizer.inverse_transform(out)[0]
     return inp, out
 
 
