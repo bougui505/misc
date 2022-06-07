@@ -136,7 +136,7 @@ class Encoder(torch.nn.Module):
             # x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
         out = self.layers(x)
         mu = self.linear_mu(out)
-        log_sigma_sq = self.linear_sigma(out)
+        log_sigma_sq = torch.clamp(self.linear_sigma(out), min=-50., max=10.)
         sigma_sq = torch.exp(log_sigma_sq)
         if self.sample:
             z = mu + torch.sqrt(sigma_sq) * self.N.sample(mu.shape)
