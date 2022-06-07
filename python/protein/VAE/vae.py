@@ -247,14 +247,15 @@ class VariationalAutoencoder(torch.nn.Module):
         return self.decoder(z, output_size=output_size)
 
 
-def reconstruct(inp, model):
+def reconstruct(inp, model, normalize=False):
     """
     # >>> model = load_model('models/test.pt')
     # >>> inp = [torch.randn(1, 1, 83, 83)]
     # >>> inp, out = reconstruct(inp, model)
     """
-    normalizer = Normalizer(inp)
-    inp = normalizer.transform(inp)
+    if normalize:
+        normalizer = Normalizer(inp)
+        inp = normalizer.transform(inp)
     model.eval()
     model.interpolate = True
     inp, out = forward_batch(inp, model)

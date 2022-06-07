@@ -50,17 +50,18 @@ from misc.protein.VAE.vae import forward_batch, load_model
 
 
 def train(
-    pdbpath=None,
-    pdblist=None,
-    batch_size=4,
-    n_epochs=20,
-    latent_dims=512,
-    save_each_epoch=True,
-    print_each=100,
-    save_each=30,  # in minutes
-    modelfilename='models/cmapvae.pt',
-    klwscheduler=False,
-    input_size=(512, 512)):
+        pdbpath=None,
+        pdblist=None,
+        batch_size=4,
+        n_epochs=20,
+        latent_dims=512,
+        save_each_epoch=True,
+        print_each=100,
+        save_each=30,  # in minutes
+        modelfilename='models/cmapvae.pt',
+        klwscheduler=False,
+        input_size=(512, 512),
+        normalize=False):
     """
     >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt')
     """
@@ -92,8 +93,9 @@ def train(
             step += 1
             batch = next(dataiter)
             batch = [e.to(device) for e in batch if e is not None]
-            normalizer = Normalizer(batch)
-            batch = normalizer.transform(normalizer.batch)
+            if normalize:
+                normalizer = Normalizer(batch)
+                batch = normalizer.transform(normalizer.batch)
             bs = len(batch)
             if klwscheduler:
                 klw = torch.sigmoid(torch.tensor(step * 10 / total_steps - 5.))

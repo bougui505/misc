@@ -37,6 +37,8 @@
 #############################################################################
 
 import torch
+import scipy.spatial.distance as scidist
+from utils import Normalizer
 
 
 class Encoder(torch.nn.Module):
@@ -149,6 +151,8 @@ def log(msg):
 
 
 def plot_latent(A, encoder):
+    normalizer = Normalizer(A)
+    A = normalizer.transform(normalizer.batch)[0][None, ...]
     z = encoder(A)
     z = z.detach().cpu().numpy()
     z = np.squeeze(z)
@@ -185,7 +189,7 @@ if __name__ == '__main__':
         sys.exit()
 
     # A = torch.randn((1, 1, 78, 78))
-    pdbdataset = PDBloader.PDBdataset(pdblist=['/home/bougui/source/misc/python/protein/VAE/data/1ycr.pdb'],
+    pdbdataset = PDBloader.PDBdataset(pdblist=['pdb/yc/pdb1ycr.ent.gz'],
                                       selection='polymer.protein and name CA and chain A',
                                       interpolate=False)
     A = pdbdataset.__getitem__(0)
@@ -194,17 +198,18 @@ if __name__ == '__main__':
                                latent_dims=512)
     # encoder = Encoder(512, sample=False)
     encoder = model.encoder
-    pdbdataset = PDBloader.PDBdataset(pdblist=['/home/bougui/source/misc/python/protein/VAE/data/4ci0.pdb'],
+    encoder.sample = False
+    pdbdataset = PDBloader.PDBdataset(pdblist=['pdb/pn/pdb6pno.ent.gz'],
                                       selection='polymer.protein and name CA and chain A',
                                       interpolate=False)
-    A_rand = pdbdataset.__getitem__(0)[..., :nref, :nref]
-    z_rand = plot_latent(torch.randn(A.shape), encoder)
+    A_rand = pdbdataset.__getitem__(0)
+    z_rand = plot_latent(A_rand, encoder)
     z_ori = plot_latent(A, encoder)
-    sim_rand = z_rand.dot(z_ori)
+    sim_rand = z_ori.dot(z_rand)
     dist_rand = np.linalg.norm(z_rand - z_ori)
-    for i in range(1, 20):
+    for i in range(1, 20, 5):
         z = plot_latent(A[..., i:-i, i:-i], encoder)
         sim = z.dot(z_ori)
         dist = np.linalg.norm(z - z_ori)
-        print(i, sim, dist, sim_rand, dist_rand)
+        print(i, sim, sim_rand)
     plt.show()
