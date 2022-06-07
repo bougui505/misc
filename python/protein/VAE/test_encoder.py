@@ -158,7 +158,7 @@ def plot_latent(A, encoder):
     # z = z / z.max(axis=-1)
     # z = (z - z.mean(axis=-1)) / z.std(axis=-1)
     z = z / np.linalg.norm(z, axis=-1)
-    plt.plot(z[:20])
+    plt.plot(z[:40])
     return z
 
 

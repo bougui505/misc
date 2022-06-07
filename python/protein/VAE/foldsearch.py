@@ -74,7 +74,7 @@ def foldsearch(pdbcode=None,
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
     model.eval()
-    if pdbcode is not None:
+    if pdbcode is not None and len(pdbcode) > 0:
         try:
             os.mkdir('pdbfetch')
         except FileExistsError:
@@ -204,7 +204,9 @@ if __name__ == '__main__':
     index = faiss.read_index(f'{args.index}/index.faiss')
     ids = np.load(f'{args.index}/ids.npy')
     model = cmapvae.load_model(filename=args.model, latent_dims=args.latent_dims)
-    if len(args.pdb) == 1:
+    if args.pdb is None:
+        args.pdb = []
+    if len(args.pdb) == 1 or pdblist is not None:
         foldsearch(pdbcode=args.pdb,
                    pdblist=pdblist,
                    index=index,
