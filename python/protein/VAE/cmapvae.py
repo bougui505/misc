@@ -168,7 +168,8 @@ def get_reconstruction_loss(inputs, targets):
     loss = 0
     n = len(inputs)
     for (i, o) in zip(inputs, targets):
-        loss += ((i - o)**2).mean()
+        # loss += ((i - o)**2).mean()
+        loss += torch.nn.functional.binary_cross_entropy(i, o)
     loss = loss / n
     return loss
 
