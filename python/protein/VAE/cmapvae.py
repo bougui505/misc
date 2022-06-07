@@ -110,7 +110,7 @@ def train(
                 loss_kl = torch.mean(torch.tensor(model.encoder.kl))
                 loss = loss_rec + klw * loss_kl
                 if torch.isnan(loss):
-                    log('NAN-loss break!')
+                    log(f'NAN-loss break!. rec: {loss_rec}|kl: {loss_kl}')
                     break
                 loss.backward()
                 opt.step()
@@ -169,8 +169,8 @@ def get_reconstruction_loss(inputs, targets):
     loss = 0
     n = len(inputs)
     for (i, o) in zip(inputs, targets):
-        # loss += ((i - o)**2).mean()
-        loss += torch.nn.functional.binary_cross_entropy(i, o)
+        loss += ((i - o)**2).mean()
+        # loss += torch.nn.functional.binary_cross_entropy(i, o)
     loss = loss / n
     return loss
 

@@ -200,6 +200,7 @@ class Decoder(torch.nn.Module):
         self.upconv4 = torch.nn.ConvTranspose2d(in_channels=256, out_channels=96, kernel_size=4, stride=2)
         self.upconv5 = torch.nn.ConvTranspose2d(in_channels=96, out_channels=1, kernel_size=12, stride=4)
         self.relu = torch.nn.ReLU()
+        self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, z, output_size=None):
         B = z.shape[0]  # batch size
@@ -219,7 +220,7 @@ class Decoder(torch.nn.Module):
         out = self.upconv4(out)
         out = self.relu(out)
         out = self.upconv5(out)  # torch.Size([3, 1, 224, 224])
-        # out = self.relu(out)
+        out = self.sigmoid(out)
         if self.interpolate:
             out = torch.nn.functional.interpolate(out, size=output_size)
             # out = utils.back_transform(out, size=output_size)
