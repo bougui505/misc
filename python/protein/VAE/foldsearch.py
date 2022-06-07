@@ -59,7 +59,7 @@ def foldsearch(pdbcode=None,
                n_neighbors=5,
                return_latent=False,
                print_latent=False,
-               normalize=False):
+               normalize=True):
     """
     >>> index = faiss.read_index('index_20220603_1045.faiss/index.faiss')
     >>> ids = np.load('index_20220603_1045.faiss/ids.npy')

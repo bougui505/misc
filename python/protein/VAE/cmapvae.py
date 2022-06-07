@@ -61,7 +61,7 @@ def train(
         modelfilename='models/cmapvae.pt',
         klwscheduler=False,
         input_size=(512, 512),
-        normalize=False):
+        normalize=True):
     """
     >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt')
     """

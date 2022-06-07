@@ -63,7 +63,7 @@ def encode_pdb(pdbfilelist,
                do_break=np.inf,
                latent_dims=512,
                save_each=10,
-               normalize=False):
+               normalize=True):
     """
     >>> model = cmapvae.load_model('models/cmapvae_20220525_0843.pt')
     >>> encode_pdb('pdbfilelist.txt', model, indexfilename='index_test.faiss', do_break=3)
