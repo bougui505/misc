@@ -62,57 +62,42 @@ def get_random_fragment(coords):
     >>> fragment.shape
     torch.Size([1, ..., 3])
     """
-    fragment_ratio = np.random.uniform()
+    fragment_ratio = np.random.uniform(low=0.25)
     n = coords.shape[1]
     fragment_size = int(fragment_ratio * n)
-    i_start_max = n - fragment_size
-    i_start = np.random.choice(i_start_max)
-    i_stop = i_start + fragment_size
-    inds = np.r_[i_start:i_stop]
-    fragment = coords[:, inds, :]
+    if fragment_size > 0:
+        i_start_max = n - fragment_size
+        i_start = np.random.choice(i_start_max)
+        i_stop = i_start + fragment_size
+        inds = np.r_[i_start:i_stop]
+        fragment = coords[:, inds, :]
+    else:
+        fragment = coords
     return fragment
 
 
-class Normalizer(object):
-    def __init__(self, batch):
-        """
-        >>> batch = [1 + torch.randn(1, 1, 249, 249), 2 + 2* torch.randn(1, 1, 639, 639), 3 + 3 * torch.randn(1, 1, 390, 390), 4 + 4 * torch.randn(1, 1, 131, 131)]
-        >>> normalizer = Normalizer(batch)
-        >>> [torch.round(e) for e in normalizer.mu]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> [torch.round(e) for e in normalizer.sigma]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> out = normalizer.transform(batch)
-        >>> [torch.round(e.mean()).abs() for e in out]
-        [tensor(0.), tensor(0.), tensor(0.), tensor(0.)]
-        >>> [torch.round(e.std()) for e in out]
-        [tensor(1.), tensor(1.), tensor(1.), tensor(1.)]
-        >>> x = normalizer.inverse_transform(out)
-        >>> [torch.round(e.mean()) for e in x]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        >>> [torch.round(e.std()) for e in x]
-        [tensor(1.), tensor(2.), tensor(3.), tensor(4.)]
-        """
-        self.batch = [e for e in batch if e is not None]
-        self.mu = torch.tensor([e.mean() for e in self.batch])
-        self.sigma = torch.tensor([e.std() for e in self.batch])
-
-    def transform(self, x):
-        n = len(x)
-        out = []
-        for i in range(n):
-            if self.sigma[i] > 0:
-                out.append((x[i] - self.mu[i]) / self.sigma[i])
-            else:
-                out.append(x[i] - self.mu[i])
-        return out
-
-    def inverse_transform(self, x):
-        n = len(x)
-        out = []
-        for i in range(n):
-            out.append(x[i] * self.sigma[i] + self.mu[i])
-        return out
+def normalize(inp):
+    """
+    >>> batch = 3
+    >>> inp = 3. + 4 * torch.randn(batch, 1, 50, 50)
+    >>> (torch.abs(inp.mean(dim=(2, 3)) - 3.) <= 5e-1).all()
+    tensor(True)
+    >>> (torch.abs(inp.std(dim=(2, 3)) - 4.) <= 5e-1).all()
+    tensor(True)
+    >>> out = normalize(inp)
+    >>> out.shape
+    torch.Size([3, 1, 50, 50])
+    >>> (torch.abs(out.mean(dim=(2, 3))) < 1e-6).all()
+    tensor(True)
+    >>> out.std(dim=(2, 3))
+    tensor([[1.0000],
+            [1.0000],
+            [1.0000]])
+    """
+    mu = torch.mean(inp, dim=(2, 3))
+    sigma = torch.std(inp, dim=(2, 3))
+    out = (inp - mu[..., None, None]) / sigma[..., None, None]
+    return out
 
 
 def compute_pad(inp_size, out_size):
