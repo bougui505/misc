@@ -41,6 +41,9 @@ from misc.protein.sscl import encoder
 from misc.protein.sscl.encoder import load_model
 import torch
 import os
+import time
+from misc.eta import ETA
+import datetime
 
 
 def get_batch_test():
@@ -102,11 +105,16 @@ def get_contrastive_loss(out, tau=1.):
             z_fragment_j = z_fragment_list[j]
             if i == j:
                 sim_num = torch.matmul(z_full_i, z_fragment_j.T)
+                # log(f'z_full_i: {z_full_i}')
+                # log(f'sim_num: {sim_num}')
                 num = torch.exp(sim_num / tau)
             else:
                 sim_den = torch.matmul(z_full_i, z_full_j.T)
+                # log(f'sim_den: {sim_den}')
                 den += torch.exp(sim_den / tau)
+        # log(f'num:{num}, den: {den}')
         loss -= torch.log(num / den)
+    loss = loss / n
     loss = torch.squeeze(loss)
     return loss
 
@@ -124,11 +132,10 @@ def train(
         save_each_epoch=True,
         print_each=100,
         save_each=30,  # in minutes
-        modelfilename='models/cmapvae.pt',
         input_size=(224, 224),
-        klwscheduler=False):
+        modelfilename='models/sscl.pt'):
     """
-    >>> train(pdblist=['data/1ycr.pdb'], print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt')
+    >>> train(pdbpath='pdb', print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt', batch_size=32)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist)
@@ -157,10 +164,22 @@ def train(
         try:
             step += 1
             batch = next(dataiter)
-            batch = [e.to(device) for e in batch if e is not None]
-            normalizer = Normalizer(batch)
-            batch = normalizer.transform(normalizer.batch)
+            batch = [(e[0].to(device), e[1].to(device)) for e in batch if e is not None]
             bs = len(batch)
+            if bs > 0:
+                opt.zero_grad()
+                out = forward_batch(batch, model)
+                loss = get_contrastive_loss(out)
+                loss.backward()
+                opt.step()
+            if (time.time() - t_0) / 60 >= save_each:
+                t_0 = time.time()
+                save_model(model, modelfilename)
+            if not step % print_each:
+                eta_val = eta(step)
+                last_saved = (time.time() - t_0)
+                last_saved = str(datetime.timedelta(seconds=last_saved))
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}")
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
@@ -181,19 +200,41 @@ if __name__ == '__main__':
     import doctest
     import argparse
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import os
+    import logging
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
+    parser.add_argument('--train', help='Train the SSCL', action='store_true')
+    parser.add_argument('--bs', help='Batch size', type=int, default=4)
+    parser.add_argument('--pdbpath', help='Path to the PDB database')
+    parser.add_argument('--epochs', type=int)
+    parser.add_argument('--print_each', type=int, default=100)
+    parser.add_argument('--save_every',
+                        help='Save the model every given number of minutes (default: 30 min)',
+                        type=int,
+                        default=30)
+    parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
+    parser.add_argument('--latent_dims', default=512, type=int)
+    parser.add_argument('--input_size', default=224, type=int)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+    input_size = (args.input_size, args.input_size)
+    if args.train:
+        train(pdbpath=args.pdbpath,
+              n_epochs=args.epochs,
+              modelfilename=args.model,
+              print_each=args.print_each,
+              latent_dims=args.latent_dims,
+              save_each=args.save_every,
+              batch_size=args.bs,
+              input_size=input_size)

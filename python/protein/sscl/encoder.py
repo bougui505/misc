@@ -126,7 +126,11 @@ class Encoder(torch.nn.Module):
         if self.interpolate:
             x = torch.nn.functional.interpolate(x, size=self.input_size)
             # x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
+        if torch.isnan(x).any():
+            print('Warning: nan detected in network input')
         out = self.layers(x)
+        if torch.isnan(out).any():
+            print('Warning: nan detected in network output')
         z = self.linear_mu(out)
         return z
 

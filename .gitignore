@@ -536,3 +536,6 @@ python/protein/VAE/index_20220603_1045.faiss/index.faiss
 python/protein/VAE/data/4ci0.pdb
 python/protein/sscl/pdb
 python/protein/sscl/utils.log
+python/protein/sscl/models/1.pt
+python/protein/sscl/models/test.pt
+python/protein/sscl/trainer.log

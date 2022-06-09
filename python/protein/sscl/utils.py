@@ -96,7 +96,10 @@ def normalize(inp):
     """
     mu = torch.mean(inp, dim=(2, 3))
     sigma = torch.std(inp, dim=(2, 3))
-    out = (inp - mu[..., None, None]) / sigma[..., None, None]
+    if sigma > 0:
+        out = (inp - mu[..., None, None]) / sigma[..., None, None]
+    else:
+        out = (inp - mu[..., None, None])
     return out
 
 
