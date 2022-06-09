@@ -134,6 +134,7 @@ class Encoder(torch.nn.Module):
         # if torch.isnan(out).any():
         #     print('WARNING: nan detected in network output')
         z = self.linear_mu(out)
+        z = z / torch.linalg.norm(z, dim=1)
         return z
 
 
