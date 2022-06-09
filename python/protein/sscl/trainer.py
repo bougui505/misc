@@ -117,10 +117,7 @@ def get_contrastive_loss(out, tau=1.):
     if n > 0:
         loss = loss / n
     loss = torch.squeeze(loss)
-    # assert not torch.isnan(loss), 'Error: loss is nan'
-    if torch.isnan(loss):
-        print('WARNING: loss is nan')
-        loss = None
+    assert not torch.isnan(loss), 'ERROR: loss is nan'
     return loss
 
 
