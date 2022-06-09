@@ -120,6 +120,23 @@ def get_contrastive_loss(out, tau=1.):
     return loss
 
 
+def get_norm(out):
+    """
+    >>> batch = get_batch_test()
+    >>> model = encoder.Encoder(latent_dims=512)
+    >>> out = forward_batch(batch, model)
+    >>> [(z_full.shape, z_fragment.shape) for z_full, z_fragment in out]
+    [(torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512]))]
+    >>> get_norm(out)
+    tensor(..., grad_fn=<MeanBackward0>)
+    """
+    z_full_list = torch.cat([e[0] for e in out])  # torch.Size([4, 512])
+    z_fragment_list = torch.cat([e[1] for e in out])  # torch.Size([4, 512])
+    z = torch.cat((z_full_list, z_fragment_list))  # torch.Size([8, 512])
+    norms = torch.linalg.norm(z, dim=1)
+    return norms.mean()
+
+
 def save_model(model, filename):
     torch.save(model.state_dict(), filename)
 
@@ -136,7 +153,7 @@ def train(
         input_size=(224, 224),
         modelfilename='models/sscl.pt'):
     """
-    >>> train(pdbpath='pdb', print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt', batch_size=32)
+    # >>> train(pdbpath='pdb', print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt', batch_size=32)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataset = PDBloader.PDBdataset(pdbpath=pdbpath, pdblist=pdblist)
@@ -180,7 +197,9 @@ def train(
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}")
+                norm = get_norm(out)
+                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                    )
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
