@@ -75,6 +75,16 @@ class PDBdataset(torch.utils.data.Dataset):
     4
     >>> [(dmat.shape, dmat_fragment.shape, name) for dmat, dmat_fragment, name in batch]
     [(torch.Size([1, 1, 162, 162]), torch.Size([1, 1, ..., ...]), 'pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), torch.Size([1, 1, ..., ...]), 'pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 154, 154]), torch.Size([1, 1, ..., ...]), 'pdb/02/pdb102m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), torch.Size([1, 1, ..., ...]), 'pdb/02/pdb102l.ent.gz_A')]
+
+
+    >>> dataset = PDBdataset(pdblistfile='pdbfilelist.txt', return_name=True, do_fragment=False)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> len(batch)
+    4
+    >>> [(dmat.shape, name) for dmat, name in batch]
+    [(torch.Size([1, 1, 162, 162]), 'pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/02/pdb102m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), 'pdb/02/pdb102l.ent.gz_A')]
     """
     def __init__(
             self,
@@ -82,9 +92,11 @@ class PDBdataset(torch.utils.data.Dataset):
             pdblist=None,
             pdblistfile=None,  # format: pdbfilename chain
             selection='polymer.protein and name CA',
-            return_name=False):
+            return_name=False,
+            do_fragment=True):
         self.chain_from_list = False
         self.return_name = return_name
+        self.do_fragment = do_fragment
         if pdbpath is not None:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
         if pdblist is not None:
@@ -123,14 +135,23 @@ class PDBdataset(torch.utils.data.Dataset):
                 else:
                     return None
             coords = torch.tensor(coords[None, ...])
-            fragment = utils.get_random_fragment(coords)
             dmat = utils.get_dmat(coords)
-            dmat_fragment = utils.get_dmat(fragment)
+            if self.do_fragment:
+                fragment = utils.get_random_fragment(coords)
+                dmat_fragment = utils.get_dmat(fragment)
+            else:
+                dmat_fragment = None
         cmd.delete(pymolname)
         if self.return_name:
-            return dmat, dmat_fragment, pdbfile + "_" + chain
+            if dmat_fragment is not None:
+                return dmat, dmat_fragment, pdbfile + "_" + chain
+            else:
+                return dmat, pdbfile + "_" + chain
         else:
-            return dmat, dmat_fragment
+            if dmat_fragment is not None:
+                return dmat, dmat_fragment
+            else:
+                return dmat
 
 
 if __name__ == '__main__':
