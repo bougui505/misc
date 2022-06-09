@@ -172,7 +172,7 @@ def train(
     else:
         model = encoder.Encoder(latent_dims=latent_dims, input_size=input_size)
     model = model.to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-4)
+    opt = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
     t_0 = time.time()
     save_model(model, modelfilename)
     epoch = 0
