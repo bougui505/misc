@@ -48,13 +48,13 @@ import numpy as np
 import datetime
 
 
-def encode_pdb(pdbfilename, sel='all', model='models/sscl_20220609_1344.pt', latent_dims=512):
+def encode_pdb(pdb, sel='all', model='models/sscl_20220609_1344.pt', latent_dims=512):
     """
     >>> z = encode_pdb('pdb/yc/pdb1ycr.ent.gz')
     >>> z.shape
     torch.Size([1, 512])
     """
-    coords = utils.get_coords(pdbfilename, sel=sel)
+    coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
     model = encoder.load_model(model, latent_dims=latent_dims)
     with torch.no_grad():
@@ -132,6 +132,18 @@ def build_index(pdblistfile,
     np.save(f'{indexfilename}/ids.npy', names)
 
 
+def print_foldsearch_results(Imat, Dmat, query_names, ids):
+    for ind, dist, query in zip(Imat, Dmat, query_names):
+        result_pdb_list = ids[ind]
+        print(f'query: {query}')
+        for pdb, d in zip(result_pdb_list, dist):
+            # print(pdb)  # pdb/hf/pdb4hfz.ent.gz_A
+            pdbcode = os.path.basename(pdb)
+            pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
+            chain = pdb.split('_')[1]
+            print(f'    {pdbcode} {chain} {d:.4f}')
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -157,6 +169,8 @@ if __name__ == '__main__':
                         help='Compute the latent similarity between the 2 given pdb',
                         nargs=2,
                         metavar='file.pdb')
+    parser.add_argument('-q', '--query', help='Search for nearest neighbors for the given query pdb')
+    parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
                         default=None,
@@ -191,6 +205,17 @@ if __name__ == '__main__':
             sel2 = args.sel[1]
         sim = get_latent_similarity(pdb1, pdb2, sel1=sel1, sel2=sel2, model=args.model, latent_dims=args.latent_dims)
         print(f'similarity: {sim:.4f}')
+    if args.query is not None:
+        if args.sel is None:
+            sel = 'all'
+        else:
+            sel = args.sel[0]
+        z = encode_pdb(pdb=args.query, sel=sel, model=args.model, latent_dims=args.latent_dims)
+        z = z.detach().cpu().numpy()
+        index = faiss.read_index(f'{args.index}/index.faiss')
+        ids = np.load(f'{args.index}/ids.npy')
+        Dmat, Imat = index.search(z, args.n)
+        print_foldsearch_results(Imat, Dmat, [args.query], ids)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
