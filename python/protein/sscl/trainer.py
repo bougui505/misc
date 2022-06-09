@@ -117,7 +117,10 @@ def get_contrastive_loss(out, tau=1.):
     if n > 0:
         loss = loss / n
     loss = torch.squeeze(loss)
-    assert not torch.isnan(loss), 'Error: loss is nan'
+    # assert not torch.isnan(loss), 'Error: loss is nan'
+    if torch.isnan(loss):
+        print('WARNING: loss is nan')
+        loss = None
     return loss
 
 
@@ -189,8 +192,9 @@ def train(
                 opt.zero_grad()
                 out = forward_batch(batch, model)
                 loss = get_contrastive_loss(out)
-                loss.backward()
-                opt.step()
+                if loss is not None:
+                    loss.backward()
+                    opt.step()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
@@ -199,8 +203,9 @@ def train(
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 norm = get_norm(out)
-                log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
-                    )
+                if loss is not None:
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                        )
         except StopIteration:
             dataiter = iter(dataloader)
             epoch += 1
