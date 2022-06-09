@@ -168,6 +168,7 @@ if __name__ == '__main__':
         '--pdblist',
         help='File containing the list of pdb file to put in the index. Line format of the file: pdbfile chain')
     parser.add_argument('--bs', help='Batch size', type=int, default=4)
+    parser.add_argument('--index', help='FAISS index directory. Default: index.faiss', default='index.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -193,4 +194,4 @@ if __name__ == '__main__':
                     latent_dims=args.latent_dims,
                     batch_size=args.bs,
                     save_each=10,
-                    indexfilename='index.faiss')
+                    indexfilename=args.index)
