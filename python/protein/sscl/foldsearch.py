@@ -120,14 +120,14 @@ def build_index(pdblistfile,
         eta_val = eta(i + 1)
         if (time.time() - t_0) / 60 >= save_each:
             t_0 = time.time()
-            faiss.write_index(index, f'{indexfilename}/{indexfilename}')
+            faiss.write_index(index, f'{indexfilename}/index.faiss')
             np.save(f'{indexfilename}/ids.npy', np.asarray(names))
         last_saved = (time.time() - t_0)
         last_saved = str(datetime.timedelta(seconds=last_saved))
         log(f"step: {i+1}|last_saved: {last_saved}|eta: {eta_val}")
     npdb = index.ntotal
     print(f'Total number of pdb in the FAISS index: {npdb}')
-    faiss.write_index(index, f'{indexfilename}/{indexfilename}')
+    faiss.write_index(index, f'{indexfilename}/index.faiss')
     names = np.asarray(names)
     np.save(f'{indexfilename}/ids.npy', names)
 
@@ -164,6 +164,10 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='SSCL model to use', metavar='model.pt', default='models/sscl_20220609_1344.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
+    parser.add_argument('--save_every',
+                        help='Save the FAISS index every given number of minutes when building it',
+                        type=int,
+                        default=10)
     parser.add_argument(
         '--pdblist',
         help='File containing the list of pdb file to put in the index. Line format of the file: pdbfile chain')
@@ -193,5 +197,5 @@ if __name__ == '__main__':
                     model,
                     latent_dims=args.latent_dims,
                     batch_size=args.bs,
-                    save_each=10,
+                    save_each=args.save_every,
                     indexfilename=args.index)
