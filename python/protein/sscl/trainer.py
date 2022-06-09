@@ -172,7 +172,7 @@ def train(
     else:
         model = encoder.Encoder(latent_dims=latent_dims, input_size=input_size)
     model = model.to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+    opt = torch.optim.Adam(model.parameters(), lr=1e-4)
     t_0 = time.time()
     save_model(model, modelfilename)
     epoch = 0
@@ -189,9 +189,9 @@ def train(
                 opt.zero_grad()
                 out = forward_batch(batch, model)
                 loss = get_contrastive_loss(out)
-                if loss is not None:
-                    loss.backward()
-                    opt.step()
+                loss.backward()
+                torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                opt.step()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
