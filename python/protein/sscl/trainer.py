@@ -113,7 +113,7 @@ def get_contrastive_loss(out, tau=1.):
                 # log(f'sim_den: {sim_den}')
                 den += torch.exp(sim_den / tau)
         # log(f'num:{num}, den: {den}')
-        loss -= torch.log(num / den)
+        loss -= torch.log((num + 1e-8) / (den + 1e-8))
     if n > 0:
         loss = loss / n
     loss = torch.squeeze(loss)
