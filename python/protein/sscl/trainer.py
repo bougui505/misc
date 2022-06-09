@@ -190,7 +190,8 @@ def train(
                 out = forward_batch(batch, model)
                 loss = get_contrastive_loss(out)
                 loss.backward()
-                torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                # torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0, norm_type=2)
                 opt.step()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
