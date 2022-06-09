@@ -43,6 +43,15 @@ import numpy as np
 import itertools
 
 
+def get_coords(pdbfilename, sel='all'):
+    pymolname = randomgen.randomstring()
+    cmd.load(pdbfilename, pymolname)
+    coords = cmd.get_coords(selection=f'{pymolname} and polymer.protein and name CA and {sel}')
+    cmd.delete(pymolname)
+    coords = torch.tensor(coords)
+    return coords
+
+
 def get_dmat(coords):
     """
     >>> coords = torch.randn(1, 10, 3)
