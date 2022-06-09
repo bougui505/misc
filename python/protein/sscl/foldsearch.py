@@ -60,9 +60,9 @@ def get_latent_similarity(pdb1, pdb2, sel1='all', sel2='all', model='models/sscl
     >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
     >>> pdb2 = 'pdb/yc/pdb1ycr.ent.gz'
     >>> get_latent_similarity(pdb1, pdb2, sel1='chain A', sel2='chain A and resi 25-109')
-    1.0
-    >>> get_latent_similarity(pdb1, pdb2, sel1='chain A', sel2='chain A and resi 25-50')
-    0.8462...
+    0.9999...
+    >>> get_latent_similarity(pdb1, pdb2, sel1='chain A', sel2='chain A and resi 25-64')
+    0.9849...
     """
     z1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1)
     z2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2)

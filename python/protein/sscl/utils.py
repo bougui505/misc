@@ -41,11 +41,16 @@ from misc import randomgen
 from pymol import cmd
 import numpy as np
 import itertools
+import os
 
 
-def get_coords(pdbfilename, sel='all'):
+def get_coords(pdb, sel='all'):
+    cmd.set('fetch_path', cmd.exp_path('~/pdb'), quiet=1)
     pymolname = randomgen.randomstring()
-    cmd.load(pdbfilename, pymolname)
+    if os.path.exists(pdb):
+        cmd.load(pdb, pymolname)
+    else:  # Try to fetch from the PDB
+        cmd.fetch(pdb, name=pymolname)
     coords = cmd.get_coords(selection=f'{pymolname} and polymer.protein and name CA and {sel}')
     cmd.delete(pymolname)
     coords = torch.tensor(coords)
