@@ -141,7 +141,7 @@ def print_foldsearch_results(Imat, Dmat, query_names, ids):
             pdbcode = os.path.basename(pdb)
             pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
             chain = pdb.split('_')[1]
-            print(f'    {pdbcode} {chain} {d:.4f}')
+            print(f'>>> {pdbcode} {chain} {d:.4f}')
 
 
 def log(msg):
