@@ -63,7 +63,7 @@ def structure(entry_id, url=URL, operator='relaxed_shape_match', max_results=10,
     """
     Performs fast searches matching a global 3D shape of assemblies or chains of a given entry (identified by PDB ID), in either strict (strict_shape_match) or relaxed (relaxed_shape_match) modes, using a BioZernike descriptor strategy.
 
-    >>> structure('1ycr')
+    >>> r = structure('1ycr')
     """
     params = {
         "query": {
