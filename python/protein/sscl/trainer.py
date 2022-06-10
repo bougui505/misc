@@ -45,6 +45,9 @@ import time
 from misc.eta import ETA
 import datetime
 
+# See: https://discuss.pytorch.org/t/runtimeerror-received-0-items-of-ancdata/4999
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 def get_batch_test():
     """
