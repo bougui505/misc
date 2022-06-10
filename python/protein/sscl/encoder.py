@@ -228,10 +228,25 @@ class CNN(torch.nn.Module):
 
 def load_model(filename, latent_dims=512):
     """
+    >>> cnn = CNN(512, normalize=False, normalized_latent_space=False)
+    >>> torch.save(cnn.state_dict(), 'models/cnn_test.pt')
+    >>> cnn = load_model('models/cnn_test.pt')
+    Loading CNN model
+
+    >>> fcn = FCN(512, normalize=False, normalized_latent_space=False)
+    >>> torch.save(fcn.state_dict(), 'models/fcn_test.pt')
+    >>> fcn = load_model('models/fcn_test.pt')
+    Loading FCN model
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = CNN(latent_dims=latent_dims)
-    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+    try:
+        model = CNN(latent_dims=latent_dims)
+        model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+        print('Loading CNN model')
+    except RuntimeError:
+        model = FCN(latent_dims=latent_dims)
+        model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+        print('Loading FCN model')
     model.eval()
     return model
 
