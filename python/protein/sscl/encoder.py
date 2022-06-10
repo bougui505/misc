@@ -41,12 +41,12 @@ from torchsummary import summary
 from misc.protein.sscl.utils import normalize
 
 
-class Encoder(torch.nn.Module):
+class CNN(torch.nn.Module):
     """
     >>> batch = 3
     >>> inp = torch.ones(batch, 1, 50, 50)
-    >>> encoder = Encoder(512, normalize=False, normalized_latent_space=False)
-    >>> summary(encoder, (1, 50, 50))
+    >>> cnn = CNN(512, normalize=False, normalized_latent_space=False)
+    >>> summary(cnn, (1, 50, 50))
     ----------------------------------------------------------------
             Layer (type)               Output Shape         Param #
     ================================================================
@@ -92,7 +92,7 @@ class Encoder(torch.nn.Module):
     Estimated Total Size (MB): 381.83
     ----------------------------------------------------------------
 
-    >>> out = encoder(inp)
+    >>> out = cnn(inp)
     >>> out.shape
     torch.Size([3, 512])
     """
@@ -149,7 +149,7 @@ def load_model(filename, latent_dims=512):
     """
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = Encoder(latent_dims=latent_dims)
+    model = CNN(latent_dims=latent_dims)
     model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
     model.eval()
     return model
