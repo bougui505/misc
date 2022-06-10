@@ -41,6 +41,92 @@ from torchsummary import summary
 from misc.protein.sscl.utils import normalize
 
 
+class FCN(torch.nn.Module):
+    """
+    >>> batch = 3
+    >>> inp = torch.ones(batch, 1, 50, 50)
+    >>> fcn = FCN(512, normalize=False, normalized_latent_space=False)
+    >>> summary(fcn, (1, 50, 50))
+    ----------------------------------------------------------------
+            Layer (type)               Output Shape         Param #
+    ================================================================
+                Conv2d-1            [-1, 8, 50, 50]             976
+                Conv2d-2            [-1, 8, 50, 50]             976
+                  ReLU-3            [-1, 8, 50, 50]               0
+                  ReLU-4            [-1, 8, 50, 50]               0
+                Conv2d-5           [-1, 16, 50, 50]           3,216
+                Conv2d-6           [-1, 16, 50, 50]           3,216
+                  ReLU-7           [-1, 16, 50, 50]               0
+                  ReLU-8           [-1, 16, 50, 50]               0
+                Conv2d-9           [-1, 32, 50, 50]           4,640
+               Conv2d-10           [-1, 32, 50, 50]           4,640
+                 ReLU-11           [-1, 32, 50, 50]               0
+                 ReLU-12           [-1, 32, 50, 50]               0
+               Conv2d-13           [-1, 64, 50, 50]          18,496
+               Conv2d-14           [-1, 64, 50, 50]          18,496
+                 ReLU-15           [-1, 64, 50, 50]               0
+                 ReLU-16           [-1, 64, 50, 50]               0
+               Conv2d-17          [-1, 128, 50, 50]          73,856
+               Conv2d-18          [-1, 128, 50, 50]          73,856
+                 ReLU-19          [-1, 128, 50, 50]               0
+                 ReLU-20          [-1, 128, 50, 50]               0
+               Conv2d-21          [-1, 512, 50, 50]         590,336
+               Conv2d-22          [-1, 512, 50, 50]         590,336
+    ================================================================
+    Total params: 1,383,040
+    Trainable params: 1,383,040
+    Non-trainable params: 0
+    ----------------------------------------------------------------
+    Input size (MB): 0.01
+    Forward/backward pass size (MB): 38.45
+    Params size (MB): 5.28
+    Estimated Total Size (MB): 43.74
+    ----------------------------------------------------------------
+    >>> out = fcn(inp)
+    >>> out.shape
+    torch.Size([3, 512])
+    """
+    def __init__(self,
+                 latent_dims,
+                 input_size=(224, 224),
+                 interpolate=False,
+                 normalize=True,
+                 normalized_latent_space=True):
+        super().__init__()
+        self.input_size = input_size
+        self.interpolate = interpolate
+        self.normalize = normalize
+        self.normalized_latent_space = normalized_latent_space
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=11, padding='same')
+        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, padding='same')
+        self.conv3 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding='same')
+        self.conv4 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding='same')
+        self.conv5 = torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding='same')
+        self.conv6 = torch.nn.Conv2d(in_channels=128, out_channels=latent_dims, kernel_size=3, padding='same')
+        self.relu = torch.nn.ReLU()
+        self.flatten = torch.nn.Flatten()
+        self.layers = torch.nn.Sequential(self.conv1, self.relu, self.conv2, self.relu, self.conv3, self.relu,
+                                          self.conv4, self.relu, self.conv5, self.relu, self.conv6)
+
+    def forward(self, x):
+        if self.normalize:
+            x = normalize(x)
+        if self.interpolate:
+            x = torch.nn.functional.interpolate(x, size=self.input_size)
+            # x = utils.resize(x, size=self.input_size)  # perform padding or interpolation
+        assert not torch.isnan(x).any(), 'ERROR: nan detected in network input'
+        # if torch.isnan(x).any():
+        #     print('WARNING: nan detected in network input')
+        out = self.layers(x)
+        z = torch.max(out, dim=-1).values.max(dim=-1).values
+        assert not torch.isnan(z).any(), 'ERROR: nan detected in network output'
+        # if torch.isnan(out).any():
+        #     print('WARNING: nan detected in network output')
+        if self.normalized_latent_space:
+            z = z / torch.linalg.norm(z, dim=1)
+        return z
+
+
 class CNN(torch.nn.Module):
     """
     >>> batch = 3
@@ -120,11 +206,6 @@ class CNN(torch.nn.Module):
         self.layers = torch.nn.Sequential(self.conv1, self.relu, self.conv2, self.relu, self.conv3, self.relu,
                                           self.conv4, self.relu, self.conv5, self.relu, self.flatten, self.linear1,
                                           self.relu, self.linear2, self.relu)
-        self.N = torch.distributions.Normal(0, 1)
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        if device == 'cuda':
-            self.N.loc = self.N.loc.cuda()  # hack to get sampling on the GPU
-            self.N.scale = self.N.scale.cuda()
 
     def forward(self, x):
         if self.normalize:
