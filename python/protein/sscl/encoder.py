@@ -45,7 +45,7 @@ class Encoder(torch.nn.Module):
     """
     >>> batch = 3
     >>> inp = torch.ones(batch, 1, 50, 50)
-    >>> encoder = Encoder(512)
+    >>> encoder = Encoder(512, normalize=False, normalized_latent_space=False)
     >>> summary(encoder, (1, 50, 50))
     ----------------------------------------------------------------
             Layer (type)               Output Shape         Param #
@@ -96,11 +96,17 @@ class Encoder(torch.nn.Module):
     >>> out.shape
     torch.Size([3, 512])
     """
-    def __init__(self, latent_dims, input_size=(224, 224), interpolate=True, normalize=True):
+    def __init__(self,
+                 latent_dims,
+                 input_size=(224, 224),
+                 interpolate=True,
+                 normalize=True,
+                 normalized_latent_space=True):
         super().__init__()
         self.input_size = input_size
         self.interpolate = interpolate
         self.normalize = normalize
+        self.normalized_latent_space = normalized_latent_space
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=4)
         self.conv2 = torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=2)
         self.conv3 = torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=2)
@@ -134,7 +140,8 @@ class Encoder(torch.nn.Module):
         # if torch.isnan(out).any():
         #     print('WARNING: nan detected in network output')
         z = self.linear_mu(out)
-        z = z / torch.linalg.norm(z, dim=1)
+        if self.normalized_latent_space:
+            z = z / torch.linalg.norm(z, dim=1)
         return z
 
 
