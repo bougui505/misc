@@ -68,7 +68,7 @@ def get_batch_test():
 def forward_batch(batch, model):
     """
     >>> batch = get_batch_test()
-    >>> model = encoder.Encoder(latent_dims=512)
+    >>> model = encoder.CNN(latent_dims=512)
     >>> out = forward_batch(batch, model)
     >>> [(z_full.shape, z_fragment.shape) for z_full, z_fragment in out]
     [(torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512]))]
@@ -84,7 +84,7 @@ def forward_batch(batch, model):
 def get_contrastive_loss(out, tau=1.):
     """
     >>> batch = get_batch_test()
-    >>> model = encoder.Encoder(latent_dims=512)
+    >>> model = encoder.CNN(latent_dims=512)
     >>> out = forward_batch(batch, model)
     >>> [(z_full.shape, z_fragment.shape) for z_full, z_fragment in out]
     [(torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512]))]
@@ -124,7 +124,7 @@ def get_contrastive_loss(out, tau=1.):
 def get_norm(out):
     """
     >>> batch = get_batch_test()
-    >>> model = encoder.Encoder(latent_dims=512)
+    >>> model = encoder.CNN(latent_dims=512)
     >>> out = forward_batch(batch, model)
     >>> [(z_full.shape, z_fragment.shape) for z_full, z_fragment in out]
     [(torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512])), (torch.Size([1, 512]), torch.Size([1, 512]))]
@@ -152,7 +152,8 @@ def train(
         print_each=100,
         save_each=30,  # in minutes
         input_size=(224, 224),
-        modelfilename='models/sscl.pt'):
+        modelfilename='models/sscl.pt',
+        cnn=True):
     """
     # >>> train(pdbpath='pdb', print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt', batch_size=32)
     """
@@ -170,7 +171,12 @@ def train(
         model = load_model(filename=modelfilename, latent_dims=latent_dims)
         model.train()
     else:
-        model = encoder.Encoder(latent_dims=latent_dims, input_size=input_size)
+        if cnn:
+            log('CNN model')
+            model = encoder.CNN(latent_dims=latent_dims, input_size=input_size)
+        else:
+            log('FCN model')
+            model = encoder.FCN(latent_dims=latent_dims)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     t_0 = time.time()
@@ -246,6 +252,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--input_size', default=224, type=int)
+    parser.add_argument('--model_type', help='model type to use. Can be CNN (default) or FCN', default='CNN')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -254,6 +261,10 @@ if __name__ == '__main__':
         sys.exit()
     input_size = (args.input_size, args.input_size)
     if args.train:
+        if args.model_type == 'CNN':
+            cnn = True
+        else:
+            cnn = False
         train(pdbpath=args.pdbpath,
               n_epochs=args.epochs,
               modelfilename=args.model,
@@ -261,4 +272,5 @@ if __name__ == '__main__':
               latent_dims=args.latent_dims,
               save_each=args.save_every,
               batch_size=args.bs,
-              input_size=input_size)
+              input_size=input_size,
+              cnn=cnn)
