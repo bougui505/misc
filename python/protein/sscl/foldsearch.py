@@ -141,6 +141,41 @@ def get_important_features(feature_importance, threshold=0.5):
     return list(zip(important_features, importances))
 
 
+def get_feature_map(conv, feature_importance):
+    """
+    >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
+    >>> pdb2 = 'pdb/rv/pdb1rv1.ent.gz'
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A')
+    >>> sim
+    0.9974226951599121
+    >>> feature_importance.shape
+    (512,)
+    >>> feature_importance.sum()
+    0.99999994
+    >>> important_features = get_important_features(feature_importance, threshold=0.5)
+    >>> z, conv = encode_pdb(pdb1, model)
+    >>> conv.shape
+    torch.Size([1, 512, 98, 98])
+    >>> out = get_feature_map(conv, feature_importance)
+    >>> out.shape
+    (98, 98)
+
+    # >>> _ = plt.matshow(out)
+    # >>> _ = plt.colorbar()
+    # >>> plt.show()
+    """
+    # conv = maxpool(conv).squeeze()
+    conv = conv.detach().cpu().numpy().squeeze()
+    conv -= conv.min(axis=0)
+    conv /= conv.max(axis=0)
+    conv = conv * feature_importance[:, None, None]
+    out = conv.sum(axis=0)
+    out = (out + out.T) / 2.
+    return out
+
+
 def build_index(pdblistfile,
                 model,
                 latent_dims=512,
