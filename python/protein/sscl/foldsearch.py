@@ -119,6 +119,9 @@ def build_index(pdblistfile,
             index.add(latent_vectors)
             names.extend([name for dmat, name in data if dmat is not None])
         except RuntimeError:
+            print('System too large to fit in memory:')
+            print([name for dmat, name in data if dmat is not None])
+            print([dmat.shape for dmat, name in data if dmat is not None])
             pass
         eta_val = eta(i + 1)
         if (time.time() - t_0) / 60 >= save_each:
