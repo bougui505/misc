@@ -85,6 +85,9 @@ class FCN(torch.nn.Module):
     >>> out = fcn(inp)
     >>> out.shape
     torch.Size([3, 512])
+    >>> out = fcn(inp, get_conv=True)
+    >>> out.shape
+    torch.Size([3, 512, 50, 50])
     """
     def __init__(self,
                  latent_dims,
@@ -108,7 +111,7 @@ class FCN(torch.nn.Module):
         self.layers = torch.nn.Sequential(self.conv1, self.relu, self.conv2, self.relu, self.conv3, self.relu,
                                           self.conv4, self.relu, self.conv5, self.relu, self.conv6)
 
-    def forward(self, x):
+    def forward(self, x, get_conv=False):
         if self.normalize:
             x = normalize(x)
         if self.interpolate:
@@ -118,6 +121,8 @@ class FCN(torch.nn.Module):
         # if torch.isnan(x).any():
         #     print('WARNING: nan detected in network input')
         out = self.layers(x)
+        if get_conv:
+            return out
         z = torch.max(out, dim=-1).values.max(dim=-1).values
         assert not torch.isnan(z).any(), 'ERROR: nan detected in network output'
         # if torch.isnan(out).any():
