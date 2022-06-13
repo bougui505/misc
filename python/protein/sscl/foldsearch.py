@@ -49,28 +49,31 @@ import numpy as np
 import datetime
 
 
-def encode_pdb(pdb, sel='all', model='models/sscl_20220609_1344.pt', latent_dims=512):
+def encode_pdb(pdb, model, sel='all', latent_dims=512):
     """
-    >>> z = encode_pdb('pdb/yc/pdb1ycr.ent.gz')
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> z = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
     >>> z.shape
     torch.Size([1, 512])
     """
     coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
-    model = encoder.load_model(model, latent_dims=latent_dims)
     with torch.no_grad():
         z = model(dmat)
     return z
 
 
-def get_latent_similarity(pdb1, pdb2, sel1='all', sel2='all', model='models/sscl_20220609_1344.pt', latent_dims=512):
+def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512):
     """
     >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
     >>> pdb2 = 'pdb/yc/pdb1ycr.ent.gz'
-    >>> get_latent_similarity(pdb1, pdb2, sel1='chain A', sel2='chain A and resi 25-109')
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-109')
     1.0000...
-    >>> get_latent_similarity(pdb1, pdb2, sel1='chain A', sel2='chain A and resi 25-64')
-    0.9419...
+    >>> get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64')
+    0.9474...
     """
     z1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1)
     z2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2)
@@ -86,8 +89,9 @@ def build_index(pdblistfile,
                 save_each=10,
                 indexfilename='index.faiss'):
     """
-    >>> model = encoder.load_model('models/sscl_20220609_1344.pt')
-    >>> build_index('pdbfilelist.txt', model, do_break=3)
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> build_index('pdbfilelist.txt', model, do_break=3, indexfilename='index_test.faiss')
     Total number of pdb in the FAISS index: 12
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -220,7 +224,9 @@ if __name__ == '__main__':
         else:
             sel1 = args.sel[0]
             sel2 = args.sel[1]
-        sim = get_latent_similarity(pdb1, pdb2, sel1=sel1, sel2=sel2, model=args.model, latent_dims=args.latent_dims)
+
+        model = encoder.load_model(args.model, latent_dims=args.latent_dims)
+        sim = get_latent_similarity(pdb1, pdb2, sel1=sel1, sel2=sel2, model=model, latent_dims=args.latent_dims)
         print(f'similarity: {sim:.4f}')
     if args.query is not None:
         if args.sel is None:
