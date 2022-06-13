@@ -50,14 +50,11 @@ import datetime
 import matplotlib.pyplot as plt
 
 
-def encode_pdb(pdb, model, sel='all', latent_dims=512, get_conv=False):
+def encode_pdb(pdb, model, sel='all', latent_dims=512):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
-    >>> z = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
-    >>> z.shape
-    torch.Size([1, 512])
-    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model, get_conv=True)
+    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
     >>> z.shape
     torch.Size([1, 512])
     >>> conv.shape
@@ -66,13 +63,8 @@ def encode_pdb(pdb, model, sel='all', latent_dims=512, get_conv=False):
     coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
     with torch.no_grad():
-        out = model(dmat, get_conv=get_conv)
-    if get_conv:
-        z, conv = out
-        return z, conv
-    else:
-        z = out
-        return z
+        z, conv = model(dmat, get_conv=True)
+    return z, conv
 
 
 def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512):
@@ -88,8 +80,8 @@ def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims
     >>> sim
     0.9474...
     """
-    z1, conv1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1, get_conv=True)
-    z2, conv2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2, get_conv=True)
+    z1, conv1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1)
+    z2, conv2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2)
     sim = float(torch.matmul(z1, z2.T).squeeze().numpy())
     feature_importance = (z1 * z2).squeeze().numpy() / sim
     # print(feature_importance.shape)  # (512,)
@@ -102,7 +94,7 @@ def maxpool(conv):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
-    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model, get_conv=True)
+    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
     >>> conv.shape
     torch.Size([1, 512, 98, 98])
     >>> out = maxpool(conv)
@@ -307,7 +299,7 @@ if __name__ == '__main__':
         else:
             sel = args.sel[0]
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
-        z = encode_pdb(pdb=args.query, sel=sel, model=model, latent_dims=args.latent_dims)
+        z, conv = encode_pdb(pdb=args.query, sel=sel, model=model, latent_dims=args.latent_dims)
         z = z.detach().cpu().numpy()
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
