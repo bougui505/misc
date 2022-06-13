@@ -93,7 +93,7 @@ class FCN(torch.nn.Module):
                  latent_dims,
                  input_size=(224, 224),
                  interpolate=False,
-                 normalize=True,
+                 normalize=False,
                  normalized_latent_space=True):
         super().__init__()
         self.input_size = input_size
@@ -192,7 +192,7 @@ class CNN(torch.nn.Module):
                  latent_dims,
                  input_size=(224, 224),
                  interpolate=True,
-                 normalize=True,
+                 normalize=False,
                  normalized_latent_space=True):
         super().__init__()
         self.input_size = input_size
