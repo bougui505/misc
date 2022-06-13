@@ -539,3 +539,14 @@ python/protein/sscl/utils.log
 python/protein/sscl/models/1.pt
 python/protein/sscl/models/test.pt
 python/protein/sscl/trainer.log
+python/protein/sscl/foldsearch.log
+python/protein/sscl/index.faiss/ids.npy
+python/protein/sscl/index.faiss/index.faiss
+python/protein/sscl/index_fcn_20220610_1353.faiss/ids.npy
+python/protein/sscl/index_fcn_20220610_1353.faiss/index.faiss
+python/protein/sscl/index_test.faiss/ids.npy
+python/protein/sscl/index_test.faiss/index.faiss
+python/protein/sscl/mapalign.log
+python/protein/sscl/models/fcn_test.pt
+python/protein/sscl/models/sscl_20220609_1344.pt
+python/protein/sscl/models/sscl_fcn_20220610_1353.pt
