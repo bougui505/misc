@@ -63,7 +63,13 @@ def encode_pdb(pdb, model, sel='all', latent_dims=512):
     coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
     with torch.no_grad():
-        z, conv = model(dmat, get_conv=True)
+        try:
+            # FCN model
+            z, conv = model(dmat, get_conv=True)
+        except TypeError:
+            # CNN model
+            z = model(dmat)
+            conv = None
     return z, conv
 
 
