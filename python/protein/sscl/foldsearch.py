@@ -50,7 +50,7 @@ import datetime
 import matplotlib.pyplot as plt
 
 
-def encode_pdb(pdb, model, sel='all', latent_dims=512):
+def encode_pdb(pdb, model, sel='all', latent_dims=512, return_dmat=False):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
@@ -70,10 +70,13 @@ def encode_pdb(pdb, model, sel='all', latent_dims=512):
             # CNN model
             z = model(dmat)
             conv = None
-    return z, conv
+    if return_dmat:
+        return z, conv, dmat
+    else:
+        return z, conv
 
 
-def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512):
+def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, doplot=False):
     """
     >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
     >>> pdb2 = 'pdb/yc/pdb1ycr.ent.gz'
@@ -82,17 +85,32 @@ def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims
     >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-109')
     >>> sim
     1.0000...
-    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64')
+    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64', doplot=True)
     >>> sim
     0.9474...
     """
-    z1, conv1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1)
-    z2, conv2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2)
+    z1, conv1, dmat1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1, return_dmat=True)
+    z2, conv2, dmat2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2, return_dmat=True)
+    dmat1 = dmat1.detach().cpu().numpy().squeeze()
+    dmat2 = dmat2.detach().cpu().numpy().squeeze()
     sim = float(torch.matmul(z1, z2.T).squeeze().numpy())
     feature_importance = (z1 * z2).squeeze().numpy() / sim
-    # print(feature_importance.shape)  # (512,)
-    # plt.plot(feature_importance)
-    # plt.show()
+    f1 = get_feature_map(conv1, feature_importance)
+    f2 = get_feature_map(conv2, feature_importance)
+    if doplot:
+        plt.subplot(3, 2, 1)
+        plt.matshow(dmat1, fignum=0)
+        plt.subplot(3, 2, 2)
+        plt.matshow(dmat2, fignum=0)
+        plt.subplot(3, 2, 3)
+        plt.matshow(f1, fignum=0)
+        plt.subplot(3, 2, 4)
+        plt.matshow(f2, fignum=0)
+        plt.subplot(3, 1, 3)
+        plt.plot(z1.detach().cpu().numpy().squeeze())
+        plt.plot(z2.detach().cpu().numpy().squeeze())
+        plt.tight_layout()
+        plt.show()
     return sim, feature_importance
 
 
@@ -332,7 +350,8 @@ if __name__ == '__main__':
                                                         sel1=sel1,
                                                         sel2=sel2,
                                                         model=model,
-                                                        latent_dims=args.latent_dims)
+                                                        latent_dims=args.latent_dims,
+                                                        doplot=True)
         print(f'similarity: {sim:.4f}')
     if args.query is not None:
         if args.sel is None:
