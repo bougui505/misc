@@ -111,12 +111,15 @@ def build_index(pdblistfile,
         if i >= do_break:
             break
         batch = [dmat.to(device) for dmat, name in data if dmat is not None]
-        names.extend([name for dmat, name in data if dmat is not None])
-        with torch.no_grad():
-            latent_vectors = torch.cat([model(e) for e in batch])
-        # print(latent_vectors.shape)  # torch.Size([4, 512])
-        latent_vectors = latent_vectors.detach().cpu().numpy()
-        index.add(latent_vectors)
+        try:
+            with torch.no_grad():
+                latent_vectors = torch.cat([model(e) for e in batch])
+            # print(latent_vectors.shape)  # torch.Size([4, 512])
+            latent_vectors = latent_vectors.detach().cpu().numpy()
+            index.add(latent_vectors)
+            names.extend([name for dmat, name in data if dmat is not None])
+        except RuntimeError:
+            pass
         eta_val = eta(i + 1)
         if (time.time() - t_0) / 60 >= save_each:
             t_0 = time.time()
