@@ -126,9 +126,27 @@ def maxpool(conv):
     return out
 
 
-def get_important_features(conv, feature_importance):
+def get_important_features(feature_importance, threshold=0.5):
     """
+    >>> pdb1 = 'pdb/ay/pdb7aye.ent.gz'
+    >>> pdb2 = 'pdb/di/pdb4dij.ent.gz'
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A')
+    >>> sim
+    0.9953...
+    >>> feature_importance.shape
+    (512,)
+    >>> feature_importance.sum()
+    1.0
+    >>> get_important_features(feature_importance)
+    [(146, 0.16278093), (9, 0.13784872), (237, 0.09079589), (37, 0.03166283), (502, 0.027908802), (277, 0.024614722), (67, 0.019103186)]
     """
+    important_features = feature_importance.argsort()[::-1]
+    csum = np.cumsum(feature_importance[important_features])
+    important_features = important_features[csum <= threshold]
+    importances = feature_importance[important_features]
+    return list(zip(important_features, importances))
 
 
 def build_index(pdblistfile,
@@ -288,7 +306,8 @@ if __name__ == '__main__':
             sel = 'all'
         else:
             sel = args.sel[0]
-        z = encode_pdb(pdb=args.query, sel=sel, model=args.model, latent_dims=args.latent_dims)
+        model = encoder.load_model(args.model, latent_dims=args.latent_dims)
+        z = encode_pdb(pdb=args.query, sel=sel, model=model, latent_dims=args.latent_dims)
         z = z.detach().cpu().numpy()
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
