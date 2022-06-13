@@ -47,21 +47,32 @@ from misc.eta import ETA
 import time
 import numpy as np
 import datetime
+import matplotlib.pyplot as plt
 
 
-def encode_pdb(pdb, model, sel='all', latent_dims=512):
+def encode_pdb(pdb, model, sel='all', latent_dims=512, get_conv=False):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
     >>> z = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
     >>> z.shape
     torch.Size([1, 512])
+    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model, get_conv=True)
+    >>> z.shape
+    torch.Size([1, 512])
+    >>> conv.shape
+    torch.Size([1, 512, 98, 98])
     """
     coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
     with torch.no_grad():
-        z = model(dmat)
-    return z
+        out = model(dmat, get_conv=get_conv)
+    if get_conv:
+        z, conv = out
+        return z, conv
+    else:
+        z = out
+        return z
 
 
 def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512):
@@ -70,15 +81,54 @@ def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims
     >>> pdb2 = 'pdb/yc/pdb1ycr.ent.gz'
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
-    >>> get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-109')
+    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-109')
+    >>> sim
     1.0000...
-    >>> get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64')
+    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64')
+    >>> sim
     0.9474...
     """
-    z1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1)
-    z2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2)
+    z1, conv1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1, get_conv=True)
+    z2, conv2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2, get_conv=True)
     sim = float(torch.matmul(z1, z2.T).squeeze().numpy())
-    return sim
+    feature_importance = (z1 * z2).squeeze().numpy() / sim
+    # print(feature_importance.shape)  # (512,)
+    # plt.plot(feature_importance)
+    # plt.show()
+    return sim, feature_importance
+
+
+def maxpool(conv):
+    """
+    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
+    Loading FCN model
+    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model, get_conv=True)
+    >>> conv.shape
+    torch.Size([1, 512, 98, 98])
+    >>> out = maxpool(conv)
+    >>> out.shape
+    (1, 512, 98, 98)
+    """
+    conv = conv.detach().cpu().numpy()
+    n = conv.shape[-1]
+    latent_dim = conv.shape[1]
+    bs = conv.shape[0]
+    conv = conv.reshape((bs, latent_dim, -1))
+    inds = conv.argmax(axis=-1)
+    # print(inds.shape)  # (1, 512)
+    out = np.zeros((bs, latent_dim, n * n))
+    for b in range(bs):
+        for la in range(latent_dim):
+            i = inds[b, la]
+            out[b, la, i] = conv[b, la, i]
+    out = out
+    out = out.reshape((bs, latent_dim, n, n))
+    return out
+
+
+def get_important_features(conv, feature_importance):
+    """
+    """
 
 
 def build_index(pdblistfile,
@@ -226,7 +276,12 @@ if __name__ == '__main__':
             sel2 = args.sel[1]
 
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
-        sim = get_latent_similarity(pdb1, pdb2, sel1=sel1, sel2=sel2, model=model, latent_dims=args.latent_dims)
+        sim, feature_importance = get_latent_similarity(pdb1,
+                                                        pdb2,
+                                                        sel1=sel1,
+                                                        sel2=sel2,
+                                                        model=model,
+                                                        latent_dims=args.latent_dims)
         print(f'similarity: {sim:.4f}')
     if args.query is not None:
         if args.sel is None:

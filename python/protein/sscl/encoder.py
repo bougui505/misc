@@ -82,10 +82,10 @@ class FCN(torch.nn.Module):
     Params size (MB): 5.28
     Estimated Total Size (MB): 43.74
     ----------------------------------------------------------------
-    >>> out = fcn(inp)
-    >>> out.shape
+    >>> z = fcn(inp)
+    >>> z.shape
     torch.Size([3, 512])
-    >>> out = fcn(inp, get_conv=True)
+    >>> z, out = fcn(inp, get_conv=True)
     >>> out.shape
     torch.Size([3, 512, 50, 50])
     """
@@ -121,15 +121,16 @@ class FCN(torch.nn.Module):
         # if torch.isnan(x).any():
         #     print('WARNING: nan detected in network input')
         out = self.layers(x)
-        if get_conv:
-            return out
         z = torch.max(out, dim=-1).values.max(dim=-1).values
         assert not torch.isnan(z).any(), 'ERROR: nan detected in network output'
         # if torch.isnan(out).any():
         #     print('WARNING: nan detected in network output')
         if self.normalized_latent_space:
             z = z / torch.linalg.norm(z, dim=1)
-        return z
+        if get_conv:
+            return z, out
+        else:
+            return z
 
 
 class CNN(torch.nn.Module):
