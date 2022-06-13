@@ -38,6 +38,7 @@
 
 import misc.protein.sscl.encoder as encoder
 import misc.protein.sscl.utils as utils
+import misc.protein.get_pdb_title as get_pdb_title
 import torch
 import PDBloader
 import faiss
@@ -138,7 +139,7 @@ def build_index(pdblistfile,
     np.save(f'{indexfilename}/ids.npy', names)
 
 
-def print_foldsearch_results(Imat, Dmat, query_names, ids):
+def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False):
     for ind, dist, query in zip(Imat, Dmat, query_names):
         result_pdb_list = ids[ind]
         print(f'query: {query}')
@@ -147,7 +148,11 @@ def print_foldsearch_results(Imat, Dmat, query_names, ids):
             pdbcode = os.path.basename(pdb)
             pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
             chain = pdb.split('_')[1]
-            print(f'>>> {pdbcode} {chain} {d:.4f}')
+            outstr = f'>>> {pdbcode} {chain} {d:.4f}'
+            if return_name:
+                title = get_pdb_title.get_pdb_title(pdbcode, chain)
+                outstr += f' {title}'
+            print(outstr)
 
 
 def log(msg):
@@ -176,6 +181,7 @@ if __name__ == '__main__':
                         nargs=2,
                         metavar='file.pdb')
     parser.add_argument('-q', '--query', help='Search for nearest neighbors for the given query pdb')
+    parser.add_argument('--title', help='Retrieve PDB title information', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
@@ -226,7 +232,7 @@ if __name__ == '__main__':
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
         Dmat, Imat = index.search(z, args.n)
-        print_foldsearch_results(Imat, Dmat, [args.query], ids)
+        print_foldsearch_results(Imat, Dmat, [args.query], ids, return_name=args.title)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
