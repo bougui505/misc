@@ -181,7 +181,10 @@ if __name__ == '__main__':
                         help='Selection for pdb file. Give two selections for the similarity computation',
                         default=None,
                         nargs='+')
-    parser.add_argument('--model', help='SSCL model to use', metavar='model.pt', default='models/sscl_20220609_1344.pt')
+    parser.add_argument('--model',
+                        help='SSCL model to use',
+                        metavar='model.pt',
+                        default='models/sscl_fcn_20220610_1353.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
     parser.add_argument('--save_every',
@@ -192,7 +195,9 @@ if __name__ == '__main__':
         '--pdblist',
         help='File containing the list of pdb file to put in the index. Line format of the file: pdbfile chain')
     parser.add_argument('--bs', help='Batch size', type=int, default=4)
-    parser.add_argument('--index', help='FAISS index directory. Default: index.faiss', default='index.faiss')
+    parser.add_argument('--index',
+                        help='FAISS index directory. Default: index_fcn_20220610_1353.faiss',
+                        default='index_fcn_20220610_1353.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
