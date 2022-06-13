@@ -40,20 +40,25 @@ import requests
 import re
 
 
-def get_pdb_title(pdbcode):
+def get_pdb_title(pdbcode, chain):
     """
-    >>> title = get_pdb_title('1ycr')
+    >>> title = get_pdb_title('1ycr', 'A')
     >>> print(title)
-    'MDM2 BOUND TO THE TRANSACTIVATION DOMAIN OF P53' "
+    >1YCR_1|Chain A|MDM2|Homo sapiens (9606)
     """
-    url = f'http://files.rcsb.org/header/{pdbcode}.cif'
+    url = f'https://www.rcsb.org/fasta/entry/{pdbcode}/display'
     r = requests.get(url)
-    # print(f'{r.content}')
+    title = ''
     for line in r.content.splitlines():
-        line = str(line)
-        if '_struct.title' in line:
-            title = ' '.join(line.strip().split()[1:])
-            break
+        line = line.decode('utf-8')
+        if line[0] == '>':
+            if chain is not None:
+                chains = line.split("|")[1]
+                chains = re.split("\s|,", chains)[1:]
+                if chain in chains:
+                    title += line
+            else:
+                title += line
     return title
 
 
@@ -79,6 +84,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
+    parser.add_argument('-c', '--chain')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -86,5 +92,5 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    title = get_pdb_title(args.pdb)
+    title = get_pdb_title(args.pdb, args.chain)
     print(title)
