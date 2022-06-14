@@ -69,6 +69,25 @@ def get_dmat(coords):
     return dmat
 
 
+def get_cmap(dmat, threshold=8.):
+    """
+    >>> from pymol import cmd
+    >>> cmd.load('pdb/yc/pdb1ycr.ent.gz', 'inp')
+    >>> coords = cmd.get_coords('inp and polymer.protein and name CA and chain A')
+    >>> coords = torch.tensor(coords[None, ...])
+    >>> dmat = get_dmat(coords)
+    >>> cmap = get_cmap(dmat)
+    >>> cmap.shape
+    torch.Size([1, 1, 85, 85])
+    >>> cmap = cmap.cpu().numpy().squeeze()
+    >>> _ = plt.matshow(cmap)
+    >>> plt.colorbar()
+    >>> plt.show()
+    """
+    cmap = 1. - torch.nn.functional.sigmoid(dmat - threshold)
+    return cmap
+
+
 def get_random_fragment(coords):
     """
     >>> coords = torch.randn(1, 100, 3)
@@ -103,14 +122,12 @@ def normalize(inp):
     torch.Size([3, 1, 50, 50])
     >>> (torch.abs(out.mean(dim=(2, 3))) < 1e-6).all()
     tensor(True)
-    >>> out.std(dim=(2, 3))
-    tensor([[1.0000],
-            [1.0000],
-            [1.0000]])
+    >>> (out.std(dim=(2, 3)) - 1.).mean() < 1e-6
+    tensor(True)
     """
     mu = torch.mean(inp, dim=(2, 3))
     sigma = torch.std(inp, dim=(2, 3))
-    if sigma > 0:
+    if (sigma > 0).all():
         out = (inp - mu[..., None, None]) / sigma[..., None, None]
     else:
         out = (inp - mu[..., None, None])

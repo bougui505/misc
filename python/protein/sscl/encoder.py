@@ -38,7 +38,7 @@
 
 import torch
 from torchsummary import summary
-from misc.protein.sscl.utils import normalize
+from misc.protein.sscl.utils import normalize, get_cmap
 
 
 class FCN(torch.nn.Module):
@@ -94,11 +94,13 @@ class FCN(torch.nn.Module):
                  input_size=(224, 224),
                  interpolate=False,
                  normalize=False,
+                 cmapify=True,
                  normalized_latent_space=True):
         super().__init__()
         self.input_size = input_size
         self.interpolate = interpolate
         self.normalize = normalize
+        self.cmapify = cmapify
         self.normalized_latent_space = normalized_latent_space
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=11, padding='same')
         self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, padding='same')
@@ -112,6 +114,8 @@ class FCN(torch.nn.Module):
                                           self.conv4, self.relu, self.conv5, self.relu, self.conv6)
 
     def forward(self, x, get_conv=False):
+        if self.cmapify:
+            x = get_cmap(x)
         if self.normalize:
             x = normalize(x)
         if self.interpolate:
