@@ -198,7 +198,7 @@ def get_feature_map(conv, feature_importance):
     conv /= conv.max(axis=0)
     conv = conv * feature_importance[:, None, None]
     out = conv.sum(axis=0)
-    out = (out + out.T) / 2.
+    # out = (out + out.T) / 2.
     return out
 
 
