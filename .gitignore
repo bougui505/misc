@@ -552,3 +552,4 @@ python/protein/sscl/models/sscl_20220609_1344.pt
 python/protein/sscl/models/sscl_fcn_20220610_1353.pt
 python/protein/sscl/models/cnn_test.pt
 python/protein/sscl/models/trainer_20220610_1353.log
+python/protein/sscl/models/sscl_fcn_20220613_2219.pt
