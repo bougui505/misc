@@ -98,22 +98,26 @@ def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims
     f1 = get_feature_map(conv1, feature_importance)
     f2 = get_feature_map(conv2, feature_importance)
     if doplot:
-        fig = plt.figure(constrained_layout=True)
-        spec = fig.add_gridspec(3, 2)
-        ax0 = fig.add_subplot(spec[0, 0])
-        ax0.matshow(dmat1)
-        ax1 = fig.add_subplot(spec[0, 1])
-        ax1.matshow(dmat2)
-        ax2 = fig.add_subplot(spec[1, 0])
-        ax2.matshow(f1)
-        ax3 = fig.add_subplot(spec[1, 1])
-        ax3.matshow(f2)
-        ax4 = fig.add_subplot(spec[2, :])
-        ax4.plot(z1.detach().cpu().numpy().squeeze())
-        ax4.plot(z2.detach().cpu().numpy().squeeze())
-        ax4.set_xlabel(f'latent_space: sim={sim:.4f}')
-        plt.show()
+        plot_sim(dmat1, dmat2, f1, f2, z1, z2, sim)
     return sim, feature_importance
+
+
+def plot_sim(dmat1, dmat2, f1, f2, z1, z2, sim):
+    fig = plt.figure(constrained_layout=True)
+    spec = fig.add_gridspec(3, 2)
+    ax0 = fig.add_subplot(spec[0, 0])
+    ax0.matshow(dmat1)
+    ax1 = fig.add_subplot(spec[0, 1])
+    ax1.matshow(dmat2)
+    ax2 = fig.add_subplot(spec[1, 0])
+    ax2.matshow(f1)
+    ax3 = fig.add_subplot(spec[1, 1])
+    ax3.matshow(f2)
+    ax4 = fig.add_subplot(spec[2, :])
+    ax4.plot(z1.detach().cpu().numpy().squeeze())
+    ax4.plot(z2.detach().cpu().numpy().squeeze())
+    ax4.set_xlabel(f'latent_space: sim={sim:.4f}')
+    plt.show()
 
 
 def maxpool(conv):
