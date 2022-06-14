@@ -95,27 +95,49 @@ def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims
     dmat2 = dmat2.detach().cpu().numpy().squeeze()
     sim = float(torch.matmul(z1, z2.T).squeeze().numpy())
     feature_importance = (z1 * z2).squeeze().numpy() / sim
-    f1 = get_feature_map(conv1, feature_importance)
-    f2 = get_feature_map(conv2, feature_importance)
+    # f1 = get_feature_map(conv1, feature_importance)
+    # f2 = get_feature_map(conv2, feature_importance)
     if doplot:
-        plot_sim(dmat1, dmat2, f1, f2, z1, z2, sim)
+        plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim)
     return sim, feature_importance
 
 
-def plot_sim(dmat1, dmat2, f1, f2, z1, z2, sim):
+def plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim, threshold=8.):
     fig = plt.figure(constrained_layout=True)
+
+    def onclick(event):
+        ind = int(event.xdata)
+        maxconv1 = conv1[ind, ...].max()
+        maxconv2 = conv2[ind, ...].max()
+        _, i1, j1 = np.unravel_index(conv1[ind, ...].argmax(), conv1.shape)
+        _, i2, j2 = np.unravel_index(conv2[ind, ...].argmax(), conv2.shape)
+        print(ind, z1[ind], z2[ind], maxconv1, maxconv2)
+        ax2.matshow(conv1[ind, ...] == maxconv1)
+        ax3.matshow(conv2[ind, ...] == maxconv2)
+        ax0.scatter(j1, i1)
+        ax1.scatter(j2, i2)
+        ax4.scatter(ind, z1[ind], zorder=2)
+        fig.canvas.draw_idle()
+
+    z1 = z1.detach().cpu().numpy().squeeze()
+    z2 = z2.detach().cpu().numpy().squeeze()
+    conv1 = conv1.cpu().detach().numpy().squeeze()
+    conv2 = conv2.cpu().detach().numpy().squeeze()
+    cmap1 = utils.get_cmap(torch.tensor(dmat1))
+    cmap2 = utils.get_cmap(torch.tensor(dmat2))
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
     spec = fig.add_gridspec(3, 2)
     ax0 = fig.add_subplot(spec[0, 0])
-    ax0.matshow(dmat1)
+    ax0.matshow(cmap1)
     ax1 = fig.add_subplot(spec[0, 1])
-    ax1.matshow(dmat2)
+    ax1.matshow(cmap2)
     ax2 = fig.add_subplot(spec[1, 0])
-    ax2.matshow(f1)
+    ax2.matshow(conv1[0, ...])
     ax3 = fig.add_subplot(spec[1, 1])
-    ax3.matshow(f2)
+    ax3.matshow(conv2[0, ...])
     ax4 = fig.add_subplot(spec[2, :])
-    ax4.plot(z1.detach().cpu().numpy().squeeze())
-    ax4.plot(z2.detach().cpu().numpy().squeeze())
+    ax4.plot(z1)
+    ax4.plot(z2)
     ax4.set_xlabel(f'latent_space: sim={sim:.4f}')
     plt.show()
 
