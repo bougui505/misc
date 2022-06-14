@@ -555,3 +555,5 @@ python/protein/sscl/models/trainer_20220610_1353.log
 python/protein/sscl/models/sscl_fcn_20220613_2219.pt
 python/protein/sscl/models/trainer_20220613_2219.log
 python/protein/sscl/models/sscl_fcn_20220614_0927.pt
+python/protein/sscl/index_fcn_20220614_0927.faiss/ids.npy
+python/protein/sscl/index_fcn_20220614_0927.faiss/index.faiss
