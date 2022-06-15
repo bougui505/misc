@@ -342,7 +342,7 @@ if __name__ == '__main__':
                         help='SSCL model to use',
                         metavar='model.pt',
                         default='models/sscl_fcn_20220614_0927.pt')
-    parser.add_argument('--latent_dims', default=512, type=int)
+    parser.add_argument('--latent_dims', default=128, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
     parser.add_argument('--save_every',
                         help='Save the FAISS index every given number of minutes when building it',
