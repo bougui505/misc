@@ -50,12 +50,12 @@ class FCN(torch.nn.Module):
     ----------------------------------------------------------------
             Layer (type)               Output Shape         Param #
     ================================================================
-                Conv2d-1            [-1, 8, 50, 50]             976
-                Conv2d-2            [-1, 8, 50, 50]             976
+                Conv2d-1            [-1, 8, 50, 50]              80
+                Conv2d-2            [-1, 8, 50, 50]              80
                   ReLU-3            [-1, 8, 50, 50]               0
                   ReLU-4            [-1, 8, 50, 50]               0
-                Conv2d-5           [-1, 16, 50, 50]           3,216
-                Conv2d-6           [-1, 16, 50, 50]           3,216
+                Conv2d-5           [-1, 16, 50, 50]           1,168
+                Conv2d-6           [-1, 16, 50, 50]           1,168
                   ReLU-7           [-1, 16, 50, 50]               0
                   ReLU-8           [-1, 16, 50, 50]               0
                 Conv2d-9           [-1, 32, 50, 50]           4,640
@@ -72,15 +72,17 @@ class FCN(torch.nn.Module):
                  ReLU-20          [-1, 128, 50, 50]               0
                Conv2d-21          [-1, 512, 50, 50]         590,336
                Conv2d-22          [-1, 512, 50, 50]         590,336
+              Sigmoid-23          [-1, 512, 50, 50]               0
+              Sigmoid-24          [-1, 512, 50, 50]               0
     ================================================================
-    Total params: 1,383,040
-    Trainable params: 1,383,040
+    Total params: 1,377,152
+    Trainable params: 1,377,152
     Non-trainable params: 0
     ----------------------------------------------------------------
     Input size (MB): 0.01
-    Forward/backward pass size (MB): 38.45
-    Params size (MB): 5.28
-    Estimated Total Size (MB): 43.74
+    Forward/backward pass size (MB): 57.98
+    Params size (MB): 5.25
+    Estimated Total Size (MB): 63.25
     ----------------------------------------------------------------
     >>> z = fcn(inp)
     >>> z.shape
@@ -102,16 +104,17 @@ class FCN(torch.nn.Module):
         self.normalize = normalize
         self.cmapify = cmapify
         self.normalized_latent_space = normalized_latent_space
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=11, padding='same')
-        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, padding='same')
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding='same')
+        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding='same')
         self.conv3 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding='same')
         self.conv4 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding='same')
         self.conv5 = torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding='same')
         self.conv6 = torch.nn.Conv2d(in_channels=128, out_channels=latent_dims, kernel_size=3, padding='same')
         self.relu = torch.nn.ReLU()
+        self.sigmoid = torch.nn.Sigmoid()
         self.flatten = torch.nn.Flatten()
         self.layers = torch.nn.Sequential(self.conv1, self.relu, self.conv2, self.relu, self.conv3, self.relu,
-                                          self.conv4, self.relu, self.conv5, self.relu, self.conv6)
+                                          self.conv4, self.relu, self.conv5, self.relu, self.conv6, self.sigmoid)
 
     def forward(self, x, get_conv=False):
         if self.cmapify:

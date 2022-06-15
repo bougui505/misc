@@ -44,6 +44,8 @@ import os
 import time
 from misc.eta import ETA
 import datetime
+import utils
+import numpy as np
 
 # See: https://discuss.pytorch.org/t/runtimeerror-received-0-items-of-ancdata/4999
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -149,12 +151,43 @@ def save_model(model, filename):
     torch.save(model.state_dict(), filename)
 
 
+class Metric(object):
+    """
+    >>> metric = Metric()
+    >>> model = encoder.FCN(latent_dims=128)
+    >>> metric.get(model)
+    ...
+    """
+    def __init__(self,
+                 pdblist1=['pdb/uc/pdb4ucc.ent.gz'],
+                 pdblist2=['pdb/wj/pdb2wj8.ent.gz'],
+                 sellist1=['chain A'],
+                 sellist2=['chain A']):
+        self.dmat1list = []
+        self.dmat2list = []
+        for pdb1, sel1, pdb2, sel2 in zip(pdblist1, sellist1, pdblist2, sellist2):
+            coords1 = utils.get_coords(pdb1, sel=sel1)
+            coords2 = utils.get_coords(pdb2, sel=sel2)
+            self.dmat1list.append(utils.get_dmat(coords1[None, ...]))
+            self.dmat2list.append(utils.get_dmat(coords2[None, ...]))
+
+    def get(self, model):
+        simlist = []
+        for dmat1, dmat2 in zip(self.dmat1list, self.dmat2list):
+            with torch.no_grad():
+                z1 = model(dmat1)
+                z2 = model(dmat2)
+            simlist.append(float(torch.matmul(z1, z2.T).squeeze().numpy()))
+        sim = np.mean(simlist)
+        return sim
+
+
 def train(
         pdbpath=None,
         pdblist=None,
         batch_size=4,
         n_epochs=20,
-        latent_dims=512,
+        latent_dims=128,
         save_each_epoch=True,
         print_each=100,
         save_each=30,  # in minutes
@@ -190,6 +223,7 @@ def train(
     save_model(model, modelfilename)
     epoch = 0
     step = 0
+    metric = Metric()
     total_steps = n_epochs * len(dataiter)
     eta = ETA(total_steps=total_steps)
     while epoch < n_epochs:
@@ -215,8 +249,9 @@ def train(
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 norm = get_norm(out)
+                metricval = metric.get(model)
                 if loss is not None:
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|metric: {metricval:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
                         )
         except StopIteration:
             dataiter = iter(dataloader)
@@ -258,7 +293,7 @@ if __name__ == '__main__':
                         type=int,
                         default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
-    parser.add_argument('--latent_dims', default=512, type=int)
+    parser.add_argument('--latent_dims', default=128, type=int)
     parser.add_argument('--input_size', default=224, type=int)
     parser.add_argument('--model_type', help='model type to use. Can be CNN (default) or FCN', default='CNN')
     parser.add_argument('--test', help='Test the code', action='store_true')
