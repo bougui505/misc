@@ -111,10 +111,9 @@ class FCN(torch.nn.Module):
         self.conv5 = torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding='same')
         self.conv6 = torch.nn.Conv2d(in_channels=128, out_channels=latent_dims, kernel_size=3, padding='same')
         self.relu = torch.nn.ReLU()
-        self.sigmoid = torch.nn.Sigmoid()
         self.flatten = torch.nn.Flatten()
         self.layers = torch.nn.Sequential(self.conv1, self.relu, self.conv2, self.relu, self.conv3, self.relu,
-                                          self.conv4, self.relu, self.conv5, self.relu, self.conv6, self.sigmoid)
+                                          self.conv4, self.relu, self.conv5, self.relu, self.conv6)
 
     def forward(self, x, get_conv=False):
         if self.cmapify:
