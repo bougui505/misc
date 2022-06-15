@@ -299,7 +299,7 @@ if __name__ == '__main__':
                         type=int,
                         default=30)
     parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
-    parser.add_argument('--latent_dims', default=128, type=int)
+    parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--input_size', default=224, type=int)
     parser.add_argument('--model_type', help='model type to use. Can be CNN (default) or FCN', default='CNN')
     parser.add_argument('--test', help='Test the code', action='store_true')

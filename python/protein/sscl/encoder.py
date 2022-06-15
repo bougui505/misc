@@ -104,8 +104,8 @@ class FCN(torch.nn.Module):
         self.normalize = normalize
         self.cmapify = cmapify
         self.normalized_latent_space = normalized_latent_space
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding='same')
-        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding='same')
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=11, padding='same')
+        self.conv2 = torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, padding='same')
         self.conv3 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding='same')
         self.conv4 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding='same')
         self.conv5 = torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding='same')
