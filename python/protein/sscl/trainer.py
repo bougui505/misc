@@ -224,7 +224,8 @@ def train(
     save_model(model, modelfilename)
     epoch = 0
     step = 0
-    metric = Metric()
+    metric_pos = Metric()
+    metric_neg = Metric(pdblist1=['pdb/uc/pdb4ucc.ent.gz'], pdblist2=['pdb/ci/pdb4ci0.ent.gz'])
     total_steps = n_epochs * len(dataiter)
     eta = ETA(total_steps=total_steps)
     while epoch < n_epochs:
@@ -253,9 +254,10 @@ def train(
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 norm = get_norm(out)
-                metricval = metric.get(model)
+                metricval_pos = metric_pos.get(model)
+                metricval_neg = metric_neg.get(model)
                 if loss is not None:
-                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|metric: {metricval:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|metric+: {metricval_pos:.4f}|metric-: {metricval_neg:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
                         )
         except StopIteration:
             dataiter = iter(dataloader)
