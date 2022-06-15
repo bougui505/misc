@@ -238,10 +238,13 @@ def train(
                 out = forward_batch(batch, model)
                 if len(out) > 0:
                     loss = get_contrastive_loss(out)
-                    loss.backward()
-                    # torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
-                    # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0, norm_type=2)
-                    opt.step()
+                    try:
+                        loss.backward()
+                        # torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0, norm_type=2)
+                        opt.step()
+                    except RuntimeError:
+                        print('RuntimeError: CUDA out of memory. Skipping backward...')
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
