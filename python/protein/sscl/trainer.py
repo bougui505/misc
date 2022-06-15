@@ -165,6 +165,7 @@ class Metric(object):
                  sellist2=['chain A']):
         self.dmat1list = []
         self.dmat2list = []
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         for pdb1, sel1, pdb2, sel2 in zip(pdblist1, sellist1, pdblist2, sellist2):
             coords1 = utils.get_coords(pdb1, sel=sel1)
             coords2 = utils.get_coords(pdb2, sel=sel2)
@@ -175,9 +176,9 @@ class Metric(object):
         simlist = []
         for dmat1, dmat2 in zip(self.dmat1list, self.dmat2list):
             with torch.no_grad():
-                z1 = model(dmat1)
-                z2 = model(dmat2)
-            simlist.append(float(torch.matmul(z1, z2.T).squeeze().numpy()))
+                z1 = model(dmat1.to(self.device))
+                z2 = model(dmat2.to(self.device))
+            simlist.append(float(torch.matmul(z1, z2.T).squeeze().cpu().numpy()))
         sim = np.mean(simlist)
         return sim
 
