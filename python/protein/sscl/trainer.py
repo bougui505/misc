@@ -175,9 +175,11 @@ class Metric(object):
     def get(self, model):
         simlist = []
         for dmat1, dmat2 in zip(self.dmat1list, self.dmat2list):
+            dmat1 = dmat1.to(self.device)
+            dmat2 = dmat2.to(self.device)
             with torch.no_grad():
-                z1 = model(dmat1.to(self.device))
-                z2 = model(dmat2.to(self.device))
+                z1 = model(dmat1)
+                z2 = model(dmat2)
             simlist.append(float(torch.matmul(z1, z2.T).squeeze().cpu().numpy()))
         sim = np.mean(simlist)
         return sim
