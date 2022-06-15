@@ -80,32 +80,79 @@ def get_cmap(dmat, threshold=8.):
     >>> cmap.shape
     torch.Size([1, 1, 85, 85])
     >>> cmap = cmap.cpu().numpy().squeeze()
-    >>> _ = plt.matshow(cmap)
-    >>> plt.colorbar()
-    >>> plt.show()
+
+    # >>> _ = plt.matshow(cmap)
+    # >>> plt.colorbar()
+    # >>> plt.show()
     """
     cmap = 1. - torch.nn.functional.sigmoid(dmat - threshold)
     return cmap
 
 
-def get_random_fragment(coords):
+def get_Rg(coords):
     """
-    >>> coords = torch.randn(1, 100, 3)
-    >>> fragment = get_random_fragment(coords)
+    >>> coords = torch.randn(1, 10, 3)
+    >>> Rg = get_Rg(coords)
+    >>> Rg
+    tensor(0...)
+    """
+    rk = torch.linalg.norm(coords, dim=-1)
+    rmean = rk.mean()
+    Rg = torch.sqrt(((rk - rmean)**2).mean())
+    return Rg
+
+
+def get_random_fragment(coords, fragment_ratio=None, noise=None):
+    """
+    >>> from pymol import cmd
+    >>> cmd.load('pdb/yc/pdb1ycr.ent.gz', 'inp')
+    >>> coords = cmd.get_coords('inp and polymer.protein and name CA and chain A')
+    >>> coords = torch.tensor(coords[None, ...])
+    >>> coords.shape
+    torch.Size([1, 85, 3])
+    >>> fragment = get_random_fragment(coords, fragment_ratio=0.5, noise=1.)
     >>> fragment.shape
-    torch.Size([1, ..., 3])
+    torch.Size([1, 42, 3])
+    >>> fragment = get_random_fragment(coords, fragment_ratio=1.5, noise=1.)
+    >>> fragment.shape
+    torch.Size([1, 127, 3])
+
+    >>> dmat = get_dmat(coords)
+    >>> cmap = get_cmap(dmat)
+    >>> dmat_fragment = get_dmat(fragment)
+    >>> cmap_fragment = get_cmap(dmat_fragment)
+    >>> coords = torch.randn(1, 100, 3)
+    >>> _ = plt.subplot(1, 2, 1)
+    >>> _ = plt.matshow(cmap.squeeze(), fignum=0)
+    >>> _ = plt.colorbar()
+    >>> _ = plt.subplot(1, 2, 2)
+    >>> _ = plt.matshow(cmap_fragment.squeeze(), fignum=0)
+    >>> _ = plt.colorbar()
+    >>> plt.show()
     """
-    fragment_ratio = np.random.uniform(low=0.25)
+    if noise is None:
+        noise = np.random.uniform()
+    if fragment_ratio is None:
+        fragment_ratio = np.random.uniform(low=0.25, high=2.)
     n = coords.shape[1]
-    fragment_size = int(fragment_ratio * n)
-    if fragment_size > 0:
-        i_start_max = n - fragment_size
-        i_start = np.random.choice(i_start_max)
-        i_stop = i_start + fragment_size
-        inds = np.r_[i_start:i_stop]
+    if fragment_ratio <= 1.:
+        fragment_size = int(fragment_ratio * n)
+    else:
+        fragment_size = int((fragment_ratio - 1.) * n)
+    if fragment_size <= 0:
+        return coords + noise * torch.randn(coords.shape)
+    i_start_max = n - fragment_size
+    i_start = np.random.choice(i_start_max)
+    i_stop = i_start + fragment_size
+    inds = np.r_[i_start:i_stop]
+    if fragment_ratio <= 1.:
         fragment = coords[:, inds, :]
     else:
-        fragment = coords
+        Rg = get_Rg(coords)
+        v = torch.randn(1, 1, 3) * Rg
+        to_add = coords[:, inds, :] + v
+        fragment = torch.cat((coords, to_add), 1)
+    fragment = fragment + noise * torch.randn(fragment.shape)
     return fragment
 
 
