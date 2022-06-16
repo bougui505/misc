@@ -231,6 +231,7 @@ def train(
     total_steps = n_epochs * len(dataiter)
     eta = ETA(total_steps=total_steps)
     while epoch < n_epochs:
+        opt.zero_grad()
         try:
             step += 1
             batch = next(dataiter)
@@ -241,7 +242,6 @@ def train(
                 batch = []
             bs = len(batch)
             if bs > 0:
-                opt.zero_grad()
                 out = forward_batch(batch, model)
                 if len(out) > 0:
                     loss = get_contrastive_loss(out)
