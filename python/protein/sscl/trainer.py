@@ -234,7 +234,10 @@ def train(
         try:
             step += 1
             batch = next(dataiter)
-            batch = [(e[0].to(device), e[1].to(device)) for e in batch if e is not None]
+            try:
+                batch = [(e[0].to(device), e[1].to(device)) for e in batch if e is not None]
+            except RuntimeError:
+                print('RuntimeError: CUDA out of memory. Skipping batch...')
             bs = len(batch)
             if bs > 0:
                 opt.zero_grad()
