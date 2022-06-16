@@ -362,6 +362,7 @@ if __name__ == '__main__':
                         help='Compute the latent similarity between the 2 given pdb',
                         nargs=2,
                         metavar='file.pdb')
+    parser.add_argument('--plotsim', help='Display interactive latent similarity plot', action='store_true')
     parser.add_argument('-q', '--query', help='Search for nearest neighbors for the given query pdb')
     parser.add_argument('--title', help='Retrieve PDB title information', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
@@ -410,7 +411,7 @@ if __name__ == '__main__':
                                                         sel2=sel2,
                                                         model=model,
                                                         latent_dims=args.latent_dims,
-                                                        doplot=True)
+                                                        doplot=args.plotsim)
         print(f'similarity: {sim:.4f}')
     if args.query is not None:
         if args.sel is None:
