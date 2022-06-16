@@ -260,8 +260,11 @@ def train(
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 norm = get_norm(out)
-                metricval_pos = metric_pos.get(model)
-                metricval_neg = metric_neg.get(model)
+                try:
+                    metricval_pos = metric_pos.get(model)
+                    metricval_neg = metric_neg.get(model)
+                except RuntimeError:
+                    print('RuntimeError: CUDA out of memory. Skipping metric...')
                 if loss is not None:
                     log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|metric+: {metricval_pos:.4f}|metric-: {metricval_neg:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
                         )
