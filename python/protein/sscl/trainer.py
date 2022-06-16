@@ -252,6 +252,7 @@ def train(
                         opt.step()
                     except RuntimeError:
                         print('RuntimeError: CUDA out of memory. Skipping backward...')
+            opt.zero_grad()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
