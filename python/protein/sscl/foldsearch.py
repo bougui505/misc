@@ -106,20 +106,41 @@ def plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim, threshold=8.):
     fig = plt.figure(constrained_layout=True)
 
     def onclick(event):
-        ind = int(event.xdata)
-        maxconv1 = conv1[ind, ...].max()
-        maxconv2 = conv2[ind, ...].max()
-        _, i1, j1 = np.unravel_index(conv1[ind, ...].argmax(), conv1.shape)
-        _, i2, j2 = np.unravel_index(conv2[ind, ...].argmax(), conv2.shape)
-        for i, ax in enumerate(axes):
+        for plotid, ax in enumerate(axes):
             if ax == event.inaxes:
-                plotid = i
-        print(ind, z1[ind], z2[ind], maxconv1, maxconv2, plotid)
+                break
+        # print(conv1.shape)  # (512, 226, 226)
         if plotid == 4:
+            ind = int(event.xdata)
+            maxconv1 = conv1[ind, ...].max()
+            maxconv2 = conv2[ind, ...].max()
+            _, i1, j1 = np.unravel_index(conv1[ind, ...].argmax(), conv1.shape)
+            _, i2, j2 = np.unravel_index(conv2[ind, ...].argmax(), conv2.shape)
+            print(ind, z1[ind], z2[ind], maxconv1, maxconv2, plotid)
             ax2.matshow(conv1[ind, ...])
             ax3.matshow(conv2[ind, ...])
             ax0.scatter(j1, i1)
             ax1.scatter(j2, i2)
+            ax4.scatter(ind, z1[ind], zorder=2)
+            fig.canvas.draw_idle()
+        if plotid == 0 or plotid == 1:
+            if plotid == 0:
+                i1, j1 = int(event.ydata), int(event.xdata)
+                ax0.scatter(j1, i1)
+                ind1 = conv1[:, i1, j1].argmax()
+                ind = ind1
+                _, i2, j2 = np.unravel_index(conv2[ind1, ...].argmax(), conv2.shape)
+                ax1.scatter(j2, i2)
+            elif plotid == 1:
+                i2, j2 = int(event.ydata), int(event.xdata)
+                ax1.scatter(j2, i2)
+                ind2 = conv2[:, i2, j2].argmax()
+                ind = ind2
+                _, i1, j1 = np.unravel_index(conv1[ind2, ...].argmax(), conv1.shape)
+                ax0.scatter(j1, i1)
+            # print(cmap1.shape)  # torch.Size([226, 226])
+            ax2.matshow(conv1[ind, ...])
+            ax3.matshow(conv2[ind, ...])
             ax4.scatter(ind, z1[ind], zorder=2)
             fig.canvas.draw_idle()
 
