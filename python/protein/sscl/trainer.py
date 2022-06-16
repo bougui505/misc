@@ -260,7 +260,8 @@ def train(
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                norm = get_norm(out)
+                if len(out) > 0:
+                    norm = get_norm(out)
                 try:
                     metricval_pos = metric_pos.get(model)
                     metricval_neg = metric_neg.get(model)
