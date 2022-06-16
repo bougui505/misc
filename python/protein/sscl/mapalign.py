@@ -81,7 +81,7 @@ def get_substitution_matrix(pdb1, pdb2, model, sel1='all', sel2='all', latent_di
     return z_sub
 
 
-def get_score_mat(z_sub, gap_open=-1.):
+def get_score_mat(z_sub, gap=-0.1):
     """
     # >>> import matplotlib.pyplot as plt
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
@@ -101,11 +101,11 @@ def get_score_mat(z_sub, gap_open=-1.):
     M = np.zeros((n1, n2))
     for i in range(1, n1):
         for j in range(1, n2):
-            M[i, j] = max(0, M[i - 1, j - 1] + z_sub[i, j], M[i - 1, j] + gap_open, M[i, j - 1] + gap_open)
+            M[i, j] = max(0, M[i - 1, j - 1] + z_sub[i, j], M[i - 1, j] + gap, M[i, j - 1] + gap)
     return M
 
 
-def traceback(M, z_sub, gap_open=-1.):
+def traceback(M, z_sub, gap=-0.1):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
@@ -131,10 +131,10 @@ def traceback(M, z_sub, gap_open=-1.):
             j = j - 1
             aln1[i] = j
             aln2[j] = i
-        if M[i, j] == M[i - 1, j] + gap_open:
+        if M[i, j] == M[i - 1, j] + gap:
             i = i - 1
             aln1[i] = '-'
-        if M[i, j] == M[i, j - 1] + gap_open:
+        if M[i, j] == M[i, j - 1] + gap:
             j = j - 1
             aln2[j] = '-'
     aln1 = {k: aln1[k] for k in reversed(aln1)}
