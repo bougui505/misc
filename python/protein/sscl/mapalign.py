@@ -52,10 +52,8 @@ class MapAlign():
     (85, 85)
     >>> ma.cmap2.shape
     (88, 88)
-    >>> ma.cmap1_aln.shape
-    (88, 88)
     >>> ma.cmap2_aln.shape
-    (88, 88)
+    (85, 85)
     """
     def __init__(self, model, pdb1=None, pdb2=None, dmat1=None, dmat2=None, sel1='all', sel2='all', gap=0.):
         """
@@ -70,11 +68,11 @@ class MapAlign():
         self.aln1, self.aln2 = traceback(self.M, self.zsub, gap=self.gap)
         self.cmap1 = utils.get_cmap(self.dmat1).squeeze().numpy()
         self.cmap2 = utils.get_cmap(self.dmat2).squeeze().numpy()
-        self.aln = np.asarray(list(self.aln1.values()))
-        self.cmap1_aln, self.cmap2_aln = get_aligned_maps(self.cmap1, self.cmap2, self.aln, full=True)
+        # self.aln = np.asarray(list(self.aln1.values()))
+        self.cmap1_aln, self.cmap2_aln = get_aligned_maps(self.cmap1, self.cmap2, self.aln1)
 
     def plot(self, full=True, outfilename=None):
-        plot_aln(self.cmap1, self.cmap2, self.aln, full=full, outfilename=outfilename)
+        plot_aln(self.cmap1, self.cmap2, self.aln1, outfilename=outfilename)
 
 
 def latent_sequence(model, pdb=None, dmat=None, sel='all', latent_dims=512):
@@ -190,7 +188,7 @@ def traceback(M, z_sub, gap=0.):
     return aln1, aln2
 
 
-def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
+def get_aligned_maps(cmap_a, cmap_b, aln_a):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
@@ -199,53 +197,28 @@ def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
     (85, 85)
     >>> ma.cmap2.shape
     (88, 88)
-    >>> aln = np.asarray(list(ma.aln1.values()))
-    >>> aln
-    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
-           17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
-           34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-           52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
-           69, 70, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 86, 87])
-    >>> aln.shape
-    (85,)
-    >>> cmap1_aln, cmap2_aln = get_aligned_maps(ma.cmap1, ma.cmap2, aln, full=True)
-    >>> cmap1_aln.shape
-    (88, 88)
+    >>> cmap1_aln, cmap2_aln = get_aligned_maps(ma.cmap1, ma.cmap2, ma.aln1)
     >>> cmap2_aln.shape
-    (88, 88)
+    (85, 85)
 
     """
     na, na = cmap_a.shape
     nb, nb = cmap_b.shape
-    ai_aln = np.where(aln != None)[0]
-    bi_aln = aln[ai_aln]
-    if not full:  # Only get the aligned parts
-        cmap_a_aln = cmap_a[ai_aln, :][:, ai_aln]
-        cmap_b_aln = cmap_b[bi_aln, :][:, bi_aln]
-    else:  # get the FULL matrices with zeros in insertion regions
-        if na <= nb:
-            cmap_a_aln = np.zeros_like(cmap_b)
-            cmap_a_aln[:na, :na] = cmap_a
-            cmap_a_aln[bi_aln, :] = cmap_a_aln[ai_aln, :]
-            cmap_a_aln[:, bi_aln] = cmap_a_aln[:, ai_aln]
-            cmap_b_aln = cmap_b
-        else:
-            cmap_a_aln = cmap_a
-            cmap_b_aln = np.zeros_like(cmap_a)
-            cmap_b_aln[:nb, :nb] = cmap_b
-            cmap_b_aln[ai_aln, :] = cmap_b_aln[bi_aln, :]
-            cmap_b_aln[:, ai_aln] = cmap_b_aln[:, bi_aln]
+    ia = [i for i in aln_a if aln_a[i] is not None]
+    ib = [aln_a[i] for i in aln_a if aln_a[i] is not None]
+    cmap_a_aln = cmap_a[ia, :][:, ia]
+    cmap_b_aln = cmap_b[ib, :][:, ib]
     return cmap_a_aln, cmap_b_aln
 
 
-def plot_aln(cmap_a, cmap_b, aln, full=False, outfilename=None):
+def plot_aln(cmap_a, cmap_b, aln_a, outfilename=None):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
     >>> ma = MapAlign(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
-    >>> plot_aln(ma.cmap1, ma.cmap2, ma.aln)
+    >>> plot_aln(ma.cmap1, ma.cmap2, ma.aln1)
     """
-    cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln, full=full)
+    cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln_a)
     ai, aj = np.where(cmap_a_aln > 0.5)
     bi, bj = np.where(cmap_b_aln > 0.5)
     plt.scatter(bi, bj, s=16., c='gray', alpha=.5, label='cmap_b')
