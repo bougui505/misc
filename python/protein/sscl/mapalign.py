@@ -204,6 +204,8 @@ def get_aligned_maps(cmap_a, cmap_b, aln, full=False):
            34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
            69, 70, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 86])
+    >>> aln.shape
+    (84,)
     >>> cmap1_aln, cmap2_aln = get_aligned_maps(ma.cmap1, ma.cmap2, aln, full=True)
     >>> cmap1_aln.shape
     (88, 88)
@@ -277,10 +279,18 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--pdb1')
+    parser.add_argument('--pdb2')
+    parser.add_argument('--sel1')
+    parser.add_argument('--sel2')
+    parser.add_argument('--model', help='Model to load', metavar='model.pt', default='models/sscl_fcn_20220615_2221.pt')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    model = encoder.load_model(args.model)
+    ma = MapAlign(model=model, pdb1=args.pdb1, pdb2=args.pdb2, sel1=args.sel1, sel2=args.sel2)
+    ma.plot(full=True)
