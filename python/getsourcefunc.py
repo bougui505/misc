@@ -55,6 +55,14 @@ def print_source(modulefilename, functionname):
     return lines
 
 
+def print_attributes(modulefilename):
+    modulename = os.path.splitext(modulefilename)[0]
+    mod = importlib.import_module(modulename)
+    attr_list = dir(mod)
+    for attr in attr_list:
+        print(attr)
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -78,7 +86,9 @@ if __name__ == '__main__':
         description='Print to stdout the given function (-f) from the given source code file (-m)')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-m', '--module', help='Filename to get the function from')
-    parser.add_argument('-f', '--func', help='Name of the function to print out')
+    parser.add_argument('-f',
+                        '--func',
+                        help='Name of the function to print out. If not given print all the attributes of the module')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -86,5 +96,8 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    lines = print_source(modulefilename=args.module, functionname=args.func)
-    print(lines)
+    if args.func is not None:
+        lines = print_source(modulefilename=args.module, functionname=args.func)
+        print(lines)
+    if args.func is None:
+        print_attributes(args.module)
