@@ -373,7 +373,7 @@ if __name__ == '__main__':
     parser.add_argument('--model',
                         help='SSCL model to use',
                         metavar='model.pt',
-                        default='models/sscl_fcn_20220614_0927.pt')
+                        default='models/sscl_fcn_20220615_2221.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
     parser.add_argument('--save_every',
@@ -386,7 +386,7 @@ if __name__ == '__main__':
     parser.add_argument('--bs', help='Batch size', type=int, default=4)
     parser.add_argument('--index',
                         help='FAISS index directory. Default: index_fcn_20220610_1353.faiss',
-                        default='index_fcn_20220614_0927.faiss')
+                        default='index_fcn_20220615_2221.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
