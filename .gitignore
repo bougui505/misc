@@ -566,3 +566,4 @@ python/protein/sscl/index_fcn_20220615_2221.faiss/ids.npy
 python/protein/sscl/index_fcn_20220615_2221.faiss/index.faiss
 python/protein/sscl/models/sscl_fcn_20220615_2221.pt~20220616-225044~
 python/protein/sscl/models/trainer_20220615_2221.log
+python/protein/sscl/align.log
