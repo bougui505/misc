@@ -44,11 +44,11 @@ import matplotlib.pyplot as plt
 from scipy.optimize import linear_sum_assignment
 
 
-class MapAlign():
+class Alignment():
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
-    >>> ma = MapAlign(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
+    >>> ma = Alignment(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
     >>> ma.cmap1.shape
     (85, 85)
     >>> ma.cmap2.shape
@@ -221,7 +221,7 @@ def get_aligned_maps(cmap_a, cmap_b, aln_a):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
-    >>> ma = MapAlign(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
+    >>> ma = Alignment(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
     >>> ma.cmap1.shape
     (85, 85)
     >>> ma.cmap2.shape
@@ -244,7 +244,7 @@ def plot_aln(cmap_a, cmap_b, aln_a, outfilename=None):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
-    >>> ma = MapAlign(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
+    >>> ma = Alignment(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
 
     # >>> plot_aln(ma.cmap1, ma.cmap2, ma.aln1)
     """
@@ -297,5 +297,5 @@ if __name__ == '__main__':
         sys.exit()
 
     model = encoder.load_model(args.model)
-    ma = MapAlign(model=model, pdb1=args.pdb1, pdb2=args.pdb2, sel1=args.sel1, sel2=args.sel2)
+    ma = Alignment(model=model, pdb1=args.pdb1, pdb2=args.pdb2, sel1=args.sel1, sel2=args.sel2)
     ma.plot(full=False)
