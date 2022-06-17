@@ -295,4 +295,4 @@ if __name__ == '__main__':
 
     model = encoder.load_model(args.model)
     ma = MapAlign(model=model, pdb1=args.pdb1, pdb2=args.pdb2, sel1=args.sel1, sel2=args.sel2)
-    ma.plot(full=True)
+    ma.plot(full=False)
