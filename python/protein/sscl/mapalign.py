@@ -41,6 +41,7 @@ import numpy as np
 from misc.protein.sscl import utils
 from misc.protein.sscl import encoder
 import matplotlib.pyplot as plt
+from scipy.optimize import linear_sum_assignment
 
 
 class MapAlign():
@@ -58,13 +59,13 @@ class MapAlign():
     def __init__(self, model, pdb1=None, pdb2=None, dmat1=None, dmat2=None, sel1='all', sel2='all', gap=0.):
         """
         """
+        self.gap = gap
         coords1 = utils.get_coords(pdb1, sel=sel1)
         coords2 = utils.get_coords(pdb2, sel=sel2)
         self.dmat1 = utils.get_dmat(coords1[None, ...])
         self.dmat2 = utils.get_dmat(coords2[None, ...])
         self.zsub = get_substitution_matrix(model=model, dmat1=self.dmat1, dmat2=self.dmat2)
         self.M = get_score_mat(self.zsub)
-        self.gap = gap
         self.aln1, self.aln2 = traceback(self.M, self.zsub, gap=self.gap)
         self.cmap1 = utils.get_cmap(self.dmat1).squeeze().numpy()
         self.cmap2 = utils.get_cmap(self.dmat2).squeeze().numpy()
@@ -120,6 +121,34 @@ def get_substitution_matrix(model,
     z_seq_2 = latent_sequence(pdb=pdb2, dmat=dmat2, model=model, sel=sel2, latent_dims=latent_dims)
     z_sub = torch.matmul(z_seq_1, z_seq_2.T)
     return z_sub
+
+
+def hungarian(z_sub):
+    """
+    >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
+    Loading FCN model
+    >>> z_sub = get_substitution_matrix(pdb1='1ycr', pdb2='7ad0', model=model, sel1='chain A', sel2='chain D')
+    >>> z_sub.shape
+    torch.Size([85, 88])
+    >>> aln1, aln2 = hungarian(z_sub)
+    """
+    row_ind, col_ind = linear_sum_assignment(-z_sub)
+    row_ind = list(row_ind)
+    col_ind = list(col_ind)
+    aln1 = dict()
+    aln2 = dict()
+    na, nb = z_sub.shape
+    for i in range(na):
+        if i in row_ind:
+            aln1[i] = col_ind[row_ind.index(i)]
+        else:
+            aln1[i] = None
+    for j in range(nb):
+        if j in col_ind:
+            aln2[j] = row_ind[col_ind.index(j)]
+        else:
+            aln2[j] = None
+    return aln1, aln2
 
 
 def get_score_mat(z_sub, gap=0.):
@@ -216,7 +245,8 @@ def plot_aln(cmap_a, cmap_b, aln_a, outfilename=None):
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
     >>> ma = MapAlign(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
-    >>> plot_aln(ma.cmap1, ma.cmap2, ma.aln1)
+
+    # >>> plot_aln(ma.cmap1, ma.cmap2, ma.aln1)
     """
     cmap_a_aln, cmap_b_aln = get_aligned_maps(cmap_a, cmap_b, aln_a)
     ai, aj = np.where(cmap_a_aln > 0.5)
