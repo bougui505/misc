@@ -36,7 +36,10 @@
 #                                                                           #
 #############################################################################
 
+from misc.sequences.sequence_identity import get_sequence
 import pickle
+from Bio import pairwise2
+from Bio.pairwise2 import format_alignment
 
 
 def log(msg):
@@ -46,15 +49,20 @@ def log(msg):
         pass
 
 
-def get_sequence(pdbcode, index, chain=None):
-    pdbcode = pdbcode.lower()
-    if chain is not None:
-        out = index[pdbcode][chain]
-    else:
-        out = []
-        for chain in index[pdbcode]:
-            out.append(index[pdbcode][chain])
-    return out
+def align(pdb1, pdb2, index):
+    pdbcode1 = pdb1[:4]
+    chain1 = pdb1[-1]
+    pdbcode2 = pdb2[:4]
+    chain2 = pdb2[-1]
+    seq1 = get_sequence.get_sequence(pdbcode=pdbcode1, index=index, chain=chain1)
+    seq2 = get_sequence.get_sequence(pdbcode=pdbcode2, index=index, chain=chain2)
+    minlen = min(len(seq1), len(seq2))
+    alignments = pairwise2.align.globalxx(seq1, seq2)
+    alignment = alignments[0]
+    sequence_identity = alignment.score / minlen
+    return alignment, sequence_identity
+    # for alignment in alignments:
+    #     print(format_alignment(*alignment))
 
 
 if __name__ == '__main__':
@@ -72,8 +80,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--index', default='index.pkl')
-    parser.add_argument('--pdb')
-    parser.add_argument('--chain')
+    parser.add_argument('--pdb1', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
+    parser.add_argument('--pdb2', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -82,5 +90,6 @@ if __name__ == '__main__':
         sys.exit()
 
     index = pickle.load(open(args.index, 'rb'))
-    seq = get_sequence(pdbcode=args.pdb, index=index, chain=args.chain)
-    print(seq)
+    alignment, seq_identity = align(args.pdb1, args.pdb2, index)
+    print(format_alignment(*alignment))
+    print(f'seq_identity: {seq_identity:.4f}')
