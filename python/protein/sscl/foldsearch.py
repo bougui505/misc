@@ -48,10 +48,12 @@ import time
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
+from misc import kabsch
+from pymol import cmd
 
 
 class Align():
-    def __init__(self, pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, feature_threshold=0.5):
+    def __init__(self, pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, feature_threshold=0.5, gap=-1.):
         """
         >>> pdb1 = '1ycr'
         >>> pdb2 = '7ad0'
@@ -62,46 +64,141 @@ class Align():
         >>> aln = Align(pdb1=pdb1, pdb2=pdb2, model=model, sel1=sel1, sel2=sel2)
         >>> aln.similarity
         0.9920978546142578
-        >>> aln.important_features
+        >>> aln.important_features()
         [(477, 0.20763037), (382, 0.19166075)]
+        >>> aln.substitution_matrix().shape
+        (85, 87)
+        >>> aln.score_mat().shape
+        (85, 87)
+
+        # >>> _ = plt.matshow(aln.score_mat)
+        # >>> _ = plt.colorbar()
+        # >>> _ = plt.show()
+
+        >>> aln.aln1
+        {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 10, 12: 11, 13: 12, 14: 13, 15: 14, 16: 15, 17: 16, 18: 17, 19: 18, 20: 19, 21: 20, 22: 21, 23: 22, 24: 23, 25: 24, 26: 25, 27: 26, 28: 27, 29: 28, 30: 29, 31: 30, 32: 31, 33: 32, 34: 33, 35: 34, 36: 35, 37: 36, 38: 37, 39: 38, 40: 39, 41: 40, 42: 41, 43: 42, 44: 43, 45: 44, 46: 45, 47: 46, 48: 47, 49: 48, 50: 49, 51: 50, 52: 51, 53: 52, 54: 53, 55: 54, 56: 55, 57: 56, 58: 57, 59: 58, 60: 59, 61: 60, 62: 61, 63: 62, 64: 63, 65: 64, 66: 65, 67: 66, 68: 67, 69: 68, 70: 69, 71: 70, 72: 71, 73: 72, 74: 73, 75: 74, 76: 75, 77: 76, 78: 77, 79: 78, 80: 79, 81: 80, 82: 81}
+        >>> aln.aln2
+        {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 10: 11, 11: 12, 12: 13, 13: 14, 14: 15, 15: 16, 16: 17, 17: 18, 18: 19, 19: 20, 20: 21, 21: 22, 22: 23, 23: 24, 24: 25, 25: 26, 26: 27, 27: 28, 28: 29, 29: 30, 30: 31, 31: 32, 32: 33, 33: 34, 34: 35, 35: 36, 36: 37, 37: 38, 38: 39, 39: 40, 40: 41, 41: 42, 42: 43, 43: 44, 44: 45, 45: 46, 46: 47, 47: 48, 48: 49, 49: 50, 50: 51, 51: 52, 52: 53, 53: 54, 54: 55, 55: 56, 56: 57, 57: 58, 58: 59, 59: 60, 60: 61, 61: 62, 62: 63, 63: 64, 64: 65, 65: 66, 66: 67, 67: 68, 68: 69, 69: 70, 70: 71, 71: 72, 72: 73, 73: 74, 74: 75, 75: 76, 76: 77, 77: 78, 78: 79, 79: 80, 80: 81, 81: 82}
+
+        >>> aln.structalign()
         """
         self.pdb1 = pdb1
         self.pdb2 = pdb2
+        self.sel1 = sel1
+        self.sel2 = sel2
+        self.coords1 = utils.get_coords(pdb1, sel=sel1)
+        self.coords2 = utils.get_coords(pdb2, sel=sel2)
         self.feature_threshold = feature_threshold
-        self.z1, self.conv1, self.dmat1 = encode_pdb(pdb1,
-                                                     model=model,
-                                                     latent_dims=latent_dims,
-                                                     sel=sel1,
-                                                     return_dmat=True)
-        self.z2, self.conv2, self.dmat2 = encode_pdb(pdb2,
-                                                     model=model,
-                                                     latent_dims=latent_dims,
-                                                     sel=sel2,
-                                                     return_dmat=True)
+        self.gap = gap
+        self.z1, self.conv1, self.dmat1 = encode(coords=self.coords1,
+                                                 model=model,
+                                                 latent_dims=latent_dims,
+                                                 sel=sel1,
+                                                 return_dmat=True)
+        self.z2, self.conv2, self.dmat2 = encode(coords=self.coords2,
+                                                 model=model,
+                                                 latent_dims=latent_dims,
+                                                 sel=sel2,
+                                                 return_dmat=True)
+        self.conv1 = self.conv1.cpu().detach().numpy().squeeze()
+        self.conv2 = self.conv2.cpu().detach().numpy().squeeze()
         self.dmat1 = self.dmat1.detach().cpu().numpy().squeeze()
         self.dmat2 = self.dmat2.detach().cpu().numpy().squeeze()
         self.similarity = float(torch.matmul(self.z1, self.z2.T).squeeze().numpy())
         self.feature_importance = (self.z1 * self.z2).squeeze().numpy() / self.similarity
+        self.zsub = self.substitution_matrix()
+        self.M = self.score_mat()
+        self.aln1, self.aln2 = self.traceback()
 
-    @property
     def important_features(self):
         return get_important_features(self.feature_importance, threshold=self.feature_threshold)
+
+    def substitution_matrix(self):
+        """
+        Get residue anchors for each latent dim
+        """
+        latent_dim, n1, _ = self.conv1.shape
+        _, n2, _ = self.conv2.shape
+        out = []
+        zub = np.zeros((n1, n2))
+        for ind in range(latent_dim):
+            _, i1, j1 = np.unravel_index(self.conv1[ind, ...].argmax(), self.conv1.shape)
+            _, i2, j2 = np.unravel_index(self.conv2[ind, ...].argmax(), self.conv2.shape)
+            fi = self.feature_importance[ind]
+            out.append(((i1, j1), (i2, j2), fi))
+            zub[i1, i2] = fi
+            zub[j1, j2] = fi
+        return zub
+
+    def score_mat(self):
+        """
+        """
+        n1, n2 = self.zsub.shape
+        M = np.zeros((n1, n2))
+        for i in range(1, n1):
+            for j in range(1, n2):
+                M[i, j] = max(0, M[i - 1, j - 1] + self.zsub[i, j], M[i - 1, j] + self.gap, M[i, j - 1] + self.gap)
+        return M
+
+    def traceback(self):
+        gap = self.gap
+        n1, n2 = self.M.shape
+        aln1 = dict()
+        aln2 = dict()
+        i, j = np.unravel_index(self.M.argmax(), self.M.shape)
+        aln1[i] = j
+        aln2[j] = i
+        while i > 0 and j > 0:
+            if self.M[i, j] == self.M[i - 1, j - 1] + self.zsub[i, j]:
+                i = i - 1
+                j = j - 1
+                aln1[i] = j
+                aln2[j] = i
+            elif self.M[i, j] == self.M[i - 1, j] + gap:
+                i = i - 1
+                aln1[i] = None
+            elif self.M[i, j] == self.M[i, j - 1] + gap:
+                j = j - 1
+                aln2[j] = None
+            else:
+                break
+        aln1 = {k: aln1[k] for k in reversed(aln1)}
+        aln2 = {k: aln2[k] for k in reversed(aln2)}
+        return aln1, aln2
+
+    def structalign(self):
+        s1 = [k for k in self.aln1 if self.aln1[k] is not None]
+        s2 = [self.aln1[k] for k in self.aln1 if self.aln1[k] is not None]
+        c1 = self.coords1[s1].numpy()
+        c2 = self.coords2[s2].numpy()
+        R, t = kabsch.rigid_body_fit(c1, c2)
+        cmd.remove('all')
+        cmd.fetch(code=self.pdb1, name='p1')
+        cmd.fetch(code=self.pdb2, name='p2')
+        cmd.remove(selection=f'not ({self.sel1}) and p1')
+        cmd.remove(selection=f'not ({self.sel2}) and p2')
+        toalign = cmd.get_coords('p1')
+        coords_aligned = (R.dot(toalign.T)).T + t
+        cmd.load_coords(coords_aligned, 'p1')
+        cmd.orient()
+        cmd.save('aln.pse')
 
     def plot(self):
         plot_sim(self.dmat1, self.dmat2, self.conv1, self.conv2, self.z1, self.z2, self.similarity)
 
 
-def encode_pdb(pdb, model, sel='all', latent_dims=512, return_dmat=False):
+def encode(model, pdb=None, coords=None, sel='all', latent_dims=512, return_dmat=False):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
-    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
+    >>> z, conv = encode(pdb='pdb/yc/pdb1ycr.ent.gz', model=model)
     >>> z.shape
     torch.Size([1, 512])
     >>> conv.shape
     torch.Size([1, 512, 98, 98])
     """
-    coords = utils.get_coords(pdb, sel=sel)
+    if pdb is not None:
+        coords = utils.get_coords(pdb, sel=sel)
     dmat = utils.get_dmat(coords[None, ...])
     with torch.no_grad():
         try:
@@ -161,8 +258,8 @@ def plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim, threshold=8.):
 
     z1 = z1.detach().cpu().numpy().squeeze()
     z2 = z2.detach().cpu().numpy().squeeze()
-    conv1 = conv1.cpu().detach().numpy().squeeze()
-    conv2 = conv2.cpu().detach().numpy().squeeze()
+    # conv1 = conv1.cpu().detach().numpy().squeeze()
+    # conv2 = conv2.cpu().detach().numpy().squeeze()
     cmap1 = utils.get_cmap(torch.tensor(dmat1))
     cmap2 = utils.get_cmap(torch.tensor(dmat2))
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
@@ -192,7 +289,7 @@ def maxpool(conv):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
     Loading FCN model
-    >>> z, conv = encode_pdb('pdb/yc/pdb1ycr.ent.gz', model)
+    >>> z, conv = encode(pdb='pdb/yc/pdb1ycr.ent.gz', model=model)
     >>> conv.shape
     torch.Size([1, 512, 98, 98])
     >>> out = maxpool(conv)
@@ -373,6 +470,7 @@ if __name__ == '__main__':
 
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         aln = Align(pdb1=pdb1, pdb2=pdb2, sel1=sel1, sel2=sel2, model=model, latent_dims=args.latent_dims)
+        aln.structalign()
         if args.plotsim:
             aln.plot()
         print(f'similarity: {aln.similarity:.4f}')
@@ -382,7 +480,7 @@ if __name__ == '__main__':
         else:
             sel = args.sel[0]
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
-        z, conv = encode_pdb(pdb=args.query, sel=sel, model=model, latent_dims=args.latent_dims)
+        z, conv = encode(pdb=args.query, sel=sel, model=model, latent_dims=args.latent_dims)
         z = z.detach().cpu().numpy()
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
