@@ -66,8 +66,9 @@ def align(pdb1, pdb2, index=None):
     seq2 = get_sequence.get_sequence(pdbcode=pdbcode2, index=index, chain=chain2)
     alignments = pairwise2.align.globalxx(seq1, seq2)
     alignment = alignments[0]
-    den = alignment.end
+    # den = alignment.end
     den = min(len(seq1), len(seq2))
+    # den = len(seq1)
     sequence_identity = alignment.score / den
     return alignment, sequence_identity
 
