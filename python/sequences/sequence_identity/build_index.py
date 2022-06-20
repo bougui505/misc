@@ -46,10 +46,13 @@ def build_index(gzfilename):
         for line in gzipfile:
             line = line.decode().strip()
             if line[0] == '>':
-                pdbcode_chain = line[1:7]  # e.g. 9icr_P
+                pdbcode = line[1:5]
+                chain = line[6]  # e.g. A
             else:
                 sequence = line
-                index[pdbcode_chain] = sequence
+                if pdbcode not in index:
+                    index[pdbcode] = {}
+                index[pdbcode][chain] = sequence
     return index
 
 
@@ -85,8 +88,9 @@ if __name__ == '__main__':
     print('Building index ...')
     index = build_index('pdb_seqres.txt.gz')
     print('Testing index')
-    key = '4ci0_A'
-    print(key)
-    print(index[key])
+    pdbcode = '4ci0'
+    chain = 'A'
+    print(f'{pdbcode}_{chain}')
+    print(index[pdbcode][chain])
     print('Dumping index ...')
     pickle.dump(index, open('index.pkl', 'wb'))

@@ -48,9 +48,12 @@ def log(msg):
 
 def get_sequence(pdbcode, index, chain=None):
     if chain is not None:
-        key = f'{pdbcode}_{chain}'
-    seq = index[key]
-    return seq
+        out = index[pdbcode][chain]
+    else:
+        out = []
+        for chain in index[pdbcode]:
+            out.append(index[pdbcode][chain])
+    return out
 
 
 if __name__ == '__main__':

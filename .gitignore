@@ -569,3 +569,4 @@ python/protein/sscl/models/trainer_20220615_2221.log
 python/protein/sscl/align.log
 python/protein/sscl/aln.pse
 python/sequences/sequence_identity/pdb_seqres.txt.gz
+python/sequences/sequence_identity/index.pkl
