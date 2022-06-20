@@ -568,3 +568,4 @@ python/protein/sscl/models/sscl_fcn_20220615_2221.pt~20220616-225044~
 python/protein/sscl/models/trainer_20220615_2221.log
 python/protein/sscl/align.log
 python/protein/sscl/aln.pse
+python/sequences/sequence_identity/pdb_seqres.txt.gz
