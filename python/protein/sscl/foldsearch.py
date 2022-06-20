@@ -50,7 +50,7 @@ import datetime
 import matplotlib.pyplot as plt
 from misc import kabsch
 from pymol import cmd
-from misc.sequences.sequence_identity
+from misc.sequences.sequence_identity import seqalign
 
 
 class Align():
@@ -399,6 +399,9 @@ def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False, re
             if return_name:
                 title = get_pdb_title.get_pdb_title(pdbcode, chain)
                 outstr += f' {title}'
+            if return_seq_identity:
+                alignment, sequence_identity = seqalign.align(query, f'{pdbcode}_{chain}')
+                outstr += f' {sequence_identity:.4f}'
             print(outstr)
 
 
@@ -428,8 +431,13 @@ if __name__ == '__main__':
                         nargs=2,
                         metavar='file.pdb')
     parser.add_argument('--plotsim', help='Display interactive latent similarity plot', action='store_true')
-    parser.add_argument('-q', '--query', help='Search for nearest neighbors for the given query pdb')
+    parser.add_argument(
+        '-q',
+        '--query',
+        help='Search for nearest neighbors for the given query pdb. The query pdb should be given as {PDBCODE}_{CHAINID}'
+    )
     parser.add_argument('--title', help='Retrieve PDB title information', action='store_true')
+    parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
@@ -486,7 +494,11 @@ if __name__ == '__main__':
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
         Dmat, Imat = index.search(z, args.n)
-        print_foldsearch_results(Imat, Dmat, [args.query], ids, return_name=args.title)
+        print_foldsearch_results(Imat,
+                                 Dmat, [f'{args.query}'],
+                                 ids,
+                                 return_name=args.title,
+                                 return_seq_identity=args.pid)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,

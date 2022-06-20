@@ -44,6 +44,8 @@ import os
 
 DIRPATH = os.path.realpath(__file__)
 DIRPATH = os.path.dirname(DIRPATH)
+INDEXPATH = f'{DIRPATH}/index.pkl'
+INDEX = pickle.load(open(INDEXPATH, 'rb'))
 
 
 def log(msg):
@@ -53,7 +55,9 @@ def log(msg):
         pass
 
 
-def align(pdb1, pdb2, index):
+def align(pdb1, pdb2, index=None):
+    if index is None:
+        index = INDEX
     pdbcode1 = pdb1[:4]
     chain1 = pdb1[-1]
     pdbcode2 = pdb2[:4]
@@ -91,9 +95,10 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    if args.index is None:
-        args.index = f'{DIRPATH}/index.pkl'
-    index = pickle.load(open(args.index, 'rb'))
+    if args.index is not None:
+        index = pickle.load(open(args.index, 'rb'))
+    else:
+        index = None
     alignment, seq_identity = align(args.pdb1, args.pdb2, index)
     print(format_alignment(*alignment))
     print(f'seq_identity: {seq_identity:.4f}')
