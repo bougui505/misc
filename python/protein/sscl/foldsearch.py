@@ -50,6 +50,47 @@ import datetime
 import matplotlib.pyplot as plt
 
 
+class Align():
+    def __init__(self, pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, feature_threshold=0.5):
+        """
+        >>> pdb1 = '1ycr'
+        >>> pdb2 = '7ad0'
+        >>> sel1 = 'chain A'
+        >>> sel2 = 'chain E'
+        >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
+        Loading FCN model
+        >>> aln = Align(pdb1=pdb1, pdb2=pdb2, model=model, sel1=sel1, sel2=sel2)
+        >>> aln.similarity
+        0.9920978546142578
+        >>> aln.important_features
+        [(477, 0.20763037), (382, 0.19166075)]
+        """
+        self.pdb1 = pdb1
+        self.pdb2 = pdb2
+        self.feature_threshold = feature_threshold
+        self.z1, self.conv1, self.dmat1 = encode_pdb(pdb1,
+                                                     model=model,
+                                                     latent_dims=latent_dims,
+                                                     sel=sel1,
+                                                     return_dmat=True)
+        self.z2, self.conv2, self.dmat2 = encode_pdb(pdb2,
+                                                     model=model,
+                                                     latent_dims=latent_dims,
+                                                     sel=sel2,
+                                                     return_dmat=True)
+        self.dmat1 = self.dmat1.detach().cpu().numpy().squeeze()
+        self.dmat2 = self.dmat2.detach().cpu().numpy().squeeze()
+        self.similarity = float(torch.matmul(self.z1, self.z2.T).squeeze().numpy())
+        self.feature_importance = (self.z1 * self.z2).squeeze().numpy() / self.similarity
+
+    @property
+    def important_features(self):
+        return get_important_features(self.feature_importance, threshold=self.feature_threshold)
+
+    def plot(self):
+        plot_sim(self.dmat1, self.dmat2, self.conv1, self.conv2, self.z1, self.z2, self.similarity)
+
+
 def encode_pdb(pdb, model, sel='all', latent_dims=512, return_dmat=False):
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
@@ -74,32 +115,6 @@ def encode_pdb(pdb, model, sel='all', latent_dims=512, return_dmat=False):
         return z, conv, dmat
     else:
         return z, conv
-
-
-def get_latent_similarity(pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, doplot=False):
-    """
-    >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
-    >>> pdb2 = 'pdb/yc/pdb1ycr.ent.gz'
-    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
-    Loading FCN model
-    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-109')
-    >>> sim
-    1.0000...
-    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A and resi 25-64', doplot=True)
-    >>> sim
-    0.9474...
-    """
-    z1, conv1, dmat1 = encode_pdb(pdb1, model=model, latent_dims=latent_dims, sel=sel1, return_dmat=True)
-    z2, conv2, dmat2 = encode_pdb(pdb2, model=model, latent_dims=latent_dims, sel=sel2, return_dmat=True)
-    dmat1 = dmat1.detach().cpu().numpy().squeeze()
-    dmat2 = dmat2.detach().cpu().numpy().squeeze()
-    sim = float(torch.matmul(z1, z2.T).squeeze().numpy())
-    feature_importance = (z1 * z2).squeeze().numpy() / sim
-    # f1 = get_feature_map(conv1, feature_importance)
-    # f2 = get_feature_map(conv2, feature_importance)
-    if doplot:
-        plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim)
-    return sim, feature_importance
 
 
 def plot_sim(dmat1, dmat2, conv1, conv2, z1, z2, sim, threshold=8.):
@@ -203,60 +218,12 @@ def maxpool(conv):
 
 def get_important_features(feature_importance, threshold=0.5):
     """
-    >>> pdb1 = 'pdb/ay/pdb7aye.ent.gz'
-    >>> pdb2 = 'pdb/di/pdb4dij.ent.gz'
-    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
-    Loading FCN model
-    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A')
-    >>> sim
-    0.9953...
-    >>> feature_importance.shape
-    (512,)
-    >>> feature_importance.sum()
-    1.0
-    >>> get_important_features(feature_importance)
-    [(146, 0.16278093), (9, 0.13784872), (237, 0.09079589), (37, 0.03166283), (502, 0.027908802), (277, 0.024614722), (67, 0.019103186)]
     """
     important_features = feature_importance.argsort()[::-1]
     csum = np.cumsum(feature_importance[important_features])
     important_features = important_features[csum <= threshold]
     importances = feature_importance[important_features]
     return list(zip(important_features, importances))
-
-
-def get_feature_map(conv, feature_importance):
-    """
-    >>> pdb1 = 'pdb/yc/pdb1ycr.ent.gz'
-    >>> pdb2 = 'pdb/rv/pdb1rv1.ent.gz'
-    >>> model = encoder.load_model('models/sscl_fcn_20220610_1353.pt')
-    Loading FCN model
-    >>> sim, feature_importance = get_latent_similarity(pdb1, pdb2, model, sel1='chain A', sel2='chain A')
-    >>> sim
-    0.9974226951599121
-    >>> feature_importance.shape
-    (512,)
-    >>> feature_importance.sum()
-    0.99999994
-    >>> important_features = get_important_features(feature_importance, threshold=0.5)
-    >>> z, conv = encode_pdb(pdb1, model)
-    >>> conv.shape
-    torch.Size([1, 512, 98, 98])
-    >>> out = get_feature_map(conv, feature_importance)
-    >>> out.shape
-    (98, 98)
-
-    # >>> _ = plt.matshow(out)
-    # >>> _ = plt.colorbar()
-    # >>> plt.show()
-    """
-    # conv = maxpool(conv).squeeze()
-    conv = conv.detach().cpu().numpy().squeeze()
-    conv -= conv.min(axis=0)
-    conv /= conv.max(axis=0)
-    conv = conv * feature_importance[:, None, None]
-    out = conv.sum(axis=0)
-    # out = (out + out.T) / 2.
-    return out
 
 
 def build_index(pdblistfile,
@@ -385,7 +352,7 @@ if __name__ == '__main__':
         help='File containing the list of pdb file to put in the index. Line format of the file: pdbfile chain')
     parser.add_argument('--bs', help='Batch size', type=int, default=4)
     parser.add_argument('--index',
-                        help='FAISS index directory. Default: index_fcn_20220610_1353.faiss',
+                        help='FAISS index directory. Default: index_fcn_20220615_2221.faiss',
                         default='index_fcn_20220615_2221.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
@@ -405,14 +372,10 @@ if __name__ == '__main__':
             sel2 = args.sel[1]
 
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
-        sim, feature_importance = get_latent_similarity(pdb1,
-                                                        pdb2,
-                                                        sel1=sel1,
-                                                        sel2=sel2,
-                                                        model=model,
-                                                        latent_dims=args.latent_dims,
-                                                        doplot=args.plotsim)
-        print(f'similarity: {sim:.4f}')
+        aln = Align(pdb1=pdb1, pdb2=pdb2, sel1=sel1, sel2=sel2, model=model, latent_dims=args.latent_dims)
+        if args.plotsim:
+            aln.plot()
+        print(f'similarity: {aln.similarity:.4f}')
     if args.query is not None:
         if args.sel is None:
             sel = 'all'

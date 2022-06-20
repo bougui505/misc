@@ -42,35 +42,62 @@ from misc.protein.sscl import utils
 from misc.protein.sscl import encoder
 import matplotlib.pyplot as plt
 from scipy.optimize import linear_sum_assignment
+from misc import kabsch
+from pymol import cmd
 
 
 class Alignment():
     """
     >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt')
     Loading FCN model
-    >>> ma = Alignment(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
-    >>> ma.cmap1.shape
+    >>> aln = Alignment(model=model, pdb1='1ycr', pdb2='7ad0', sel1='chain A', sel2='chain D')
+    >>> aln.cmap1.shape
     (85, 85)
-    >>> ma.cmap2.shape
+    >>> aln.cmap2.shape
     (88, 88)
-    >>> ma.cmap2_aln.shape
+    >>> aln.cmap2_aln.shape
     (85, 85)
+    >>> aln.coords1.shape
+    torch.Size([85, 3])
+    >>> aln.structalign()
     """
     def __init__(self, model, pdb1=None, pdb2=None, dmat1=None, dmat2=None, sel1='all', sel2='all', gap=0.):
         """
         """
         self.gap = gap
-        coords1 = utils.get_coords(pdb1, sel=sel1)
-        coords2 = utils.get_coords(pdb2, sel=sel2)
-        self.dmat1 = utils.get_dmat(coords1[None, ...])
-        self.dmat2 = utils.get_dmat(coords2[None, ...])
+        self.coords1 = utils.get_coords(pdb1, sel=sel1)
+        self.coords2 = utils.get_coords(pdb2, sel=sel2)
+        self.pdb1 = pdb1
+        self.pdb2 = pdb2
+        self.sel1 = sel1
+        self.sel2 = sel2
+        self.dmat1 = utils.get_dmat(self.coords1[None, ...])
+        self.dmat2 = utils.get_dmat(self.coords2[None, ...])
         self.zsub = get_substitution_matrix(model=model, dmat1=self.dmat1, dmat2=self.dmat2)
         self.M = get_score_mat(self.zsub)
         self.aln1, self.aln2 = traceback(self.M, self.zsub, gap=self.gap)
+        # self.aln1, self.aln2 = hungarian(self.zsub)
         self.cmap1 = utils.get_cmap(self.dmat1).squeeze().numpy()
         self.cmap2 = utils.get_cmap(self.dmat2).squeeze().numpy()
         # self.aln = np.asarray(list(self.aln1.values()))
         self.cmap1_aln, self.cmap2_aln = get_aligned_maps(self.cmap1, self.cmap2, self.aln1)
+
+    def structalign(self):
+        s1 = [k for k in self.aln1 if self.aln1[k] is not None]
+        s2 = [self.aln1[k] for k in self.aln1 if self.aln1[k] is not None]
+        c1 = self.coords1[s1].numpy()
+        c2 = self.coords2[s2].numpy()
+        R, t = kabsch.rigid_body_fit(c1, c2)
+        cmd.remove('all')
+        cmd.fetch(code=self.pdb1, name='p1')
+        cmd.fetch(code=self.pdb2, name='p2')
+        cmd.remove(selection=f'not ({self.sel1}) and p1')
+        cmd.remove(selection=f'not ({self.sel2}) and p2')
+        toalign = cmd.get_coords('p1')
+        coords_aligned = (R.dot(toalign.T)).T + t
+        cmd.load_coords(coords_aligned, 'p1')
+        cmd.orient()
+        cmd.save('aln.pse')
 
     def plot(self, full=True, outfilename=None):
         plot_aln(self.cmap1, self.cmap2, self.aln1, outfilename=outfilename)
@@ -93,7 +120,7 @@ def latent_sequence(model, pdb=None, dmat=None, sel='all', latent_dims=512):
         z, conv = model(dmat, get_conv=True)
     # log(f'conv: {conv.shape}')  # torch.Size([1, 512, 98, 98])
     z_seq = torch.maximum(conv.max(dim=-1).values, conv.max(dim=-2).values).squeeze().T
-    z_seq = z_seq / torch.linalg.norm(z_seq, dim=1)[:, None]
+    # z_seq = z_seq / torch.linalg.norm(z_seq, dim=1)[:, None]
     return z_seq
 
 
@@ -298,4 +325,5 @@ if __name__ == '__main__':
 
     model = encoder.load_model(args.model)
     ma = Alignment(model=model, pdb1=args.pdb1, pdb2=args.pdb2, sel1=args.sel1, sel2=args.sel2)
-    ma.plot(full=False)
+    ma.structalign()
+    # ma.plot(full=False)
