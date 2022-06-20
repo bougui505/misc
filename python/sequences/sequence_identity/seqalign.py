@@ -40,6 +40,10 @@ from misc.sequences.sequence_identity import get_sequence
 import pickle
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
+import os
+
+DIRPATH = os.path.realpath(__file__)
+DIRPATH = os.path.dirname(DIRPATH)
 
 
 def log(msg):
@@ -77,7 +81,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--index', default='index.pkl')
+    parser.add_argument('--index')
     parser.add_argument('--pdb1', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
     parser.add_argument('--pdb2', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -87,6 +91,8 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
+    if args.index is None:
+        args.index = f'{DIRPATH}/index.pkl'
     index = pickle.load(open(args.index, 'rb'))
     alignment, seq_identity = align(args.pdb1, args.pdb2, index)
     print(format_alignment(*alignment))

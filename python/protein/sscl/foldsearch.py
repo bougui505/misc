@@ -50,6 +50,7 @@ import datetime
 import matplotlib.pyplot as plt
 from misc import kabsch
 from pymol import cmd
+from misc.sequences.sequence_identity
 
 
 class Align():
@@ -385,7 +386,7 @@ def build_index(pdblistfile,
     np.save(f'{indexfilename}/ids.npy', names)
 
 
-def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False):
+def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False, return_seq_identity=False):
     for ind, dist, query in zip(Imat, Dmat, query_names):
         result_pdb_list = ids[ind]
         print(f'query: {query}')
