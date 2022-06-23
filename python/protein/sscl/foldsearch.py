@@ -127,8 +127,8 @@ class Align():
             _, i2, j2 = np.unravel_index(self.conv2[ind, ...].argmax(), self.conv2.shape)
             fi = self.feature_importance[ind]
             out.append(((i1, j1), (i2, j2), fi))
-            zub[i1, i2] = fi
-            zub[j1, j2] = fi
+            zub[i1, i2] = max(fi, zub[i1, i2])
+            zub[j1, j2] = max(fi, zub[j1, j2])
         return zub
 
     def score_mat(self):
@@ -412,6 +412,12 @@ def log(msg):
         pass
 
 
+def GetScriptDir():
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+    return scriptdir
+
+
 if __name__ == '__main__':
     import sys
     import doctest
@@ -446,7 +452,7 @@ if __name__ == '__main__':
     parser.add_argument('--model',
                         help='SSCL model to use',
                         metavar='model.pt',
-                        default='models/sscl_fcn_20220615_2221.pt')
+                        default=f'{GetScriptDir()}/models/sscl_fcn_20220615_2221.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
     parser.add_argument('--save_every',
@@ -459,7 +465,7 @@ if __name__ == '__main__':
     parser.add_argument('--bs', help='Batch size', type=int, default=4)
     parser.add_argument('--index',
                         help='FAISS index directory. Default: index_fcn_20220615_2221.faiss',
-                        default='index_fcn_20220615_2221.faiss')
+                        default=f'{GetScriptDir()}/index_fcn_20220615_2221.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
