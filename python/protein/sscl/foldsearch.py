@@ -53,6 +53,8 @@ import pymol
 from pymol import cmd
 from misc.sequences.sequence_identity import seqalign
 
+cmd.set('fetch_path', cmd.exp_path('~/pdb'))
+
 
 class Align():
     def __init__(self, pdb1, pdb2, model, sel1='all', sel2='all', latent_dims=512, feature_threshold=0.5, gap=-1.):
