@@ -49,6 +49,7 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 from misc import kabsch
+import pymol
 from pymol import cmd
 from misc.sequences.sequence_identity import seqalign
 
@@ -174,8 +175,14 @@ class Align():
         c2 = self.coords2[s2].numpy()
         R, t = kabsch.rigid_body_fit(c1, c2)
         cmd.remove('all')
-        cmd.fetch(code=self.pdb1, name='p1')
-        cmd.fetch(code=self.pdb2, name='p2')
+        try:
+            cmd.load(filename=self.pdb1, object='p1')
+        except pymol.CmdException:
+            cmd.fetch(code=self.pdb1, name='p1')
+        try:
+            cmd.load(filename=self.pdb2, object='p1')
+        except pymol.CmdException:
+            cmd.fetch(code=self.pdb2, name='p2')
         cmd.remove(selection=f'not ({self.sel1}) and p1')
         cmd.remove(selection=f'not ({self.sel2}) and p2')
         toalign = cmd.get_coords('p1')
