@@ -393,7 +393,13 @@ def build_index(pdblistfile,
     np.save(f'{indexfilename}/ids.npy', names)
 
 
-def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False, return_seq_identity=False):
+def print_foldsearch_results(Imat,
+                             Dmat,
+                             query_names,
+                             ids,
+                             return_name=False,
+                             return_seq_identity=False,
+                             return_pdb_link=False):
     for ind, dist, query in zip(Imat, Dmat, query_names):
         result_pdb_list = ids[ind]
         print(f'query: {query}')
@@ -403,12 +409,14 @@ def print_foldsearch_results(Imat, Dmat, query_names, ids, return_name=False, re
             pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
             chain = pdb.split('_')[1]
             outstr = f'>>> {pdbcode} {chain} {d:.4f}'
-            if return_name:
-                title = get_pdb_title.get_pdb_title(pdbcode, chain)
-                outstr += f' {title}'
+            if return_pdb_link:
+                outstr += f' https://www.rcsb.org/structure/{pdbcode}'
             if return_seq_identity:
                 alignment, sequence_identity = seqalign.align(query, f'{pdbcode}_{chain}')
                 outstr += f' {sequence_identity:.4f}'
+            if return_name:
+                title = get_pdb_title.get_pdb_title(pdbcode, chain)
+                outstr += f' {title}'
             print(outstr)
 
 
@@ -450,6 +458,7 @@ if __name__ == '__main__':
         help='Search for nearest neighbors for the given query pdb. The query pdb should be given as {PDBCODE}_{CHAINID}'
     )
     parser.add_argument('--title', help='Retrieve PDB title information', action='store_true')
+    parser.add_argument('--link', help='Display pdb link', action='store_true')
     parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
@@ -511,7 +520,8 @@ if __name__ == '__main__':
                                  Dmat, [f'{args.query}'],
                                  ids,
                                  return_name=args.title,
-                                 return_seq_identity=args.pid)
+                                 return_seq_identity=args.pid,
+                                 return_pdb_link=args.link)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
