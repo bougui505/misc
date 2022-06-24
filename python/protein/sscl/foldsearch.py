@@ -409,9 +409,12 @@ def print_foldsearch_results(Imat,
                              Dmat,
                              query_names,
                              ids,
+                             model=None,
                              return_name=False,
                              return_seq_identity=False,
-                             return_pdb_link=False):
+                             return_pdb_link=False,
+                             return_rmsd=False,
+                             return_gdt=False):
     table = PrettyTable()
     field_names = ['code', 'chain', 'similarity']
     if return_pdb_link:
@@ -420,6 +423,8 @@ def print_foldsearch_results(Imat,
         field_names.append('seq_id')
     if return_name:
         field_names.append('title')
+    if return_rmsd:
+        field_names.append('RMSD (Å)')
     table.field_names = field_names
     table.float_format = '.4'
     for ind, dist, query in zip(Imat, Dmat, query_names):
@@ -439,6 +444,11 @@ def print_foldsearch_results(Imat,
             if return_name:
                 title = get_pdb_title.get_pdb_title(pdbcode, chain)
                 row.append(f' {title}')
+            if return_rmsd or return_gdt:
+                align = Align(pdb1=query, pdb2=f'{pdbcode}_{chain}', model=model)
+                metric = align.structalign(save_pse=False)
+            if return_rmsd:
+                row.append(float(metric.rmsd))
             table.add_row(row)
     print(table)
 
@@ -483,6 +493,7 @@ if __name__ == '__main__':
     parser.add_argument('--title', help='Retrieve PDB title information', action='store_true')
     parser.add_argument('--link', help='Display pdb link', action='store_true')
     parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
+    parser.add_argument('--rmsd', help='Display RMSD between match and query', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
@@ -544,9 +555,11 @@ if __name__ == '__main__':
         print_foldsearch_results(Imat,
                                  Dmat, [f'{args.query}'],
                                  ids,
+                                 model=model,
                                  return_name=args.title,
                                  return_seq_identity=args.pid,
-                                 return_pdb_link=args.link)
+                                 return_pdb_link=args.link,
+                                 return_rmsd=args.rmsd)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
