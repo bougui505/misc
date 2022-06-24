@@ -54,6 +54,7 @@ from pymol import cmd
 from misc.sequences.sequence_identity import seqalign
 from collections import namedtuple
 from prettytable import PrettyTable
+import tqdm
 
 cmd.set('fetch_type_default', 'mmtf')
 cmd.set('fetch_path', cmd.exp_path('~/pdb'))
@@ -432,6 +433,7 @@ def print_foldsearch_results(Imat,
     for ind, dist, query in zip(Imat, Dmat, query_names):
         result_pdb_list = ids[ind]
         print(f'query: {query}')
+        pbar = tqdm.tqdm(total=len(result_pdb_list))
         for pdb, d in zip(result_pdb_list, dist):
             # print(pdb)  # pdb/hf/pdb4hfz.ent.gz_A
             pdbcode = os.path.basename(pdb)
@@ -454,6 +456,8 @@ def print_foldsearch_results(Imat,
             if return_gdt:
                 row.append(float(metric.gdt))
             table.add_row(row)
+            pbar.update(1)
+    pbar.close()
     print(table)
 
 
