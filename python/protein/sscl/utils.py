@@ -44,14 +44,52 @@ import itertools
 import os
 
 
+def GetScriptDir():
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+    return scriptdir
+
+
+SCRIPTDIR = GetScriptDir()
+
+
+def fetch(code, name, pdbpath=f'{SCRIPTDIR}/pdb/'):
+    """
+    >>> fetch(code='1ycr', name='p1')
+    >>> cmd.get_coords('p1').shape
+    (818, 3)
+    >>> cmd.delete('all')
+    >>> fetch(code='1ycr_A', name='p1')
+    >>> cmd.get_coords('p1').shape
+    (705, 3)
+    >>> cmd.delete('all')
+    >>> fetch(code='1ycrA', name='p1')
+    >>> cmd.get_coords('p1').shape
+    (705, 3)
+    >>> cmd.delete('all')
+    """
+    if len(code) > 4:
+        if code[4] == '_':
+            chain = code[5]  # e.g. 1ycr_A
+        else:
+            chain = code[4]  # e.g. 1ycrA
+    else:
+        chain = None
+    pdbfilepath = f'{pdbpath}/{code[1]}{code[2]}/pdb{code[:4]}.ent.gz'
+    # if os.path.exists(pdbfilepath):
+    cmd.load(pdbfilepath, object=name)
+    if chain is not None:
+        cmd.remove(f'{name} and not chain {chain}')
+
+
 def get_coords(pdb, sel='all'):
-    cmd.remove('all')
+    cmd.delete('all')
     cmd.set('fetch_path', cmd.exp_path('~/pdb'), quiet=1)
     pymolname = randomgen.randomstring()
     if os.path.exists(pdb):
         cmd.load(pdb, pymolname)
     else:  # Try to fetch from the PDB
-        cmd.fetch(pdb, name=pymolname)
+        fetch(pdb, name=pymolname)
     coords = cmd.get_coords(selection=f'{pymolname} and polymer.protein and name CA and {sel}')
     cmd.delete(pymolname)
     coords = torch.tensor(coords)

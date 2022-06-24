@@ -91,7 +91,7 @@ class Align():
 
         >>> aln.structalign()
         """
-        cmd.remove('all')
+        cmd.delete('all')
         self.pdb1 = pdb1
         self.pdb2 = pdb2
         self.sel1 = sel1
@@ -188,15 +188,15 @@ class Align():
         gdt = utils.get_gdt(c1_aligned, c2)
         metrics = Metrics(rmsd, gdt)
         if save_pse:
-            cmd.remove('all')
+            cmd.delete('all')
             try:
                 cmd.load(filename=self.pdb1, object='p1')
             except pymol.CmdException:
-                cmd.fetch(code=self.pdb1, name='p1')
+                utils.fetch(code=self.pdb1, name='p1')
             try:
                 cmd.load(filename=self.pdb2, object='p1')
             except pymol.CmdException:
-                cmd.fetch(code=self.pdb2, name='p2')
+                utils.fetch(code=self.pdb2, name='p2')
             cmd.remove(selection=f'not ({self.sel1}) and p1')
             cmd.remove(selection=f'not ({self.sel2}) and p2')
             toalign = cmd.get_coords('p1')
