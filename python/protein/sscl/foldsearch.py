@@ -437,27 +437,31 @@ def print_foldsearch_results(Imat,
         print(f'query: {query}')
         pbar = tqdm.tqdm(total=len(result_pdb_list))
         for pdb, d in zip(result_pdb_list, dist):
-            # print(pdb)  # pdb/hf/pdb4hfz.ent.gz_A
-            pdbcode = os.path.basename(pdb)
-            pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
-            chain = pdb.split('_')[1]
-            row = [pdbcode, chain, float(d)]
-            if return_pdb_link:
-                row.append(f' https://www.rcsb.org/structure/{pdbcode}')
-            if return_seq_identity:
-                alignment, sequence_identity = seqalign.align(query, f'{pdbcode}_{chain}')
-                row.append(f' {sequence_identity:.4f}')
-            if return_name:
-                title = get_pdb_title.get_pdb_title(pdbcode, chain)
-                row.append(f' {title}')
-            if return_rmsd or return_gdt:
-                align = Align(pdb1=query, pdb2=f'{pdbcode}_{chain}', model=model)
-                metric = align.structalign(save_pse=False)
-            if return_rmsd:
-                row.append(float(metric.rmsd))
-            if return_gdt:
-                row.append(float(metric.gdt))
-            table.add_row(row)
+            try:
+                # print(pdb)  # pdb/hf/pdb4hfz.ent.gz_A
+                pdbcode = os.path.basename(pdb)
+                pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
+                chain = pdb.split('_')[1]
+                row = [pdbcode, chain, float(d)]
+                if return_pdb_link:
+                    row.append(f' https://www.rcsb.org/structure/{pdbcode}')
+                if return_seq_identity:
+                    alignment, sequence_identity = seqalign.align(query, f'{pdbcode}_{chain}')
+                    row.append(f' {sequence_identity:.4f}')
+                if return_name:
+                    title = get_pdb_title.get_pdb_title(pdbcode, chain)
+                    row.append(f' {title}')
+                if return_rmsd or return_gdt:
+                    align = Align(pdb1=query, pdb2=f'{pdbcode}_{chain}', model=model)
+                    metric = align.structalign(save_pse=False)
+                if return_rmsd:
+                    row.append(float(metric.rmsd))
+                if return_gdt:
+                    row.append(float(metric.gdt))
+                table.add_row(row)
+            except RuntimeError:
+                print(f'RuntimeError: Cannot process {pdbcode}')
+                pass
             pbar.update(1)
     pbar.close()
     return table
