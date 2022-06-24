@@ -39,6 +39,7 @@
 import misc.protein.sscl.encoder as encoder
 import misc.protein.sscl.utils as utils
 import misc.protein.get_pdb_title as get_pdb_title
+import misc.sequences.printaln as printaln
 import torch
 import PDBloader
 import faiss
@@ -155,7 +156,9 @@ class Align():
         n1, n2 = self.M.shape
         aln1 = dict()
         aln2 = dict()
-        i, j = np.unravel_index(self.M.argmax(), self.M.shape)
+        # To be changed if we want to start from the best score position
+        # i, j = np.unravel_index(self.M.argmax(), self.M.shape)
+        i, j = np.asarray(self.M.shape) - 1
         aln1[i] = j
         aln2[j] = i
         while i > 0 and j > 0:
@@ -417,7 +420,8 @@ def print_foldsearch_results(Imat,
                              return_seq_identity=False,
                              return_pdb_link=False,
                              return_rmsd=False,
-                             return_gdt=False):
+                             return_gdt=False,
+                             return_aln=False):
     table = PrettyTable()
     field_names = ['code', 'chain', 'similarity']
     if return_pdb_link:
@@ -430,6 +434,8 @@ def print_foldsearch_results(Imat,
         field_names.append('RMSD (Å)')
     if return_gdt:
         field_names.append('GDT')
+    if return_aln:
+        field_names.append('Alignment')
     table.field_names = field_names
     table.float_format = '.4'
     for ind, dist, query in zip(Imat, Dmat, query_names):
@@ -451,13 +457,15 @@ def print_foldsearch_results(Imat,
                 if return_name:
                     title = get_pdb_title.get_pdb_title(pdbcode, chain)
                     row.append(f' {title}')
-                if return_rmsd or return_gdt:
+                if return_rmsd or return_gdt or return_aln:
                     align = Align(pdb1=query, pdb2=f'{pdbcode}_{chain}', model=model)
                     metric = align.structalign(save_pse=False)
                 if return_rmsd:
                     row.append(float(metric.rmsd))
                 if return_gdt:
                     row.append(float(metric.gdt))
+                if return_aln:
+                    row.append(printaln.alnstr(align.aln1, strlen=80, seqlen=len(align.coords1)))
                 table.add_row(row)
             except RuntimeError:
                 print(f'RuntimeError: Cannot process {pdbcode}')
@@ -518,6 +526,9 @@ if __name__ == '__main__':
     parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
     parser.add_argument('--rmsd', help='Display RMSD between match and query', action='store_true')
     parser.add_argument('--gdt', help='Display GDT between match and query', action='store_true')
+    parser.add_argument('--aln',
+                        help='Display alignmnent simplified string between match and query',
+                        action='store_true')
     parser.add_argument('--sortby',
                         help='Sort the results by the given field: "similarity", "rmsd", "gdt"',
                         default='similarity')
@@ -569,7 +580,7 @@ if __name__ == '__main__':
         print(f'rmsd: {metrics.rmsd:.4f} Å')
         print(f'gdt: {metrics.gdt}')
     if args.query is not None:
-        resultfilename = f'{args.query}_{args.sel}_{args.model}_{args.index}_{args.n}_{args.title}_{args.link}_{args.pid}_{args.rmsd}_{args.gdt}.pkl'.replace(
+        resultfilename = f'{args.query}_{args.sel}_{args.model}_{args.index}_{args.n}_{args.title}_{args.link}_{args.pid}_{args.rmsd}_{args.gdt}_{args.aln}.pkl'.replace(
             '/', ':')
         if not os.path.exists(f'{GetScriptDir()}/queries'):
             os.mkdir(f'{GetScriptDir()}/queries')
@@ -597,7 +608,8 @@ if __name__ == '__main__':
                                          return_seq_identity=args.pid,
                                          return_pdb_link=args.link,
                                          return_rmsd=args.rmsd,
-                                         return_gdt=args.gdt)
+                                         return_gdt=args.gdt,
+                                         return_aln=args.aln)
         print_table(table, sortby=args.sortby)
         with open(resultfilename, 'wb') as f:
             pickle.dump(table, f)
