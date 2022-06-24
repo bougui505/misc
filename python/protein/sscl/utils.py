@@ -45,6 +45,7 @@ import os
 
 
 def get_coords(pdb, sel='all'):
+    cmd.remove('all')
     cmd.set('fetch_path', cmd.exp_path('~/pdb'), quiet=1)
     pymolname = randomgen.randomstring()
     if os.path.exists(pdb):

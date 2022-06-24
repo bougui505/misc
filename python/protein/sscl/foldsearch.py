@@ -90,6 +90,7 @@ class Align():
 
         >>> aln.structalign()
         """
+        cmd.remove('all')
         self.pdb1 = pdb1
         self.pdb2 = pdb2
         self.sel1 = sel1
@@ -458,7 +459,7 @@ def print_foldsearch_results(Imat,
             table.add_row(row)
             pbar.update(1)
     pbar.close()
-    print(table)
+    return table
 
 
 def log(msg):
@@ -551,6 +552,14 @@ if __name__ == '__main__':
         print(f'rmsd: {metrics.rmsd:.4f} Å')
         print(f'gdt: {metrics.gdt}')
     if args.query is not None:
+        resultfilename = f'{args.query}_{args.sel}_{args.model}_{args.index}_{args.n}'.replace('/', ':')
+        if not os.path.exists(f'{GetScriptDir()}/queries'):
+            os.mkdir(f'{GetScriptDir()}/queries')
+        resultfilename = f'{GetScriptDir()}/queries/{resultfilename}'
+        if os.path.exists(resultfilename):
+            with open(resultfilename) as f:
+                print(f.read())
+            sys.exit()
         if args.sel is None:
             sel = 'all'
         else:
@@ -561,15 +570,18 @@ if __name__ == '__main__':
         index = faiss.read_index(f'{args.index}/index.faiss')
         ids = np.load(f'{args.index}/ids.npy')
         Dmat, Imat = index.search(z, args.n)
-        print_foldsearch_results(Imat,
-                                 Dmat, [f'{args.query}'],
-                                 ids,
-                                 model=model,
-                                 return_name=args.title,
-                                 return_seq_identity=args.pid,
-                                 return_pdb_link=args.link,
-                                 return_rmsd=args.rmsd,
-                                 return_gdt=args.gdt)
+        table = print_foldsearch_results(Imat,
+                                         Dmat, [f'{args.query}'],
+                                         ids,
+                                         model=model,
+                                         return_name=args.title,
+                                         return_seq_identity=args.pid,
+                                         return_pdb_link=args.link,
+                                         return_rmsd=args.rmsd,
+                                         return_gdt=args.gdt)
+        print(table)
+        with open(resultfilename, 'w') as f:
+            f.write(table.get_string())
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
