@@ -55,6 +55,7 @@ from misc.sequences.sequence_identity import seqalign
 from collections import namedtuple
 from prettytable import PrettyTable
 import tqdm
+import dill as pickle
 
 cmd.set('fetch_type_default', 'mmtf')
 cmd.set('fetch_path', cmd.exp_path('~/pdb'))
@@ -552,13 +553,15 @@ if __name__ == '__main__':
         print(f'rmsd: {metrics.rmsd:.4f} Å')
         print(f'gdt: {metrics.gdt}')
     if args.query is not None:
-        resultfilename = f'{args.query}_{args.sel}_{args.model}_{args.index}_{args.n}'.replace('/', ':')
+        resultfilename = f'{args.query}_{args.sel}_{args.model}_{args.index}_{args.n}_{args.title}_{args.link}_{args.pid}_{args.rmsd}_{args.gdt}.pkl'.replace(
+            '/', ':')
         if not os.path.exists(f'{GetScriptDir()}/queries'):
             os.mkdir(f'{GetScriptDir()}/queries')
         resultfilename = f'{GetScriptDir()}/queries/{resultfilename}'
         if os.path.exists(resultfilename):
-            with open(resultfilename) as f:
-                print(f.read())
+            with open(resultfilename, 'rb') as f:
+                table = pickle.load(f)
+            print(table)
             sys.exit()
         if args.sel is None:
             sel = 'all'
@@ -580,8 +583,8 @@ if __name__ == '__main__':
                                          return_rmsd=args.rmsd,
                                          return_gdt=args.gdt)
         print(table)
-        with open(resultfilename, 'w') as f:
-            f.write(table.get_string())
+        with open(resultfilename, 'wb') as f:
+            pickle.dump(table, f)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
