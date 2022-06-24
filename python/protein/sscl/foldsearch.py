@@ -463,6 +463,15 @@ def print_foldsearch_results(Imat,
     return table
 
 
+def print_table(table, sortby='similarity'):
+    if sortby == 'similarity':
+        print(table.get_string(sortby='similarity', reversesort=True))
+    if sortby == 'rmsd':
+        print(table.get_string(sortby='RMSD (Å)', reversesort=False))
+    if sortby == 'gdt':
+        print(table.get_string(sortby='GDT', reversesort=True))
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -505,6 +514,9 @@ if __name__ == '__main__':
     parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
     parser.add_argument('--rmsd', help='Display RMSD between match and query', action='store_true')
     parser.add_argument('--gdt', help='Display GDT between match and query', action='store_true')
+    parser.add_argument('--sortby',
+                        help='Sort the results by the given field: "similarity", "rmsd", "gdt"',
+                        default='similarity')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
@@ -561,7 +573,7 @@ if __name__ == '__main__':
         if os.path.exists(resultfilename):
             with open(resultfilename, 'rb') as f:
                 table = pickle.load(f)
-            print(table)
+            print_table(table, sortby=args.sortby)
             sys.exit()
         if args.sel is None:
             sel = 'all'
@@ -582,7 +594,7 @@ if __name__ == '__main__':
                                          return_pdb_link=args.link,
                                          return_rmsd=args.rmsd,
                                          return_gdt=args.gdt)
-        print(table)
+        print_table(table, sortby=args.sortby)
         with open(resultfilename, 'wb') as f:
             pickle.dump(table, f)
     if args.build_index:
