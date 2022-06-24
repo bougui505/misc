@@ -68,6 +68,21 @@ def get_rmsd(c1, c2):
     return rmsd
 
 
+def get_gdt(c1, c2, thresholds=[1, 2, 4, 8]):
+    """
+    >>> c1 = np.random.uniform(size=(10,3))
+    >>> c2 = np.random.uniform(size=(10,3)) + 1.
+    >>> get_gdt(c1, c2)
+    0...
+    """
+    n = len(c1)
+    distances = np.linalg.norm(c2 - c1, axis=1)
+    gdt = []
+    for thr in thresholds:
+        gdt.append((distances <= thr).sum() / n)
+    return np.mean(gdt)
+
+
 def get_dmat(coords):
     """
     >>> coords = torch.randn(1, 10, 3)

@@ -179,9 +179,10 @@ class Align():
         c2 = self.coords2[s2].numpy()
         R, t = kabsch.rigid_body_fit(c1, c2)
         c1_aligned = (R.dot(c1.T)).T + t
-        Metrics = namedtuple('Metrics', 'rmsd')
+        Metrics = namedtuple('Metrics', 'rmsd gdt')
         rmsd = utils.get_rmsd(c1_aligned, c2)
-        metrics = Metrics(rmsd)
+        gdt = utils.get_gdt(c1_aligned, c2)
+        metrics = Metrics(rmsd, gdt)
         if save_pse:
             cmd.remove('all')
             try:
@@ -516,6 +517,7 @@ if __name__ == '__main__':
             aln.plot()
         print(f'similarity: {aln.similarity:.4f}')
         print(f'rmsd: {metrics.rmsd:.4f} Å')
+        print(f'gdt: {metrics.gdt}')
     if args.query is not None:
         if args.sel is None:
             sel = 'all'
