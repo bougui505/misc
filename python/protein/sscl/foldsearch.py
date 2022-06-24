@@ -53,6 +53,7 @@ import pymol
 from pymol import cmd
 from misc.sequences.sequence_identity import seqalign
 from collections import namedtuple
+from prettytable import PrettyTable
 
 cmd.set('fetch_type_default', 'mmtf')
 cmd.set('fetch_path', cmd.exp_path('~/pdb'))
@@ -411,6 +412,16 @@ def print_foldsearch_results(Imat,
                              return_name=False,
                              return_seq_identity=False,
                              return_pdb_link=False):
+    table = PrettyTable()
+    field_names = ['code', 'chain', 'similarity']
+    if return_pdb_link:
+        field_names.append('link')
+    if return_seq_identity:
+        field_names.append('seq_id')
+    if return_name:
+        field_names.append('title')
+    table.field_names = field_names
+    table.float_format = '.4'
     for ind, dist, query in zip(Imat, Dmat, query_names):
         result_pdb_list = ids[ind]
         print(f'query: {query}')
@@ -419,16 +430,17 @@ def print_foldsearch_results(Imat,
             pdbcode = os.path.basename(pdb)
             pdbcode = os.path.splitext(os.path.splitext(pdbcode)[0])[0][-4:]
             chain = pdb.split('_')[1]
-            outstr = f'>>> {pdbcode} {chain} {d:.4f}'
+            row = [pdbcode, chain, float(d)]
             if return_pdb_link:
-                outstr += f' https://www.rcsb.org/structure/{pdbcode}'
+                row.append(f' https://www.rcsb.org/structure/{pdbcode}')
             if return_seq_identity:
                 alignment, sequence_identity = seqalign.align(query, f'{pdbcode}_{chain}')
-                outstr += f' {sequence_identity:.4f}'
+                row.append(f' {sequence_identity:.4f}')
             if return_name:
                 title = get_pdb_title.get_pdb_title(pdbcode, chain)
-                outstr += f' {title}'
-            print(outstr)
+                row.append(f' {title}')
+            table.add_row(row)
+    print(table)
 
 
 def log(msg):
