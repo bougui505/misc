@@ -156,9 +156,9 @@ class Align():
         n1, n2 = self.M.shape
         aln1 = dict()
         aln2 = dict()
-        # To be changed if we want to start from the best score position
-        # i, j = np.unravel_index(self.M.argmax(), self.M.shape)
-        i, j = np.asarray(self.M.shape) - 1
+        # To be set if we want to start from the best score position
+        i, j = np.unravel_index(self.M.argmax(), self.M.shape)
+        # i, j = np.asarray(self.M.shape) - 1
         aln1[i] = j
         aln2[j] = i
         while i > 0 and j > 0:
