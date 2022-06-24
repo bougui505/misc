@@ -57,6 +57,17 @@ def get_coords(pdb, sel='all'):
     return coords
 
 
+def get_rmsd(c1, c2):
+    """
+    >>> c1 = np.random.uniform(size=(10,3))
+    >>> c2 = np.random.uniform(size=(10,3))
+    >>> get_rmsd(c1, c2)
+    0...
+    """
+    rmsd = np.sqrt(((c1 - c2)**2).sum(axis=1).mean())
+    return rmsd
+
+
 def get_dmat(coords):
     """
     >>> coords = torch.randn(1, 10, 3)

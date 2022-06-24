@@ -52,7 +52,9 @@ from misc import kabsch
 import pymol
 from pymol import cmd
 from misc.sequences.sequence_identity import seqalign
+from collections import namedtuple
 
+cmd.set('fetch_type_default', 'mmtf')
 cmd.set('fetch_path', cmd.exp_path('~/pdb'))
 
 
@@ -170,28 +172,34 @@ class Align():
         aln2 = {k: aln2[k] for k in reversed(aln2)}
         return aln1, aln2
 
-    def structalign(self):
+    def structalign(self, save_pse=True):
         s1 = [k for k in self.aln1 if self.aln1[k] is not None]
         s2 = [self.aln1[k] for k in self.aln1 if self.aln1[k] is not None]
         c1 = self.coords1[s1].numpy()
         c2 = self.coords2[s2].numpy()
         R, t = kabsch.rigid_body_fit(c1, c2)
-        cmd.remove('all')
-        try:
-            cmd.load(filename=self.pdb1, object='p1')
-        except pymol.CmdException:
-            cmd.fetch(code=self.pdb1, name='p1')
-        try:
-            cmd.load(filename=self.pdb2, object='p1')
-        except pymol.CmdException:
-            cmd.fetch(code=self.pdb2, name='p2')
-        cmd.remove(selection=f'not ({self.sel1}) and p1')
-        cmd.remove(selection=f'not ({self.sel2}) and p2')
-        toalign = cmd.get_coords('p1')
-        coords_aligned = (R.dot(toalign.T)).T + t
-        cmd.load_coords(coords_aligned, 'p1')
-        cmd.orient()
-        cmd.save('aln.pse')
+        c1_aligned = (R.dot(c1.T)).T + t
+        Metrics = namedtuple('Metrics', 'rmsd')
+        rmsd = utils.get_rmsd(c1_aligned, c2)
+        metrics = Metrics(rmsd)
+        if save_pse:
+            cmd.remove('all')
+            try:
+                cmd.load(filename=self.pdb1, object='p1')
+            except pymol.CmdException:
+                cmd.fetch(code=self.pdb1, name='p1')
+            try:
+                cmd.load(filename=self.pdb2, object='p1')
+            except pymol.CmdException:
+                cmd.fetch(code=self.pdb2, name='p2')
+            cmd.remove(selection=f'not ({self.sel1}) and p1')
+            cmd.remove(selection=f'not ({self.sel2}) and p2')
+            toalign = cmd.get_coords('p1')
+            coords_aligned = (R.dot(toalign.T)).T + t
+            cmd.load_coords(coords_aligned, 'p1')
+            cmd.orient()
+            cmd.save('aln.pse')
+        return metrics
 
     def plot(self):
         plot_sim(self.dmat1, self.dmat2, self.conv1, self.conv2, self.z1, self.z2, self.similarity)
@@ -503,10 +511,11 @@ if __name__ == '__main__':
 
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         aln = Align(pdb1=pdb1, pdb2=pdb2, sel1=sel1, sel2=sel2, model=model, latent_dims=args.latent_dims)
-        aln.structalign()
+        metrics = aln.structalign()
         if args.plotsim:
             aln.plot()
         print(f'similarity: {aln.similarity:.4f}')
+        print(f'rmsd: {metrics.rmsd:.4f} Å')
     if args.query is not None:
         if args.sel is None:
             sel = 'all'
