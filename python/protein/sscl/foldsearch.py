@@ -425,6 +425,8 @@ def print_foldsearch_results(Imat,
         field_names.append('title')
     if return_rmsd:
         field_names.append('RMSD (Å)')
+    if return_gdt:
+        field_names.append('GDT')
     table.field_names = field_names
     table.float_format = '.4'
     for ind, dist, query in zip(Imat, Dmat, query_names):
@@ -449,6 +451,8 @@ def print_foldsearch_results(Imat,
                 metric = align.structalign(save_pse=False)
             if return_rmsd:
                 row.append(float(metric.rmsd))
+            if return_gdt:
+                row.append(float(metric.gdt))
             table.add_row(row)
     print(table)
 
@@ -494,6 +498,7 @@ if __name__ == '__main__':
     parser.add_argument('--link', help='Display pdb link', action='store_true')
     parser.add_argument('--pid', help='Display sequence identity between match and query', action='store_true')
     parser.add_argument('--rmsd', help='Display RMSD between match and query', action='store_true')
+    parser.add_argument('--gdt', help='Display GDT between match and query', action='store_true')
     parser.add_argument('-n', help='Number of neighbors to return', type=int, default=5)
     parser.add_argument('--sel',
                         help='Selection for pdb file. Give two selections for the similarity computation',
@@ -559,7 +564,8 @@ if __name__ == '__main__':
                                  return_name=args.title,
                                  return_seq_identity=args.pid,
                                  return_pdb_link=args.link,
-                                 return_rmsd=args.rmsd)
+                                 return_rmsd=args.rmsd,
+                                 return_gdt=args.gdt)
     if args.build_index:
         model = encoder.load_model(args.model, latent_dims=args.latent_dims)
         build_index(args.pdblist,
