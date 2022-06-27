@@ -19,30 +19,30 @@
 \usepackage{tcolorbox}
 
 % For subtitles (see: https://tex.stackexchange.com/a/514348/19419)
-\makeatletter
-\setbeamercolor{framesubtitle}{fg=mDarkTeal}
-\defbeamertemplate*{frametitle}{myframetitle}{%
-    \nointerlineskip
-    \begin{beamercolorbox}[%
-        wd=\paperwidth,%
-        sep=0pt,%
-        leftskip=0pt, %\metropolis@frametitle@padding,
-        rightskip=\metropolis@frametitle@padding,
-        ]{frametitle}%
-        \metropolis@frametitlestrut@start
-        \centering{\insertframetitle}%%%%%%%%%%%%%%%%%%%%%%
-        \nolinebreak
-        \metropolis@frametitlestrut@end
-    \end{beamercolorbox}\par
-    \usebeamerfont{framesubtitle}%
-    \usebeamercolor[fg]{framesubtitle}%
-    \vskip3pt
-    \hspace*{-1.\metropolis@frametitle@padding}%
-    \insertframesubtitle
-    %\vskip-8pt
-}
-\makeatother
-\setbeamertemplate{frametitle}[myframetitle]
+% \makeatletter
+% \setbeamercolor{framesubtitle}{fg=mDarkTeal}
+% \defbeamertemplate*{frametitle}{myframetitle}{%
+%     \nointerlineskip
+%     \begin{beamercolorbox}[%
+%         wd=\paperwidth,%
+%         sep=0pt,%
+%         leftskip=0pt, %\metropolis@frametitle@padding,
+%         rightskip=\metropolis@frametitle@padding,
+%         ]{frametitle}%
+%         \metropolis@frametitlestrut@start
+%         \centering{\insertframetitle}%%%%%%%%%%%%%%%%%%%%%%
+%         \nolinebreak
+%         \metropolis@frametitlestrut@end
+%     \end{beamercolorbox}\par
+%     \usebeamerfont{framesubtitle}%
+%     \usebeamercolor[fg]{framesubtitle}%
+%     \vskip3pt
+%     \hspace*{-1.\metropolis@frametitle@padding}%
+%     \insertframesubtitle
+%     %\vskip-8pt
+% }
+% \makeatother
+% \setbeamertemplate{frametitle}[myframetitle]
 
 % Redefine Fira font (thanks to: https://tex.stackexchange.com/a/268340/19419)
 % prevent to extract svg text with inkscapelatex=false option (see: https://tex.stackexchange.com/a/437498/19419)
