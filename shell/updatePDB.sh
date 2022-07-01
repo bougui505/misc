@@ -43,5 +43,19 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
+echo "Updating structure files: /media/bougui/scratch/pdb"
 [ -d /media/bougui/scratch/pdb ] \
     && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/pdb/ /media/bougui/scratch/pdb
+
+
+echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
+[ -f /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta ] \
+    && rm /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
+[ -d /media/bougui/scratch/pdb_seqres ] \
+    && wget -O - https://ftp.wwpdb.org/pub/pdb/derived_data/pdb_seqres.txt.gz | gunzip > /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
+
+echo "Building blastdb for sequences"
+[ -d /media/bougui/scratch/pdb_seqres ] \
+    && cd /media/bougui/scratch/pdb_seqres/ \
+    && makeblastdb -in pdb_seqres.fasta -dbtype prot \
+    && cd -
