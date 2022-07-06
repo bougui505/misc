@@ -45,6 +45,7 @@
 # which is placed in the first element of the line
 # The processing of the 2 lines above gives the following result:
 # 101d_A 2oxv_C 1qri_M
+# The output is saved in the compressed file homologs.txt.gz
 
 set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
