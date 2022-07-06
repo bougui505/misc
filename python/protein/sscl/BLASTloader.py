@@ -59,7 +59,7 @@ def gethomodict(blastresults, outfile='homologs.h5', max_rows=None):
     pbar = tqdm.tqdm(total=len(data))
     keys = []
     homologs = []
-    with h5py.File(outfile, 'w') as h5f:
+    with h5py.File(outfile, 'w', libver='latest') as h5f:
         for p1, p2 in data:
             p1, p2 = p1.encode('utf-8'), p2.encode('utf-8')
             if p1 not in keys:
