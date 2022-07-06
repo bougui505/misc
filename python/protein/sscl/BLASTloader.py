@@ -37,45 +37,45 @@
 #############################################################################
 import os
 import torch
+import gzip
 import numpy as np
-import tqdm
-import h5py
-
-
-def gethomodict(blastresults, outfile='homologs.h5', max_rows=None):
-    """
-    Build dictionnary of homologous structures
-    >>> blastresults = "/media/bougui/scratch/pdb_seqres/blast_results.txt.gz"
-    >>> homodict = gethomodict(blastresults, max_rows=20)
-    Loading data...
-    Reading data...
-    >>> homodict
-    defaultdict(<class 'list'>, {'101d_A': ['2oxv_C', '1qri_M', '1qrh_M', '1eri_B', '1cl8_B', '1ckq_B', '9bna_B']})
-    """
-    # with gzip.open(blastresults, mode='rb') as f:
-    print('Loading data...')
-    data = np.loadtxt(blastresults, usecols=(0, 1), dtype=str, max_rows=max_rows)
-    print('Saving data...')
-    pbar = tqdm.tqdm(total=len(data))
-    keys = []
-    homologs = []
-    with h5py.File(outfile, 'w', libver='latest') as h5f:
-        for p1, p2 in data:
-            p1, p2 = p1.encode('utf-8'), p2.encode('utf-8')
-            if p1 not in keys:
-                if len(keys) > 0:
-                    h5f.create_dataset(keys[-1], data=homologs, compression="gzip")
-                keys.append(p1)
-                homologs = []
-            homologs.append(p2)
-            pbar.update(1)
-    pbar.close()
-    return data
 
 
 class PDBdataset(torch.utils.data.Dataset):
     """
+    >>> dataset = PDBdataset()
+    >>> dataset.__getitem__(0)
+    ('101d_A', '...')
+    >>> dataset.__getitem__(1000)
+    ('1abs_A', '...')
     """
+    def __init__(self, homologs_file='homologs.txt.gz'):
+        self.hf = homologs_file
+        self.mapping = self.get_mapping()
+
+    def __len__(self):
+        with gzip.open(self.hf, 'r') as f:
+            nx = sum(1 for line in f)
+        return nx
+
+    def get_mapping(self):
+        with gzip.open(self.hf, 'r') as f:
+            mapping = dict()
+            offset = 0
+            for i, line in enumerate(f):
+                mapping[i] = offset
+                offset += len(line)
+        return mapping
+
+    def __getitem__(self, index):
+        offset = self.mapping[index]
+        with gzip.open(self.hf, 'r') as f:
+            f.seek(offset)
+            line = f.readline().decode()
+        pdbs = line.split()
+        anchor = pdbs[0]
+        positive = np.random.choice(pdbs[1:])
+        return anchor, positive
 
 
 def log(msg):
