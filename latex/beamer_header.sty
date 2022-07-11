@@ -1,60 +1,25 @@
 % Declare that this style file requires at least LaTeX version 2e.
-\NeedsTeXFormat{LaTeX2e}
+% \NeedsTeXFormat{LaTeX2e}
 
 % see: https://tex.stackexchange.com/a/108/19419
 
 % Provide the name of your page, the date it was last updated, and a comment about what it's used for
 \ProvidesPackage{beamer_header}
+\usetheme{Boadilla}
 
-% Now paste your code from the preamble here
-%\documentclass[10pt]{beamer}
 \usepackage{tikz}
 \usetikzlibrary{intersections, through, graphs, positioning, quotes, arrows, decorations.pathmorphing, tikzmark, pgfplots.groupplots, fit, hobby}
 \usepackage{smartdiagram}
-\usetheme[]{Boadilla}
 \usepackage{appendixnumberbeamer}
-% \setbeamertemplate{frame footer}{\insertshortauthor~(\insertshortinstitute)}
-% \setbeamertemplate{blocks}[rounded][shadow=true]  % for shadow and frame around blocks (see: https://latex-beamer.com/tutorials/blocks/)
 
 \usepackage{tcolorbox}
 
-% For subtitles (see: https://tex.stackexchange.com/a/514348/19419)
-% \makeatletter
-% \setbeamercolor{framesubtitle}{fg=mDarkTeal}
-% \defbeamertemplate*{frametitle}{myframetitle}{%
-%     \nointerlineskip
-%     \begin{beamercolorbox}[%
-%         wd=\paperwidth,%
-%         sep=0pt,%
-%         leftskip=0pt, %\metropolis@frametitle@padding,
-%         rightskip=\metropolis@frametitle@padding,
-%         ]{frametitle}%
-%         \metropolis@frametitlestrut@start
-%         \centering{\insertframetitle}%%%%%%%%%%%%%%%%%%%%%%
-%         \nolinebreak
-%         \metropolis@frametitlestrut@end
-%     \end{beamercolorbox}\par
-%     \usebeamerfont{framesubtitle}%
-%     \usebeamercolor[fg]{framesubtitle}%
-%     \vskip3pt
-%     \hspace*{-1.\metropolis@frametitle@padding}%
-%     \insertframesubtitle
-%     %\vskip-8pt
-% }
-% \makeatother
-% \setbeamertemplate{frametitle}[myframetitle]
-
-% Redefine Fira font (thanks to: https://tex.stackexchange.com/a/268340/19419)
-% prevent to extract svg text with inkscapelatex=false option (see: https://tex.stackexchange.com/a/437498/19419)
 \usepackage[inkscapelatex=false]{svg}  % use includesvg command (similar to includegraphics)
 \usepackage{qrcode}
 \usepackage{listings}
-% \usepackage[sfdefault,light]{FiraSans}
 \usepackage{sfmath}
 \usepackage{mathtools}
 \usepackage{multirow}
-\makeatletter
-\def\bfseries@sf{m}
 \SetSymbolFont{operators}{normal}{\math@encoding}{\math@sfdefault}{l}{n}
 \SetSymbolFont{operators}{bold}{\math@encoding}{\math@sfdefault}{m}{n}
 \DeclareSymbolFont{SFMath}{\math@encoding}{\math@sfdefault}{l}{sl}
@@ -84,7 +49,6 @@
 \usepgfplotslibrary{fillbetween}
 
 \usepackage{xspace}
-\newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
 
 \tikzset{ % Make curves appear one by one in one plot in a beamer presentation
           % e.g. \addplot+[visible on=<1->] coordinates {(0,0) (5,3)};
@@ -152,28 +116,6 @@
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2,
-    columns=fullflexible
-}
-
-\lstset{style=mystyle}
 
 \hypersetup{colorlinks=true, linkcolor=blue, filecolor=magenta, urlcolor=cyan}
 \urlstyle{same}
