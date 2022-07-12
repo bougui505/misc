@@ -36,57 +36,28 @@
 #                                                                           #
 #############################################################################
 import os
+import BLASTloader
 import torch
-import gzip
-import numpy as np
-import misc.graphein.protein
-import torch_geometric.data
+from torch_geometric.loader import DataLoader
 
 
-class PDBdataset(torch.utils.data.Dataset):
+def get_batch_test():
     """
-    >>> dataset = PDBdataset()
-    >>> dataset.__getitem__(0)
-    (None, None)
-    >>> dataset.__getitem__(1000)
-    154
-    ...
-    (Data(edge_index=[2, 728], node_id=[154], num_nodes=154, x=[154, 20]), ...)
+    >>> anchors, positives = get_batch_test()
+    >>> anchors.num_graphs
+    3
+    >>> positives.num_graphs
+    3
+    >>> anchors
+    DataBatch()
+    >>> positives
+    DataBatch()
     """
-    def __init__(self, homologs_file='homologs.txt.gz'):
-        self.hf = homologs_file
-        self.mapping = self.get_mapping()
-
-    def __len__(self):
-        with gzip.open(self.hf, 'r') as f:
-            nx = sum(1 for line in f)
-        return nx
-
-    def get_mapping(self):
-        with gzip.open(self.hf, 'r') as f:
-            mapping = dict()
-            offset = 0
-            for i, line in enumerate(f):
-                mapping[i] = offset
-                offset += len(line)
-        return mapping
-
-    def __getitem__(self, index):
-        offset = self.mapping[index]
-        with gzip.open(self.hf, 'r') as f:
-            f.seek(offset)
-            line = f.readline().decode()
-        pdbs = line.split()
-        anchor = pdbs[0]
-        positive = np.random.choice(pdbs[1:])
-        try:
-            g_anchor = misc.graphein.protein.graph(pdbcode=anchor[:4], chain=anchor[5:])
-            g_positive = misc.graphein.protein.graph(pdbcode=positive[:4], chain=positive[5:])
-        except ValueError:
-            # Not a protein chain
-            g_anchor = torch_geometric.data.Data(x=None, edge_index=None)
-            g_positive = torch_geometric.data.Data(x=None, edge_index=None)
-        return g_anchor, g_positive
+    dataset = BLASTloader.PDBdataset()
+    dataloader = DataLoader(dataset, batch_size=3, shuffle=False, num_workers=4)
+    for batch in dataloader:
+        break
+    return batch
 
 
 def log(msg):
@@ -116,6 +87,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
