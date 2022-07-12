@@ -574,3 +574,4 @@ python/protein/sscl/queries
 python/protein/sscl/homologs.h5
 python/protein/sscl/blast_results.txt.gz
 python/protein/sscl/homologs.txt.gz
+python/graphein/pdb
