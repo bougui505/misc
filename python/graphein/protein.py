@@ -52,6 +52,7 @@ def graph(pdbcode, chain='all', doplot=False):
     >>> g = graph('1ycr', chain='A', doplot=False)
     85
     >>> g
+    Data(edge_index=[2, 375], node_id=[85], num_nodes=85, x=[85, 20])
     """
     new_funcs = {
         "granularity":
@@ -77,7 +78,7 @@ def graph(pdbcode, chain='all', doplot=False):
                                            node_size_multiplier=1)
         p.show()
     g = format_convertor(g)
-    g.x = torch.asarray(g.amino_acid_one_hot)
+    g.x = torch.asarray(g.amino_acid_one_hot).type(torch.FloatTensor)
     del g.amino_acid_one_hot
     return g
 
