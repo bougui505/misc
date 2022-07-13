@@ -38,7 +38,7 @@
 import os
 import BLASTloader
 import torch
-from torch_geometric.loader import DataLoader
+import encoder
 
 
 def collate_fn(batch):
@@ -48,6 +48,8 @@ def collate_fn(batch):
 def get_batch_test():
     """
     >>> batch = get_batch_test()
+    >>> len(batch)
+    3
     >>> batch
     [(Data(), Data()), (Data(), Data()), (Data(edge_index=[2, 717], node_id=[154], num_nodes=154, x=[154, 20]), Data(edge_index=[2, ...], node_id=[...], num_nodes=..., x=[..., 20]))]
     """
@@ -56,6 +58,23 @@ def get_batch_test():
     for batch in dataloader:
         break
     return batch
+
+
+def forward_batch(batch, model):
+    """
+    >>> batch = get_batch_test()
+    >>> model = encoder.GCN()
+    >>> out = forward_batch(batch, model)
+    >>> [(z_anchor.shape, z_positive.shape) for z_anchor, z_positive in out]
+    [(torch.Size([512]), torch.Size([512]))]
+    """
+    out = []
+    for anchor, positive in batch:
+        if anchor.x is not None and positive.x is not None:
+            z_anchor = model(anchor)
+            z_positive = model(positive)
+            out.append((z_anchor, z_positive))
+    return out
 
 
 def log(msg):
