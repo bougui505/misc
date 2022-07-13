@@ -60,8 +60,9 @@ class GCN(torch.nn.Module):
     >>> out.shape
     torch.Size([154, 512])
     """
-    def __init__(self, in_channels=20, latent_dim=512):
+    def __init__(self, in_channels=20, latent_dim=512, normalized_latent_space=True):
         super().__init__()
+        self.normalized_latent_space = normalized_latent_space
         self.conv1 = GCNConv(in_channels, 8)
         self.conv2 = GCNConv(8, 16)
         self.conv3 = GCNConv(16, 32)
@@ -85,6 +86,8 @@ class GCN(torch.nn.Module):
         x = F.relu(x)
         x = F.tanh(x)
         z = torch.max(x, dim=0).values
+        if self.normalized_latent_space:
+            z = z / torch.linalg.norm(z)
         if get_conv:
             return z[None, ...], x
         else:
