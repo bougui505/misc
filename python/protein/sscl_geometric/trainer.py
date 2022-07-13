@@ -66,7 +66,7 @@ def forward_batch(batch, model):
     >>> model = encoder.GCN()
     >>> out = forward_batch(batch, model)
     >>> [(z_anchor.shape, z_positive.shape) for z_anchor, z_positive in out]
-    [(torch.Size([512]), torch.Size([512]))]
+    [(torch.Size([1, 512]), torch.Size([1, 512]))]
     """
     out = []
     for anchor, positive in batch:
@@ -75,6 +75,43 @@ def forward_batch(batch, model):
             z_positive = model(positive)
             out.append((z_anchor, z_positive))
     return out
+
+
+def get_contrastive_loss(out, tau=1.):
+    """
+    >>> n = 3
+    >>> out = [(torch.randn(1, 512), torch.randn(1, 512)) for i in range(n)]
+    >>> loss = get_contrastive_loss(out)
+    >>> loss
+    tensor(...)
+    """
+    n = len(out)
+    z_anchor_list = [e[0] for e in out]
+    z_positive_list = [e[1] for e in out]
+    loss = 0.
+    for i in range(n):
+        z_full_i = z_anchor_list[i]
+        # z_fragment_i = z_fragment_list[i]
+        den = 0.
+        for j in range(n):
+            z_full_j = z_anchor_list[j]
+            z_fragment_j = z_positive_list[j]
+            if i == j:
+                sim_num = torch.matmul(z_full_i, z_fragment_j.T)
+                # log(f'z_full_i: {z_full_i}')
+                # log(f'sim_num: {sim_num}')
+                num = torch.exp(sim_num / tau)
+            else:
+                sim_den = torch.matmul(z_full_i, z_full_j.T)
+                # log(f'sim_den: {sim_den}')
+                den += torch.exp(sim_den / tau)
+        # log(f'num:{num}, den: {den}')
+        loss -= torch.log((num + 1e-8) / (den + 1e-8))
+    if n > 0:
+        loss = loss / n
+    loss = torch.squeeze(loss)
+    assert not torch.isnan(loss), 'ERROR: loss is nan'
+    return loss
 
 
 def log(msg):

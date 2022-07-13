@@ -53,10 +53,10 @@ class GCN(torch.nn.Module):
     >>> gcn = GCN()
     >>> z = gcn(g_anchor)
     >>> z.shape
-    torch.Size([512])
+    torch.Size([1, 512])
     >>> z, out = gcn(g_anchor, get_conv=True)
     >>> z.shape
-    torch.Size([512])
+    torch.Size([1, 512])
     >>> out.shape
     torch.Size([154, 512])
     """
@@ -86,9 +86,9 @@ class GCN(torch.nn.Module):
         x = F.tanh(x)
         z = torch.max(x, dim=0).values
         if get_conv:
-            return z, x
+            return z[None, ...], x
         else:
-            return z
+            return z[None, ...]
 
 
 def log(msg):
