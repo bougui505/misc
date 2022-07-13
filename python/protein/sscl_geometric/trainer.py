@@ -41,20 +41,18 @@ import torch
 from torch_geometric.loader import DataLoader
 
 
+def collate_fn(batch):
+    return batch
+
+
 def get_batch_test():
     """
-    >>> anchors, positives = get_batch_test()
-    >>> anchors.num_graphs
-    3
-    >>> positives.num_graphs
-    3
-    >>> anchors
-    DataBatch()
-    >>> positives
-    DataBatch()
+    >>> batch = get_batch_test()
+    >>> batch
+    [(Data(), Data()), (Data(), Data()), (Data(edge_index=[2, 717], node_id=[154], num_nodes=154, x=[154, 20]), Data(edge_index=[2, ...], node_id=[...], num_nodes=..., x=[..., 20]))]
     """
     dataset = BLASTloader.PDBdataset()
-    dataloader = DataLoader(dataset, batch_size=3, shuffle=False, num_workers=4)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=3, shuffle=False, num_workers=4, collate_fn=collate_fn)
     for batch in dataloader:
         break
     return batch
