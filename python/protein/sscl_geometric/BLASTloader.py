@@ -47,7 +47,7 @@ class PDBdataset(torch.utils.data.Dataset):
     """
     >>> dataset = PDBdataset()
     >>> dataset.__getitem__(0)
-    (None, None)
+    (Data(), Data())
     >>> dataset.__getitem__(1000)
     154
     ...
