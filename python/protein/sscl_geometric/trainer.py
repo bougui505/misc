@@ -114,6 +114,25 @@ def get_contrastive_loss(out, tau=1.):
     return loss
 
 
+def load_model(filename, latent_dim=512):
+    """
+    >>> model = encoder.GCN()
+    >>> torch.save(model.state_dict(), 'models/gcn_test.pt')
+    >>> gcn = load_model('models/gcn_test.pt')
+    Loading GCN model
+    >>> batch = get_batch_test()
+    >>> out = forward_batch(batch, gcn)
+    >>> [(z_anchor.shape, z_positive.shape) for z_anchor, z_positive in out]
+    [(torch.Size([1, 512]), torch.Size([1, 512]))]
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = encoder.GCN(latent_dim=latent_dim)
+    model.load_state_dict(torch.load(filename, map_location=torch.device(device)))
+    print('Loading GCN model')
+    model.eval()
+    return model
+
+
 def log(msg):
     try:
         logging.info(msg)
