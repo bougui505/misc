@@ -37,12 +37,17 @@
 #############################################################################
 import os
 import torch
+import numpy as np
 from graphein.protein.config import ProteinGraphConfig
 from graphein.protein.graphs import construct_graph
 from graphein.protein.visualisation import plotly_protein_structure_graph
 import graphein.protein as gp
 from graphein.ml.conversion import GraphFormatConvertor
 from graphein.protein.features.nodes.amino_acid import amino_acid_one_hot
+import logging
+
+logger = logging.getLogger('graphein.protein')
+logger.setLevel(level="ERROR")
 
 format_convertor = GraphFormatConvertor('nx', 'pyg', verbose=None, columns=['edge_index', "amino_acid_one_hot"])
 
@@ -78,7 +83,7 @@ def graph(pdbcode, chain='all', doplot=False):
                                            node_size_multiplier=1)
         p.show()
     g = format_convertor(g)
-    g.x = torch.asarray(g.amino_acid_one_hot).type(torch.FloatTensor)
+    g.x = torch.asarray(np.array(g.amino_acid_one_hot)).type(torch.FloatTensor)
     del g.amino_acid_one_hot
     return g
 

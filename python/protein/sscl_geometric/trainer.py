@@ -39,6 +39,9 @@ import os
 import BLASTloader
 import torch
 import encoder
+import time
+from misc.eta import ETA
+import datetime
 
 
 def collate_fn(batch):
@@ -58,6 +61,23 @@ def get_batch_test():
     for batch in dataloader:
         break
     return batch
+
+
+def get_norm(out):
+    """
+    >>> batch = get_batch_test()
+    >>> model = encoder.GCN(latent_dim=512)
+    >>> out = forward_batch(batch, model)
+    >>> [(z_full.shape, z_fragment.shape) for z_full, z_fragment in out]
+    [(torch.Size([1, 512]), torch.Size([1, 512]))]
+    >>> get_norm(out)
+    tensor(..., grad_fn=<MeanBackward0>)
+    """
+    z_full_list = torch.cat([e[0] for e in out])  # torch.Size([4, 512])
+    z_fragment_list = torch.cat([e[1] for e in out])  # torch.Size([4, 512])
+    z = torch.cat((z_full_list, z_fragment_list))  # torch.Size([8, 512])
+    norms = torch.linalg.norm(z, dim=1)
+    return norms.mean()
 
 
 def forward_batch(batch, model):
@@ -133,6 +153,88 @@ def load_model(filename, latent_dim=512):
     return model
 
 
+def save_model(model, filename):
+    torch.save(model.state_dict(), filename)
+
+
+def train(
+        batch_size=4,
+        n_epochs=20,
+        latent_dim=128,
+        save_each_epoch=True,
+        print_each=100,
+        save_each=30,  # in minutes
+        modelfilename='models/sscl.pt'):
+    """
+    # >>> train(pdbpath='pdb', print_each=1, save_each_epoch=False, n_epochs=3, modelfilename='models/1.pt', batch_size=32)
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    dataset = BLASTloader.PDBdataset()
+    num_workers = os.cpu_count()
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=True,
+                                             num_workers=num_workers,
+                                             collate_fn=collate_fn)
+    dataiter = iter(dataloader)
+    if os.path.exists(modelfilename):
+        log(f'# Loading model from {modelfilename}')
+        model = load_model(filename=modelfilename, latent_dim=latent_dim)
+        model.train()
+    else:
+        log('GCN model')
+        model = encoder.GCN(latent_dim=latent_dim)
+    model = model.to(device)
+    opt = torch.optim.Adam(model.parameters())
+    t_0 = time.time()
+    save_model(model, modelfilename)
+    epoch = 0
+    step = 0
+    total_steps = n_epochs * len(dataiter)
+    eta = ETA(total_steps=total_steps)
+    while epoch < n_epochs:
+        opt.zero_grad()
+        try:
+            step += 1
+            batch = next(dataiter)
+            try:
+                batch = [(e[0].to(device), e[1].to(device)) for e in batch if e is not None]
+            except RuntimeError:
+                print('RuntimeError: CUDA out of memory. Skipping batch...')
+                batch = []
+            bs = len(batch)
+            if bs > 0:
+                out = forward_batch(batch, model)
+                if len(out) > 0:
+                    loss = get_contrastive_loss(out)
+                    try:
+                        loss.backward()
+                        # torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0, norm_type=2)
+                        opt.step()
+                    except RuntimeError:
+                        print('RuntimeError: CUDA out of memory. Skipping backward...')
+            opt.zero_grad()
+            if (time.time() - t_0) / 60 >= save_each:
+                t_0 = time.time()
+                save_model(model, modelfilename)
+            if not step % print_each:
+                eta_val = eta(step)
+                last_saved = (time.time() - t_0)
+                last_saved = str(datetime.timedelta(seconds=last_saved))
+                if len(out) > 0:
+                    norm = get_norm(out)
+                if loss is not None:
+                    log(f"epoch: {epoch+1}|step: {step}|loss: {loss:.4f}|norm: {norm:.4f}|bs: {bs}|last_saved: {last_saved}| eta: {eta_val}"
+                        )
+        except StopIteration:
+            dataiter = iter(dataloader)
+            epoch += 1
+            if save_each_epoch:
+                t_0 = time.time()
+                save_model(model, modelfilename)
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -151,19 +253,37 @@ if __name__ == '__main__':
     import doctest
     import argparse
     # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
+    import logging
+    logger = logging.getLogger()
+    logger.setLevel(level=logging.DEBUG)
+    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--train', help='Train the SSCL', action='store_true')
+    parser.add_argument('--epochs', type=int)
+    parser.add_argument('--model', help='Model to load or for saving', metavar='model.pt')
+    parser.add_argument('--print_each', type=int, default=100)
+    parser.add_argument('--latent_dim', default=512, type=int)
+    parser.add_argument('--save_every',
+                        help='Save the model every given number of minutes (default: 30 min)',
+                        type=int,
+                        default=30)
+    parser.add_argument('--bs', help='Batch size', type=int, default=4)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+
+    if args.train:
+        train(n_epochs=args.epochs,
+              modelfilename=args.model,
+              print_each=args.print_each,
+              latent_dim=args.latent_dim,
+              save_each=args.save_every,
+              batch_size=args.bs)
