@@ -577,3 +577,4 @@ python/protein/sscl/homologs.txt.gz
 python/graphein/pdb
 python/protein/sscl_geometric/homologs.txt.gz
 python/protein/sscl_geometric/pdb
+python/protein/sscl_geometric/models/gcn_test.pt
