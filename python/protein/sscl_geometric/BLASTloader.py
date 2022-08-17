@@ -82,7 +82,7 @@ class PDBdataset(torch.utils.data.Dataset):
         try:
             g_anchor = misc.graphein.protein.graph(pdbcode=anchor[:4], chain=anchor[5:])
             g_positive = misc.graphein.protein.graph(pdbcode=positive[:4], chain=positive[5:])
-        except ValueError:
+        except (ValueError, KeyError, FileNotFoundError):
             # Not a protein chain
             g_anchor = torch_geometric.data.Data(x=None, edge_index=None)
             g_positive = torch_geometric.data.Data(x=None, edge_index=None)

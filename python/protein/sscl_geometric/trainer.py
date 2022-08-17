@@ -257,7 +257,15 @@ if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(level=logging.DEBUG)
     logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+
+    # See: https://stackoverflow.com/a/13839732/1679629
+    fileh = logging.FileHandler(logfilename, 'a')
+    formatter = logging.Formatter('%(asctime)s: %(message)s')
+    fileh.setFormatter(formatter)
+    for hdlr in logger.handlers[:]:  # remove all old handlers
+        logger.removeHandler(hdlr)
+    logger.addHandler(fileh)  # set the new handler
     logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
