@@ -192,6 +192,7 @@ def train(
     step = 0
     total_steps = n_epochs * len(dataiter)
     eta = ETA(total_steps=total_steps)
+    loss = None
     while epoch < n_epochs:
         opt.zero_grad()
         try:
