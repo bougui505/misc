@@ -43,6 +43,7 @@ from shapely.geometry import Point
 from shapely.ops import unary_union
 from descartes import PolygonPatch
 from misc.protein import coords_loader
+from matplotlib.pyplot import cm
 # from figures import SIZE, BLUE, GRAY, set_limits
 
 
@@ -67,13 +68,8 @@ def binarize_z(coords, nbins):
 
 def plot_spheres(coords, n_zlevels=10):
     """
-    >>> coords = np.asarray([(i, 0) for i in range(5)], dtype=float)
-    >>> coords
-    array([[0., 0.],
-           [1., 0.],
-           [2., 0.],
-           [3., 0.],
-           [4., 0.]])
+    >>> coords = coords_loader.get_coords('1ycr')
+    Fetching 1ycr from the PDB
     >>> plot_spheres(coords)
     """
     inds = binarize_z(coords, nbins=n_zlevels)
