@@ -66,6 +66,14 @@ def binarize_z(coords, nbins):
     return inds
 
 
+def get_mapping(keys):
+    mapping = np.unique(keys)
+    nchain = len(mapping)
+    colors = iter(cm.rainbow(np.linspace(0, 1, nchain)))
+    mapping = {c: next(colors) for c in mapping}
+    return mapping
+
+
 def plot_spheres(coords, n_zlevels=10):
     """
     >>> coords = coords_loader.get_coords('1ycr')
@@ -124,5 +132,7 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    coords = coords_loader.get_coords(args.pdb, selection=args.sel)
+    coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True)
+    chains = coords_loader.get_chain_ids(sel)
+    mapping = get_mapping(chains)
     plot_spheres(coords)
