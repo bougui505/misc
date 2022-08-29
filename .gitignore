@@ -581,3 +581,4 @@ python/protein/sscl_geometric/models/gcn_test.pt
 python/protein/sscl_geometric/models/test.pt
 python/protein/sscl_geometric/trainer.log
 python/Grid3/test.mrc
+python/protein/depict/out.svg
