@@ -42,12 +42,32 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point
 from shapely.ops import unary_union
 from descartes import PolygonPatch
+from misc.protein import coords_loader
 # from figures import SIZE, BLUE, GRAY, set_limits
 
 
-def plot_spheres(coords):
+def binarize_z(coords, nbins):
     """
-    >>> coords = np.asarray([(i, 0) for i in range(5)], dtype=np.float)
+    >>> coords = np.asarray([(i, i, i) for i in range(100)], dtype=float)
+    >>> inds = binarize_z(coords, 20)
+    >>> inds
+    array([ 1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  4,
+            4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  7,  7,
+            7,  7,  7,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9, 10, 10, 10, 10,
+           10, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13,
+           14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 17,
+           17, 17, 17, 17, 18, 18, 18, 18, 18, 19, 19, 19, 19, 19, 20])
+    """
+    zmin = coords.min(axis=0)[2]
+    zmax = coords.max(axis=0)[2]
+    bins = np.linspace(zmin, zmax, nbins)
+    inds = np.digitize(coords[:, 2], bins)
+    return inds
+
+
+def plot_spheres(coords, n_zlevels=10):
+    """
+    >>> coords = np.asarray([(i, 0) for i in range(5)], dtype=float)
     >>> coords
     array([[0., 0.],
            [1., 0.],
@@ -56,12 +76,16 @@ def plot_spheres(coords):
            [4., 0.]])
     >>> plot_spheres(coords)
     """
+    inds = binarize_z(coords, nbins=n_zlevels)
     fig = plt.figure()
     ax = fig.add_subplot()
-    polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords]
-    u = unary_union(polygons)
-    patch2b = PolygonPatch(u, alpha=0.5, zorder=2)
-    ax.add_patch(patch2b)
+    for i in np.unique(inds):
+        sel = (inds == i)
+        coords_ = coords[sel]
+        polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords_]
+        u = unary_union(polygons)
+        patch2b = PolygonPatch(u, alpha=1)
+        ax.add_patch(patch2b)
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
@@ -96,6 +120,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
+    parser.add_argument('-s', '--sel', default='all')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -103,6 +128,5 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    cmd.load(args.pdb, object='user_input')
-    coords = cmd.get_coords('user_input')
+    coords = coords_loader.get_coords(args.pdb, selection=args.sel)
     plot_spheres(coords)
