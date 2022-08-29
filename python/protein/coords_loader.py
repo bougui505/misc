@@ -41,7 +41,24 @@ from pymol import cmd
 from misc.randomgen import randomstring
 
 
-def get_coords(pdb, selection='all', split_by_chains=False):
+def get_chain_ids(selection):
+    """
+    >>> coords, selection = get_coords('1ycr', return_selection=True)
+    Fetching 1ycr from the PDB
+    >>> coords.shape
+    (818, 3)
+    >>> selection
+    '... and all'
+    >>> chains = get_chain_ids(selection)
+    >>> chains
+    ['A', 'A', 'A', 'A', 'A',...
+    """
+    myspace = {'chains': []}
+    cmd.iterate(selection, 'chains.append(chain)', space=myspace)
+    return myspace['chains']
+
+
+def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False):
     """
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -77,7 +94,10 @@ def get_coords(pdb, selection='all', split_by_chains=False):
         coords = []
         for chain in chain_list:
             coords.append(cmd.get_coords(selection=f'{selection} and chain {chain}'))
-    return coords
+    if not return_selection:
+        return coords
+    else:
+        return coords, selection
 
 
 def log(msg):
