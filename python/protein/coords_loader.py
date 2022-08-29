@@ -41,7 +41,7 @@ from pymol import cmd
 from misc.randomgen import randomstring
 
 
-def get_coords(pdb, selection='all'):
+def get_coords(pdb, selection='all', split_by_chains=False):
     """
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -55,6 +55,10 @@ def get_coords(pdb, selection='all'):
     Fetching 1ycr from the PDB
     >>> coords.shape
     (705, 3)
+    >>> coords = get_coords('1ycr', split_by_chains=True)
+    Fetching 1ycr from the PDB
+    >>> [e.shape for e in coords]
+    [(705, 3), (113, 3)]
     """
     cmd.set('fetch_path', os.path.expanduser('~/pdb'))
     cmd.set('fetch_type_default', 'mmtf')
@@ -65,7 +69,14 @@ def get_coords(pdb, selection='all'):
     else:
         print(f'Fetching {pdb} from the PDB')
         cmd.fetch(pdb, name=obj)
-    coords = cmd.get_coords(selection=f'{obj} and {selection}')
+    selection = f'{obj} and {selection}'
+    if not split_by_chains:
+        coords = cmd.get_coords(selection=selection)
+    else:
+        chain_list = cmd.get_chains(selection=selection)
+        coords = []
+        for chain in chain_list:
+            coords.append(cmd.get_coords(selection=f'{selection} and chain {chain}'))
     return coords
 
 
