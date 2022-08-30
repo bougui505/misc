@@ -81,7 +81,7 @@ def arr_tuple(li):
 def get_mapping(keys):
     mapping = np.unique(keys)
     nchain = len(mapping)
-    colors = iter(cm.rainbow(np.linspace(0, 1, nchain)))
+    colors = iter(cm.tab20(np.linspace(0, 1, nchain)))
     mapping = {c: next(colors) for c in mapping}
     return mapping
 
