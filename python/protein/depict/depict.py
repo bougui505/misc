@@ -74,12 +74,14 @@ def get_mapping(keys):
     return mapping
 
 
-def plot_spheres(coords, n_zlevels=10):
+def plot_spheres(coords, n_zlevels=20):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
     >>> plot_spheres(coords)
     """
+    sorter = coords[:, 2].argsort()
+    coords = coords[sorter]
     inds = binarize_z(coords, nbins=n_zlevels)
     fig = plt.figure()
     ax = fig.add_subplot()
