@@ -66,6 +66,18 @@ def binarize_z(coords, nbins):
     return inds
 
 
+def arr_tuple(li):
+    """
+    >>> li = [(1,2),(3,4)]
+    >>> out = arr_tuple(li)
+    >>> out
+    array([(1, 2), (3, 4)], dtype=object)
+    """
+    out = np.empty(len(li), dtype=object)
+    out[:] = li
+    return out
+
+
 def get_mapping(keys):
     mapping = np.unique(keys)
     nchain = len(mapping)
@@ -74,24 +86,41 @@ def get_mapping(keys):
     return mapping
 
 
-def plot_spheres(coords, n_zlevels=20):
+def get_polygons(coords, ax, edgecolor='black', facecolor=None, zorder=None):
+    polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords]
+    u = unary_union(polygons)
+    patch2b = PolygonPatch(u, alpha=1, ec=edgecolor, fc=facecolor, zorder=zorder)
+    ax.add_patch(patch2b)
+
+
+def plot_spheres(coords, n_zlevels=20, keys=None):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
     >>> plot_spheres(coords)
     """
-    sorter = coords[:, 2].argsort()
-    coords = coords[sorter]
+    if keys is None:
+        keys = np.ones(len(coords), dtype=int)
+    keys = np.asarray(keys)
+
     inds = binarize_z(coords, nbins=n_zlevels)
+    mapping = get_mapping(keys)
+    inds = arr_tuple(list(zip(inds, keys)))
     fig = plt.figure()
     ax = fig.add_subplot()
-    for i in np.unique(inds):
-        sel = (inds == i)
-        coords_ = coords[sel]
-        polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords_]
-        u = unary_union(polygons)
-        patch2b = PolygonPatch(u, alpha=1)
-        ax.add_patch(patch2b)
+    binid = -1
+    coords_ = []
+    for i, c in enumerate(coords):
+        key = keys[i]
+        if inds[i] != binid:
+            binid = inds[i]
+            coords_ = np.asarray(coords_)
+            if len(coords_) > 0:
+                get_polygons(coords_, ax, facecolor=mapping[key], zorder=np.median(coords_[:, 2]))
+            coords_ = []
+        coords_.append(c)
+    coords_ = np.asarray(coords_)
+    get_polygons(coords_, ax, facecolor=mapping[key], zorder=np.median(coords_[:, 2]))
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
@@ -136,5 +165,4 @@ if __name__ == '__main__':
 
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True)
     chains = coords_loader.get_chain_ids(sel)
-    mapping = get_mapping(chains)
-    plot_spheres(coords)
+    plot_spheres(coords, keys=chains)
