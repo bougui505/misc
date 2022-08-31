@@ -39,6 +39,7 @@
 import os
 from pymol import cmd
 from misc.randomgen import randomstring
+import numpy as np
 
 
 def get_chain_ids(selection):
@@ -58,7 +59,19 @@ def get_chain_ids(selection):
     return myspace['chains']
 
 
-def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False):
+def load_pymol_view(view):
+    """Read rotation matrix from output of PyMol ``get_view`` command
+    Args:
+        file (str): Path to file
+    """
+    view = view.replace('(', '')
+    view = view.replace(')', '')
+    fields = view.split(',')
+    view_matrix = np.asarray(fields, dtype=float)[:16]
+    return view_matrix
+
+
+def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False, view=None):
     """
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -87,6 +100,9 @@ def get_coords(pdb, selection='all', split_by_chains=False, return_selection=Fal
         print(f'Fetching {pdb} from the PDB')
         cmd.fetch(pdb, name=obj)
     selection = f'{obj} and {selection}'
+    if view is not None:
+        viewmat = load_pymol_view(view)
+        cmd.transform_selection(selection, viewmat)
     if not split_by_chains:
         coords = cmd.get_coords(selection=selection)
     else:

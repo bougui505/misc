@@ -158,6 +158,9 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('-s', '--sel', default='all')
+    parser.add_argument(
+        '--view',
+        help='Define the orientation of the protein. In Pymol, it can be obtained using: "v=cmd.get_view();print(v)"')
     parser.add_argument('--axis', help='Display axis', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
@@ -166,6 +169,6 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True)
+    coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
     plot_spheres(coords, keys=chains)
