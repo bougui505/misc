@@ -160,7 +160,9 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--sel', default='all')
     parser.add_argument(
         '--view',
-        help='Define the orientation of the protein. In Pymol, it can be obtained using: "v=cmd.get_view();print(v)"')
+        help=
+        "Define the orientation of the protein. In Pymol, first reset the view ('reset' command) then in editing mode apply transformation (shift mouse to apply a transformation) then get the transformation matrix using: 'm = cmd.get_object_matrix('obj_name'); print(m)'"
+    )
     parser.add_argument('--axis', help='Display axis', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
