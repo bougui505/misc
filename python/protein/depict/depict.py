@@ -124,6 +124,8 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
+    if not args.axis:
+        plt.axis('off')
     plt.show()
 
 
@@ -156,6 +158,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('-s', '--sel', default='all')
+    parser.add_argument('--axis', help='Display axis', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
