@@ -87,10 +87,10 @@ def get_mapping(keys):
     return mapping
 
 
-def get_polygons(coords, ax, edgecolor=[0, 0, 0, 1], facecolor=None, zorder=None, alpha=1.):
+def get_polygons(coords, ax, edgecolor=[0, 0, 0, 1], facecolor=None, zorder=None, alpha=1., label=None):
     polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords]
     u = unary_union(polygons)
-    patch2b = PolygonPatch(u, alpha=alpha, ec=edgecolor, fc=facecolor, zorder=zorder)
+    patch2b = PolygonPatch(u, alpha=alpha, ec=edgecolor, fc=facecolor, zorder=zorder, label=label)
     ax.add_patch(patch2b)
 
 
@@ -124,7 +124,8 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
     unique_inds = np.unique(inds)
     pbar = tqdm.tqdm(total=len(unique_inds))
     pbar.set_description(desc='rendering')
-    for ind in unique_inds:
+    labels = []
+    for ind in unique_inds[::-1]:
         zlevel, key = ind
         sel = np.asarray([e == ind for e in inds])
         coords_ = coords[sel]
@@ -133,12 +134,22 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
         color = desaturate(color, saturation_ratio)
         edgecolor = [0, 0, 0, 1]
         edgecolor = desaturate(edgecolor, saturation_ratio)
-        get_polygons(coords_, ax, facecolor=color, edgecolor=edgecolor, zorder=np.median(coords_[:, 2]))
+        if key not in labels:
+            labels.append(key)
+            label = key
+        else:
+            label = None
+        get_polygons(coords_, ax, facecolor=color, edgecolor=edgecolor, zorder=np.median(coords_[:, 2]), label=label)
         pbar.update(1)
     pbar.close()
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
+    # Sort the legend
+    handles, labels = ax.get_legend_handles_labels()
+    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+    ax.legend(handles, labels)
+    # plt.legend()
     if not args.axis:
         plt.axis('off')
     plt.show()
