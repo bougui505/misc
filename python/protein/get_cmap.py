@@ -54,7 +54,7 @@ def GetScriptDir():
     return scriptdir
 
 
-def get_cmap(pdb, threshold=8.):
+def get_cmap(pdb, threshold=8., print_distance=False):
     coords, selection = coords_loader.get_coords(pdb, selection='name CA', return_selection=True)
     resids = coords_loader.get_atom_property(selection, prop='resi')
     resids = np.int_(resids)
@@ -66,7 +66,10 @@ def get_cmap(pdb, threshold=8.):
     ijs = np.asarray(np.where(cmap)).T
     for i, j in ijs:
         if i > j:
-            sys.stdout.write('%d %d\n' % (resids[i], resids[j]))
+            if not print_distance:
+                sys.stdout.write('%d %d\n' % (resids[i], resids[j]))
+            else:
+                sys.stdout.write('%d %d %.4f\n' % (resids[i], resids[j], dmat[i, j]))
 
 
 if __name__ == '__main__':
@@ -85,6 +88,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('--threshold', type=float, default=8.)
+    parser.add_argument('--distance', help='print the distance', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -92,4 +96,4 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    get_cmap(args.pdb, args.threshold)
+    get_cmap(args.pdb, args.threshold, print_distance=args.distance)
