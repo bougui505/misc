@@ -119,28 +119,23 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
     inds = arr_tuple(list(zip(inds, keys)))
     fig = plt.figure()
     ax = fig.add_subplot()
-    binid = -1
     coords_ = []
-    pbar = tqdm.tqdm(total=len(coords))
+    # print(inds)  # [(2, 'A') (2, 'A') (2, 'A') ... (14, 'C') (14, 'C') (14, 'C')]
+    unique_inds = np.unique(inds)
+    pbar = tqdm.tqdm(total=len(unique_inds))
     pbar.set_description(desc='rendering')
-    for i, c in enumerate(coords):
-        key = keys[i]
-        if inds[i] != binid:
-            binid = inds[i]
-            saturation_ratio = binid[0] / n_zlevels
-            coords_ = np.asarray(coords_)
-            if len(coords_) > 0:
-                color = mapping[key]
-                edgecolor = [0, 0, 0, 1]
-                color = desaturate(color, saturation_ratio)
-                edgecolor = desaturate(edgecolor, saturation_ratio)
-                get_polygons(coords_, ax, facecolor=color, edgecolor=edgecolor, zorder=np.median(coords_[:, 2]))
-            coords_ = []
-        coords_.append(c)
+    for ind in unique_inds:
+        zlevel, key = ind
+        sel = np.asarray([e == ind for e in inds])
+        coords_ = coords[sel]
+        saturation_ratio = zlevel / n_zlevels
+        color = mapping[key]
+        color = desaturate(color, saturation_ratio)
+        edgecolor = [0, 0, 0, 1]
+        edgecolor = desaturate(edgecolor, saturation_ratio)
+        get_polygons(coords_, ax, facecolor=color, edgecolor=edgecolor, zorder=np.median(coords_[:, 2]))
         pbar.update(1)
     pbar.close()
-    coords_ = np.asarray(coords_)
-    get_polygons(coords_, ax, facecolor=mapping[key], zorder=np.median(coords_[:, 2]))
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
