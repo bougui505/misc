@@ -104,7 +104,7 @@ def desaturate(rgbcolor, saturation_ratio=1.):
     return rgbcolor
 
 
-def plot_spheres(coords, n_zlevels=20, keys=None):
+def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -145,11 +145,11 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
     ax.set_ylim(coords.min(axis=0)[1] - 2., coords.max(axis=0)[1] + 2.)
     ax.set_aspect("equal")
-    # Sort the legend
-    handles, labels = ax.get_legend_handles_labels()
-    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
-    ax.legend(handles, labels)
-    # plt.legend()
+    if dolegend:
+        # Sort the legend
+        handles, labels = ax.get_legend_handles_labels()
+        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+        ax.legend(handles, labels)
     if not args.axis:
         plt.axis('off')
     plt.show()
@@ -191,6 +191,7 @@ if __name__ == '__main__':
         "Define the orientation of the protein. In Pymol, first reset the view ('reset' command) then in editing mode apply transformation (shift mouse to apply a transformation) then get the transformation matrix using: 'm = cmd.get_object_matrix('obj_name'); print(m)'"
     )
     parser.add_argument('--axis', help='Display axis', action='store_true')
+    parser.add_argument('--legend', help='Display the legend', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -200,4 +201,4 @@ if __name__ == '__main__':
 
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
-    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains)
+    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend)
