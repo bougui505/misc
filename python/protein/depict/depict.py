@@ -178,6 +178,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('-s', '--sel', default='all')
+    parser.add_argument('--zlevels', help='Number of zlevels for bining z-axis (default=20)', default=20, type=int)
     parser.add_argument(
         '--view',
         help=
@@ -193,4 +194,4 @@ if __name__ == '__main__':
 
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
-    plot_spheres(coords, keys=chains)
+    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains)
