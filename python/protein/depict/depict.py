@@ -44,7 +44,8 @@ from shapely.ops import unary_union
 from descartes import PolygonPatch
 from misc.protein import coords_loader
 from matplotlib.pyplot import cm
-# from figures import SIZE, BLUE, GRAY, set_limits
+import colorsys
+import tqdm
 
 
 def binarize_z(coords, nbins):
@@ -86,11 +87,21 @@ def get_mapping(keys):
     return mapping
 
 
-def get_polygons(coords, ax, edgecolor='black', facecolor=None, zorder=None):
+def get_polygons(coords, ax, edgecolor=[0, 0, 0, 1], facecolor=None, zorder=None, alpha=1.):
     polygons = [Point(c[0], c[1]).buffer(1.5) for c in coords]
     u = unary_union(polygons)
-    patch2b = PolygonPatch(u, alpha=1, ec=edgecolor, fc=facecolor, zorder=zorder)
+    patch2b = PolygonPatch(u, alpha=alpha, ec=edgecolor, fc=facecolor, zorder=zorder)
     ax.add_patch(patch2b)
+
+
+def desaturate(rgbcolor, saturation_ratio=1.):
+    r, g, b, alpha = rgbcolor
+    hsvcolor = list(colorsys.rgb_to_hsv(r, g, b))
+    hsvcolor[1] = hsvcolor[1] * saturation_ratio
+    h, s, v = hsvcolor
+    rgbcolor = list(colorsys.hsv_to_rgb(h, s, v))
+    rgbcolor.append(alpha)
+    return rgbcolor
 
 
 def plot_spheres(coords, n_zlevels=20, keys=None):
@@ -110,15 +121,24 @@ def plot_spheres(coords, n_zlevels=20, keys=None):
     ax = fig.add_subplot()
     binid = -1
     coords_ = []
+    pbar = tqdm.tqdm(total=len(coords))
+    pbar.set_description(desc='rendering')
     for i, c in enumerate(coords):
         key = keys[i]
         if inds[i] != binid:
             binid = inds[i]
+            saturation_ratio = binid[0] / n_zlevels
             coords_ = np.asarray(coords_)
             if len(coords_) > 0:
-                get_polygons(coords_, ax, facecolor=mapping[key], zorder=np.median(coords_[:, 2]))
+                color = mapping[key]
+                edgecolor = [0, 0, 0, 1]
+                color = desaturate(color, saturation_ratio)
+                edgecolor = desaturate(edgecolor, saturation_ratio)
+                get_polygons(coords_, ax, facecolor=color, edgecolor=edgecolor, zorder=np.median(coords_[:, 2]))
             coords_ = []
         coords_.append(c)
+        pbar.update(1)
+    pbar.close()
     coords_ = np.asarray(coords_)
     get_polygons(coords_, ax, facecolor=mapping[key], zorder=np.median(coords_[:, 2]))
     ax.set_xlim(coords.min(axis=0)[0] - 2., coords.max(axis=0)[0] + 2.)
