@@ -105,11 +105,11 @@ def desaturate(rgbcolor, saturation_ratio=1.):
     return rgbcolor
 
 
-def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, orient=None):
+def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, orient=None, showaxis=False):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
-    >>> plot_spheres(coords)
+    >>> plot_spheres(coords, save='figures/spheres.png')
     """
     if orient is not None:
         coords = orient.transform(coords)
@@ -153,7 +153,54 @@ def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, ori
         handles, labels = ax.get_legend_handles_labels()
         labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
         ax.legend(handles, labels)
-    if not args.axis:
+    if not showaxis:
+        plt.axis('off')
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig(save)
+
+
+def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, orient=None):
+    """
+    >>> coords, sel = coords_loader.get_coords('1ycr', selection='name CA', return_selection=True)
+    Fetching 1ycr from the PDB
+    >>> chains = coords_loader.get_chain_ids(sel)
+    >>> plot_trace(coords, keys=chains, save='figures/trace.png', dolegend=True)
+    """
+    fig, ax = plt.subplots()
+    if orient is not None:
+        coords = orient.transform(coords)
+    if keys is None:
+        keys = np.ones(len(coords), dtype=int)
+    keys = np.asarray(keys)
+    mapping = get_mapping(keys)
+    coords -= coords.min(axis=0)
+    zmax = coords[:, 2].max()
+    labels = []
+    for c1, c2, key in zip(coords, coords[1:], keys):
+        dist = np.linalg.norm(c2 - c1)
+        if dist > 3.6 and dist < 4.:
+            x = [c1[0], c2[0]]
+            y = [c1[1], c2[1]]
+            z = [c1[2], c2[2]]
+            zratio = max(z) / zmax
+            color = mapping[key]
+            if key not in labels:
+                labels.append(key)
+                label = key
+            else:
+                label = None
+            ax.plot(x, y, color=color, alpha=zratio, label=label)
+    ax.set_aspect("equal")
+    if dolegend:
+        # Sort the legend
+        handles, labels = ax.get_legend_handles_labels()
+        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+        for lh in handles:
+            lh.set_alpha(1)
+        ax.legend(handles, labels)
+    if not showaxis:
         plt.axis('off')
     if save is None:
         plt.show()
@@ -203,12 +250,17 @@ if __name__ == '__main__':
                         type=str)
     parser.add_argument('--save', help='Save the image as the given file name')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--show_as',
+                        help='Show the given representation: spheres (default) or trace',
+                        default='spheres')
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
+    if args.show_as == 'trace':
+        args.sel = f'{args.sel} and polymer.protein and name CA'
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
     if args.orient is not None:
@@ -216,4 +268,15 @@ if __name__ == '__main__':
         orient = misc.pca.orient(orient_coords, return_pca=True)
     else:
         orient = None
-    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend, save=args.save, orient=orient)
+    if args.show_as == 'spheres':
+        plot_spheres(coords,
+                     n_zlevels=args.zlevels,
+                     keys=chains,
+                     dolegend=args.legend,
+                     save=args.save,
+                     orient=orient,
+                     showaxis=args.axis)
+    elif args.show_as == 'trace':
+        plot_trace(coords, keys=chains, dolegend=args.legend, save=args.save, orient=orient, showaxis=args.axis)
+    else:
+        print("Give a valid representation: spheres or trace")
