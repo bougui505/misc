@@ -180,6 +180,7 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
     pbar = tqdm.tqdm(total=len(coords))
     pbar.set_description(desc='rendering')
     labels = []
+    i = 0
     for c1, c2, key in zip(coords, coords[1:], keys):
         dist = np.linalg.norm(c2 - c1)
         if dist > 3.6 and dist < 4.:
@@ -193,7 +194,9 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
                 label = key
             else:
                 label = None
-            ax.plot(x, y, color=color, alpha=zratio, label=label, zorder=zratio)
+            # give a group id based on the key for easier selection
+            ax.plot(x, y, color=color, alpha=zratio, label=label, zorder=zratio, gid=f'{key}_{i}')
+            i += 1
         pbar.update(1)
     pbar.close()
     ax.set_aspect("equal")
