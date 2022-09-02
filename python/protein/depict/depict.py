@@ -104,7 +104,7 @@ def desaturate(rgbcolor, saturation_ratio=1.):
     return rgbcolor
 
 
-def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False):
+def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -152,7 +152,10 @@ def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False):
         ax.legend(handles, labels)
     if not args.axis:
         plt.axis('off')
-    plt.show()
+    if save is None:
+        plt.show()
+    else:
+        plt.savefig(save)
 
 
 def log(msg):
@@ -192,6 +195,7 @@ if __name__ == '__main__':
     )
     parser.add_argument('--axis', help='Display axis', action='store_true')
     parser.add_argument('--legend', help='Display the legend', action='store_true')
+    parser.add_argument('--save', help='Save the image as the given file name')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -201,4 +205,4 @@ if __name__ == '__main__':
 
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
-    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend)
+    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend, save=args.save)
