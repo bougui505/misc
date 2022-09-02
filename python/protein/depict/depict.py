@@ -177,6 +177,8 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
     mapping = get_mapping(keys)
     coords -= coords.min(axis=0)
     zmax = coords[:, 2].max()
+    pbar = tqdm.tqdm(total=len(coords))
+    pbar.set_description(desc='rendering')
     labels = []
     for c1, c2, key in zip(coords, coords[1:], keys):
         dist = np.linalg.norm(c2 - c1)
@@ -192,6 +194,8 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
             else:
                 label = None
             ax.plot(x, y, color=color, alpha=zratio, label=label)
+        pbar.update(1)
+    pbar.close()
     ax.set_aspect("equal")
     if dolegend:
         # Sort the legend
