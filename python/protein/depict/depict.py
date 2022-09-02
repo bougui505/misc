@@ -193,7 +193,7 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
                 label = key
             else:
                 label = None
-            ax.plot(x, y, color=color, alpha=zratio, label=label)
+            ax.plot(x, y, color=color, alpha=zratio, label=label, zorder=zratio)
         pbar.update(1)
     pbar.close()
     ax.set_aspect("equal")
