@@ -46,6 +46,7 @@ from misc.protein import coords_loader
 from matplotlib.pyplot import cm
 import colorsys
 import tqdm
+import misc.pca
 
 
 def binarize_z(coords, nbins):
@@ -104,12 +105,14 @@ def desaturate(rgbcolor, saturation_ratio=1.):
     return rgbcolor
 
 
-def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None):
+def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, orient=None):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
     >>> plot_spheres(coords)
     """
+    if orient is not None:
+        coords = orient.transform(coords)
     if keys is None:
         keys = np.ones(len(coords), dtype=int)
     keys = np.asarray(keys)
@@ -195,6 +198,9 @@ if __name__ == '__main__':
     )
     parser.add_argument('--axis', help='Display axis', action='store_true')
     parser.add_argument('--legend', help='Display the legend', action='store_true')
+    parser.add_argument('--orient',
+                        help='Orient the structure according to the principal axes of the given selection',
+                        type=str)
     parser.add_argument('--save', help='Save the image as the given file name')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
@@ -205,4 +211,9 @@ if __name__ == '__main__':
 
     coords, sel = coords_loader.get_coords(args.pdb, selection=args.sel, return_selection=True, view=args.view)
     chains = coords_loader.get_chain_ids(sel)
-    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend, save=args.save)
+    if args.orient is not None:
+        orient_coords = coords_loader.get_coords(args.pdb, selection=args.orient, verbose=False)
+        orient = misc.pca.orient(orient_coords, return_pca=True)
+    else:
+        orient = None
+    plot_spheres(coords, n_zlevels=args.zlevels, keys=chains, dolegend=args.legend, save=args.save, orient=orient)

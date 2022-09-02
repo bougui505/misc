@@ -40,7 +40,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 
-def orient(coords):
+def orient(coords, return_pca=False):
     """
     >>> import misc.protein.coords_loader as coords_loader
     >>> coords = coords_loader.get_coords(pdb='1ycr')
@@ -65,8 +65,11 @@ def orient(coords):
     """
     pca = PCA()
     pca.fit(coords)
-    coords = pca.transform(coords)
-    return coords
+    if return_pca:
+        return pca
+    else:
+        coords = pca.transform(coords)
+        return coords
 
 
 def log(msg):

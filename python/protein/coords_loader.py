@@ -89,7 +89,7 @@ def load_pymol_view(view):
     return view_matrix
 
 
-def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False, view=None):
+def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False, view=None, verbose=True):
     """
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -112,10 +112,12 @@ def get_coords(pdb, selection='all', split_by_chains=False, return_selection=Fal
     cmd.set('fetch_type_default', 'mmtf')
     obj = randomstring()
     if os.path.exists(pdb):
-        print(f'Loading from local file {pdb}')
+        if verbose:
+            print(f'Loading from local file {pdb}')
         cmd.load(pdb, object=obj)
     else:
-        print(f'Fetching {pdb} from the PDB')
+        if verbose:
+            print(f'Fetching {pdb} from the PDB')
         cmd.fetch(pdb, name=obj)
     selection = f'{obj} and {selection} and present'
     if view is not None:
