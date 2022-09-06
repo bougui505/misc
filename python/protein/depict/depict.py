@@ -105,7 +105,38 @@ def desaturate(rgbcolor, saturation_ratio=1.):
     return rgbcolor
 
 
-def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, orient=None, showaxis=False):
+def rotate_coords(coords, angles=(90, 0, 0)):
+    """
+    >>> coords = np.asarray([np.zeros(3), np.ones(3), np.ones(3)*2]).T
+    >>> coords
+    array([[0., 1., 2.],
+           [0., 1., 2.],
+           [0., 1., 2.]])
+    >>> rotate_coords(coords, angles=(90, 0, 0))
+    array([[ 0., -2.,  1.],
+           [ 0., -2.,  1.],
+           [ 0., -2.,  1.]])
+    """
+    angles = np.deg2rad(angles)
+    # see: https://en.wikipedia.org/wiki/Rotation_matrix
+    theta = angles[0]
+    Rx = np.asarray([[1, 0, 0], [0, np.cos(theta), -np.sin(theta)], [0, np.sin(theta), np.cos(theta)]])
+    theta = angles[1]
+    Ry = np.asarray([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
+    theta = angles[2]
+    Rz = np.asarray([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
+    coords = Rx.dot(Ry).dot(Rz).dot(coords.T).T
+    return coords
+
+
+def plot_spheres(coords,
+                 n_zlevels=20,
+                 keys=None,
+                 dolegend=False,
+                 save=None,
+                 orient=None,
+                 showaxis=False,
+                 angles=(0, 0, 0)):
     """
     >>> coords = coords_loader.get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -113,6 +144,7 @@ def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, ori
     """
     if orient is not None:
         coords = orient.transform(coords)
+    coords = rotate_coords(coords, angles=angles)
     if keys is None:
         keys = np.ones(len(coords), dtype=int)
     keys = np.asarray(keys)
@@ -161,7 +193,7 @@ def plot_spheres(coords, n_zlevels=20, keys=None, dolegend=False, save=None, ori
         plt.savefig(save)
 
 
-def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, orient=None):
+def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, orient=None, angles=(0, 0, 0)):
     """
     >>> coords, sel = coords_loader.get_coords('1ycr', selection='name CA', return_selection=True)
     Fetching 1ycr from the PDB
@@ -171,6 +203,7 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
     fig, ax = plt.subplots()
     if orient is not None:
         coords = orient.transform(coords)
+    coords = rotate_coords(coords, angles=angles)
     if keys is None:
         keys = np.ones(len(coords), dtype=int)
     keys = np.asarray(keys)
@@ -255,6 +288,11 @@ if __name__ == '__main__':
     parser.add_argument('--orient',
                         help='Orient the structure according to the principal axes of the given selection',
                         type=str)
+    parser.add_argument('--rotate',
+                        nargs=3,
+                        default=[0, 0, 0],
+                        help='Rotation angle in degree along the 3 axis',
+                        type=float)
     parser.add_argument('--save', help='Save the image as the given file name')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--show_as',
@@ -282,8 +320,15 @@ if __name__ == '__main__':
                      dolegend=args.legend,
                      save=args.save,
                      orient=orient,
-                     showaxis=args.axis)
+                     showaxis=args.axis,
+                     angles=args.rotate)
     elif args.show_as == 'trace':
-        plot_trace(coords, keys=chains, dolegend=args.legend, save=args.save, orient=orient, showaxis=args.axis)
+        plot_trace(coords,
+                   keys=chains,
+                   dolegend=args.legend,
+                   save=args.save,
+                   orient=orient,
+                   showaxis=args.axis,
+                   angles=args.rotate)
     else:
         print("Give a valid representation: spheres or trace")
