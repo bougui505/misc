@@ -50,16 +50,25 @@ function usage () {
 Run blast against the pdb database
     -h, --help print this help message and exit
     --pdb pdb code of the query. Could be format code_chain (e.g. 1ycr_A)
+    --pdbfile pdb file name
 EOF
 }
 
+PDB=0
+PDBFILE=0
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --pdb) PDB="$2"; shift ;;
+        --pdbfile) PDBFILE="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
     shift
 done
 
-blastp -query =(grep $PDB $DBPATH -A1) -db $DBPATH -outfmt 7
+if [ $PDB != 0 ]; then
+    blastp -query =(grep $PDB $DBPATH -A1) -db $DBPATH -outfmt 7
+fi
+if [ $PDBFILE != 0 ]; then
+    blastp -query =(pdb2fasta relaxed_model_1_multimer_v2_pred_0.pdb 'all') -db $DBPATH -outfmt 7
+fi
