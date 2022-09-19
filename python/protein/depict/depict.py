@@ -255,7 +255,7 @@ def plot_trace(coords,
         else:
             dist = 3.8
             samechain = True
-        if dist > 3.6 and dist < 4. and samechain:
+        if dist > 3 and dist < 5. and samechain:
             toplot[fragment_id].append(xyz)
             labels[fragment_id] = key
         else:
