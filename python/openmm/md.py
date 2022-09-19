@@ -71,11 +71,13 @@ def run(inpdb='input.pdb',
         pH=7.0,
         padding=1.0 * unit.nanometers,
         boxSize=None,
-        checkpoint=None):
+        checkpoint=None,
+        implicit_solvent=False):
     """
     inpdb: input pdb file
     plumed_script: if not None, run a metadynamics using the given plumed script in PLUMED using openmmplumed
     checkpoint: if not None, resume the simulation by loading the given checkpoint
+    implicit_solvent: if True, use the amber99_obc implicit solvation model
     """
     if checkpoint is not None:
         restart = True
@@ -87,26 +89,41 @@ def run(inpdb='input.pdb',
     if restart:
         inpdb = f'{outbasename}_start.pdb'
     pdb = app.PDBFile(inpdb)
+    print('Creating modeller object...')
     modeller = app.Modeller(pdb.topology, pdb.positions)
+    if implicit_solvent:
+        watermodel_xml = 'implicit/obc1.xml'
     forcefield = app.ForceField(forcefield_xml, watermodel_xml)
     if not restart:
+        print('Adding hydrogens...')
         modeller.addHydrogens(forcefield, pH=pH)
-        if boxSize is not None:
-            modeller.addSolvent(forcefield, boxSize=boxSize)
-        else:
-            modeller.addSolvent(forcefield, padding=padding)
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
-                                     nonbondedCutoff=1 * unit.nanometer,
-                                     constraints=app.HBonds)
+        if not implicit_solvent:
+            print('Adding solvent...')
+            if boxSize is not None:
+                modeller.addSolvent(forcefield, boxSize=boxSize)
+            else:
+                modeller.addSolvent(forcefield, padding=padding)
+    print('Creating system...')
+    if implicit_solvent:
+        system = forcefield.createSystem(modeller.topology,
+                                         soluteDielectric=1.0,
+                                         solventDielectric=80.0,
+                                         constraints=app.HBonds)
+    else:
+        system = forcefield.createSystem(modeller.topology,
+                                         nonbondedMethod=app.PME,
+                                         nonbondedCutoff=1 * unit.nanometer,
+                                         constraints=app.HBonds)
     integrator = openmm.LangevinIntegrator(temperature, frictionCoeff, stepSize)
     # ######## add PLUMED forces ##########
     if plumed_script is not None:
+        print('Adding plumed forces...')
         add_plumed_forces(plumed_script, system)
     # #####################################
     simulation = app.Simulation(modeller.topology, system, integrator)
     if not restart:
         simulation.context.setPositions(modeller.positions)
+        print('Minimizing energy...')
         simulation.minimizeEnergy()
         with open(f'{outbasename}_start.pdb', 'w') as outpdbfile:
             app.PDBFile.writeFile(modeller.topology, modeller.positions, outpdbfile)
@@ -135,6 +152,7 @@ def run(inpdb='input.pdb',
                               speed=True,
                               remainingTime=True,
                               totalSteps=steps))
+    print('Running MD...')
     simulation.step(steps)
 
 
@@ -162,6 +180,11 @@ if __name__ == '__main__':
                         nargs=3)
     parser.add_argument('--plumed', help='Plumed script (see example in plumed.dat)')
     parser.add_argument('--restart', help='Restart the simulation. Give the checkpoint file as argument')
+    parser.add_argument('--report_interval',
+                        help='Report interval for the log and the trajectory (default 1000)',
+                        default=1000,
+                        type=int)
+    parser.add_argument('--implicit_solvent', action='store_true', help="Use 'amber99_obc' implicit solvation model")
     args = parser.parse_args()
     outbasename = os.path.splitext(args.pdb)[0]
     padding = args.padding * unit.nanometers
@@ -180,4 +203,6 @@ if __name__ == '__main__':
         plumed_script=args.plumed,
         steps=args.nsteps,
         outbasename=outbasename,
-        checkpoint=args.restart)
+        checkpoint=args.restart,
+        reportInterval=args.report_interval,
+        implicit_solvent=args.implicit_solvent)
