@@ -47,6 +47,8 @@ from matplotlib.pyplot import cm
 import colorsys
 import tqdm
 import misc.pca
+from scipy import interpolate
+from collections import defaultdict
 
 
 def binarize_z(coords, nbins):
@@ -193,7 +195,39 @@ def plot_spheres(coords,
         plt.savefig(save)
 
 
-def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, orient=None, angles=(0, 0, 0)):
+def interpolate_3D(coords, factor=10):
+    """
+    See: https://stackoverflow.com/a/26536822/1679629
+    """
+    npts = coords.shape[0]
+    # Filter out consecutive identical coordinates
+    sel = (np.diff(coords, axis=0)**2).sum(axis=1) > 0
+    sel = np.asarray(list(sel) + [True])
+    coords = coords[sel]
+    x_list, y_list, z_list = coords.T
+    tck, u = interpolate.splprep([x_list, y_list, z_list], s=2)
+    u_fine = np.linspace(u.min(), u.max(), npts * factor)
+    x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
+    coords_fine = np.asarray([x_fine, y_fine, z_fine]).T
+    return coords_fine
+
+
+def plot_line(coords, ax, alphas, color, label):
+    label_ = None
+    for i, (p1, p2) in enumerate(zip(coords, coords[1:])):
+        if i == len(coords) - 2:
+            label_ = label
+        ax.plot([p1[0], p2[0]], [p1[1], p2[1]], '-', alpha=alphas[i], zorder=alphas[i], c=color, label=label_)
+
+
+def plot_trace(coords,
+               keys=None,
+               showaxis=False,
+               save=None,
+               dolegend=False,
+               orient=None,
+               angles=(0, 0, 0),
+               smooth_factor=1):
     """
     >>> coords, sel = coords_loader.get_coords('1ycr', selection='name CA', return_selection=True)
     Fetching 1ycr from the PDB
@@ -210,26 +244,39 @@ def plot_trace(coords, keys=None, showaxis=False, save=None, dolegend=False, ori
     mapping = get_mapping(keys)
     coords -= coords.min(axis=0)
     zmax = coords[:, 2].max()
-    pbar = tqdm.tqdm(total=len(coords))
+    toplot = defaultdict(list)
+    labels = dict()
+    fragment_id = 0
+    for i, xyz in enumerate(coords):
+        key = keys[i]
+        if i > 0:
+            dist = np.linalg.norm(xyz - coords[i - 1])
+            samechain = keys[i] == keys[i - 1]
+        else:
+            dist = 3.8
+            samechain = True
+        if dist > 3.6 and dist < 4. and samechain:
+            toplot[fragment_id].append(xyz)
+            labels[fragment_id] = key
+        else:
+            fragment_id += 1
+    pbar = tqdm.tqdm(total=len(toplot))
     pbar.set_description(desc='rendering')
-    labels = []
-    i = 0
-    for c1, c2, key in zip(coords, coords[1:], keys):
-        dist = np.linalg.norm(c2 - c1)
-        if dist > 3.6 and dist < 4.:
-            x = [c1[0], c2[0]]
-            y = [c1[1], c2[1]]
-            z = [c1[2], c2[2]]
-            zratio = max(z) / zmax
-            color = mapping[key]
-            if key not in labels:
-                labels.append(key)
-                label = key
-            else:
-                label = None
-            # give a group id based on the key for easier selection
-            ax.plot(x, y, color=color, alpha=zratio, label=label, zorder=zratio, gid=f'{key}_{i}')
-            i += 1
+    label_plotted = []
+    for fragment_id in toplot:
+        coords_i = np.asarray(toplot[fragment_id])
+        if smooth_factor > 1 and len(coords_i) > smooth_factor:
+            coords_i = interpolate_3D(coords_i, factor=smooth_factor)
+        alphas = coords_i[:, 2] / zmax
+        alphas = np.clip(alphas, 0., 1.)
+        color = mapping[labels[fragment_id]]
+        label = labels[fragment_id]
+        if label not in label_plotted and len(coords_i) >= 2:
+            label_toplot = label
+            label_plotted.append(label)
+        else:
+            label_toplot = None
+        plot_line(coords_i[:, :2], ax, alphas, color, label_toplot)
         pbar.update(1)
     pbar.close()
     ax.set_aspect("equal")
@@ -298,6 +345,10 @@ if __name__ == '__main__':
     parser.add_argument('--show_as',
                         help='Show the given representation: spheres (default) or trace',
                         default='spheres')
+    parser.add_argument('--smooth_factor',
+                        help='smoothing factor for the trace representation (default=1 -- no smoothing)',
+                        type=int,
+                        default=1)
     args = parser.parse_args()
 
     if args.test:
@@ -329,6 +380,7 @@ if __name__ == '__main__':
                    save=args.save,
                    orient=orient,
                    showaxis=args.axis,
-                   angles=args.rotate)
+                   angles=args.rotate,
+                   smooth_factor=args.smooth_factor)
     else:
         print("Give a valid representation: spheres or trace")
