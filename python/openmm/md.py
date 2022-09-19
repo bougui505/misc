@@ -40,7 +40,10 @@
 
 import openmm.app as app
 import openmm
-import openmmplumed
+try:
+    import openmmplumed
+except ImportError:
+    print('Cannot import openmmplumed')
 import openmm.unit as unit
 import os
 from sys import stdout
