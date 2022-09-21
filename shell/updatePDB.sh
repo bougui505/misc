@@ -45,7 +45,7 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 echo "Updating structure files: /media/bougui/scratch/pdb"
 [ -d /media/bougui/scratch/pdb ] \
-    && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/pdb/ /media/bougui/scratch/pdb
+    && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/mmCIF/ /media/bougui/scratch/pdb
 
 
 echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
