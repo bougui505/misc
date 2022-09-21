@@ -61,7 +61,8 @@ for PDB in "$@"; do
     FETCHSTR+="fetch $PDB;"
 done
 for PDB in "${@:2}"; do
-    FETCHSTR+="align $PDB, $@[1];"
+    # FETCHSTR+="align $PDB, $@[1];"
+    FETCHSTR+="tmalign $PDB, $@[1];"
 done
 FETCHSTR+="util.cbc; orient"
 # echo $FETCHSTR
