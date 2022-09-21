@@ -39,6 +39,7 @@
 import numpy as np
 import scipy.spatial.distance as distance
 import scipy.optimize as optimize
+import itertools
 
 
 def merge_lists(list1, list2):
@@ -95,16 +96,24 @@ def merge_lists(list1, list2):
             else:
                 e1, e2 = list1.pop(), list2.pop()
                 if len(out) > 0:
-                    d1 = np.linalg.norm(
-                        np.atleast_2d(e1) - np.atleast_2d(out[-1]))
-                    d2 = np.linalg.norm(
-                        np.atleast_2d(e2) - np.atleast_2d(out[-1]))
+                    d1 = np.linalg.norm(np.atleast_2d(e1) - np.atleast_2d(out[-1]))
+                    d2 = np.linalg.norm(np.atleast_2d(e2) - np.atleast_2d(out[-1]))
                     if d1 > d2:
                         e1, e2 = e2, e1
                 out.extend([e1, e2])
     out = np.squeeze(np.asarray(out))
     out = [tuple(e) if hasattr(e, '__iter__') else e for e in out]
     return out
+
+
+def flatten(li):
+    """
+    >>> li = [[1, 2, 3], [4, 5, 6]]
+    >>> flatten(li)
+    [1, 2, 3, 4, 5, 6]
+    """
+    flat_list = list(itertools.chain.from_iterable(li))
+    return flat_list
 
 
 if __name__ == '__main__':
