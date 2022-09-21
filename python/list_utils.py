@@ -106,6 +106,7 @@ def merge_lists(list1, list2):
     return out
 
 
+# grepper flatten a nested python list
 def flatten(li):
     """
     >>> li = [[1, 2, 3], [4, 5, 6]]
@@ -115,6 +116,8 @@ def flatten(li):
     flat_list = list(itertools.chain.from_iterable(li))
     return flat_list
 
+
+# end grepper
 
 if __name__ == '__main__':
     import doctest
