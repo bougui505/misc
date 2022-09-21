@@ -584,3 +584,7 @@ python/Grid3/test.mrc
 python/protein/depict/out.svg
 python/protein/depict/figures/spheres.png
 python/protein/depict/figures/trace.png
+python/protein/sscl/data/homologs_scope40.txt.gz
+python/protein/sscl/data/homologs_scope40_ranks.npz
+python/protein/sscl/data/homologs_scope40_ranks.txt
+python/protein/sscl/data/homologs_scope40_ranks.txt~20220920-154009~
