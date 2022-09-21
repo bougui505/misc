@@ -56,5 +56,13 @@ case $1 in
     -h|--help) usage; exit 0 ;;
 esac
 
-PDB=$1
-pymol -d "fetch $PDB; util.cbc"
+FETCHSTR=""
+for PDB in "$@"; do
+    FETCHSTR+="fetch $PDB;"
+done
+for PDB in "${@:2}"; do
+    FETCHSTR+="align $PDB, $@[1];"
+done
+FETCHSTR+="util.cbc; orient"
+# echo $FETCHSTR
+pymol -d "$FETCHSTR"

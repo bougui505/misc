@@ -110,7 +110,7 @@ def get_all_ranks(homologs_lists, findex, ids, outfile=None):
     >>> distances
     [0.9999725, 0.9999109, 0.9997288, 0.9328714, 0.9242841, 0.9238974, 0.92215693, ...
     """
-    nested_homologs = [[str(e) for e in homologs if e in ids] for homologs in homologs_lists[:10]]
+    nested_homologs = [[str(e) for e in homologs if e in ids] for homologs in homologs_lists]
     nested_list = [[ids[str(e)] for e in homologs] for homologs in nested_homologs]
     z_anchors = []
     for li in nested_list:
