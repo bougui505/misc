@@ -38,6 +38,7 @@
 import os
 import time
 import datetime
+from termcolor import colored
 
 
 def log(msg):
@@ -55,37 +56,61 @@ def GetScriptDir():
 
 class Timer(object):
     """
-    >>> timer = Timer()
+    >>> timer = Timer(colors=False)
     >>> time.sleep(1)
     >>> timer.stop()
     0:00:01.00...
     >>> time.sleep(1)
     >>> timer.stop(message='test')
-    test: 0:00:02.00...
+    test done: 0:00:02.00...
     >>> timer.reset()
     >>> time.sleep(1)
     >>> timer.stop(message='after reset', reset=True)
-    after reset: 0:00:01.00...
+    after reset done: 0:00:01.00...
     >>> time.sleep(1)
     >>> timer.stop()
     0:00:01.00...
+
+    >>> timer = Timer(autoreset=True, colors=False)
+    >>> timer.start(message='Test')
+    Test
+    >>> time.sleep(1)
+    >>> timer.stop()
+    Test done: 0:00:01.00...
     """
-    def __init__(self, autoreset=False):
+    def __init__(self, autoreset=False, colors=True):
         self.reset()
         self.autoreset = autoreset
+        self.message = None
+        self.colors = colors
 
     def stop(self, message=None, reset=False):
         delta_t = time.time() - self.t0
         delta_t = str(datetime.timedelta(seconds=delta_t))
         outstr = ''
+        if self.message is not None:
+            message = self.message
         if message is not None:
-            outstr += f'{message}: '
+            outstr += f'{message} done: '
         outstr += delta_t
+        if self.colors:
+            outstr = colored(outstr, 'red')
         print(outstr)
         if reset or self.autoreset:
             self.reset()
 
+    def start(self, message=None):
+        """
+        Same as reset except that a message can be printed
+        """
+        self.message = message
+        if self.colors:
+            message = colored(message, 'green')
+        print(message)
+        self.t0 = time.time()
+
     def reset(self):
+        self.message = None
         self.t0 = time.time()
 
 
