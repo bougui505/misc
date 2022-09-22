@@ -64,13 +64,16 @@ class Timer(object):
     test: 0:00:02.00...
     >>> timer.reset()
     >>> time.sleep(1)
-    >>> timer.stop(message='after reset')
+    >>> timer.stop(message='after reset', reset=True)
     after reset: 0:00:01.00...
+    >>> time.sleep(1)
+    >>> timer.stop()
+    0:00:01.00...
     """
     def __init__(self):
         self.reset()
 
-    def stop(self, message=None):
+    def stop(self, message=None, reset=False):
         delta_t = time.time() - self.t0
         delta_t = str(datetime.timedelta(seconds=delta_t))
         outstr = ''
@@ -78,6 +81,8 @@ class Timer(object):
             outstr += f'{message}: '
         outstr += delta_t
         print(outstr)
+        if reset:
+            self.reset()
 
     def reset(self):
         self.t0 = time.time()
