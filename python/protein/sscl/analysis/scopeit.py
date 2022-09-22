@@ -78,9 +78,9 @@ def load_index(index_dir):
     return findex, ids
 
 
-def read_scope40(scopefile):
+def read_homologs(homologs_file):
     """
-    >>> homologs_lists = read_scope40('data/homologs_scope40.txt.gz')
+    >>> homologs_lists = read_homologs('data/homologs_scope40.txt.gz')
     >>> type(homologs_lists)
     <class 'list'>
     >>> len(homologs_lists)
@@ -88,7 +88,7 @@ def read_scope40(scopefile):
     >>> homologs_lists[10]
     ['1a1i_A', '1a1k_A', '1a1j_A', '1jk2_A', ...
     """
-    with gzip.open(scopefile, 'r') as scopefile:
+    with gzip.open(homologs_file, 'r') as scopefile:
         homologs_list = []
         for line in scopefile:
             line = line.decode().strip()
@@ -176,6 +176,6 @@ if __name__ == '__main__':
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
-    homologs_lists = read_scope40('data/homologs_scope40.txt.gz')
+    homologs_lists = read_homologs('data/homologs_scope40.txt.gz')
     findex, ids = load_index('index.faiss')
     ranks, distances = get_all_ranks(homologs_lists, findex, ids, outfile='data/homologs_scope40_ranks.txt')
