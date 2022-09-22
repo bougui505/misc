@@ -70,8 +70,9 @@ class Timer(object):
     >>> timer.stop()
     0:00:01.00...
     """
-    def __init__(self):
+    def __init__(self, autoreset=False):
         self.reset()
+        self.autoreset = autoreset
 
     def stop(self, message=None, reset=False):
         delta_t = time.time() - self.t0
@@ -81,7 +82,7 @@ class Timer(object):
             outstr += f'{message}: '
         outstr += delta_t
         print(outstr)
-        if reset:
+        if reset or self.autoreset:
             self.reset()
 
     def reset(self):
