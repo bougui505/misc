@@ -43,6 +43,8 @@ import torch
 import h5py
 import scipy.spatial.distance as scidist
 
+TIMER = Timer(autoreset=True)
+
 
 class SOMindex(object):
     def __init__(self,
@@ -61,7 +63,7 @@ class SOMindex(object):
         self.som = SOM(m=m, n=n, dim=dim, alpha=alpha, sigma=sigma, periodic=periodic, device=device)
 
     def read_index(self, somfile):
-        self.som.load_pickle('som.p')
+        self.som.load_pickle(somfile)
 
     def train(self, Xt):
         """
@@ -122,29 +124,33 @@ class SOMindex(object):
         return results
 
 
-def test(nvecttors=10000, ntrain=10000, dim=128, nqueries=3, nbatch=10):
+def test(nvecttors=1000000, ntrain=10000, dim=128, nqueries=3, nbatch=10):
     timer = Timer(autoreset=True)
 
-    timer.start('Random training data generation')
-    Xt = np.random.random((ntrain, dim))
-    timer.stop()
+    # timer.start('Random training data generation')
+    # Xt = np.random.random((ntrain, dim))
+    # timer.stop()
 
     index = SOMindex(dim, m=10, n=10, somfilename='test_som.p', h5filename='test_index.hdf5')
-    if os.path.exists('test_index.hdf5'):
-        os.remove('test_index.hdf5')
+    # if os.path.exists('test_index.hdf5'):
+    #     os.remove('test_index.hdf5')
 
-    timer.start('SOM training')
-    index.train(Xt)
-    timer.stop()
+    # timer.start('SOM training')
+    # index.train(Xt)
+    # timer.stop()
 
-    timer.start('Adding vectors')
-    for bid in range(nbatch):
-        toadd = nvecttors // nbatch
-        X = np.random.random((toadd, dim))
-        print(f'{bid}/{nbatch}', X.shape)
-        labels = np.asarray([f'{bid}_{i}' for i in range(toadd)])
-        index.add(X, labels=labels)
-    timer.stop()
+    # timer.start('Adding vectors')
+    # for bid in range(nbatch):
+    #     toadd = nvecttors // nbatch
+    #     X = np.random.random((toadd, dim))
+    #     print(f'{bid}/{nbatch}', X.shape)
+    #     labels = np.asarray([f'{bid}_{i}' for i in range(toadd)])
+    #     index.add(X, labels=labels)
+    # timer.stop()
+
+    X = np.random.random((10, dim))
+    labels = np.string_([f'{i}' for i in range(10)])
+    index.read_index('test_som.p')
 
     i_queries = np.random.choice(len(X), size=nqueries)
     print('Index of queries: ', i_queries)
