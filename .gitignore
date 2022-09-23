@@ -593,3 +593,5 @@ python/protein/sscl/data/dir.des.scope.2.08-stable.txt
 python/som.log
 python/test_index.hdf5
 python/test_som.p
+python/HDF5/test.hdf5
+python/HDF5/test_index.hdf5

@@ -42,6 +42,7 @@ import h5py
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from misc.Timer import Timer
+import tqdm
 
 
 class Index(object):
@@ -114,7 +115,8 @@ class Index(object):
         out_distances = np.ones((n, k)) * np.inf
         out_labels = np.zeros((n, k))
         out_labels = out_labels.astype('S')
-        nn = NearestNeighbors(n_neighbors=k, algorithm='auto')
+        nn = NearestNeighbors(n_neighbors=k, algorithm='auto', n_jobs=-1)
+        pbar = tqdm.tqdm(total=self.batch_index_builder)
         for data, labels in self:
             nn.fit(data)
             d_neighbors, i_neighbors = nn.kneighbors(X)
@@ -122,6 +124,8 @@ class Index(object):
             sel = (d_neighbors < out_distances)
             out_distances[sel] = d_neighbors[sel]
             out_labels[sel] = labels_neighbors[sel]
+            pbar.update(1)
+        pbar.close()
         return out_distances, out_labels
 
     def __next__(self):
@@ -135,12 +139,13 @@ class Index(object):
             raise StopIteration
 
 
-def test(nvecttors=1000000, ntrain=100000, dim=128, nqueries=3, nbatch=10):
+def test(nvecttors=10000000, dim=128, nqueries=3, nbatch=10):
     timer = Timer(autoreset=True)
 
-    index = Index(h5filename='test_index.hdf5')
-    if os.path.exists('test_index.hdf5'):
-        os.remove('test_index.hdf5')
+    h5filename = '/media/bougui/scratch/test_index.hdf5'
+    index = Index(h5filename=h5filename)
+    if os.path.exists(h5filename):
+        os.remove(h5filename)
 
     timer.start('Adding vectors')
     for bid in range(nbatch):
