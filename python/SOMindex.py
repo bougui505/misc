@@ -42,8 +42,18 @@ import numpy as np
 import torch
 import h5py
 import scipy.spatial.distance as scidist
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 TIMER = Timer(autoreset=True)
+
+
+def add_to_dataset(grp, key, X):
+    data = grp[key]
+    del grp[key]
+    data_new = np.concatenate((data, X))
+    grp.create_dataset(key, data=data_new)
 
 
 class SOMindex(object):
@@ -89,8 +99,14 @@ class SOMindex(object):
             for bmu in np.unique(bmus):
                 sel = (bmus == bmu)
                 grp = h5file.require_group(str(bmu))
-                for v, label in zip(X[sel], labels[sel]):
-                    grp.create_dataset(label, data=v)
+                if 'data' in grp:
+                    add_to_dataset(grp, 'data', X[sel])
+                else:
+                    grp.create_dataset('data', data=X[sel])
+                if 'labels' in grp:
+                    add_to_dataset(grp, 'labels', labels[sel])
+                else:
+                    grp.create_dataset('labels', data=labels[sel])
 
     def search(self, X, k):
         """
@@ -106,15 +122,10 @@ class SOMindex(object):
     def __search_in_hdf5__(self, X, bmus, k):
         with h5py.File(self.h5filename, 'r') as h5file:
             results = []
-            # for bmu in np.unique(bmus):
             for i, bmu in enumerate(bmus):
                 grp = h5file[str(bmu)]
-                labels = np.asarray(list(grp.keys()))
-                members = []
-                for label in labels:
-                    members.append(grp[label])
-                members = np.asarray(members)
-                # sel = (bmus == bmu)
+                labels = np.asarray(grp['labels'])
+                members = grp['data']
                 queries = X[i][None, ...]
                 cdist = scidist.cdist(queries, members)
                 ids = cdist.argsort(axis=1)
@@ -124,33 +135,34 @@ class SOMindex(object):
         return results
 
 
-def test(nvecttors=1000000, ntrain=10000, dim=128, nqueries=3, nbatch=10):
+def test(nvecttors=1000000, ntrain=100000, dim=128, nqueries=3, nbatch=10):
     timer = Timer(autoreset=True)
 
-    # timer.start('Random training data generation')
-    # Xt = np.random.random((ntrain, dim))
-    # timer.stop()
+    timer.start('Random training data generation')
+    Xt = np.random.random((ntrain, dim))
+    timer.stop()
 
     index = SOMindex(dim, m=10, n=10, somfilename='test_som.p', h5filename='test_index.hdf5')
-    # if os.path.exists('test_index.hdf5'):
-    #     os.remove('test_index.hdf5')
+    if os.path.exists('test_index.hdf5'):
+        os.remove('test_index.hdf5')
 
-    # timer.start('SOM training')
-    # index.train(Xt)
-    # timer.stop()
+    timer.start('SOM training')
+    index.train(Xt)
+    timer.stop()
 
-    # timer.start('Adding vectors')
-    # for bid in range(nbatch):
-    #     toadd = nvecttors // nbatch
-    #     X = np.random.random((toadd, dim))
-    #     print(f'{bid}/{nbatch}', X.shape)
-    #     labels = np.asarray([f'{bid}_{i}' for i in range(toadd)])
-    #     index.add(X, labels=labels)
-    # timer.stop()
+    index.add(Xt)
+    timer.start('Adding vectors')
+    for bid in range(nbatch):
+        toadd = nvecttors // nbatch
+        X = np.random.random((toadd, dim))
+        print(f'{bid}/{nbatch}', X.shape)
+        labels = np.asarray([f'{bid}_{i}' for i in range(toadd)])
+        index.add(X, labels=labels)
+    timer.stop()
 
-    X = np.random.random((10, dim))
-    labels = np.string_([f'{i}' for i in range(10)])
-    index.read_index('test_som.p')
+    # X = np.random.random((10, dim))
+    # labels = np.string_([f'{i}' for i in range(10)])
+    # index.read_index('test_som.p')
 
     i_queries = np.random.choice(len(X), size=nqueries)
     print('Index of queries: ', i_queries)
