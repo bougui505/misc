@@ -78,7 +78,7 @@ class SOMindex(object):
         X = torch.tensor(X, device=self.device).float()
         dataset = ArrayDataset(X, labels=labels)
         bmus, errors, labels = self.som.predict(dataset)
-        labels = np.asarray(labels)
+        labels = np.string_(labels)
         self.__add_to_hdf5__(X, bmus, labels)
 
     def __add_to_hdf5__(self, X, bmus, labels):
@@ -122,31 +122,39 @@ class SOMindex(object):
         return results
 
 
-def test(nvecttors=10000, ntrain=4000, dim=128, nqueries=3):
+def test(nvecttors=10000, ntrain=10000, dim=128, nqueries=3, nbatch=10):
     timer = Timer(autoreset=True)
+
     timer.start('Random training data generation')
-    X = np.random.random((nvecttors, dim))
-    labels = np.asarray([f'a{i}' for i in range(nvecttors)])
     Xt = np.random.random((ntrain, dim))
     timer.stop()
+
     index = SOMindex(dim, m=10, n=10, somfilename='test_som.p', h5filename='test_index.hdf5')
     if os.path.exists('test_index.hdf5'):
         os.remove('test_index.hdf5')
+
     timer.start('SOM training')
     index.train(Xt)
     timer.stop()
+
     timer.start('Adding vectors')
-    index.add(X, labels=labels)
-    X2 = np.random.random((nvecttors, dim))
-    labels2 = np.asarray([f'b{i}' for i in range(nvecttors)])
-    index.add(X2, labels=labels2)
+    for bid in range(nbatch):
+        toadd = nvecttors // nbatch
+        X = np.random.random((toadd, dim))
+        print(f'{bid}/{nbatch}', X.shape)
+        labels = np.asarray([f'{bid}_{i}' for i in range(toadd)])
+        index.add(X, labels=labels)
     timer.stop()
-    i_queries = np.random.choice(nvecttors, size=nqueries)
+
+    i_queries = np.random.choice(len(X), size=nqueries)
     print('Index of queries: ', i_queries)
     X_queries = X[i_queries]
     label_queries = labels[i_queries]
     print('Labels of queries: ', label_queries)
+
+    timer.start('Querying the index')
     index.search(X_queries, k=4)
+    timer.stop()
 
 
 def log(msg):
