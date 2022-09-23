@@ -590,3 +590,6 @@ python/protein/sscl/data/homologs_scope40_ranks.txt
 python/protein/sscl/data/homologs_scope40_ranks.txt~20220920-154009~
 python/protein/sscl/analysis/latent_scope.npz
 python/protein/sscl/data/dir.des.scope.2.08-stable.txt
+python/som.log
+python/test_index.hdf5
+python/test_som.p
