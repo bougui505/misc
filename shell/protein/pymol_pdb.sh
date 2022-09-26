@@ -58,7 +58,11 @@ esac
 
 FETCHSTR=""
 for PDB in "$@"; do
-    FETCHSTR+="fetch $PDB;"
+    if [[ -z $PDB:e ]]; then  # no extension : PDBCODE
+        FETCHSTR+="fetch $PDB;"
+    else
+        FETCHSTR+="load $PDB;"
+    fi
 done
 for PDB in "${@:2}"; do
     # FETCHSTR+="align $PDB, $@[1];"
