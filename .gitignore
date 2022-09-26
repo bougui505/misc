@@ -596,3 +596,4 @@ python/test_som.p
 python/HDF5/test.hdf5
 python/HDF5/test_index.hdf5
 python/protein/1ycr_density.mrc
+python/protein/4ci0_density.mrc
