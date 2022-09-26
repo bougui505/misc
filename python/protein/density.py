@@ -54,7 +54,7 @@ def gaussian(x, y, z, x0, y0, z0, sigma):
 def gaussians(x, y, z, center_list, sigma):
     """
     """
-    out = 0
+    out = np.zeros(len(x))
     neighbors = neighbor_lists(center_list, np.c_[x, y, z], radius=3. * sigma)
     assert len(neighbors) == len(center_list)
     pbar = tqdm.tqdm(total=len(center_list))
@@ -124,6 +124,8 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=Fal
     coords = get_coords(pdb, selection=selection, verbose=verbose)
     GX, GY, GZ, origin = Grid(coords, padding, spacing)
     nX, nY, nZ = GX.shape
+    if verbose:
+        print('Grid shape: ', nX, nY, nZ)
     gaussians = Gaussians(pdb=pdb, sigma=sigma, selection=selection, verbose=verbose)
     density = []
     if verbose:
@@ -163,7 +165,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
     parser.add_argument('--sigma', type=float, default=1.5)
-    parser.add_argument('--spacing', type=int, default=1)
+    parser.add_argument('--spacing', type=float, default=1)
     parser.add_argument('--padding', type=int, default=3)
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
