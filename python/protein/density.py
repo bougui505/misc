@@ -42,6 +42,7 @@ from misc.Grid3 import mrc
 import functools
 from misc.Timer import Timer
 from sklearn.neighbors import KDTree
+import tqdm
 
 TIMER = Timer(autoreset=True)
 
@@ -56,11 +57,14 @@ def gaussians(x, y, z, center_list, sigma):
     out = 0
     neighbors = neighbor_lists(center_list, np.c_[x, y, z], radius=3. * sigma)
     assert len(neighbors) == len(center_list)
+    pbar = tqdm.tqdm(total=len(center_list))
     for i, center in enumerate(center_list):
         x0, y0, z0 = center
         density_values = np.zeros(len(x))
         density_values[neighbors[i]] = gaussian(x[neighbors[i]], y[neighbors[i]], z[neighbors[i]], x0, y0, z0, sigma)
         out += density_values
+        pbar.update(1)
+    pbar.close()
     return out
 
 
@@ -94,10 +98,6 @@ def Gaussians(pdb, sigma, selection='all', verbose=False):
     (818,)
     """
     coords = get_coords(pdb, selection=selection, verbose=verbose)
-    if verbose:
-        TIMER.start('Computing Gaussians')
-    if verbose:
-        TIMER.stop()
     return functools.partial(gaussians, center_list=coords, sigma=sigma)
 
 
