@@ -40,17 +40,32 @@ from misc.protein.coords_loader import get_coords
 import numpy as np
 from misc.Grid3 import mrc
 import functools
+from misc.Timer import Timer
+
+TIMER = Timer(autoreset=True)
 
 
 def gaussian(x, y, z, x0, y0, z0, sigma):
     return np.exp(-((x - x0)**2 / (2 * sigma**2) + (y - y0)**2 / (2 * sigma**2) + (z - z0)**2 / (2 * sigma**2)))
 
 
-def Gaussians(pdb, sigma, selection='all'):
+def gaussians(x, y, z, center_list, sigma):
+    """
+    selection: list of gaussians to sum
+    """
+    out = 0
+    for center in center_list:
+        x0, y0, z0 = center
+        density_value = gaussian(x, y, z, x0, y0, z0, sigma)
+        out += density_value
+    return out
+
+
+def Gaussians(pdb, sigma, selection='all', verbose=False):
     """
     >>> gaussians = Gaussians('1ycr', sigma=3.)
     >>> gaussians
-    <function Gaussians.<locals>.gaussians at 0x...>
+    functools.partial(<function gaussians at 0x...
     >>> gaussians(29.08331, -16.980543, -4.387978)
     18.031352571395498
 
@@ -58,24 +73,15 @@ def Gaussians(pdb, sigma, selection='all'):
     >>> gaussians(*coords.T).shape
     (818,)
     """
-    coords = get_coords(pdb, selection=selection, verbose=False)
-    gaussian_list = []
-
-    for xyz0 in coords:
-        x0, y0, z0 = xyz0
-        gaussian_list.append(functools.partial(gaussian, x0=x0, y0=y0, z0=z0, sigma=sigma))
-
-    def gaussians(x, y, z):
-        out = 0
-        for gaussian in gaussian_list:
-            d = gaussian(x, y, z)
-            out += d
-        return out
-
-    return gaussians
+    coords = get_coords(pdb, selection=selection, verbose=verbose)
+    if verbose:
+        TIMER.start('Computing Gaussians')
+    if verbose:
+        TIMER.stop()
+    return functools.partial(gaussians, center_list=coords, sigma=sigma)
 
 
-def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all'):
+def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=False):
     """
     >>> density, origin = Density('1ycr', sigma=3, spacing=1)
     >>> density.shape
@@ -84,7 +90,7 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all'):
     >>> density.shape
     (41, 42, 32)
     """
-    coords = get_coords(pdb, selection=selection, verbose=False)
+    coords = get_coords(pdb, selection=selection, verbose=verbose)
     x_min, y_min, z_min = coords.min(axis=0) - np.asarray(padding)
     x_max, y_max, z_max = coords.max(axis=0) + np.asarray(padding)
     origin = (x_min, y_min, z_min)
@@ -93,8 +99,13 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all'):
     Z = np.arange(z_min, z_max, spacing)
     GX, GY, GZ = np.meshgrid(X, Y, Z, indexing='ij')
     nX, nY, nZ = GX.shape
-    gaussians = Gaussians(pdb=pdb, sigma=sigma, selection=selection)
+    gaussians = Gaussians(pdb=pdb, sigma=sigma, selection=selection, verbose=verbose)
+    density = []
+    if verbose:
+        TIMER.start('Adding gaussians')
     density = gaussians(GX.flatten(), GY.flatten(), GZ.flatten()).reshape((nX, nY, nZ))
+    if verbose:
+        TIMER.stop()
     return density, origin
 
 
@@ -136,6 +147,6 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    density, origin = Density(args.pdb, sigma=args.sigma, spacing=args.spacing, padding=args.padding)
+    density, origin = Density(args.pdb, sigma=args.sigma, spacing=args.spacing, padding=args.padding, verbose=True)
     outfilename = f'{os.path.splitext(args.pdb)[0]}_density.mrc'
     mrc.save_density(density, outfilename, spacing=args.spacing, padding=0, origin=origin)
