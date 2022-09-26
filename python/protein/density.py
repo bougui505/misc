@@ -131,7 +131,7 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=Fal
         TIMER.start('Computing density')
     X, Y, Z, origin = Grid(coords, padding, spacing, return_axis=True)
     density, edges = np.histogramdd(coords, bins=(X, Y, Z))
-    origin = (edges[0][0] + spacing, edges[1][0] + spacing, edges[2][0] + spacing)
+    origin = (edges[0][0] + spacing / 2, edges[1][0] + spacing / 2, edges[2][0] + spacing / 2)
     density = scipy.ndimage.gaussian_filter(density, sigma)
     if verbose:
         TIMER.stop()
