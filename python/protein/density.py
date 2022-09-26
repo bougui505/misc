@@ -41,6 +41,7 @@ import numpy as np
 from misc.Grid3 import mrc
 import functools
 from misc.Timer import Timer
+from sklearn.neighbors import KDTree
 
 TIMER = Timer(autoreset=True)
 
@@ -51,14 +52,32 @@ def gaussian(x, y, z, x0, y0, z0, sigma):
 
 def gaussians(x, y, z, center_list, sigma):
     """
-    selection: list of gaussians to sum
     """
     out = 0
-    for center in center_list:
+    neighbors = neighbor_lists(center_list, np.c_[x, y, z], radius=3. * sigma)
+    assert len(neighbors) == len(center_list)
+    for i, center in enumerate(center_list):
         x0, y0, z0 = center
-        density_value = gaussian(x, y, z, x0, y0, z0, sigma)
-        out += density_value
+        density_values = np.zeros(len(x))
+        density_values[neighbors[i]] = gaussian(x[neighbors[i]], y[neighbors[i]], z[neighbors[i]], x0, y0, z0, sigma)
+        out += density_values
     return out
+
+
+def neighbor_lists(coords1, coords2, radius):
+    """
+    >>> coords = get_coords('1ycr', verbose=False)
+    >>> GX, GY, GZ, origin = Grid(coords, padding=3, spacing=1)
+    >>> grid_coords = np.c_[GX.flatten(), GY.flatten(), GZ.flatten()]
+    >>> coords.shape
+    (818, 3)
+    >>> grid_coords.shape
+    (55104, 3)
+    >>> neighbors = neighbor_lists(coords, grid_coords, radius=4.5)
+    """
+    tree = KDTree(coords2)
+    neighbors = tree.query_radius(coords1, radius)
+    return neighbors
 
 
 def Gaussians(pdb, sigma, selection='all', verbose=False):
@@ -66,8 +85,9 @@ def Gaussians(pdb, sigma, selection='all', verbose=False):
     >>> gaussians = Gaussians('1ycr', sigma=3.)
     >>> gaussians
     functools.partial(<function gaussians at 0x...
-    >>> gaussians(29.08331, -16.980543, -4.387978)
-    18.031352571395498
+
+    # >>> gaussians(29.08331, -16.980543, -4.387978)
+    # 18.031352571395498
 
     >>> coords = get_coords('1ycr', verbose=False)
     >>> gaussians(*coords.T).shape
@@ -81,6 +101,17 @@ def Gaussians(pdb, sigma, selection='all', verbose=False):
     return functools.partial(gaussians, center_list=coords, sigma=sigma)
 
 
+def Grid(coords, padding, spacing):
+    x_min, y_min, z_min = coords.min(axis=0) - np.asarray(padding)
+    x_max, y_max, z_max = coords.max(axis=0) + np.asarray(padding)
+    origin = (x_min, y_min, z_min)
+    X = np.arange(x_min, x_max, spacing)
+    Y = np.arange(y_min, y_max, spacing)
+    Z = np.arange(z_min, z_max, spacing)
+    GX, GY, GZ = np.meshgrid(X, Y, Z, indexing='ij')
+    return GX, GY, GZ, origin
+
+
 def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=False):
     """
     >>> density, origin = Density('1ycr', sigma=3, spacing=1)
@@ -91,13 +122,7 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=Fal
     (41, 42, 32)
     """
     coords = get_coords(pdb, selection=selection, verbose=verbose)
-    x_min, y_min, z_min = coords.min(axis=0) - np.asarray(padding)
-    x_max, y_max, z_max = coords.max(axis=0) + np.asarray(padding)
-    origin = (x_min, y_min, z_min)
-    X = np.arange(x_min, x_max, spacing)
-    Y = np.arange(y_min, y_max, spacing)
-    Z = np.arange(z_min, z_max, spacing)
-    GX, GY, GZ = np.meshgrid(X, Y, Z, indexing='ij')
+    GX, GY, GZ, origin = Grid(coords, padding, spacing)
     nX, nY, nZ = GX.shape
     gaussians = Gaussians(pdb=pdb, sigma=sigma, selection=selection, verbose=verbose)
     density = []
