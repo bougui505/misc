@@ -43,6 +43,7 @@ import functools
 from misc.Timer import Timer
 from sklearn.neighbors import KDTree
 import tqdm
+import scipy.ndimage
 
 TIMER = Timer(autoreset=True)
 
@@ -101,38 +102,35 @@ def Gaussians(pdb, sigma, selection='all', verbose=False):
     return functools.partial(gaussians, center_list=coords, sigma=sigma)
 
 
-def Grid(coords, padding, spacing):
+def Grid(coords, padding, spacing, return_axis=False):
     x_min, y_min, z_min = coords.min(axis=0) - np.asarray(padding)
     x_max, y_max, z_max = coords.max(axis=0) + np.asarray(padding)
     origin = (x_min, y_min, z_min)
     X = np.arange(x_min, x_max, spacing)
     Y = np.arange(y_min, y_max, spacing)
     Z = np.arange(z_min, z_max, spacing)
+    if return_axis:
+        return X, Y, Z, origin
     GX, GY, GZ = np.meshgrid(X, Y, Z, indexing='ij')
     return GX, GY, GZ, origin
 
 
 def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=False):
     """
-    >>> density, origin = Density('1ycr', sigma=3, spacing=1)
-    >>> density.shape
-    (35, 36, 26)
-    >>> density, origin = Density('1ycr', sigma=3, spacing=1, padding=3)
-    >>> density.shape
-    (41, 42, 32)
+    >>> Density('1ycr', sigma=3, spacing=1)
+
+    # >>> density, origin = Density('1ycr', sigma=3, spacing=1)
+    # >>> density.shape
+    # (35, 36, 26)
+    # >>> density, origin = Density('1ycr', sigma=3, spacing=1, padding=3)
+    # >>> density.shape
+    # (41, 42, 32)
     """
     coords = get_coords(pdb, selection=selection, verbose=verbose)
-    GX, GY, GZ, origin = Grid(coords, padding, spacing)
-    nX, nY, nZ = GX.shape
-    if verbose:
-        print('Grid shape: ', nX, nY, nZ)
-    gaussians = Gaussians(pdb=pdb, sigma=sigma, selection=selection, verbose=verbose)
-    density = []
-    if verbose:
-        TIMER.start('Adding gaussians')
-    density = gaussians(GX.flatten(), GY.flatten(), GZ.flatten()).reshape((nX, nY, nZ))
-    if verbose:
-        TIMER.stop()
+    X, Y, Z, origin = Grid(coords, padding, spacing, return_axis=True)
+    density, edges = np.histogramdd(coords, bins=(X, Y, Z))
+    origin = (edges[0][0] + spacing, edges[1][0] + spacing, edges[2][0] + spacing)
+    density = scipy.ndimage.gaussian_filter(density, sigma)
     return density, origin
 
 
