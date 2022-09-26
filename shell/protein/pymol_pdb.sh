@@ -64,10 +64,11 @@ for PDB in "$@"; do
         FETCHSTR+="load $PDB;"
     fi
 done
+FETCHSTR+="util.cbc;"
 for PDB in "${@:2}"; do
     # FETCHSTR+="align $PDB, $@[1];"
-    FETCHSTR+="tmalign $PDB, $@[1];"
+    FETCHSTR+="tmalign $PDB:t:r, $@[1]:t:r;"
 done
-FETCHSTR+="util.cbc; orient"
+FETCHSTR+="orient"
 # echo $FETCHSTR
 pymol -d "$FETCHSTR"
