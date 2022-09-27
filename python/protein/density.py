@@ -117,14 +117,12 @@ def Grid(coords, padding, spacing, return_axis=False):
 
 def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=False):
     """
-    >>> Density('1ycr', sigma=3, spacing=1)
-
-    # >>> density, origin = Density('1ycr', sigma=3, spacing=1)
-    # >>> density.shape
-    # (35, 36, 26)
-    # >>> density, origin = Density('1ycr', sigma=3, spacing=1, padding=3)
-    # >>> density.shape
-    # (41, 42, 32)
+    >>> density, origin = Density('1ycr', sigma=3, spacing=1)
+    >>> density.shape
+    (34, 35, 25)
+    >>> density, origin = Density('1ycr', sigma=3, spacing=1, padding=3)
+    >>> density.shape
+    (40, 41, 31)
     """
     coords = get_coords(pdb, selection=selection, verbose=verbose)
     if verbose:
