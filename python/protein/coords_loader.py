@@ -40,6 +40,7 @@ import os
 from pymol import cmd
 from misc.randomgen import randomstring
 import numpy as np
+from misc.protein.rotate import rotate
 
 
 def get_chain_ids(selection):
@@ -89,7 +90,26 @@ def load_pymol_view(view):
     return view_matrix
 
 
-def get_coords(pdb, selection='all', split_by_chains=False, return_selection=False, view=None, verbose=True, obj=None):
+def get_random_angles(verbose=False):
+    angle_x = np.random.uniform(0, 2 * np.pi)
+    angle_y = np.random.uniform(0, 2 * np.pi)
+    angle_z = np.random.uniform(0, 2 * np.pi)
+    angles = (angle_x, angle_y, angle_z)
+    if verbose:
+        print(
+            f'random rotation of coordinates with angles ({np.rad2deg(angle_x):.2f}, {np.rad2deg(angle_y):.2f}, {np.rad2deg(angle_z):.2f})'
+        )
+    return angles
+
+
+def get_coords(pdb,
+               selection='all',
+               split_by_chains=False,
+               return_selection=False,
+               view=None,
+               verbose=True,
+               obj=None,
+               random_rotation=False):
     """
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
@@ -108,6 +128,9 @@ def get_coords(pdb, selection='all', split_by_chains=False, return_selection=Fal
     >>> [e.shape for e in coords]
     [(705, 3), (113, 3)]
     """
+    if random_rotation:
+        angles = get_random_angles(verbose=verbose)
+        angle_x, angle_y, angle_z = angles
     cmd.set('fetch_path', os.path.expanduser('~/pdb'))
     cmd.set('fetch_type_default', 'mmtf')
     if obj is None:
@@ -126,11 +149,16 @@ def get_coords(pdb, selection='all', split_by_chains=False, return_selection=Fal
         cmd.transform_selection(selection, viewmat)
     if not split_by_chains:
         coords = cmd.get_coords(selection=selection)
+        if random_rotation:
+            coords = rotate(coords, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
     else:
         chain_list = cmd.get_chains(selection=selection)
         coords = []
         for chain in chain_list:
-            coords.append(cmd.get_coords(selection=f'{selection} and chain {chain}'))
+            coords_chain = cmd.get_coords(selection=f'{selection} and chain {chain}')
+            if random_rotation:
+                coords_chain = rotate(coords_chain, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
+            coords.append(coords_chain)
     if not return_selection:
         return coords
     else:
