@@ -40,6 +40,7 @@ import torch
 import glob
 from pymol import cmd
 from misc.protein.density import Density
+import numpy as np
 
 
 def collate_fn(batch):
@@ -51,13 +52,12 @@ class DensityDataset(torch.utils.data.Dataset):
     Load pdb files from a PDB database and return coordinates
     See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
-    >>> import numpy as np
     >>> np.random.seed(seed=0)
     >>> seed = torch.manual_seed(0)
     >>> # Generate random datapoints for testing
     >>> dataset = DensityDataset('/media/bougui/scratch/pdb')
     >>> dataset[0].shape
-    (37, 67, 51)
+    (47, 44, 63)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> for i, batch in enumerate(dataloader):
     ...     print(len(batch))
@@ -65,7 +65,7 @@ class DensityDataset(torch.utils.data.Dataset):
     ...         break
     4
     >>> [d.shape for d in batch]
-    [(43, 40, 65), (121, 91, 132), (44, 39, 46), (45, 88, 68)]
+    [(52, 32, 60), (69, 70, 84), (41, 42, 53), (66, 121, 58)]
     """
     def __init__(self, pdbpath, return_name=False):
         self.list_IDs = glob.glob(f'{pdbpath}/**/*.cif.gz')
@@ -77,8 +77,9 @@ class DensityDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
+        sigma = np.random.uniform(1., 2.5)
         density, origin = Density(pdb=pdbfile,
-                                  sigma=1.5,
+                                  sigma=sigma,
                                   spacing=1,
                                   padding=(3, 3, 3),
                                   random_rotation=True,
