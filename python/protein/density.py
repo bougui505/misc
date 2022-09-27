@@ -48,60 +48,6 @@ import scipy.ndimage
 TIMER = Timer(autoreset=True)
 
 
-def gaussian(x, y, z, x0, y0, z0, sigma):
-    return np.exp(-((x - x0)**2 / (2 * sigma**2) + (y - y0)**2 / (2 * sigma**2) + (z - z0)**2 / (2 * sigma**2)))
-
-
-def gaussians(x, y, z, center_list, sigma):
-    """
-    """
-    out = np.zeros(len(x))
-    neighbors = neighbor_lists(center_list, np.c_[x, y, z], radius=3. * sigma)
-    assert len(neighbors) == len(center_list)
-    pbar = tqdm.tqdm(total=len(center_list))
-    for i, center in enumerate(center_list):
-        x0, y0, z0 = center
-        density_values = np.zeros(len(x))
-        density_values[neighbors[i]] = gaussian(x[neighbors[i]], y[neighbors[i]], z[neighbors[i]], x0, y0, z0, sigma)
-        out += density_values
-        pbar.update(1)
-    pbar.close()
-    return out
-
-
-def neighbor_lists(coords1, coords2, radius):
-    """
-    >>> coords = get_coords('1ycr', verbose=False)
-    >>> GX, GY, GZ, origin = Grid(coords, padding=3, spacing=1)
-    >>> grid_coords = np.c_[GX.flatten(), GY.flatten(), GZ.flatten()]
-    >>> coords.shape
-    (818, 3)
-    >>> grid_coords.shape
-    (55104, 3)
-    >>> neighbors = neighbor_lists(coords, grid_coords, radius=4.5)
-    """
-    tree = KDTree(coords2)
-    neighbors = tree.query_radius(coords1, radius)
-    return neighbors
-
-
-def Gaussians(pdb, sigma, selection='all', verbose=False):
-    """
-    >>> gaussians = Gaussians('1ycr', sigma=3.)
-    >>> gaussians
-    functools.partial(<function gaussians at 0x...
-
-    # >>> gaussians(29.08331, -16.980543, -4.387978)
-    # 18.031352571395498
-
-    >>> coords = get_coords('1ycr', verbose=False)
-    >>> gaussians(*coords.T).shape
-    (818,)
-    """
-    coords = get_coords(pdb, selection=selection, verbose=verbose)
-    return functools.partial(gaussians, center_list=coords, sigma=sigma)
-
-
 def Grid(coords, padding, spacing, return_axis=False):
     x_min, y_min, z_min = coords.min(axis=0) - np.asarray(padding)
     x_max, y_max, z_max = coords.max(axis=0) + np.asarray(padding)
@@ -115,8 +61,18 @@ def Grid(coords, padding, spacing, return_axis=False):
     return GX, GY, GZ, origin
 
 
-def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=False):
+def Density(pdb,
+            sigma,
+            spacing,
+            padding=(0, 0, 0),
+            selection='all',
+            rotation=None,
+            random_rotation=False,
+            random_chains=False,
+            verbose=False):
     """
+    rotation: (angle_x, angle_y, angle_z) -- in radian -- for coordinates rotation. Default: no rotation
+
     >>> density, origin = Density('1ycr', sigma=3, spacing=1)
     >>> density.shape
     (34, 35, 25)
@@ -124,7 +80,18 @@ def Density(pdb, sigma, spacing, padding=(0, 0, 0), selection='all', verbose=Fal
     >>> density.shape
     (40, 41, 31)
     """
-    coords = get_coords(pdb, selection=selection, verbose=verbose)
+    coords = get_coords(pdb,
+                        selection=selection,
+                        verbose=verbose,
+                        random_rotation=random_rotation,
+                        split_by_chains=random_chains)
+    if random_chains:
+        nchains = len(coords)
+        chainids = np.random.choice(nchains, size=np.random.choice(nchains) + 1, replace=False)
+        if verbose:
+            print(f'Number of chains: {nchains}')
+            print(f'Selected chains: {chainids}')
+        coords = np.concatenate([coords[i] for i in chainids], axis=0)
     if verbose:
         TIMER.start('Computing density')
     X, Y, Z, origin = Grid(coords, padding, spacing, return_axis=True)
@@ -164,9 +131,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
+    parser.add_argument('--selection', default='all')
     parser.add_argument('--sigma', type=float, default=1.5)
     parser.add_argument('--spacing', type=float, default=1)
     parser.add_argument('--padding', type=int, default=3)
+    parser.add_argument('--random_rotation', action='store_true')
+    parser.add_argument('--random_chains', action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     args = parser.parse_args()
 
@@ -174,6 +144,13 @@ if __name__ == '__main__':
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    density, origin = Density(args.pdb, sigma=args.sigma, spacing=args.spacing, padding=args.padding, verbose=True)
+    density, origin = Density(args.pdb,
+                              sigma=args.sigma,
+                              spacing=args.spacing,
+                              padding=args.padding,
+                              verbose=True,
+                              selection=args.selection,
+                              random_rotation=args.random_rotation,
+                              random_chains=args.random_chains)
     outfilename = f'{os.path.splitext(args.pdb)[0]}_density.mrc'
     mrc.save_density(density, outfilename, spacing=args.spacing, padding=0, origin=origin)
