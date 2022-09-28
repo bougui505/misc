@@ -220,9 +220,11 @@ def train(model,
             try:
                 out = forward_batch(batch, model)
                 loss_val = loss_function(batch, out)
+                memusage = torch.cuda.memory_allocated() * 100 / torch.cuda.max_memory_allocated()
                 loss_val.backward()
                 opt.step()
             except (RuntimeError, ValueError) as error:
+                memusage=111
                 outstr = f'WARNING: forward error for batch at step: {step}\nERROR: {error}'
                 outstr = colored(outstr, 'red')
                 print(outstr)
@@ -234,7 +236,7 @@ def train(model,
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|eta: {eta_val}"
+                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|gpu_memory_usage: {memusage:.2f}%|eta: {eta_val}"
                     )
             if step >= early_break:
                 break
