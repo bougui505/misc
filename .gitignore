@@ -601,3 +601,5 @@ python/protein/3j7h_density.mrc
 python/pytorch/model.pt
 python/pytorch/trainer.log
 python/protein/Deminer/data/pdb
+python/protein/Deminer/model.pt
+python/protein/Deminer/trainer.log
