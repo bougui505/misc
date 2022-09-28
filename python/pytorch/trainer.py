@@ -220,11 +220,14 @@ def train(model,
             try:
                 out = forward_batch(batch, model)
                 loss_val = loss_function(batch, out)
-                memusage = torch.cuda.memory_allocated() * 100 / torch.cuda.max_memory_allocated()
+                if device == 'cuda':
+                    memusage = torch.cuda.memory_allocated() * 100 / torch.cuda.max_memory_allocated()
+                else:
+                    memusage = 0.
                 loss_val.backward()
                 opt.step()
             except (RuntimeError, ValueError) as error:
-                memusage=111
+                memusage = 111
                 outstr = f'WARNING: forward error for batch at step: {step}\nERROR: {error}'
                 outstr = colored(outstr, 'red')
                 print(outstr)
