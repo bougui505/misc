@@ -38,6 +38,7 @@
 import os
 import torch
 from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
+import numpy as np
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -54,10 +55,7 @@ def loss_function(batch, out):
     torch.Size([10, 5, 256])
 
     # Normalize the feature vectors:
-    >>> norms = torch.norm(features, dim=2)[..., None]
-    >>> norms.shape
-    torch.Size([10, 5, 1])
-    >>> features /= norms
+    >>> features = normalize_features(features)
 
     >>> loss_function(None, features)
     tensor(4.1987)
@@ -65,7 +63,37 @@ def loss_function(batch, out):
     return LOSS(out)
 
 
-def forward_batch(batch, model):
+def normalize_features(features):
+    """
+    >>> seed = torch.manual_seed(0)
+    >>> bsz = 10  # Batch size
+    >>> n_views = 5  # the number of crops from each image (positive example)
+    >>> latent_dim = 256
+    >>> features = torch.randn(bsz, n_views, latent_dim)
+    >>> features.shape
+    torch.Size([10, 5, 256])
+    >>> features = normalize_features(features)
+    >>> torch.norm(features, dim=2)
+    tensor([[1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+            [1.0000, 1.0000, 1.0000, 1.0000, 1.0000]])
+    """
+    # Normalize the feature vectors:
+    epsilon = 1e-6
+    norms = torch.norm(features, dim=2)[..., None]
+    norms += epsilon
+    out = features / norms
+    return out
+
+
+def forward_batch(batch, model, normalize=True):
     """
     >>> seed = torch.manual_seed(0)
     >>> pdbpath = 'data/pdb'
@@ -96,20 +124,40 @@ def forward_batch(batch, model):
         out_ = torch.cat(out_, 0)
         out.append(out_)
     out = torch.stack(out)
+    if normalize:
+        out = normalize_features(out)
     return out
 
 
-def train(latent_dim=256, pdbpath='data/pdb', nviews=5, batch_size=4):
+def train(latent_dim=256,
+          pdbpath='data/pdb',
+          nviews=5,
+          batch_size=4,
+          n_epochs=10,
+          save_each=30,
+          print_each=100,
+          early_break=np.inf):
     """
     - nviews: the number of random views for the same system (pdb)
 
-    >>> train()
+    >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1)
     """
     model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
     dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews)
     num_workers = os.cpu_count()
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    # loss = contrastive_loss.SupConLoss()
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=True,
+                                             num_workers=num_workers,
+                                             collate_fn=DensityLoader.collate_fn)
+    trainer.train(model,
+                  loss_function,
+                  dataloader,
+                  n_epochs,
+                  forward_batch,
+                  save_each=save_each,
+                  print_each=print_each,
+                  early_break=early_break)
 
 
 def log(msg):

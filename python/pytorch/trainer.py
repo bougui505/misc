@@ -43,7 +43,15 @@ import time
 import datetime
 from torchsummary import summary
 from functools import partial
+import numpy as np
 from torch.utils.checkpoint import checkpoint_sequential
+# ### UNCOMMENT FOR LOGGING ####
+import logging
+
+logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+logging.info(f"################ Starting {__file__} ################")
+# ### ##################### ####
 
 
 def save_model(model, filename):
@@ -170,7 +178,8 @@ def train(model,
           modelfilename='model.pt',
           save_each=30,
           print_each=100,
-          save_each_epoch=True):
+          save_each_epoch=True,
+          early_break=np.inf):
     """
     - save_each: save model every the given number of minutes
 
@@ -221,6 +230,8 @@ def train(model,
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|eta: {eta_val}"
                     )
+            if step >= early_break:
+                break
         if save_each_epoch:
             t_0 = time.time()
             save_model(model, modelfilename)
@@ -243,12 +254,6 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
-    # ### UNCOMMENT FOR LOGGING ####
-    import logging
-    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    logging.info(f"################ Starting {__file__} ################")
-    # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
