@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+# -*- coding: UTF8 -*-
+
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2022 Institut Pasteur                                       #
+#                 				                            #
+#                                                                           #
+#  Redistribution and use in source and binary forms, with or without       #
+#  modification, are permitted provided that the following conditions       #
+#  are met:                                                                 #
+#                                                                           #
+#  1. Redistributions of source code must retain the above copyright        #
+#  notice, this list of conditions and the following disclaimer.            #
+#  2. Redistributions in binary form must reproduce the above copyright     #
+#  notice, this list of conditions and the following disclaimer in the      #
+#  documentation and/or other materials provided with the distribution.     #
+#  3. Neither the name of the copyright holder nor the names of its         #
+#  contributors may be used to endorse or promote products derived from     #
+#  this software without specific prior written permission.                 #
+#                                                                           #
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS      #
+#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT        #
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR    #
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT     #
+#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,   #
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT         #
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,    #
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY    #
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT      #
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE    #
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.     #
+#                                                                           #
+#  This program is free software: you can redistribute it and/or modify     #
+#                                                                           #
+#############################################################################
+import os
+import torch
+from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
+
+LOSS = contrastive_loss.SupConLoss()
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+def loss_function(batch, out):
+    """
+    >>> seed = torch.manual_seed(0)
+    >>> bsz = 10  # Batch size
+    >>> n_views = 5  # the number of crops from each image (positive example)
+    >>> latent_dim = 256
+    >>> features = torch.randn(bsz, n_views, latent_dim)
+    >>> features.shape
+    torch.Size([10, 5, 256])
+
+    # Normalize the feature vectors:
+    >>> norms = torch.norm(features, dim=2)[..., None]
+    >>> norms.shape
+    torch.Size([10, 5, 1])
+    >>> features /= norms
+
+    >>> loss_function(None, features)
+    tensor(4.1987)
+    """
+    return LOSS(out)
+
+
+def forward_batch(batch, model):
+    """
+    >>> seed = torch.manual_seed(0)
+    >>> pdbpath = 'data/pdb'
+    >>> nviews = 2
+    >>> batch_size = 3
+    >>> out_channels = 256
+    >>> num_workers = os.cpu_count()
+    >>> dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=DensityLoader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> [len(l) for l in batch]
+    [2, 2, 2]
+    >>> [[e.shape for e in l] for l in batch]
+    [[(63, 86, 118), (61, 76, 60)], [(46, 37, 36), (88, 93, 116)], [(70, 56, 59), (68, 74, 110)]]
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=out_channels)
+    >>> out = forward_batch(batch, model)
+    >>> out.shape
+    torch.Size([3, 2, 256])
+    """
+    out = []
+    for system in batch:
+        out_ = []
+        for view in system:
+            view = torch.tensor(view[None, None, ...]).float().to(DEVICE)
+            view = torch.autograd.Variable(view, requires_grad=True)
+            out_.append(model(view))
+        out_ = torch.cat(out_, 0)
+        out.append(out_)
+    out = torch.stack(out)
+    return out
+
+
+def train(latent_dim=256, pdbpath='data/pdb', nviews=5, batch_size=4):
+    """
+    - nviews: the number of random views for the same system (pdb)
+
+    >>> train()
+    """
+    model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
+    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews)
+    num_workers = os.cpu_count()
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    # loss = contrastive_loss.SupConLoss()
+
+
+def log(msg):
+    try:
+        logging.info(msg)
+    except NameError:
+        pass
+
+
+def GetScriptDir():
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+    return scriptdir
+
+
+if __name__ == '__main__':
+    import sys
+    import doctest
+    import argparse
+    # ### UNCOMMENT FOR LOGGING ####
+    # import os
+    # import logging
+    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    # logging.info(f"################ Starting {__file__} ################")
+    # ### ##################### ####
+    # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
+    parser = argparse.ArgumentParser(description='')
+    # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--test', help='Test the code', action='store_true')
+    args = parser.parse_args()
+
+    if args.test:
+        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        sys.exit()
