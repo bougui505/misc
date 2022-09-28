@@ -222,11 +222,11 @@ def train(model,
                 loss_val = loss_function(batch, out)
                 loss_val.backward()
                 opt.step()
-                opt.zero_grad()
             except (RuntimeError, ValueError) as error:
                 outstr = f'WARNING: forward error for batch at step: {step}\nERROR: {error}'
                 outstr = colored(outstr, 'red')
                 print(outstr)
+            opt.zero_grad()
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
