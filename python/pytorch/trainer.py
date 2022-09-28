@@ -143,7 +143,8 @@ def sequential_checkpointer(model, segments):
     torch.Size([3, 64, 64])
     >>> y.shape
     torch.Size([])
-    >>> out = forward_batch(input=X[None, ...])
+    >>> X = torch.autograd.Variable(X[None, ...], requires_grad=True)
+    >>> out = forward_batch(input=X)
     >>> out.shape
     torch.Size([1, 10])
     """
