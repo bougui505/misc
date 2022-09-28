@@ -216,11 +216,14 @@ def train(model,
     for epoch in range(n_epochs):
         for batch in dataloader:
             step += 1
-            out = forward_batch(batch, model)
-            loss_val = loss_function(batch, out)
-            loss_val.backward()
-            opt.step()
-            opt.zero_grad()
+            try:
+                out = forward_batch(batch, model)
+                loss_val = loss_function(batch, out)
+                loss_val.backward()
+                opt.step()
+                opt.zero_grad()
+            except RuntimeError:
+                print(f'WARNING: forward error for batch at step: {step}')
             if (time.time() - t_0) / 60 >= save_each:
                 t_0 = time.time()
                 save_model(model, modelfilename)
