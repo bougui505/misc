@@ -66,10 +66,30 @@ class DensityDataset(torch.utils.data.Dataset):
     4
     >>> [d.shape for d in batch]
     [(52, 32, 60), (69, 70, 84), (41, 42, 53), (66, 121, 58)]
+
+    # For nsample > 1:
+    >>> dataset = DensityDataset('/media/bougui/scratch/pdb', nsample=3)
+    >>> d0 = dataset[0]
+    >>> [e.shape for e in d0]
+    [(46, 53, 51), (56, 43, 54), (35, 66, 41)]
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> for i, batch in enumerate(dataloader):
+    ...     print(len(batch))
+    ...     if i == 0:
+    ...         break
+    4
+    >>> [len(l) for l in batch]
+    [3, 3, 3, 3]
+    >>> [[e.shape for e in l] for l in batch]
+    [[(60, 50, 40), (52, 51, 50), (41, 58, 55)], [(97, 71, 65), (137, 91, 94), (86, 58, 77)], [(46, 53, 38), (74, 60, 71), (89, 52, 66)], [(65, 144, 66), (45, 49, 59), (71, 137, 63)]]
     """
-    def __init__(self, pdbpath, return_name=False):
+    def __init__(self, pdbpath, return_name=False, nsample=1):
+        """
+        nsample: number of random sample (for rotations and chains) to get by system
+        """
         self.list_IDs = glob.glob(f'{pdbpath}/**/*.cif.gz')
         self.return_name = return_name
+        self.nsample = nsample
         cmd.reinitialize()
 
     def __len__(self):
@@ -78,13 +98,25 @@ class DensityDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
         sigma = np.random.uniform(1., 2.5)
-        density, origin = Density(pdb=pdbfile,
-                                  sigma=sigma,
-                                  spacing=1,
-                                  padding=(3, 3, 3),
-                                  random_rotation=True,
-                                  random_chains=True)
-        return density
+        if self.nsample == 1:
+            density, origin = Density(pdb=pdbfile,
+                                      sigma=sigma,
+                                      spacing=1,
+                                      padding=(3, 3, 3),
+                                      random_rotation=True,
+                                      random_chains=True)
+            return density
+        else:
+            densities = []
+            for i in range(self.nsample):
+                density, origin = Density(pdb=pdbfile,
+                                          sigma=sigma,
+                                          spacing=1,
+                                          padding=(3, 3, 3),
+                                          random_rotation=True,
+                                          random_chains=True)
+                densities.append(density)
+            return densities
 
 
 if __name__ == '__main__':
