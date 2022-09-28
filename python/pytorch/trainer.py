@@ -163,16 +163,14 @@ def train(model,
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     save_model(model, modelfilename)
-    dataiter = iter(dataloader)
     epoch = 0
     step = 0
     total_steps = n_epochs * len(dataloader)
     t_0 = time.time()
     eta = ETA(total_steps=total_steps)
-    while epoch < n_epochs - 1:
-        try:
+    for epoch in range(n_epochs):
+        for batch in dataloader:
             step += 1
-            batch = next(dataiter)
             out = forward_batch(batch, model)
             loss_val = loss_function(batch, out)
             loss_val.backward()
@@ -187,12 +185,9 @@ def train(model,
                 last_saved = str(datetime.timedelta(seconds=last_saved))
                 log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|eta: {eta_val}"
                     )
-        except StopIteration:
-            dataiter = iter(dataloader)
-            epoch += 1
-            if save_each_epoch:
-                t_0 = time.time()
-                save_model(model, modelfilename)
+        if save_each_epoch:
+            t_0 = time.time()
+            save_model(model, modelfilename)
 
 
 def log(msg):
