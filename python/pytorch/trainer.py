@@ -42,6 +42,8 @@ from misc.eta import ETA
 import time
 import datetime
 from torchsummary import summary
+from functools import partial
+from torch.utils.checkpoint import checkpoint_sequential
 
 
 def save_model(model, filename):
@@ -127,6 +129,30 @@ class Model_test(nn.Sequential):
                          nn.BatchNorm2d(5), nn.ReLU(inplace=True), nn.Flatten(), nn.Linear(20480, nclasses))
 
 
+def sequential_checkpointer(model, segments):
+    """
+    Create a checkpointed forward function. Could be used when tensors are larger than GPU memory.
+    See: https://github.com/prigoyal/pytorch_memonger/blob/master/tutorial/Checkpointing_for_PyTorch_models.ipynb
+    - segments: set the number of checkpoint segments
+
+    >>> model = Model_test()
+    >>> forward_batch = sequential_checkpointer(model, 2)
+    >>> dataset = Dataset_test(ndata=10, shape=(3, 64, 64), nclasses=10)
+    >>> X, y = dataset[0]
+    >>> X.shape
+    torch.Size([3, 64, 64])
+    >>> y.shape
+    torch.Size([])
+    >>> out = forward_batch(input=X[None, ...])
+    >>> out.shape
+    torch.Size([1, 10])
+    """
+    modules = [module for k, module in model._modules.items()]
+    # out = checkpoint_sequential(modules, segments, input_var)
+    forward_batch = partial(checkpoint_sequential, functions=modules, segments=segments)
+    return forward_batch
+
+
 def train(model,
           loss_function,
           dataloader,
@@ -139,6 +165,7 @@ def train(model,
     """
     - save_each: save model every the given number of minutes
 
+    >>> seed = torch.manual_seed(0)
     >>> model = Model_test()
     >>> loss = nn.CrossEntropyLoss()
     >>> dataset = Dataset_test(ndata=10, shape=(3, 64, 64), nclasses=3)
@@ -151,7 +178,7 @@ def train(model,
     >>> out.shape
     torch.Size([1, 10])
     >>> loss_function(batch, out)
-    tensor(2.8013, grad_fn=<NllLossBackward0>)
+    tensor(2.5691, grad_fn=<NllLossBackward0>)
 
     >>> train(model, loss_function, dataloader, 10, forward_batch, print_each=1)
     """
