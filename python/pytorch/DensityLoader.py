@@ -83,11 +83,11 @@ class DensityDataset(torch.utils.data.Dataset):
     >>> [[e.shape for e in l] for l in batch]
     [[(60, 50, 40), (52, 51, 50), (41, 58, 55)], [(97, 71, 65), (137, 91, 94), (86, 58, 77)], [(46, 53, 38), (74, 60, 71), (89, 52, 66)], [(65, 144, 66), (45, 49, 59), (71, 137, 63)]]
     """
-    def __init__(self, pdbpath, return_name=False, nsample=1):
+    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz'):
         """
         nsample: number of random sample (for rotations and chains) to get by system
         """
-        self.list_IDs = glob.glob(f'{pdbpath}/**/*.cif.gz')
+        self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
         self.return_name = return_name
         self.nsample = nsample
         cmd.reinitialize()

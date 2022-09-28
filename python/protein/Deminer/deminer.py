@@ -131,6 +131,7 @@ def forward_batch(batch, model, normalize=True):
 
 def train(latent_dim=256,
           pdbpath='data/pdb',
+          ext='cif.gz',
           nviews=5,
           batch_size=4,
           n_epochs=10,
@@ -143,7 +144,7 @@ def train(latent_dim=256,
     >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1)
     """
     model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
-    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews)
+    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews, ext=ext)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -189,8 +190,26 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--train', action='store_true')
+    parser.add_argument('--pdbpath', help='Path to the PDB database (default: data/pdb)', default='data/pdb')
+    parser.add_argument('--ext',
+                        help='Extension of the files to read in the PDB database (default: cif.gz)',
+                        default='cif.gz')
+    parser.add_argument('--print_each', help='Log printing interval (default: every 100 steps)', default=100, type=int)
+    parser.add_argument('--batch_size', default=4, type=int)
+    parser.add_argument('--nviews', default=5, type=int)
     args = parser.parse_args()
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+    if args.train:
+        train(latent_dim=256,
+              pdbpath='data/pdb',
+              ext=args.ext,
+              nviews=args.nviews,
+              batch_size=args.batch_size,
+              n_epochs=10,
+              save_each=30,
+              print_each=args.print_each,
+              early_break=np.inf)
