@@ -119,7 +119,7 @@ def forward_batch(batch, model, normalize=True):
         out_ = []
         for view in system:
             view = torch.tensor(view[None, None, ...]).float().to(DEVICE)
-            view = torch.autograd.Variable(view, requires_grad=True)
+            # view = torch.autograd.Variable(view, requires_grad=True)
             out_.append(model(view))
         out_ = torch.cat(out_, 0)
         out.append(out_)
