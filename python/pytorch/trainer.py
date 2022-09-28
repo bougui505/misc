@@ -144,13 +144,21 @@ def sequential_checkpointer(model, segments):
     >>> y.shape
     torch.Size([])
     >>> X = torch.autograd.Variable(X[None, ...], requires_grad=True)
-    >>> out = forward_batch(input=X)
+    >>> out = forward_batch(X, model)
     >>> out.shape
     torch.Size([1, 10])
     """
     modules = [module for k, module in model._modules.items()]
+
     # out = checkpoint_sequential(modules, segments, input_var)
-    forward_batch = partial(checkpoint_sequential, functions=modules, segments=segments)
+    # forward_batch = partial(checkpoint_sequential, functions=modules, segments=segments)
+    def forward_batch(X, model):
+        """
+        X: input to forward
+        model: argument is there just for compatibility with train
+        """
+        return checkpoint_sequential(functions=modules, segments=segments, input=X)
+
     return forward_batch
 
 
