@@ -130,6 +130,30 @@ def forward_batch(batch, model, normalize=True):
     return out
 
 
+def batchsizereporter_func(X):
+    """
+    >>> seed = torch.manual_seed(0)
+    >>> pdbpath = 'data/pdb'
+    >>> nviews = 2
+    >>> batch_size = 3
+    >>> out_channels = 256
+    >>> num_workers = os.cpu_count()
+    >>> dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews)
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=DensityLoader.collate_fn)
+    >>> dataiter = iter(dataloader)
+    >>> batch = next(dataiter)
+    >>> [[e.shape for e in l] for l in batch]
+    [[(29, 35, 27), (23, 21, 36)], [(60, 59, 65), (50, 57, 66)], [(40, 41, 45), (43, 41, 46)]]
+    >>> batchsizereporter_func(batch)
+    617891
+    """
+    out = 0
+    for li in X:
+        for e in li:
+            out += e.size
+    return out
+
+
 def train(latent_dim=256,
           pdbpath='data/pdb',
           ext='cif.gz',
@@ -138,11 +162,12 @@ def train(latent_dim=256,
           n_epochs=10,
           save_each=30,
           print_each=100,
-          early_break=np.inf):
+          early_break=np.inf,
+          batchsizereporter_func=None):
     """
     - nviews: the number of random views for the same system (pdb)
 
-    >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1)
+    >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1, batchsizereporter_func=batchsizereporter_func)
     """
     model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
     dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews, ext=ext, uniprot_pdb=True)
@@ -159,7 +184,8 @@ def train(latent_dim=256,
                   forward_batch,
                   save_each=save_each,
                   print_each=print_each,
-                  early_break=early_break)
+                  early_break=early_break,
+                  batchsizereporter_func=batchsizereporter_func)
 
 
 def log(msg):

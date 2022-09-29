@@ -181,7 +181,8 @@ def train(model,
           save_each=30,
           print_each=100,
           save_each_epoch=True,
-          early_break=np.inf):
+          early_break=np.inf,
+          batchsizereporter_func=None):
     """
     - save_each: save model every the given number of minutes
 
@@ -200,7 +201,8 @@ def train(model,
     >>> loss_function(batch, out)
     tensor(2.5691, grad_fn=<NllLossBackward0>)
 
-    >>> train(model, loss_function, dataloader, 10, forward_batch, print_each=1)
+    >>> batchsizereporter_func = lambda X: np.sum([torch.numel(e) for e in X])
+    >>> train(model, loss_function, dataloader, 10, forward_batch, print_each=1, batchsizereporter_func=batchsizereporter_func)
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if os.path.exists(modelfilename):
@@ -219,7 +221,10 @@ def train(model,
         for batch in dataloader:
             step += 1
             try:
-                batchmem = sys.getsizeof(batch)
+                if batchsizereporter_func is not None:
+                    batchsizereporter = batchsizereporter_func(batch)
+                else:
+                    batchsizereporter = None
                 out = forward_batch(batch, model)
                 loss_val = loss_function(batch, out)
                 if device == 'cuda':
@@ -241,7 +246,7 @@ def train(model,
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|batch_memory:{batchmem}|gpu_memory_usage: {memusage:.2f}%|eta: {eta_val}"
+                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|batch_size_reporter:{batchsizereporter}|gpu_memory_usage: {memusage:.2f}%|eta: {eta_val}"
                     )
             if step >= early_break:
                 break
