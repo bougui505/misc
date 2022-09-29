@@ -297,12 +297,14 @@ class VideoResNet(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         x = self.stem(x)
 
-        x = self.layer1(x)
+        # x = self.layer1(x)
+        x = checkpoint(self.layer1, x)
 
         # x = self.layer2(x)
         x = checkpoint(self.layer2, x)
 
-        x = self.layer3(x)
+        # x = self.layer3(x)
+        x = checkpoint(self.layer3, x)
 
         # x = self.layer4(x)
         x = checkpoint(self.layer4, x)
@@ -310,7 +312,9 @@ class VideoResNet(nn.Module):
         x = self.avgpool(x)
         # Flatten the layer to fc
         x = x.flatten(1)
-        x = self.fc(x)
+
+        # x = self.fc(x)
+        x = checkpoint(self.fc, x)
 
         return x
 
