@@ -200,6 +200,7 @@ if __name__ == '__main__':
     parser.add_argument('--print_each', help='Log printing interval (default: every 100 steps)', default=100, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--nviews', default=5, type=int)
+    parser.add_argument('--n_epochs', default=10, type=int)
     args = parser.parse_args()
 
     if args.test:
@@ -217,7 +218,7 @@ if __name__ == '__main__':
               ext=args.ext,
               nviews=args.nviews,
               batch_size=args.batch_size,
-              n_epochs=10,
+              n_epochs=args.n_epochs,
               save_each=30,
               print_each=args.print_each,
               early_break=np.inf)
