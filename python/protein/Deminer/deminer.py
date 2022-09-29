@@ -163,7 +163,8 @@ def train(latent_dim=256,
           save_each=30,
           print_each=100,
           early_break=np.inf,
-          batchsizereporter_func=None):
+          batchsizereporter_func=None,
+          batchmemcutoff=np.inf):
     """
     - nviews: the number of random views for the same system (pdb)
 
@@ -185,7 +186,8 @@ def train(latent_dim=256,
                   save_each=save_each,
                   print_each=print_each,
                   early_break=early_break,
-                  batchsizereporter_func=batchsizereporter_func)
+                  batchsizereporter_func=batchsizereporter_func,
+                  batchmemcutoff=batchmemcutoff)
 
 
 def log(msg):
@@ -225,6 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--nviews', default=5, type=int)
     parser.add_argument('--n_epochs', default=10, type=int)
+    parser.add_argument('--batchmemcutoff', default=np.inf, type=float)
     args = parser.parse_args()
     for k, v in args._get_kwargs():
         log(f'# {k}: {v}')
@@ -248,4 +251,5 @@ if __name__ == '__main__':
               save_each=30,
               print_each=args.print_each,
               early_break=np.inf,
-              batchsizereporter_func=batchsizereporter_func)
+              batchsizereporter_func=batchsizereporter_func,
+              batchmemcutoff=args.batchmemcutoff)
