@@ -40,6 +40,9 @@ import torchvision.models.video.resnet as resnet
 from torchsummary import summary
 from functools import partial
 import torch.nn as nn
+from typing import Type, Union, Sequence, List, Callable
+from torchvision.utils import _log_api_usage_once
+from torch import Tensor
 
 # model = resnet.r3d_18(num_classes=400)
 # model = resnet._video_resnet(block=resnet.BasicBlock,
@@ -229,12 +232,106 @@ def resnet3d(in_channels=3, out_channels=400):
     """
     stem = partial(BasicStem, in_channels=in_channels)
     conv_makers = [resnet.Conv3DSimple] * 4
-    model = resnet.VideoResNet(block=resnet.BasicBlock,
-                               conv_makers=conv_makers,
-                               layers=[2, 2, 2, 2],
-                               stem=stem,
-                               num_classes=out_channels)
+    model = VideoResNet(block=resnet.BasicBlock,
+                        conv_makers=conv_makers,
+                        layers=[2, 2, 2, 2],
+                        stem=stem,
+                        num_classes=out_channels)
     return model
+
+
+class VideoResNet(nn.Module):
+    def __init__(
+        self,
+        block: Type[Union[resnet.BasicBlock, resnet.Bottleneck]],
+        conv_makers: Sequence[Type[Union[resnet.Conv3DSimple, resnet.Conv3DNoTemporal, resnet.Conv2Plus1D]]],
+        layers: List[int],
+        stem: Callable[..., nn.Module],
+        num_classes: int = 400,
+        zero_init_residual: bool = False,
+    ) -> None:
+        """Generic resnet video generator.
+
+        Args:
+            block (Type[Union[BasicBlock, Bottleneck]]): resnet building block
+            conv_makers (List[Type[Union[Conv3DSimple, Conv3DNoTemporal, Conv2Plus1D]]]): generator
+                function for each layer
+            layers (List[int]): number of blocks per layer
+            stem (Callable[..., nn.Module]): module specifying the ResNet stem.
+            num_classes (int, optional): Dimension of the final FC layer. Defaults to 400.
+            zero_init_residual (bool, optional): Zero init bottleneck residual BN. Defaults to False.
+        """
+        super().__init__()
+        _log_api_usage_once(self)
+        self.inplanes = 64
+
+        self.stem = stem()
+
+        self.layer1 = self._make_layer(block, conv_makers[0], 64, layers[0], stride=1)
+        self.layer2 = self._make_layer(block, conv_makers[1], 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, conv_makers[2], 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, conv_makers[3], 512, layers[3], stride=2)
+
+        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
+
+        # init weights
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm3d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, resnet.Bottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.stem(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        # Flatten the layer to fc
+        x = x.flatten(1)
+        x = self.fc(x)
+
+        return x
+
+    def _make_layer(
+        self,
+        block: Type[Union[resnet.BasicBlock, resnet.Bottleneck]],
+        conv_builder: Type[Union[resnet.Conv3DSimple, resnet.Conv3DNoTemporal, resnet.Conv2Plus1D]],
+        planes: int,
+        blocks: int,
+        stride: int = 1,
+    ) -> nn.Sequential:
+        downsample = None
+
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            ds_stride = conv_builder.get_downsample_stride(stride)
+            downsample = nn.Sequential(
+                nn.Conv3d(self.inplanes, planes * block.expansion, kernel_size=1, stride=ds_stride, bias=False),
+                nn.BatchNorm3d(planes * block.expansion),
+            )
+        layers = []
+        layers.append(block(self.inplanes, planes, conv_builder, stride, downsample))
+
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes, conv_builder))
+
+        return nn.Sequential(*layers)
 
 
 def log(msg):
