@@ -603,3 +603,5 @@ python/pytorch/trainer.log
 python/protein/Deminer/data/pdb
 python/protein/Deminer/model.pt
 python/protein/Deminer/trainer.log
+python/protein/Deminer/data/uniprot_pdb.csv
+python/pytorch/data/uniprot_pdb.csv
