@@ -56,6 +56,8 @@ class DensityDataset(torch.utils.data.Dataset):
     >>> seed = torch.manual_seed(0)
     >>> # Generate random datapoints for testing
     >>> dataset = DensityDataset('/media/bougui/scratch/pdb')
+    >>> len(dataset)
+    195858
     >>> dataset[0].shape
     (47, 44, 63)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
