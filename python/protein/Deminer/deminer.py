@@ -247,4 +247,5 @@ if __name__ == '__main__':
               n_epochs=args.n_epochs,
               save_each=30,
               print_each=args.print_each,
-              early_break=np.inf)
+              early_break=np.inf,
+              batchsizereporter_func=batchsizereporter_func)
