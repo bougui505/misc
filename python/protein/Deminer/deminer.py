@@ -201,7 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_epochs', default=10, type=int)
     args = parser.parse_args()
     for k, v in args._get_kwargs():
-        log(f'{k}: {v}')
+        log(f'# {k}: {v}')
 
     if args.test:
         if args.func is None:
