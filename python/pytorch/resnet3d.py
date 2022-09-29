@@ -43,6 +43,7 @@ import torch.nn as nn
 from typing import Type, Union, Sequence, List, Callable
 from torchvision.utils import _log_api_usage_once
 from torch import Tensor
+from torch.utils.checkpoint import checkpoint
 
 # model = resnet.r3d_18(num_classes=400)
 # model = resnet._video_resnet(block=resnet.BasicBlock,
@@ -297,9 +298,14 @@ class VideoResNet(nn.Module):
         x = self.stem(x)
 
         x = self.layer1(x)
-        x = self.layer2(x)
+
+        # x = self.layer2(x)
+        x = checkpoint(self.layer2, x)
+
         x = self.layer3(x)
-        x = self.layer4(x)
+
+        # x = self.layer4(x)
+        x = checkpoint(self.layer4, x)
 
         x = self.avgpool(x)
         # Flatten the layer to fc
