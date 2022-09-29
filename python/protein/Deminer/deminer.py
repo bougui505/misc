@@ -39,6 +39,7 @@ import os
 import torch
 from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
 import numpy as np
+from torch.utils.checkpoint import checkpoint_sequential
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -190,6 +191,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--pdbpath', help='Path to the PDB database (default: data/pdb)', default='data/pdb')
     parser.add_argument('--ext',
@@ -201,7 +203,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        if args.func is None:
+            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        else:
+            for f in args.func:
+                print(f'Testing {f}')
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(f, globals())
         sys.exit()
     if args.train:
         train(latent_dim=256,
