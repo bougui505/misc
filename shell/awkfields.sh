@@ -66,6 +66,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 sed 's/ //g' $FILE \
+    | grep -v "#" \
     | awk -F '[|:]' -v "KEY=$FIELD" '
 BEGIN {
     split(KEY, arr, ",")
