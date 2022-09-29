@@ -182,7 +182,8 @@ def train(model,
           print_each=100,
           save_each_epoch=True,
           early_break=np.inf,
-          batchsizereporter_func=None):
+          batchsizereporter_func=None,
+          batchmemcutoff=np.inf):
     """
     - save_each: save model every the given number of minutes
 
@@ -223,6 +224,11 @@ def train(model,
             try:
                 if batchsizereporter_func is not None:
                     batchsizereporter = batchsizereporter_func(batch)
+                    if batchsizereporter > batchmemcutoff:
+                        outstr = f'WARNING: skipping batch at step: {step} as the memory usage of batch ({batchsizereporter}) > batchmemcutoff ({batchmemcutoff})'
+                        outstr = colored(outstr, 'red')
+                        print('')
+                        continue
                 else:
                     batchsizereporter = None
                 out = forward_batch(batch, model)
