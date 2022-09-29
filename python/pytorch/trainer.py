@@ -35,6 +35,7 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
+import sys
 import os
 import torch
 import torch.nn as nn
@@ -263,7 +264,6 @@ def GetScriptDir():
 
 
 if __name__ == '__main__':
-    import sys
     import doctest
     import argparse
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
