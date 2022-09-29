@@ -41,10 +41,48 @@ import glob
 from pymol import cmd
 from misc.protein.density import Density
 import numpy as np
+import os
+import wget
 
 
 def collate_fn(batch):
     return batch
+
+
+def download_uniprot_pdb():
+    if not os.path.exists('data/uniprot_pdb.csv'):
+        if not os.path.isdir('data'):
+            os.mkdir('data')
+        print('Downloading uniprot_pdb.csv')
+        wget.download('http://ftp.ebi.ac.uk/pub/databases/msd/sifts/csv/uniprot_pdb.csv', 'data/uniprot_pdb.csv')
+
+
+def read_uniprot_pdb(pdbpath, ext):
+    """
+    >>> np.random.seed(0)
+    >>> list_IDs = read_uniprot_pdb(pdbpath='/media/bougui/scratch/pdb', ext='cif.gz')
+    >>> len(list_IDs)
+    49926
+    >>> list_IDs
+    array(['/media/bougui/scratch/pdb/1a/11as.cif.gz',
+           '/media/bougui/scratch/pdb/54/154l.cif.gz',
+           '/media/bougui/scratch/pdb/55/155c.cif.gz', ...,
+           '/media/bougui/scratch/pdb/zz/6zzy.cif.gz',
+           '/media/bougui/scratch/pdb/zz/6zzz.cif.gz',
+           '/media/bougui/scratch/pdb/zz/7zzk.cif.gz'], dtype='<U40')
+    """
+    list_IDs = []
+    with open('data/uniprot_pdb.csv', 'r') as file:
+        for line in file:
+            if line.startswith('#') or line.startswith('SP_PRIMARY'):
+                continue
+            # uniprot = line.split(',')[0]
+            pdblist = line.strip().split(',')[1].split(';')
+            pdb = np.random.choice(pdblist)
+            # f'{pdbpath}/**/*.{ext}'
+            list_IDs.append(f'{pdbpath}/{pdb[1:3]}/{pdb}.{ext}')
+    list_IDs = np.unique(list_IDs)
+    return list_IDs
 
 
 class DensityDataset(torch.utils.data.Dataset):
@@ -84,12 +122,24 @@ class DensityDataset(torch.utils.data.Dataset):
     [3, 3, 3, 3]
     >>> [[e.shape for e in l] for l in batch]
     [[(60, 50, 40), (52, 51, 50), (41, 58, 55)], [(97, 71, 65), (137, 91, 94), (86, 58, 77)], [(46, 53, 38), (74, 60, 71), (89, 52, 66)], [(65, 144, 66), (45, 49, 59), (71, 137, 63)]]
+
+    Test with uniprot_pdb:
+    >>> dataset = DensityDataset('/media/bougui/scratch/pdb', nsample=3, uniprot_pdb=True)
+    >>> d0 = dataset[0]
+    >>> [e.shape for e in d0]
+    [(71, 96, 69), (79, 93, 66), (68, 60, 59)]
     """
-    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz'):
+    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz', uniprot_pdb=False):
         """
         nsample: number of random sample (for rotations and chains) to get by system
+        uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
         """
-        self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
+        self.uniprot_pdb = uniprot_pdb
+        if not self.uniprot_pdb:
+            self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
+        else:
+            download_uniprot_pdb()
+            self.list_IDs = read_uniprot_pdb(pdbpath, ext)
         self.return_name = return_name
         self.nsample = nsample
         cmd.reinitialize()
@@ -129,8 +179,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod()
+        if args.func is None:
+            doctest.testmod()
+        else:
+            for f in args.func:
+                print(f'Testing {f}')
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(f, globals())
         sys.exit()
