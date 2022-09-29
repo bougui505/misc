@@ -218,6 +218,7 @@ def train(model,
         for batch in dataloader:
             step += 1
             try:
+                batchmem = sys.getsizeof(batch)
                 out = forward_batch(batch, model)
                 loss_val = loss_function(batch, out)
                 if device == 'cuda':
@@ -239,7 +240,7 @@ def train(model,
                 eta_val = eta(step)
                 last_saved = (time.time() - t_0)
                 last_saved = str(datetime.timedelta(seconds=last_saved))
-                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|gpu_memory_usage: {memusage:.2f}%|eta: {eta_val}"
+                log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|last_saved: {last_saved}|batch_memory:{batchmem}|gpu_memory_usage: {memusage:.2f}%|eta: {eta_val}"
                     )
             if step >= early_break:
                 break
