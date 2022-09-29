@@ -109,7 +109,7 @@ def forward_batch(batch, model, normalize=True):
     >>> [len(l) for l in batch]
     [2, 2, 2]
     >>> [[e.shape for e in l] for l in batch]
-    [[(63, 86, 118), (61, 76, 60)], [(46, 37, 36), (88, 93, 116)], [(70, 56, 59), (68, 74, 110)]]
+    [[(29, 35, 27), (23, 21, 36)], [(60, 59, 65), (50, 57, 66)], [(40, 41, 45), (43, 41, 46)]]
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=out_channels)
     >>> out = forward_batch(batch, model)
     >>> out.shape
@@ -145,7 +145,7 @@ def train(latent_dim=256,
     >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1)
     """
     model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
-    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews, ext=ext)
+    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews, ext=ext, uniprot_pdb=True)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
