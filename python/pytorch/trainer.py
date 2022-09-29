@@ -227,7 +227,7 @@ def train(model,
                     if batchsizereporter > batchmemcutoff:
                         outstr = f'WARNING: skipping batch at step: {step} as the memory usage of batch ({batchsizereporter}) > batchmemcutoff ({batchmemcutoff})'
                         outstr = colored(outstr, 'red')
-                        print('')
+                        print(outstr)
                         continue
                 else:
                     batchsizereporter = None
