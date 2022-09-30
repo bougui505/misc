@@ -201,6 +201,7 @@ class DensityDataset(torch.utils.data.Dataset):
                     raise
                 else:
                     log(f'Error for {pdbfile}')
+                    return None
             if self.verbose:
                 log(f'Density for {pdbfile} done')
             return density
@@ -220,6 +221,7 @@ class DensityDataset(torch.utils.data.Dataset):
                         raise
                     else:
                         log(f'Error for {pdbfile} and view {i}')
+                        return None
             if self.verbose:
                 log(f'Densities for {pdbfile} done')
             return densities
