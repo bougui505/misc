@@ -44,6 +44,7 @@ import numpy as np
 import os
 import wget
 import datetime
+import traceback
 # ### UNCOMMENT FOR LOGGING ####
 import logging
 
@@ -197,12 +198,12 @@ class DensityDataset(torch.utils.data.Dataset):
                                           random_rotation=True,
                                           random_chains=True,
                                           obj=index)
-            except Exception as e:
+            except Exception:
                 if not self.skip_error:
                     raise
                 else:
                     log(f'Error for {pdbfile}')
-                    log(e)
+                    log(traceback.format_exc())
                     return None
             if self.verbose:
                 log(f'Density for {pdbfile} done')
@@ -218,12 +219,12 @@ class DensityDataset(torch.utils.data.Dataset):
                                               random_rotation=True,
                                               random_chains=True)
                     densities.append(density)
-                except Exception as e:
+                except Exception:
                     if not self.skip_error:
                         raise
                     else:
                         log(f'Error for {pdbfile} and view {i}')
-                        log(e)
+                        log(traceback.format_exc())
                         return None
             if self.verbose:
                 log(f'Densities for {pdbfile} done')
