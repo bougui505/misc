@@ -195,7 +195,8 @@ class DensityDataset(torch.utils.data.Dataset):
                                           spacing=1,
                                           padding=(3, 3, 3),
                                           random_rotation=True,
-                                          random_chains=True)
+                                          random_chains=True,
+                                          obj=index)
             except Exception:
                 if not self.skip_error:
                     raise

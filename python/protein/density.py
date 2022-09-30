@@ -69,7 +69,8 @@ def Density(pdb,
             rotation=None,
             random_rotation=False,
             random_chains=False,
-            verbose=False):
+            verbose=False,
+            obj=None):
     """
     rotation: (angle_x, angle_y, angle_z) -- in radian -- for coordinates rotation. Default: no rotation
 
@@ -84,7 +85,8 @@ def Density(pdb,
                         selection=selection,
                         verbose=verbose,
                         random_rotation=random_rotation,
-                        split_by_chains=random_chains)
+                        split_by_chains=random_chains,
+                        obj=obj)
     if random_chains:
         nchains = len(coords)
         chainids = np.random.choice(nchains, size=np.random.choice(nchains) + 1, replace=False)
