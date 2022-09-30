@@ -197,11 +197,12 @@ class DensityDataset(torch.utils.data.Dataset):
                                           random_rotation=True,
                                           random_chains=True,
                                           obj=index)
-            except Exception:
+            except Exception as e:
                 if not self.skip_error:
                     raise
                 else:
                     log(f'Error for {pdbfile}')
+                    log(e)
                     return None
             if self.verbose:
                 log(f'Density for {pdbfile} done')
@@ -217,11 +218,12 @@ class DensityDataset(torch.utils.data.Dataset):
                                               random_rotation=True,
                                               random_chains=True)
                     densities.append(density)
-                except Exception:
+                except Exception as e:
                     if not self.skip_error:
                         raise
                     else:
                         log(f'Error for {pdbfile} and view {i}')
+                        log(e)
                         return None
             if self.verbose:
                 log(f'Densities for {pdbfile} done')
