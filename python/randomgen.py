@@ -36,8 +36,7 @@
 #                                                                           #
 #############################################################################
 
-import random
-import string
+import uuid
 
 
 def randomstring(strlen=8):
@@ -48,7 +47,7 @@ def randomstring(strlen=8):
     >>> rs
     '...'
     """
-    rs = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(strlen))
+    rs = str(uuid.uuid4())[:strlen]
     return rs
 
 
