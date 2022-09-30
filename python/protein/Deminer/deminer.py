@@ -256,14 +256,15 @@ if __name__ == '__main__':
                                                ext=args.ext,
                                                uniprot_pdb=True,
                                                list_ids_file='training_set.txt.gz',
-                                               exclude_list=exclude_list)
+                                               exclude_list=exclude_list,
+                                               verbose=True)
         num_workers = os.cpu_count()
         dataloader = torch.utils.data.DataLoader(dataset,
                                                  batch_size=args.batch_size,
                                                  shuffle=True,
                                                  num_workers=num_workers,
                                                  collate_fn=DensityLoader.collate_fn)
-        for i in tqdm(dataloader):
+        for batch in tqdm(dataloader):
             pass
         sys.exit()
     if args.train:

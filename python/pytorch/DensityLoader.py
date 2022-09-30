@@ -44,6 +44,13 @@ import numpy as np
 import os
 import wget
 import datetime
+# ### UNCOMMENT FOR LOGGING ####
+import logging
+
+logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+logging.info(f"################ Starting {__file__} ################")
+# ### ##################### ####
 
 
 def collate_fn(batch):
@@ -147,12 +154,14 @@ class DensityDataset(torch.utils.data.Dataset):
                  ext='cif.gz',
                  uniprot_pdb=False,
                  list_ids_file=None,
-                 exclude_list=None):
+                 exclude_list=None,
+                 verbose=False):
         """
         nsample: number of random sample (for rotations and chains) to get by system
         uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
         exclude_list: list of pdbs to remove from the list
         """
+        self.verbose = verbose
         self.uniprot_pdb = uniprot_pdb
         if not self.uniprot_pdb:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
@@ -174,6 +183,8 @@ class DensityDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
+        if self.verbose:
+            log(f'Density for {pdbfile}')
         sigma = np.random.uniform(1., 2.5)
         if self.nsample == 1:
             density, origin = Density(pdb=pdbfile,
@@ -182,6 +193,8 @@ class DensityDataset(torch.utils.data.Dataset):
                                       padding=(3, 3, 3),
                                       random_rotation=True,
                                       random_chains=True)
+            if self.verbose:
+                log(f'Density for {pdbfile} done')
             return density
         else:
             densities = []
@@ -193,7 +206,16 @@ class DensityDataset(torch.utils.data.Dataset):
                                           random_rotation=True,
                                           random_chains=True)
                 densities.append(density)
+            if self.verbose:
+                log(f'Densities for {pdbfile} done')
             return densities
+
+
+def log(msg):
+    try:
+        logging.info(msg)
+    except NameError:
+        pass
 
 
 if __name__ == '__main__':
