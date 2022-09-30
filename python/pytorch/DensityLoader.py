@@ -58,7 +58,7 @@ def download_uniprot_pdb():
         wget.download('http://ftp.ebi.ac.uk/pub/databases/msd/sifts/csv/uniprot_pdb.csv', 'data/uniprot_pdb.csv')
 
 
-def read_uniprot_pdb(pdbpath, ext):
+def read_uniprot_pdb(pdbpath, ext, exclude_list=None):
     """
     >>> np.random.seed(0)
     >>> list_IDs = read_uniprot_pdb(pdbpath='/media/bougui/scratch/pdb', ext='cif.gz')
@@ -79,9 +79,12 @@ def read_uniprot_pdb(pdbpath, ext):
                 continue
             # uniprot = line.split(',')[0]
             pdblist = line.strip().split(',')[1].split(';')
-            pdb = np.random.choice(pdblist)
-            # f'{pdbpath}/**/*.{ext}'
-            list_IDs.append(f'{pdbpath}/{pdb[1:3]}/{pdb}.{ext}')
+            if exclude_list is not None:
+                pdblist = list(set(pdblist) - set(exclude_list))
+            if len(pdblist) > 0:
+                pdb = np.random.choice(pdblist)
+                # f'{pdbpath}/**/*.{ext}'
+                list_IDs.append(f'{pdbpath}/{pdb[1:3]}/{pdb}.{ext}')
     list_IDs = np.unique(list_IDs)
     return list_IDs
 
@@ -130,17 +133,27 @@ class DensityDataset(torch.utils.data.Dataset):
     >>> [e.shape for e in d0]
     [(71, 96, 69), (79, 93, 66), (68, 60, 59)]
     """
-    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz', uniprot_pdb=False, list_ids_file=None):
+    def __init__(self,
+                 pdbpath,
+                 return_name=False,
+                 nsample=1,
+                 ext='cif.gz',
+                 uniprot_pdb=False,
+                 list_ids_file=None,
+                 exclude_list=None):
         """
         nsample: number of random sample (for rotations and chains) to get by system
         uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
+        exclude_list: list of pdbs to remove from the list
         """
         self.uniprot_pdb = uniprot_pdb
         if not self.uniprot_pdb:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
+            if exclude_list is not None:
+                self.list_IDs = list(set(self.list_IDs) - set(exclude_list))
         else:
             download_uniprot_pdb()
-            self.list_IDs = read_uniprot_pdb(pdbpath, ext)
+            self.list_IDs = read_uniprot_pdb(pdbpath, ext, exclude_list=exclude_list)
         if list_ids_file is not None:
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             bn, en = os.path.splitext(list_ids_file)
