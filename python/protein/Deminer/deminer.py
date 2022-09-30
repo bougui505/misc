@@ -164,14 +164,20 @@ def train(latent_dim=256,
           print_each=100,
           early_break=np.inf,
           batchsizereporter_func=None,
-          batchmemcutoff=np.inf):
+          batchmemcutoff=np.inf,
+          exclude_list=None):
     """
     - nviews: the number of random views for the same system (pdb)
 
     >>> train(n_epochs=1, print_each=1, batch_size=3, nviews=2, early_break=1, batchsizereporter_func=batchsizereporter_func)
     """
     model = resnet3d.resnet3d(in_channels=1, out_channels=latent_dim)
-    dataset = DensityLoader.DensityDataset(pdbpath, nsample=nviews, ext=ext, uniprot_pdb=True)
+    dataset = DensityLoader.DensityDataset(pdbpath,
+                                           nsample=nviews,
+                                           ext=ext,
+                                           uniprot_pdb=True,
+                                           list_ids_file='training_set.txt.gz',
+                                           exclude_list=exclude_list)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -242,6 +248,7 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
     if args.train:
+        exclude_list = np.genfromtxt('data/exclude_list.txt', dtype=str)
         train(latent_dim=256,
               pdbpath='data/pdb',
               ext=args.ext,
@@ -252,4 +259,5 @@ if __name__ == '__main__':
               print_each=args.print_each,
               early_break=np.inf,
               batchsizereporter_func=batchsizereporter_func,
-              batchmemcutoff=args.batchmemcutoff)
+              batchmemcutoff=args.batchmemcutoff,
+              exclude_list=exclude_list)

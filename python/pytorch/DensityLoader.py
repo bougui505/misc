@@ -73,6 +73,8 @@ def read_uniprot_pdb(pdbpath, ext, exclude_list=None):
            '/media/bougui/scratch/pdb/zz/7zzk.cif.gz'], dtype='<U40')
     """
     list_IDs = []
+    n_excluded = 0
+    exclude_list = set(exclude_list)
     with open('data/uniprot_pdb.csv', 'r') as file:
         for line in file:
             if line.startswith('#') or line.startswith('SP_PRIMARY'):
@@ -80,12 +82,17 @@ def read_uniprot_pdb(pdbpath, ext, exclude_list=None):
             # uniprot = line.split(',')[0]
             pdblist = line.strip().split(',')[1].split(';')
             if exclude_list is not None:
-                pdblist = list(set(pdblist) - set(exclude_list))
+                n_ori = len(pdblist)
+                pdblist = list(set(pdblist) - exclude_list)
+                n_after = len(pdblist)
+                n_excluded += n_ori - n_after
             if len(pdblist) > 0:
                 pdb = np.random.choice(pdblist)
                 # f'{pdbpath}/**/*.{ext}'
                 list_IDs.append(f'{pdbpath}/{pdb[1:3]}/{pdb}.{ext}')
     list_IDs = np.unique(list_IDs)
+    if exclude_list is not None:
+        print(f"{n_excluded} data removed by exclude_list")
     return list_IDs
 
 
@@ -156,8 +163,8 @@ class DensityDataset(torch.utils.data.Dataset):
             self.list_IDs = read_uniprot_pdb(pdbpath, ext, exclude_list=exclude_list)
         if list_ids_file is not None:
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            bn, en = os.path.splitext(list_ids_file)
-            np.savetxt(f'{bn}_{ts}{en}', self.list_IDs, fmt='%s')
+            bn, en = list_ids_file.split('.', 1)
+            np.savetxt(f'{bn}_{ts}.{en}', self.list_IDs, fmt='%s')
         self.return_name = return_name
         self.nsample = nsample
         cmd.reinitialize()
