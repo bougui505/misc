@@ -155,13 +155,15 @@ class DensityDataset(torch.utils.data.Dataset):
                  uniprot_pdb=False,
                  list_ids_file=None,
                  exclude_list=None,
-                 verbose=False):
+                 verbose=False,
+                 skip_error=False):
         """
         nsample: number of random sample (for rotations and chains) to get by system
         uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
         exclude_list: list of pdbs to remove from the list
         """
         self.verbose = verbose
+        self.skip_error = skip_error
         self.uniprot_pdb = uniprot_pdb
         if not self.uniprot_pdb:
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
@@ -187,25 +189,37 @@ class DensityDataset(torch.utils.data.Dataset):
             log(f'Density for {pdbfile}')
         sigma = np.random.uniform(1., 2.5)
         if self.nsample == 1:
-            density, origin = Density(pdb=pdbfile,
-                                      sigma=sigma,
-                                      spacing=1,
-                                      padding=(3, 3, 3),
-                                      random_rotation=True,
-                                      random_chains=True)
-            if self.verbose:
-                log(f'Density for {pdbfile} done')
-            return density
-        else:
-            densities = []
-            for i in range(self.nsample):
+            try:
                 density, origin = Density(pdb=pdbfile,
                                           sigma=sigma,
                                           spacing=1,
                                           padding=(3, 3, 3),
                                           random_rotation=True,
                                           random_chains=True)
-                densities.append(density)
+            except Exception:
+                if self.skip_error:
+                    raise
+                else:
+                    log(f'Error for {pdbfile}')
+            if self.verbose:
+                log(f'Density for {pdbfile} done')
+            return density
+        else:
+            densities = []
+            for i in range(self.nsample):
+                try:
+                    density, origin = Density(pdb=pdbfile,
+                                              sigma=sigma,
+                                              spacing=1,
+                                              padding=(3, 3, 3),
+                                              random_rotation=True,
+                                              random_chains=True)
+                    densities.append(density)
+                except Exception:
+                    if self.skip_error:
+                        raise
+                    else:
+                        log(f'Error for {pdbfile} and view {i}')
             if self.verbose:
                 log(f'Densities for {pdbfile} done')
             return densities

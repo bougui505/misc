@@ -258,7 +258,8 @@ if __name__ == '__main__':
                                                uniprot_pdb=True,
                                                list_ids_file='training_set.txt.gz',
                                                exclude_list=exclude_list,
-                                               verbose=True)
+                                               verbose=True,
+                                               skip_error=True)
         if args.num_workers is None:
             num_workers = os.cpu_count()
         else:
