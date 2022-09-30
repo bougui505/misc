@@ -43,6 +43,7 @@ from misc.protein.density import Density
 import numpy as np
 import os
 import wget
+import datetime
 
 
 def collate_fn(batch):
@@ -124,12 +125,12 @@ class DensityDataset(torch.utils.data.Dataset):
     [[(60, 50, 40), (52, 51, 50), (41, 58, 55)], [(97, 71, 65), (137, 91, 94), (86, 58, 77)], [(46, 53, 38), (74, 60, 71), (89, 52, 66)], [(65, 144, 66), (45, 49, 59), (71, 137, 63)]]
 
     Test with uniprot_pdb:
-    >>> dataset = DensityDataset('/media/bougui/scratch/pdb', nsample=3, uniprot_pdb=True)
+    >>> dataset = DensityDataset('/media/bougui/scratch/pdb', nsample=3, uniprot_pdb=True, list_ids_file='test.txt.gz')
     >>> d0 = dataset[0]
     >>> [e.shape for e in d0]
     [(71, 96, 69), (79, 93, 66), (68, 60, 59)]
     """
-    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz', uniprot_pdb=False):
+    def __init__(self, pdbpath, return_name=False, nsample=1, ext='cif.gz', uniprot_pdb=False, list_ids_file=None):
         """
         nsample: number of random sample (for rotations and chains) to get by system
         uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
@@ -140,6 +141,10 @@ class DensityDataset(torch.utils.data.Dataset):
         else:
             download_uniprot_pdb()
             self.list_IDs = read_uniprot_pdb(pdbpath, ext)
+        if list_ids_file is not None:
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            bn, en = os.path.splitext(list_ids_file)
+            np.savetxt(f'{bn}_{ts}{en}', self.list_IDs, fmt='%s')
         self.return_name = return_name
         self.nsample = nsample
         cmd.reinitialize()
