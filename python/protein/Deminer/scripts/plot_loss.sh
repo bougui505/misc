@@ -61,6 +61,6 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-rsync desk:/c7/home/bougui/source/misc/python/protein/Deminer/trainer.log . \
+rsync desk:/c7/home/bougui/source/misc/python/protein/Deminer/DensityLoader.log trainer.log \
     && awkfields -F 'loss' -f trainer.log \
     | plot --ylabel 'loss' --xlabel 'steps' --moving_average $WS
