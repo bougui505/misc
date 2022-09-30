@@ -236,6 +236,7 @@ if __name__ == '__main__':
     parser.add_argument('--nviews', default=5, type=int)
     parser.add_argument('--n_epochs', default=10, type=int)
     parser.add_argument('--batchmemcutoff', default=np.inf, type=float)
+    parser.add_argument('--num_workers', type=int)
     args = parser.parse_args()
     for k, v in args._get_kwargs():
         log(f'# {k}: {v}')
@@ -258,7 +259,10 @@ if __name__ == '__main__':
                                                list_ids_file='training_set.txt.gz',
                                                exclude_list=exclude_list,
                                                verbose=True)
-        num_workers = os.cpu_count()
+        if args.num_workers is None:
+            num_workers = os.cpu_count()
+        else:
+            num_workers = args.num_workers
         dataloader = torch.utils.data.DataLoader(dataset,
                                                  batch_size=args.batch_size,
                                                  shuffle=True,
