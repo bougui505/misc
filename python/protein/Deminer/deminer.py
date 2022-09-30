@@ -40,6 +40,7 @@ import torch
 from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
 import numpy as np
 from torch.utils.checkpoint import checkpoint_sequential
+from tqdm import tqdm
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -223,6 +224,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--test_dataset', help='Test the full dataset', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--pdbpath', help='Path to the PDB database (default: data/pdb)', default='data/pdb')
@@ -247,8 +249,24 @@ if __name__ == '__main__':
                 f = getattr(sys.modules[__name__], f)
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
+    exclude_list = np.genfromtxt('data/exclude_list.txt', dtype=str)
+    if args.test_dataset:
+        dataset = DensityLoader.DensityDataset(pdbpath='data/pdb',
+                                               nsample=args.nviews,
+                                               ext=args.ext,
+                                               uniprot_pdb=True,
+                                               list_ids_file='training_set.txt.gz',
+                                               exclude_list=exclude_list)
+        num_workers = os.cpu_count()
+        dataloader = torch.utils.data.DataLoader(dataset,
+                                                 batch_size=args.batch_size,
+                                                 shuffle=True,
+                                                 num_workers=num_workers,
+                                                 collate_fn=DensityLoader.collate_fn)
+        for i in tqdm(dataloader):
+            pass
+        sys.exit()
     if args.train:
-        exclude_list = np.genfromtxt('data/exclude_list.txt', dtype=str)
         train(latent_dim=256,
               pdbpath='data/pdb',
               ext=args.ext,
