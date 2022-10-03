@@ -610,3 +610,4 @@ python/protein/Deminer/data/exclude_list.txt
 python/protein/Deminer/DensityLoader.log
 python/pytorch/DensityLoader.log
 python/protein/Deminer/logs/deminer.log
+python/protein/Deminer/model.pt~20221003-133735~
