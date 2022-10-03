@@ -609,3 +609,4 @@ python/protein/Deminer/data/pdb_atom_count.txt.gz
 python/protein/Deminer/data/exclude_list.txt
 python/protein/Deminer/DensityLoader.log
 python/pytorch/DensityLoader.log
+python/protein/Deminer/logs/deminer.log
