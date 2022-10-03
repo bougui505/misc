@@ -270,7 +270,8 @@ if __name__ == '__main__':
                                                  batch_size=args.batch_size,
                                                  shuffle=True,
                                                  num_workers=num_workers,
-                                                 collate_fn=DensityLoader.collate_fn)
+                                                 collate_fn=DensityLoader.collate_fn,
+                                                 pin_memory=True)
         for batch in tqdm(dataloader):
             pass
         sys.exit()
