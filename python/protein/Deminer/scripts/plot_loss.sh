@@ -48,4 +48,4 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 rsync -a -zz --update --info=progress2 -h desk:/c7/home/bougui/source/misc/python/protein/Deminer/logs . \
     && awkfields -F 'loss' -f logs/deminer.log \
-    | plot $@
+    | plot --xlabel 'step' --ylabel 'loss' $@
