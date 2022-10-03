@@ -35,6 +35,8 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
+#
+# Accept the plot commmand options
 
 set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
@@ -43,33 +45,7 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-function usage () {
-    cat << EOF
-Help message
-    -h, --help print this help message and exit
-    --ws, window size for the moving average (default 10)
-    --nog, no gray plot of real data
-EOF
-}
-
-WS=10  # Default value
-NOG=0
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --ws) WS="$2"; shift ;;
-        --nog) NOG=1;;
-        -h|--help) usage; exit 0 ;;
-        *) usage; exit 1 ;;
-    esac
-    shift
-done
-
-PLOTOPT="--ylabel 'loss' --xlabel 'steps' --moving_average $WS"
-if [[ NOG -eq 1 ]]; then
-    PLOTOPT="$PLOTOPT --no_gray_plot"
-fi
-
 
 rsync -a -zz --update --info=progress2 -h desk:/c7/home/bougui/source/misc/python/protein/Deminer/logs . \
     && awkfields -F 'loss' -f logs/deminer.log \
-    | eval "plot $PLOTOPT"
+    | plot $@
