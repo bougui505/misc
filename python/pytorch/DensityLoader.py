@@ -47,8 +47,9 @@ import datetime
 import traceback
 # ### UNCOMMENT FOR LOGGING ####
 import logging
-
-logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+if not os.path.isdir('logs'):
+    os.mkdir('logs')
+logfilename = 'logs/deminer.log'  # os.path.splitext(os.path.basename(__file__))[0] + '.log'
 logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
 logging.info(f"################ Starting {__file__} ################")
 # ### ##################### ####
@@ -82,7 +83,8 @@ def read_uniprot_pdb(pdbpath, ext, exclude_list=None):
     """
     list_IDs = []
     n_excluded = 0
-    exclude_list = set(exclude_list)
+    if exclude_list is not None:
+        exclude_list = set(exclude_list)
     with open('data/uniprot_pdb.csv', 'r') as file:
         for line in file:
             if line.startswith('#') or line.startswith('SP_PRIMARY'):

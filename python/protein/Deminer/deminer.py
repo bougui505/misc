@@ -216,7 +216,9 @@ if __name__ == '__main__':
     import argparse
     # ### UNCOMMENT FOR LOGGING ####
     import logging
-    logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    if not os.path.isdir('logs'):
+        os.mkdir('logs')
+    logfilename = 'logs/deminer.log'  # os.path.splitext(os.path.basename(__file__))[0] + '.log'
     logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
     logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
