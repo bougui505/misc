@@ -39,7 +39,6 @@ import os
 import torch
 from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
 import numpy as np
-from torch.utils.checkpoint import checkpoint_sequential
 from tqdm import tqdm
 
 LOSS = contrastive_loss.SupConLoss()
@@ -195,6 +194,29 @@ def train(latent_dim=256,
                   early_break=early_break,
                   batchsizereporter_func=batchsizereporter_func,
                   batchmemcutoff=batchmemcutoff)
+
+
+def encode(*args, model):
+    """
+    Encode the given density map (dmap)
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    >>> model = trainer.load_model(model, filename='model.pt')
+    >>> dmap = np.random.uniform(size=(50, 40, 60))
+    >>> dmap.shape
+    (50, 40, 60)
+    >>> v = encode(dmap, model=model)
+    >>> v.shape
+    (1, 256)
+
+    # encode can accept multiple dmap
+    >>> dmap2 = np.random.uniform(size=(60, 50, 40))
+    >>> v = encode(dmap, dmap2, model=model)
+    >>> v.shape
+    (2, 256)
+    """
+    batch = [[dmap] for dmap in args]
+    v = forward_batch(batch, model, normalize=True)
+    return v.detach().numpy()[:, 0, ...]
 
 
 def log(msg):
