@@ -255,8 +255,8 @@ if __name__ == '__main__':
         dataset = DensityLoader.DensityDataset(pdbpath='data/pdb',
                                                nsample=args.nviews,
                                                ext=args.ext,
-                                               uniprot_pdb=True,
-                                               list_ids_file='training_set.txt.gz',
+                                               uniprot_pdb=False,
+                                               list_ids_file=None,
                                                exclude_list=exclude_list,
                                                verbose=True,
                                                skip_error=True)
