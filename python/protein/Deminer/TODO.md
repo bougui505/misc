@@ -1,4 +1,6 @@
-# Bugs
+# Issues
+
+## OverflowError: cannot serialize a bytes object larger than 4 GiB
 
 ```
 bougui@ld18-1006> python deminer.py --test_dataset --nviews 1 --batch_size 1 | grep -v 'Detected mmCIF'  ~/source/misc/python/protein/Deminer
@@ -13,3 +15,9 @@ Number of excluded pdb entries: 2604
 OverflowError: cannot serialize a bytes object larger than 4 GiB
 ^C
 ```
+
+Try with: `pip install pyarrow` (see: https://github.com/facebookresearch/fairseq/issues/2166#issuecomment-632652607)
+
+**SOLVED**
+
+
