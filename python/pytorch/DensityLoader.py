@@ -170,7 +170,6 @@ class DensityDataset(torch.utils.data.Dataset):
             self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
             if exclude_list is not None:
                 exclude_list = [f'{pdbpath}/{e[1:3]}/{e}.{ext}' for e in exclude_list]
-                print(exclude_list)
                 n_ori = len(self.list_IDs)
                 self.list_IDs = list(set(self.list_IDs) - set(exclude_list))
                 n_after = len(self.list_IDs)
