@@ -13,6 +13,7 @@ apt-get install -y nvidia-alternative nvidia-kernel-support nvidia-legacy-check
 apt-get install -y libcuda1 nvidia-cuda-dev
 apt-get install -y python3-pip
 pip3 install torch torchvision
+pip3 install pyarrow
 
 # %environment
 # export PYTHONPATH="$PYTHONPATH:/opt/pymol/lib/python"
