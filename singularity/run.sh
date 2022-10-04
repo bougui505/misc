@@ -51,6 +51,7 @@ run [-i image] -- COMMAND
 Help message
     -h, --help print this help message and exit
     -i, --image singularity sif image to use (default is pytorch.sif)
+    --shell open an interactive shell in the singularity container
     --nv setup the container’s environment to use an NVIDIA GPU
     -B a user-bind path specification.
        spec has the format src[:dest[:opts]],
@@ -69,11 +70,13 @@ fi
 IMAGE="$DIRSCRIPT/pytorch.sif"  # Default value
 NV=0
 B="None"
+RUNSHELL=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -i|--image) IMAGE="$2"; shift ;;
         --nv) NV=1;;
         -B) B="$2"; shift ;;
+        --shell) RUNSHELL=1;;
         -h|--help) usage; exit 0 ;;
         --) CMD="${@:2}";break; shift;;
         *) usage; exit 1 ;;
@@ -81,7 +84,11 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-RUNCMD="singularity run --cleanenv --pwd $(pwd)"
+if [ $RUNSHELL -eq 0 ]; then
+    RUNCMD="singularity run --cleanenv --pwd $(pwd)"
+else
+    RUNCMD="singularity shell --cleanenv --pwd $(pwd)"
+fi
 if [ $NV -eq 1 ]; then
     RUNCMD="$RUNCMD --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0"
 fi
