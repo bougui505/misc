@@ -70,5 +70,5 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity run --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 --pwd $(pwd) $IMAGE $(echo $CMD) 2> /dev/null \
-    || singularity run --pwd $(pwd) $IMAGE $(echo $CMD)
+singularity run --cleanenv --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 --pwd $(pwd) $IMAGE $(echo $CMD) 2> /dev/null \
+    || singularity run --cleanenv --pwd $(pwd) $IMAGE $(echo $CMD)

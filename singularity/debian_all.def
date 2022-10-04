@@ -5,3 +5,7 @@ FROM: pytorch.sif
 pip3 install scipy
 pip3 install termcolor
 pip3 install tqdm
+pip3 install mrcfile
+
+%environment
+export PYTHONPATH=~/lib/python
