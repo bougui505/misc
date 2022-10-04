@@ -615,3 +615,4 @@ singularity/debian.sif
 singularity/pymol.sif
 singularity/pytorch.sif
 singularity/debian_all.sif
+singularity/sylabs-token
