@@ -6,6 +6,29 @@ From the deb package on Github singularity repo
 sudo apt install ./singularity-ce_3.10.2-focal_amd64.deb
 ```
 
+## `builder.sh` helper script for building `SIF` images
+
+```
+❯ ./builder.sh -h           
+Help message
+    -h, --help print this help message and exit
+    -d, --def def file to build
+    -f, --force The --force option will delete and overwrite an existing Singularity image without presenting the normal interactive prompt
+```
+
+## `run.sh` helper script to run a command in a singularity container
+
+```
+❯ run -h                  
+
+run the COMMAND in a singularity container
+run [-i image] -- COMMAND
+
+Help message
+    -h, --help print this help message and exit
+    -i, --image singularity sif image to use (default is pytorch.sif)
+    -- COMMAND
+```
 
 ## Build images from scratch
 See: https://docs.sylabs.io/guides/3.5/user-guide/build_a_container.html#building-containers-from-singularity-definition-files
