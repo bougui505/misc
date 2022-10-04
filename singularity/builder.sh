@@ -47,15 +47,18 @@ Help message
     -h, --help print this help message and exit
     -d, --def def file to build
     -f, --force The --force option will delete and overwrite an existing Singularity image without presenting the normal interactive prompt
+    --remote Singularity 3.0 introduces the ability to build a container on an external resource running a remote builder. (The default remote builder is located at “https://cloud.sylabs.io/builder”.)
 EOF
 }
 
 DEF=1  # Default value
 FORCE=0
+REMOTE=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -d|--def) DEF="$2"; shift ;;
         -f|--force) FORCE=1;;
+        --remote) REMOTE=1;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -66,6 +69,9 @@ done
 BUILDCMD="sudo singularity build"
 if [ $FORCE -eq 1 ]; then
     BUILDCMD="$BUILDCMD --force"
+fi
+if [ $REMOTE -eq 1 ]; then
+    BUILDCMD="$BUILDCMD --remote"
 fi
 
 case $DEF in
