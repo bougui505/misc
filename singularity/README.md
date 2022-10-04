@@ -67,3 +67,13 @@ To bind a local directory (here: `/ld18-1006`):
 ```
 singularity run -B /ld18-1006 --pwd $(pwd) /ld18-1006/work/bougui/pytorch.sif pwd
 ```
+
+## Remote builder
+
+```
+singularity remote login
+```
+
+Tokens are generated from:
+https://cloud.sylabs.io/auth/tokens
+
