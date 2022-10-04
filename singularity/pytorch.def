@@ -1,5 +1,5 @@
 BOOTSTRAP: localimage
-FROM: /home/bougui/singularity/pymol.sif
+FROM: pymol.sif
 
 %post
 apt-get update
