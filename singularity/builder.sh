@@ -71,9 +71,12 @@ fi
 
 case $DEF in
     debian.def|pymol.def|pytorch.def)
+        echo "Building debian.sif ..."
         eval "$BUILDCMD debian.sif debian.def";;
     pymol.def|pytorch.def)
+        echo "Building pymol.sif ..."
         eval "$BUILDCMD pymol.sif pymol.def";;
     pytorch.def)
+        echo "Building pytorch.sif ..."
         eval "$BUILDCMD pytorch.sif pytorch.def";;
 esac
