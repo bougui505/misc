@@ -20,7 +20,7 @@ sudo singularity build debian.sif debian.def
 singularity shell debian.sif
 ```
 
-To run a command:
+## To run a command:
 ```
 singularity run pytorch.sif python3 -c 'import torch; print(torch.cuda.is_available())'
 ```
