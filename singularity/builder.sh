@@ -36,7 +36,6 @@
 #                                                                           #
 #############################################################################
 
-set -e  # exit on error
 set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
@@ -72,10 +71,10 @@ fi
 case $DEF in
     debian.def|pymol.def|pytorch.def)
         echo "Building debian.sif ..."
-        eval "$BUILDCMD debian.sif debian.def";;
+        eval "$BUILDCMD debian.sif debian.def";&
     pymol.def|pytorch.def)
         echo "Building pymol.sif ..."
-        eval "$BUILDCMD pymol.sif pymol.def";;
+        eval "$BUILDCMD pymol.sif pymol.def";&
     pytorch.def)
         echo "Building pytorch.sif ..."
         eval "$BUILDCMD pytorch.sif pytorch.def";;
