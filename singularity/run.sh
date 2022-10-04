@@ -51,6 +51,13 @@ run [-i image] -- COMMAND
 Help message
     -h, --help print this help message and exit
     -i, --image singularity sif image to use (default is pytorch.sif)
+    --nv setup the container’s environment to use an NVIDIA GPU
+    -B a user-bind path specification.
+       spec has the format src[:dest[:opts]],
+       where src and dest are outside and inside paths.
+       If dest is not given, it is set equal to src.
+       Mount options ('opts') may be specified as 'ro' (read-only) or 'rw' (read/write, which is the default).
+       Multiple bind paths can be given by a comma separated list
     -- COMMAND
 EOF
 }
@@ -60,9 +67,13 @@ if [ "$#" -eq 0 ]; then
 fi
 
 IMAGE="$DIRSCRIPT/debian_all.sif"  # Default value
+NV=0
+B=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -i|--image) IMAGE="$2"; shift ;;
+        --nv) NV=1;;
+        -B) B="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) CMD="${@:2}";break; shift;;
         *) usage; exit 1 ;;
@@ -70,5 +81,11 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity run --cleanenv --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 --pwd $(pwd) $IMAGE $(echo $CMD) 2> /dev/null \
-    || singularity run --cleanenv --pwd $(pwd) $IMAGE $(echo $CMD)
+RUNCMD="singularity run --cleanenv --pwd $(pwd)"
+if [ $NV -eq 1 ]; then
+    RUNCMD="$RUNCMD --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0"
+fi
+if [ $B -ne 0 ]; then
+    RUNCMD="$RUNCMD -B $B"
+fi
+eval "$RUNCMD $IMAGE $CMD"
