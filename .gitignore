@@ -614,3 +614,4 @@ python/protein/Deminer/model.pt~20221003-133735~
 singularity/debian.sif
 singularity/pymol.sif
 singularity/pytorch.sif
+singularity/debian_all.sif
