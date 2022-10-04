@@ -59,7 +59,7 @@ if [ "$#" -eq 0 ]; then
     usage; exit 1
 fi
 
-IMAGE="$DIRSCRIPT/pytorch.sif"  # Default value
+IMAGE="$DIRSCRIPT/debian_all.sif"  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
         -i|--image) IMAGE="$2"; shift ;;

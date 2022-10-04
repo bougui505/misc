@@ -69,13 +69,16 @@ if [ $FORCE -eq 1 ]; then
 fi
 
 case $DEF in
-    debian.def|pymol.def|pytorch.def)
+    debian.def|pymol.def|pytorch.def|debian_all.def)
         echo "Building debian.sif ..."
         eval "$BUILDCMD debian.sif debian.def";&
-    pymol.def|pytorch.def)
+    pymol.def|pytorch.def|debian_all.def)
         echo "Building pymol.sif ..."
         eval "$BUILDCMD pymol.sif pymol.def";&
-    pytorch.def)
+    pytorch.def|debian_all.def)
         echo "Building pytorch.sif ..."
-        eval "$BUILDCMD pytorch.sif pytorch.def";;
+        eval "$BUILDCMD pytorch.sif pytorch.def";&
+    debian_all.def)
+        echo "Building debian_all.sif ..."
+        eval "$BUILDCMD debian_all.sif debian_all.def";;
 esac
