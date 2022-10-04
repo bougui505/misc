@@ -6,6 +6,8 @@ pip3 install scipy
 pip3 install termcolor
 pip3 install tqdm
 pip3 install mrcfile
+pip3 install sklearn
+pip3 install wget
 
 %environment
-export PYTHONPATH=~/lib/python
+export PYTHONPATH=$HOME/lib/python
