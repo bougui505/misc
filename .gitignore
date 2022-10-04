@@ -611,3 +611,6 @@ python/protein/Deminer/DensityLoader.log
 python/pytorch/DensityLoader.log
 python/protein/Deminer/logs/deminer.log
 python/protein/Deminer/model.pt~20221003-133735~
+singularity/debian.sif
+singularity/pymol.sif
+singularity/pytorch.sif
