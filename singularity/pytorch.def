@@ -11,9 +11,17 @@ DEBIAN_FRONTEND=noninteractive \
 apt-get install -y nvidia-driver firmware-misc-nonfree
 apt-get install -y nvidia-alternative nvidia-kernel-support nvidia-legacy-check
 apt-get install -y libcuda1 nvidia-cuda-dev
-apt-get install -y python3-pip
 pip3 install torch torchvision
 pip3 install pyarrow
 
-# %environment
-# export PYTHONPATH="$PYTHONPATH:/opt/pymol/lib/python"
+pip3 install scipy
+pip3 install termcolor
+pip3 install tqdm
+pip3 install mrcfile
+pip3 install sklearn
+pip3 install wget
+pip3 install torchsummary
+
+%environment
+export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
+export PYTHONPATH=$HOME/lib/python
