@@ -68,7 +68,7 @@ fi
 
 IMAGE="$DIRSCRIPT/debian_all.sif"  # Default value
 NV=0
-B=0
+B="None"
 while [ "$#" -gt 0 ]; do
     case $1 in
         -i|--image) IMAGE="$2"; shift ;;
@@ -85,7 +85,7 @@ RUNCMD="singularity run --cleanenv --pwd $(pwd)"
 if [ $NV -eq 1 ]; then
     RUNCMD="$RUNCMD --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0"
 fi
-if [ $B -ne 0 ]; then
+if [ $B != "None" ]; then
     RUNCMD="$RUNCMD -B $B"
 fi
 eval "$RUNCMD $IMAGE $CMD"
