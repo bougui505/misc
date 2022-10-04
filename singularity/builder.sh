@@ -66,12 +66,13 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-BUILDCMD="sudo singularity build"
+if [ $REMOTE -eq 1 ]; then
+    BUILDCMD="singularity build --remote"
+else
+    BUILDCMD="sudo singularity build"
+fi
 if [ $FORCE -eq 1 ]; then
     BUILDCMD="$BUILDCMD --force"
-fi
-if [ $REMOTE -eq 1 ]; then
-    BUILDCMD="$BUILDCMD --remote"
 fi
 
 case $DEF in
