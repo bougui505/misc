@@ -42,6 +42,8 @@ from misc.randomgen import randomstring
 import numpy as np
 from misc.protein.rotate import rotate
 
+cmd.feedback(action='disable', module='all', mask='everything')
+
 
 def get_chain_ids(selection):
     """
