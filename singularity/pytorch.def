@@ -1,0 +1,18 @@
+BOOTSTRAP: localimage
+FROM: /home/bougui/singularity/pymol.sif
+
+%post
+apt-get update
+apt-get install -y software-properties-common
+apt-add-repository contrib
+apt-add-repository non-free
+apt-get update
+DEBIAN_FRONTEND=noninteractive \
+apt-get install -y nvidia-driver firmware-misc-nonfree
+apt-get install -y nvidia-alternative nvidia-kernel-support nvidia-legacy-check
+apt-get install -y libcuda1 nvidia-cuda-dev
+apt-get install -y python3-pip
+pip3 install torch torchvision
+
+# %environment
+# export PYTHONPATH="$PYTHONPATH:/opt/pymol/lib/python"

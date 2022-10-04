@@ -1,0 +1,15 @@
+BOOTSTRAP: localimage
+FROM: /home/bougui/singularity/debian.sif
+
+%post
+cd /opt
+git clone https://github.com/schrodinger/pymol-open-source.git
+git clone https://github.com/rcsb/mmtf-cpp.git
+mv mmtf-cpp/include/mmtf* pymol-open-source/include
+cd pymol-open-source
+python3 setup.py build install
+cd ..
+rm -rf pymol-open-source mmtf-cpp
+
+# %environment
+# export PYTHONPATH="$PYTHONPATH:/opt/pymol/lib/python"
