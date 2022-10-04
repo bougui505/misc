@@ -259,7 +259,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--nviews', default=5, type=int)
     parser.add_argument('--n_epochs', default=10, type=int)
-    parser.add_argument('--batchmemcutoff', default=np.inf, type=float)
+    parser.add_argument('--batchmemcutoff', default=30000000, type=float)
     parser.add_argument('--num_workers', type=int)
     args = parser.parse_args()
     for k, v in args._get_kwargs():

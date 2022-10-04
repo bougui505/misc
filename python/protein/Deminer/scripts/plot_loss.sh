@@ -46,6 +46,6 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 
-rsync -a -zz --update --info=progress2 -h desk:/c7/home/bougui/source/misc/python/protein/Deminer/logs . \
+rsync -a -zz --update --info=progress2 -h desk:/ld18-1006/work/bougui/Deminer/logs . \
     && awkfields -F 'loss' -f logs/deminer.log \
     | plot --xlabel 'step' --ylabel 'loss' $@
