@@ -85,4 +85,7 @@ case $DEF in
     pytorch.def)
         echo "Building pytorch.sif ..."
         eval "$BUILDCMD pytorch.sif pytorch.def";&
+    all.def)
+        echo "Building pytorch.sif from all.def"
+        eval "$BUILDCMD pytorch.sif all.def";&
 esac
