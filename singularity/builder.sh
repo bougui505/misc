@@ -71,7 +71,7 @@ if [ $FORCE -eq 1 ]; then
 fi
 
 case $DEF in
-    debian.def|pymol.def)
+    debian.def|pymol.def|pytorch.def)
         eval "$BUILDCMD debian.sif debian.def";;
     pymol.def|pytorch.def)
         eval "$BUILDCMD pymol.sif pymol.def";;
