@@ -1,0 +1,45 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+%post
+apt-get update
+apt-get install -y zsh
+apt-get install -y ipython3
+apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
+apt-get install -y python3-pip
+pip3 install numpy
+
+# Pymol
+cd /opt
+git clone https://github.com/schrodinger/pymol-open-source.git
+git clone https://github.com/rcsb/mmtf-cpp.git
+mv mmtf-cpp/include/mmtf* pymol-open-source/include
+cd pymol-open-source
+python3 setup.py build install
+cd ..
+rm -rf pymol-open-source mmtf-cpp
+
+# Pytorch
+apt-get update
+apt-get install -y software-properties-common
+apt-add-repository contrib
+apt-add-repository non-free
+apt-get update
+DEBIAN_FRONTEND=noninteractive \
+apt-get install -y nvidia-driver firmware-misc-nonfree
+apt-get install -y nvidia-alternative nvidia-kernel-support nvidia-legacy-check
+apt-get install -y libcuda1 nvidia-cuda-dev
+pip3 install torch torchvision
+pip3 install pyarrow
+
+pip3 install scipy
+pip3 install termcolor
+pip3 install tqdm
+pip3 install mrcfile
+pip3 install sklearn
+pip3 install wget
+pip3 install torchsummary
+
+%environment
+export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
+export PYTHONPATH=$HOME/lib/python
