@@ -40,6 +40,7 @@ from annoy import AnnoyIndex
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from misc.Timer import Timer
+from tqdm import tqdm
 
 TIMER = Timer(autoreset=True)
 
@@ -62,7 +63,7 @@ def test(npts=1000,
         X = None
     TIMER.start("Building index")
     index = AnnoyIndex(dim, metric)
-    for i in range(npts):
+    for i in tqdm(range(npts)):
         mu = np.random.choice(100)
         v = np.random.normal(loc=mu, size=dim)
         index.add_item(i, v)
