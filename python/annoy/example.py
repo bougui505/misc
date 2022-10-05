@@ -137,7 +137,10 @@ if __name__ == '__main__':
                         help='Approximate Nearest Neighbors index filename (test.ann)',
                         default='test.ann')
     parser.add_argument('--nn', help='Number of nearest neighbors to search for (3)', default=3, type=int)
-    parser.add_argument('--enn', help='Compare results with exact neighbors search', action='store_true')
+    parser.add_argument('--no_enn',
+                        help='Do not compare results with exact neighbors search',
+                        action='store_false',
+                        dest='enn')
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
