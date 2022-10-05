@@ -617,3 +617,4 @@ singularity/pytorch.sif
 singularity/debian_all.sif
 singularity/sylabs-token
 python/annoy/test.ann
+python/protein/Deminer/20221005_model.pt
