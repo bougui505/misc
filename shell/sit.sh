@@ -38,7 +38,7 @@
 
 # Create a zsh script file from the given command
 # The file is created in a scripts directory
-# sit comes from Script IT
+# sit comes from Script IT or Save IT ;-) ...
 
 set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
@@ -46,7 +46,7 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-SITDIR='scripts'
+SITDIR='sits'
 
 function usage () {
     cat << EOF
@@ -78,14 +78,9 @@ done
 
 if [ $SEARCH -eq 1 ]; then
     # CMD=$(ls $SITDIR/*.sh | fzf)
-    for FILE in $(ls $SITDIR/*.sh); do
-        CONTENT=$(grep -v '^#!' $FILE)
-        echo "$FILE $CONTENT"
-    done \
-        | fzf \
-        | awk '{print $1}' \
-        | read CMD
-    eval $CMD
+    SITFILE=$(ls $SITDIR/* | fzf --preview='less {}')
+    CMD=$(grep -v "^#!" $SITFILE | tr '\n' ';')
+    xdotool type $CMD
     exit 0
 fi
 
