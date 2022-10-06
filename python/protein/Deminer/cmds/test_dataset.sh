@@ -1,2 +1,2 @@
 #!/usr/bin/env zsh
-run --nv -B /ld18-1006 -- ./deminer.py --test_dataset
+run --nv -B /ld18-1006 -- ./deminer.py --test_dataset --batch_size 1
