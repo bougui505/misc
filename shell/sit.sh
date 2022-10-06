@@ -100,7 +100,8 @@ if [ $SEARCH -eq 1 ]; then
         nvim $SITFILE
     fi
     CMD=$(grep -v "^#!" $SITFILE | sed '/^$/d' | tr '\n' ';')
-    xdotool type $CMD
+    # stty -echo is to prevent xdotool to write cmd in terminal before typing (see: https://stackoverflow.com/a/35976098/1679629)
+    stty -echo && xdotool type $CMD && stty echo
     exit 0
 fi
 
