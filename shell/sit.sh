@@ -62,6 +62,9 @@ Or escape the special characters:
     -h, --help print this help message and exit
     -n, --name name of the sit file without extension
     -s, --search search in scripts directory
+    -e, --edit display the selected sit;
+               the user can edit the displayed command
+               and the sit will be saved back to the sit file
 EOF
 }
 
@@ -70,11 +73,19 @@ if [ "$#" -eq 0 ]; then
     exit 1
 fi
 
+save_sit () {
+    echo "#!/usr/bin/env zsh\n$CMD" > $SITDIR/$NAME.sh
+    chmod u+x $SITDIR/$NAME.sh
+}
+
+
 SEARCH=0
+EDIT=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -n|--name) NAME="$2"; shift;;
         -s|--search) SEARCH=1;;
+        -e|--edit) EDIT=1;SEARCH=1;;
         -h|--help) usage; exit 0 ;;
         --) CMD="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -85,7 +96,10 @@ done
 if [ $SEARCH -eq 1 ]; then
     # CMD=$(ls $SITDIR/*.sh | fzf)
     SITFILE=$(ls $SITDIR/* | fzf --preview='less {}')
-    CMD=$(grep -v "^#!" $SITFILE | tr '\n' ';')
+    if [ $EDIT -eq 1 ]; then
+        nvim $SITFILE
+    fi
+    CMD=$(grep -v "^#!" $SITFILE | sed '/^$/d' | tr '\n' ';')
     xdotool type $CMD
     exit 0
 fi
@@ -105,5 +119,4 @@ fi
 if [ ! -d $SITDIR ]; then
     mkdir -v $SITDIR
 fi
-echo "#!/usr/bin/env zsh\n$CMD" > $SITDIR/$NAME.sh
-chmod u+x $SITDIR/$NAME.sh
+save_sit
