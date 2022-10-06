@@ -51,7 +51,13 @@ SITDIR='sits'
 function usage () {
     cat << EOF
 Store the given command after '--' in an executable sh script file stored in scripts
-E.g.: sit -n test -- ls -a
+    sit -n test -- ls -a
+The given command given must escape shell command delimiters such as && ; || | ...
+If such delimiters are present git the command with double quote
+For example:
+    sit -n test -- "pwd && ls -a"
+Or escape the special characters:
+    sit -n test -- pwd \\&\\& ls -a
 
     -h, --help print this help message and exit
     -n, --name name of the sit file without extension
