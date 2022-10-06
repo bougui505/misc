@@ -296,6 +296,9 @@ if __name__ == '__main__':
     parser.add_argument('--n_epochs', default=10, type=int)
     parser.add_argument('--batchmemcutoff', default=30000000, type=float)
     parser.add_argument('--num_workers', type=int)
+
+    parser.add_argument('--sim', nargs=2, help='Compute the similarity between the given 2 pdb (code or file)')
+    parser.add_argument('--model', help='DL-model to load')
     args = parser.parse_args()
     for k, v in args._get_kwargs():
         log(f'# {k}: {v}')
@@ -345,3 +348,11 @@ if __name__ == '__main__':
               batchsizereporter_func=batchsizereporter_func,
               batchmemcutoff=args.batchmemcutoff,
               exclude_list=exclude_list)
+    if args.sim is not None:
+        if args.model is None:
+            print('Please give a DL model using --model')
+            sys.exit(1)
+        model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+        model = trainer.load_model(model, args.model)
+        sim = get_similarity(pdb1=args.sim[0], pdb2=args.sim[1], model=model)
+        print(sim)
