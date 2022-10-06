@@ -177,13 +177,15 @@ def train(latent_dim=256,
                                            ext=ext,
                                            uniprot_pdb=True,
                                            list_ids_file='training_set.txt.gz',
-                                           exclude_list=exclude_list)
+                                           exclude_list=exclude_list,
+                                           skip_error=True)
     num_workers = os.cpu_count()
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=True,
                                              num_workers=num_workers,
-                                             collate_fn=DensityLoader.collate_fn)
+                                             collate_fn=DensityLoader.collate_fn,
+                                             pin_memory=True)
     trainer.train(model,
                   loss_function,
                   dataloader,
