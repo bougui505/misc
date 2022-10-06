@@ -64,6 +64,8 @@ They can be run as a shell script:
     ./cmds/test.sh
 However the user specific shell environment is not seen. To run in the current shell please use source command:
     source cmds/test.sh
+or
+    . cmds/test.sh
 
     -h, --help print this help message and exit
     -n, --name name of the sit file without extension
