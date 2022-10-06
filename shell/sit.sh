@@ -46,7 +46,7 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-SITDIR='sits'
+SITDIR='cmds'
 
 function usage () {
     cat << EOF
