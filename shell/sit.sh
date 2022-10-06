@@ -41,7 +41,6 @@
 # sit comes from Script IT or Save IT ;-) ...
 
 set -e  # exit on error
-set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
