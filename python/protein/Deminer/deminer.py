@@ -200,7 +200,7 @@ def encode(*args, model):
     """
     Encode the given density map (dmap)
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
-    >>> model = trainer.load_model(model, filename='model.pt')
+    >>> model = trainer.load_model(model, filename='20221005_model.pt')
     >>> dmap = np.random.uniform(size=(50, 40, 60))
     >>> dmap.shape
     (50, 40, 60)
@@ -217,6 +217,21 @@ def encode(*args, model):
     batch = [[dmap] for dmap in args]
     v = forward_batch(batch, model, normalize=True)
     return v.detach().numpy()[:, 0, ...]
+
+
+def get_similarity(dmap1, dmap2, model):
+    """
+    >>> np.random.seed(0)
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    >>> model = trainer.load_model(model, filename='20221005_model.pt')
+    >>> dmap1 = np.random.uniform(size=(50, 40, 60))
+    >>> dmap2 = np.random.uniform(size=(60, 50, 40))
+    >>> get_similarity(dmap1, dmap2, model)
+    0.9991459
+    """
+    v = encode(dmap1, dmap2, model=model)
+    sim = v[0].dot(v[1].T)
+    return sim
 
 
 def log(msg):
