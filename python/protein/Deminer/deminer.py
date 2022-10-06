@@ -40,6 +40,7 @@ import torch
 from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
 import numpy as np
 from tqdm import tqdm
+from misc.protein.density import Density
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -221,16 +222,33 @@ def encode(*args, model):
     return v.detach().numpy()[:, 0, ...]
 
 
-def get_similarity(dmap1, dmap2, model):
+def encode_pdb(*args, model, sigma=1., spacing=1):
+    """
+    Encode the given pdb code or pdb file (pdb, mmcif, ...)
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    >>> v = encode_pdb('1ycr', '4ci0', model=model)
+    >>> v.shape
+    (2, 256)
+    """
+    batch = [[Density(pdb, sigma=sigma, spacing=spacing)[0]] for pdb in args]
+    v = forward_batch(batch, model, normalize=True)
+    return v.detach().numpy()[:, 0, ...]
+
+
+def get_similarity(pdb1=None, pdb2=None, dmap1=None, dmap2=None, model=None, sigma=1., spacing=1):
     """
     >>> np.random.seed(0)
+    >>> seed = torch.manual_seed(0)
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
-    >>> model = trainer.load_model(model, filename='20221005_model.pt')
     >>> dmap1 = np.random.uniform(size=(50, 40, 60))
     >>> dmap2 = np.random.uniform(size=(60, 50, 40))
-    >>> get_similarity(dmap1, dmap2, model)
-    0.9991459
+    >>> get_similarity(dmap1=dmap1, dmap2=dmap2, model=model)
+    0.9974737
     """
+    if pdb1 is not None:
+        dmap1 = Density(pdb1, sigma=sigma, spacing=spacing)[0]
+    if pdb2 is not None:
+        dmap2 = Density(pdb2, sigma=sigma, spacing=spacing)[0]
     v = encode(dmap1, dmap2, model=model)
     sim = v[0].dot(v[1].T)
     return sim
