@@ -45,11 +45,15 @@ from annoy import AnnoyIndex
 import h5py
 import numpy as np
 
-__all__ = ['NNindex', 'Mapping']
+__all__ = ['NNindex', 'Mapping', 'autohash']
 
 
 def autohash(inp, maxdepth=np.inf):
-    """
+    """autohash.
+
+    :param inp:
+    :param maxdepth:
+
     >>> autohash('abc')
     'a/b/c/'
     >>> autohash(0)
@@ -112,6 +116,14 @@ class NNindex(object):
                  index_dirname='nnindex',
                  hash_func_index=autohash,
                  hash_func_name=autohash):
+        """__init__.
+
+        :param dim:
+        :param metric:
+        :param index_dirname:
+        :param hash_func_index:
+        :param hash_func_name:
+        """
         self.dim = dim
         self.index_dirname = index_dirname
         if not os.path.isdir(index_dirname):
@@ -125,6 +137,11 @@ class NNindex(object):
         self.i = 0
 
     def add(self, v, name):
+        """add.
+
+        :param v:
+        :param name:
+        """
         if not self.is_on_disk:
             self.index.on_disk_build(self.annoyfilename)
             self.is_on_disk = True
@@ -133,9 +150,18 @@ class NNindex(object):
         self.i += 1
 
     def build(self, n_trees):
+        """build.
+
+        :param n_trees:
+        """
         self.index.build(n_trees)
 
     def query(self, name, k=1):
+        """query.
+
+        :param name:
+        :param k:
+        """
         ind = self.mapping.name_to_index(name)
         knn, dists = self.index.get_nns_by_item(ind, n=k, include_distances=True)
         nnames = []
@@ -144,6 +170,7 @@ class NNindex(object):
         return nnames, dists
 
     def load(self):
+        """load."""
         self.index.load(self.annoyfilename)
 
 
@@ -159,6 +186,13 @@ class Mapping(object):
     """
 
     def __init__(self, h5fname, hash_func_index=lambda x: x, hash_func_name=lambda x: x, verbose=False):
+        """__init__.
+
+        :param h5fname:
+        :param hash_func_index:
+        :param hash_func_name:
+        :param verbose:
+        """
         self.verbose = verbose
         self.hash_func_index = hash_func_index
         self.hash_func_name = hash_func_name
@@ -168,19 +202,30 @@ class Mapping(object):
         self.h5f.require_group('index_to_name')
 
     def __enter__(self):
+        """__enter__."""
         return self
 
     def __exit__(self, typ, val, tra):
+        """__exit__.
+
+        :param typ:
+        :param val:
+        :param tra:
+        """
         if typ is None:
             self.__del__()
 
     def __del__(self):
+        """__del__."""
         self.h5f.close()
         if self.verbose:
             print(f'{self.h5fname} closed')
 
     def add(self, number, name):
-        """
+        """add.
+
+        :param number:
+        :param name:
         """
         number_hash = self.hash_func_index(number)
         group = self.h5f['index_to_name']
@@ -193,11 +238,19 @@ class Mapping(object):
         leaf.attrs[name] = number
 
     def index_to_name(self, number):
+        """index_to_name.
+
+        :param number:
+        """
         number_hash = self.hash_func_index(number)
         group = self.h5f['index_to_name'][str(number_hash)]
         return group.attrs[str(number)]
 
     def name_to_index(self, name):
+        """name_to_index.
+
+        :param name:
+        """
         name_hash = self.hash_func_name(name)
         return self.h5f['name_to_index'][name_hash].attrs[str(name)]
 
