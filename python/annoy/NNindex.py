@@ -38,20 +38,14 @@
 """
 Helper class to generate an Annoy index for fast Approximate Nearest neighbors search.
 See: https://github.com/spotify/annoy
-
->>> np.random.seed(0)
->>> nnindex = NNindex(128)
->>> for name in ['a', 'b', 'c', 'd', 'e', 'f', 'g']:
-...     nnindex.add(np.random.normal(size=(128)), name)
->>> nnindex.build(10)
->>> nnindex.query('c', k=3)
-(['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 """
 
 import os
 from annoy import AnnoyIndex
 import h5py
 import numpy as np
+
+__all__ = ['NNindex', 'Mapping']
 
 
 def autohash(inp, maxdepth=np.inf):
@@ -89,7 +83,7 @@ class NNindex(object):
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
-    # Try loading:
+    Try loading:
     >>> del nnindex
     >>> nnindex = NNindex(128)
     >>> nnindex.annoyfilename
@@ -98,7 +92,7 @@ class NNindex(object):
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
-    # Hash function testing
+    Hash function testing
     >>> del nnindex
     >>> nnindex = NNindex(128)
     >>> for name in ['abc', 'bcd', 'cde', 'ded', 'efg', 'fgh', 'ghi']:
@@ -155,9 +149,6 @@ class NNindex(object):
 
 class Mapping(object):
     """
-    # >>> with Mapping('test.h5') as mapping:
-    # ...     mapping.add(0, 'toto')
-
     >>> mapping = Mapping('test.h5')
     >>> mapping.add(0, 'toto')
 
