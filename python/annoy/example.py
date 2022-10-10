@@ -41,6 +41,7 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from misc.Timer import Timer
 from tqdm import tqdm
+import scipy.spatial.distance as scidist
 
 TIMER = Timer(autoreset=True)
 
@@ -95,6 +96,10 @@ def test(npts=1000,
         print(enn)
         jaccard = len(set(ann) & set(enn)) / len(set(ann) | set(enn))
         print('Jaccard coefficient:', jaccard)
+    TIMER.start("cdist")
+    dmat = scidist.cdist(query[None, ...], X)
+    print(dmat.argsort(axis=1)[:, :nneighbors][0])
+    TIMER.stop()
 
 
 def log(msg):

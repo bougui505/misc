@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
 #############################################################################
@@ -9,7 +9,7 @@
 #                                                                           #
 #  Redistribution and use in source and binary forms, with or without       #
 #  modification, are permitted provided that the following conditions       #
-#  are met:                                                                 #    
+#  are met:                                                                 #
 #                                                                           #
 #  1. Redistributions of source code must retain the above copyright        #
 #  notice, this list of conditions and the following disclaimer.            #
@@ -35,17 +35,25 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
-#
-# Accept the plot commmand options
+import os
+from annoy import AnnoyIndex
+import numpy as np
+import time
 
-set -e  # exit on error
-set -o pipefail  # exit when a process in the pipe fails
-set -o noclobber  # prevent overwritting redirection
+dim = 512
+ntrees = 10
 
-# Full path to the directory of the current script
-DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-
-
-rsync -a -zz --update --info=progress2 -h desk:/ld18-1006/work/bougui/Deminer/logs . \
-    && awkfields -F 'loss' -f logs/deminer.log \
-    | plot --xlabel 'step' --ylabel 'loss' $@
+print("#n #t_add #t_build")
+for e in [3, 4, 5, 6]:
+    n = 10**e
+    index = AnnoyIndex(dim, "euclidean")
+    index.on_disk_build('index.ann')
+    t0 = time.time()
+    for i in range(n):
+        v = np.random.uniform(size=dim)
+        index.add_item(i, v)
+    t_add = time.time() - t0
+    t0 = time.time()
+    index.build(ntrees)
+    t_build = time.time() - t0
+    print(n, t_add, t_build)

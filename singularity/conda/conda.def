@@ -1,0 +1,22 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+%post
+apt-get update
+apt-get install -y wget
+# apt-get install -y zsh
+# apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
+apt-get clean
+
+# Install conda in a directory already in path
+cd /opt
+wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh
+bash Miniconda3-py39_4.12.0-Linux-x86_64.sh -b -f -p /usr/local
+rm Miniconda3-py39_4.12.0-Linux-x86_64.sh
+conda update conda
+
+# Install python packages with conda
+conda install scipy  # Not already in miniconda (numpy is)
+
+#List installed packages
+conda list

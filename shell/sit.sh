@@ -51,12 +51,21 @@ function usage () {
     cat << EOF
 Store the given command after '--' in an executable sh script file stored in scripts
     sit -n test -- ls -a
+
 The given command given must escape shell command delimiters such as && ; || | ...
 If such delimiters are present git the command with double quote
 For example:
     sit -n test -- "pwd && ls -a"
 Or escape the special characters:
     sit -n test -- pwd \\&\\& ls -a
+
+The commands are stored in the cmds directory. The files are executable zsh files.
+They can be run as a shell script:
+    ./cmds/test.sh
+However the user specific shell environment is not seen. To run in the current shell please use source command:
+    source cmds/test.sh
+or
+    . cmds/test.sh
 
     -h, --help print this help message and exit
     -n, --name name of the sit file without extension
