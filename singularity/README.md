@@ -3,7 +3,8 @@
 From the deb package on Github singularity repo
 
 ```
-sudo apt install ./singularity-ce_3.10.2-focal_amd64.deb
+wget https://github.com/apptainer/apptainer/releases/download/v1.1.2/apptainer_1.1.2_amd64.deb \
+    && sudo apt-get install ./apptainer_1.1.2_amd64.deb
 ```
 
 ## `builder.sh` helper script for building `SIF` images
