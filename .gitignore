@@ -625,3 +625,6 @@ python/protein/Deminer/20221005_model.pt~20221008-144125~
 python/protein/Deminer/20221005_model.pt~20221010-124354~
 python/protein/Deminer/models
 singularity/conda/pytorch.sif
+python/annoy/nnindex/annoy.ann
+python/annoy/nnindex/mapping.h5
+python/annoy/test.h5
