@@ -3,6 +3,7 @@
 - [API](#api)
     - [`NNindex`](#nnindex)
     - [`Mapping`](#mapping)
+    - [`autohash`](#autohash)
 
 Helper class to generate an Annoy index for fast Approximate Nearest neighbors search.
 See: https://github.com/spotify/annoy
@@ -12,6 +13,7 @@ See: https://github.com/spotify/annoy
 
 - [`NNindex`](#nnindex)
 - [`Mapping`](#mapping)
+- [`autohash`](#autohash)
 
 
 ### `NNindex`
@@ -68,4 +70,23 @@ mapping.add(0, 'toto')
 'toto'
 >>> mapping.name_to_index('toto')
 0
+```
+
+
+### `autohash`
+
+autohash.
+
+:param inp:
+:param maxdepth:
+
+```python
+>>> autohash('abc')
+'a/b/c/'
+>>> autohash(0)
+'0/'
+>>> autohash(1234)
+'1/2/3/4/'
+>>> autohash(1234, maxdepth=2)
+'1/2/34/'
 ```
