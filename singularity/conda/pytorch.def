@@ -1,0 +1,5 @@
+BOOTSTRAP: localimage
+FROM: conda.sif
+
+%post
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
