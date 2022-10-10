@@ -41,6 +41,28 @@ import h5py
 import numpy as np
 
 
+def autohash(inp, maxdepth=np.inf):
+    """
+    >>> autohash('abc')
+    'a/b/c/'
+    >>> autohash(0)
+    '0/'
+    >>> autohash(1234)
+    '1/2/3/4/'
+    >>> autohash(1234, maxdepth=2)
+    '1/2/34/'
+    """
+    inp = str(inp)
+    out = ''
+    for i, char in enumerate(inp):
+        if i < maxdepth:
+            out += char + '/'
+        else:
+            out += inp[i:] + '/'
+            break
+    return out
+
+
 class NNindex(object):
     """
     AnnoyIndex(dim, metric) returns a new index that's read-write and stores vector of dim dimensions.
@@ -63,11 +85,9 @@ class NNindex(object):
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
-    # Hash function
+    # Hash function testing
     >>> del nnindex
-    >>> hash_func_name = lambda x: f'{x[0]}/{x[1]}/{x[2]}'
-    >>> hash_func_index=lambda x: f'{str((x+1)*100)[0]}/{str((x+1)*100)[1]}/{str((x+1)*100)[2]}'
-    >>> nnindex = NNindex(128, hash_func_index=hash_func_index, hash_func_name=hash_func_name)
+    >>> nnindex = NNindex(128)
     >>> for name in ['abc', 'bcd', 'cde', 'ded', 'efg', 'fgh', 'ghi']:
     ...     nnindex.add(np.random.normal(size=(128)), name)
     >>> nnindex.build(10)
@@ -83,8 +103,8 @@ class NNindex(object):
                  dim,
                  metric='euclidean',
                  index_dirname='nnindex',
-                 hash_func_index=lambda x: x,
-                 hash_func_name=lambda x: x):
+                 hash_func_index=autohash,
+                 hash_func_name=autohash):
         self.dim = dim
         self.index_dirname = index_dirname
         if not os.path.isdir(index_dirname):
