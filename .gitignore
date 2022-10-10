@@ -621,3 +621,5 @@ python/protein/Deminer/20221005_model.pt
 singularity/conda/conda.sif
 python/annoy/scale.txt
 python/annoy/scale.txt~20221007-111930~
+python/protein/Deminer/20221005_model.pt~20221008-144125~
+python/protein/Deminer/20221005_model.pt~20221010-124354~
