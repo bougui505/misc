@@ -39,7 +39,7 @@
 from sklearn.decomposition import PCA
 import numpy as np
 from scipy.interpolate import griddata
-import kabsch
+import misc.kabsch
 # from scipy.stats import binned_statistic_2d
 
 
