@@ -85,9 +85,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ $RUNSHELL -eq 0 ]; then
-    RUNCMD="singularity run --cleanenv --pwd $(pwd)"
+    RUNCMD="singularity run --pwd $(pwd)"
 else
-    RUNCMD="singularity shell --cleanenv --pwd $(pwd)"
+    RUNCMD="singularity shell --pwd $(pwd)"
 fi
 if [ $NV -eq 1 ]; then
     RUNCMD="$RUNCMD --nv -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0"
