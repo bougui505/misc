@@ -53,8 +53,6 @@ from annoy import AnnoyIndex
 import h5py
 import numpy as np
 
-__all__ = ['NNindex', 'Mapping', 'autohash']
-
 
 def autohash(inp, maxdepth=np.inf):
     """
