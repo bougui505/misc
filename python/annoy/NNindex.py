@@ -108,6 +108,10 @@ class NNindex(object):
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
+    Querying a vector
+    >>> nnindex.query(vector=np.random.normal(size=(128)), k=3)
+    (['g', 'c', 'f'], [13.61835765838623, 15.400964736938477, 15.585434913635254])
+
     The search_k parameter can be set
     >>> nnindex.query('c', k=3, search_k=100)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
@@ -128,7 +132,7 @@ class NNindex(object):
     ...     nnindex.add(np.random.normal(size=(128)), name)
     >>> nnindex.build(10)
     >>> nnindex.query('ghi', k=3)
-    (['ghi', 'bcd', 'cde'], [0.0, 14.775142669677734, 14.855252265930176])
+    (['ghi', 'abc', 'efg'], [0.0, 12.888750076293945, 14.489431381225586])
     >>> nnindex.mapping.h5f['name_to_index']['a']['b']['c'].attrs['abc']
     0
     >>> nnindex.mapping.h5f['index_to_name']['1']['0']['0'].attrs['0']
@@ -186,22 +190,29 @@ class NNindex(object):
         """
         self.index.build(n_trees)
 
-    def query(self, name, k=1, search_k=None):
+    def query(self, name=None, vector=None, k=1, search_k=None):
         """
 
         Args:
-            name:
+            name: name of the vector for querying neighbors. The name corresponds to a vector in the annoy DB
+            vector: vector to search neigbors of. Vector or name must be defined not both
             k: number of neighbors to retrieve
             search_k:  number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
 
         Returns:
+            nnames: the names of the neighbors
+            dists: the corresponding distances
 
         """
-        ind = self.mapping.name_to_index(name)
-        nnfunc = partial(self.index.get_nns_by_item, n=k, include_distances=True)
+        if name is not None:
+            inp = self.mapping.name_to_index(name)
+            nnfunc = partial(self.index.get_nns_by_item, n=k, include_distances=True)
+        if vector is not None:
+            inp = vector
+            nnfunc = partial(self.index.get_nns_by_vector, n=k, include_distances=True)
         if search_k is not None:
             nnfunc = partial(nnfunc, search_k=search_k)
-        knn, dists = nnfunc(ind)
+        knn, dists = nnfunc(inp)
         nnames = []
         for i in knn:
             nnames.append(self.mapping.index_to_name(i))
