@@ -52,6 +52,7 @@ import os
 from annoy import AnnoyIndex
 import h5py
 import numpy as np
+from functools import partial
 
 
 def autohash(inp, maxdepth=np.inf):
@@ -105,6 +106,10 @@ class NNindex(object):
     ...     nnindex.add(np.random.normal(size=(128)), name)
     >>> nnindex.build(10)
     >>> nnindex.query('c', k=3)
+    (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
+
+    The search_k parameter can be set
+    >>> nnindex.query('c', k=3, search_k=100)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
     Try loading:
@@ -181,19 +186,23 @@ class NNindex(object):
         """
         self.index.build(n_trees)
 
-    def query(self, name, k=1):
+    def query(self, name, k=1, search_k=None):
         """
 
         Args:
             name:
-            k:
+            k: number of neighbors to retrieve
+            search_k:  number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
 
         Returns:
             
 
         """
         ind = self.mapping.name_to_index(name)
-        knn, dists = self.index.get_nns_by_item(ind, n=k, include_distances=True)
+        nnfunc = partial(self.index.get_nns_by_item, n=k, include_distances=True)
+        if search_k is not None:
+            nnfunc = partial(nnfunc, search_k=search_k)
+        knn, dists = nnfunc(ind)
         nnames = []
         for i in knn:
             nnames.append(self.mapping.index_to_name(i))
