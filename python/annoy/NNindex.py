@@ -195,7 +195,6 @@ class NNindex(object):
             search_k:  number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
 
         Returns:
-            
 
         """
         ind = self.mapping.name_to_index(name)
