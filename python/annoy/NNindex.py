@@ -88,15 +88,15 @@ class NNindex(object):
     """
 
     Attributes:
-        metric:
-        is_on_disk:
         mapping:
-        index:
-        annoyfilename:
-        i:
-        index_dirname:
-        dim:
         mappingfilename:
+        i:
+        is_on_disk:
+        index_dirname:
+        annoyfilename:
+        index:
+        metric:
+        dim:
 
     Metric can be "angular", "euclidean", "manhattan", "hamming", or "dot"
 
@@ -145,7 +145,7 @@ class NNindex(object):
 
         Args:
             dim:
-            metric:
+            metric: any of "angular", "euclidean", "manhattan", "hamming", or "dot"
             index_dirname:
             hash_func_index:
             hash_func_name:
