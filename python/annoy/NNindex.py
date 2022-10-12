@@ -125,6 +125,12 @@ class NNindex(object):
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
+    Adding batch
+    >>> nnindex = NNindex(128)
+    >>> batch = np.random.normal(size=(4, 128))
+    >>> names = ['w', 'x', 'y', 'z']
+    >>> nnindex.add_batch(batch, names)
+
     Hash function testing
     >>> del nnindex
     >>> nnindex = NNindex(128)
@@ -132,7 +138,7 @@ class NNindex(object):
     ...     nnindex.add(np.random.normal(size=(128)), name)
     >>> nnindex.build(10)
     >>> nnindex.query('ghi', k=3)
-    (['ghi', 'abc', 'efg'], [0.0, 12.888750076293945, 14.489431381225586])
+    (['ghi', 'cde', 'fgh'], [0.0, 13.730531692504883, 14.671173095703125])
     >>> nnindex.mapping.h5f['name_to_index']['a']['b']['c'].attrs['abc']
     0
     >>> nnindex.mapping.h5f['index_to_name']['1']['0']['0'].attrs['0']
@@ -180,6 +186,17 @@ class NNindex(object):
         self.index.add_item(self.i, v)
         self.mapping.add(self.i, name)
         self.i += 1
+
+    def add_batch(self, batch, names):
+        """
+
+        Args:
+            batch:
+            names:
+
+        """
+        for v, name in zip(batch, names):
+            self.add(v, name)
 
     def build(self, n_trees):
         """
