@@ -113,6 +113,7 @@ def get_coords(pdb,
                obj=None,
                random_rotation=False):
     """
+    >>> cmd.reinitialize()
     >>> coords = get_coords('1ycr')
     Fetching 1ycr from the PDB
     >>> coords.shape
@@ -129,6 +130,10 @@ def get_coords(pdb,
     Fetching 1ycr from the PDB
     >>> [e.shape for e in coords]
     [(705, 3), (113, 3)]
+
+    Check that the created pymol object has been removed to avoid memory leak!
+    >>> len(cmd.get_object_list())
+    0
     """
     if random_rotation:
         angles = get_random_angles(verbose=verbose)
@@ -162,6 +167,8 @@ def get_coords(pdb,
                 coords_chain = rotate(coords_chain, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
             coords.append(coords_chain)
     if not return_selection:
+        # Remove the pymol object
+        cmd.remove(obj)
         return coords
     else:
         return coords, selection
