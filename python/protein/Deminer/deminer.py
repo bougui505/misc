@@ -41,6 +41,8 @@ from misc.pytorch import DensityLoader, contrastive_loss, resnet3d, trainer
 import numpy as np
 from tqdm import tqdm
 from misc.protein.density import Density
+import glob
+from tqdm import tqdm
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -226,6 +228,8 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     """
     Encode the given pdb code or pdb file (pdb, mmcif, ...)
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+
+    When multiple pdbs are given they are forwarded as a batch (more efficient on gpu, but more memory usage)
     >>> v = encode_pdb('1ycr', '4ci0', model=model)
     >>> v.shape
     (2, 256)
@@ -233,6 +237,31 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     batch = [[Density(pdb, sigma=sigma, spacing=spacing)[0]] for pdb in args]
     v = forward_batch(batch, model, normalize=True)
     return v.detach().numpy()[:, 0, ...]
+
+
+def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., early_break=None):
+    """
+
+    Args:
+        directory: directory containing structure files
+        ext: extension of the structure files to encode
+        model: DL model -- encoder
+        batch_size: the size of the batch (number of structures forwarded at once)
+        sigma: sigma for the synthetic density map
+        spacing: spacing for the synthetic density map
+        early_break: take the given first files (for testing)
+
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    >>> model = trainer.load_model(model, filename='models/20221005_model.pt')
+    >>> encode_dir(directory='data/pdb', ext='cif.gz', model=model, early_break=9)
+
+    """
+    filenames = glob.glob(f'{directory}/**/*.{ext}')
+    if early_break is not None:
+        filenames = filenames[:early_break]
+    filenames = np.array_split(filenames, len(filenames) // batch_size)
+    for batch in tqdm(filenames):
+        outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
 
 
 def get_similarity(pdb1=None, pdb2=None, dmap1=None, dmap2=None, model=None, sigma=1., spacing=1):
