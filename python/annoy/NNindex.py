@@ -143,6 +143,16 @@ class NNindex(object):
     0
     >>> nnindex.mapping.h5f['index_to_name']['1']['0']['0'].attrs['0']
     'abc'
+
+    Same names is not a problem
+    >>> nnindex = NNindex(128)
+    >>> nnindex.add(np.random.normal(size=(128)), 'a')
+    >>> nnindex.add(np.random.normal(size=(128)), 'b')
+    >>> nnindex.add(np.random.normal(size=(128)), 'a')
+    >>> nnindex.build(10)
+    >>> nnindex.query('a', k=3)
+    (['a', 'b', 'a'], [0.0, 15.647073745727539, 15.918701171875])
+
     """
 
     def __init__(self,
