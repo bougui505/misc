@@ -134,6 +134,23 @@ def get_coords(pdb,
     Check that the created pymol object has been removed to avoid memory leak!
     >>> len(cmd.get_object_list())
     0
+
+    Check with return_selection=True
+    >>> coords, selection = get_coords('1ycr', return_selection=True, obj='test')
+    Fetching 1ycr from the PDB
+    >>> coords.shape
+    (818, 3)
+    >>> selection
+    'test and all and present'
+
+    Remarks: when return_selection=True, the pymol object is not removed.
+    Therefore the user can interact with it, using the given selection.
+    However, it has to be removed manually to avoid memory leak!
+    >>> len(cmd.get_object_list())
+    1
+    >>> cmd.remove('test')
+    >>> len(cmd.get_object_list())
+    0
     """
     if random_rotation:
         angles = get_random_angles(verbose=verbose)
