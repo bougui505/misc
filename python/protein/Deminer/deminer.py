@@ -290,7 +290,7 @@ def encode_dir(directory,
     >>> distances
     [0.9999999403953552, 0.8930299282073975, 0.8550390005111694]
     """
-    dim = model(torch.randn(1, 1, 10, 10, 10)).shape[-1]
+    dim = model(torch.randn(1, 1, 10, 10, 10).to(DEVICE)).shape[-1]
     nnindex = NNindex(dim, metric='dot', index_dirname=index_dirname)
     filenames = glob.glob(f'{directory}/**/*.{ext}')
     if early_break is not None:
