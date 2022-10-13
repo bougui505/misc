@@ -239,7 +239,7 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     """
     batch = [[Density(pdb, sigma=sigma, spacing=spacing)[0]] for pdb in args]
     v = forward_batch(batch, model, normalize=True)
-    return v.detach().numpy()[:, 0, ...]
+    return v.detach().cpu().numpy()[:, 0, ...]
 
 
 def encode_dir(directory,
