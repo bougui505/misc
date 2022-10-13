@@ -312,7 +312,7 @@ def encode_dir(directory,
             names = [e[1] for e in batch]
             outbatch = encode(*densities, model=model)
             nnindex.add_batch(outbatch, names)
-        except MemoryError:
+        except RuntimeError:
             print(f'Cannot encode: {names}')
     TIMER.start(f'Building index with {n_trees} trees', verbose=verbose)
     nnindex.build(n_trees=n_trees)
