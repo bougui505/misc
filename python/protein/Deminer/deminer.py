@@ -329,6 +329,7 @@ def load_model(modelfilename):
     print(f'Loading DL model: {modelfilename}')
     model = resnet3d.resnet3d(in_channels=1, out_channels=256)
     model = trainer.load_model(model, modelfilename)
+    model = model.to(DEVICE)
     return model
 
 
