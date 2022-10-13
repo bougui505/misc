@@ -631,3 +631,4 @@ python/annoy/test.h5
 python/protein/Deminer/nnindex_test/annoy.ann
 python/protein/Deminer/nnindex_test/mapping.h5
 singularity/annoy.sif
+singularity/default.sif
