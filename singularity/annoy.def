@@ -1,0 +1,11 @@
+BOOTSTRAP: localimage
+FROM: pytorch.sif
+
+%post
+pip install h5py
+pip install annoy
+
+
+%environment
+export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
+export PYTHONPATH=$HOME/lib/python

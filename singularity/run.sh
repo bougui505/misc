@@ -67,7 +67,7 @@ if [ "$#" -eq 0 ]; then
     usage; exit 1
 fi
 
-IMAGE="$DIRSCRIPT/pytorch.sif"  # Default value
+IMAGE="$DIRSCRIPT/default.sif"  # Default value
 NV=0
 B="None"
 RUNSHELL=0
