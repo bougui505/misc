@@ -57,28 +57,41 @@ def GetScriptDir():
 class Timer(object):
     """
     >>> timer = Timer(colors=False)
-    >>> time.sleep(1)
+    >>> time.sleep(0.1)
     >>> timer.stop()
-    0:00:01.00...
-    >>> time.sleep(1)
+    0:00:00.10...
+    >>> time.sleep(0.1)
     >>> timer.stop(message='test')
-    test done: 0:00:02.00...
+    test done: 0:00:00.20...
     >>> timer.reset()
-    >>> time.sleep(1)
+    >>> time.sleep(0.1)
     >>> timer.stop(message='after reset', reset=True)
-    after reset done: 0:00:01.00...
-    >>> time.sleep(1)
+    after reset done: 0:00:00.10...
+    >>> time.sleep(0.1)
     >>> timer.stop()
-    0:00:01.00...
+    0:00:00.10...
 
     >>> timer = Timer(autoreset=True, colors=False)
     >>> timer.start(message='Test')
     Test
-    >>> time.sleep(1)
+    >>> time.sleep(0.1)
     >>> timer.stop()
-    Test done: 0:00:01.00...
+    Test done: 0:00:00.10...
+
+    The printing can be temporarily shutdowned:
+    >>> timer.start(message='Test', verbose=False)
+    >>> time.sleep(0.1)
+    >>> timer.stop()
+    >>> timer.start(message='Test')
+    Test
+    >>> time.sleep(0.1)
+    >>> timer.stop()
+    Test done: 0:00:00.10...
     """
-    def __init__(self, autoreset=False, colors=True):
+
+    def __init__(self, autoreset=False, colors=True, verbose=True):
+        self.verbose = verbose
+        self.verbose_global = verbose
         self.reset()
         self.autoreset = autoreset
         self.message = None
@@ -95,18 +108,24 @@ class Timer(object):
         outstr += delta_t
         if self.colors:
             outstr = colored(outstr, 'red')
-        print(outstr)
+        if self.verbose:
+            print(outstr)
         if reset or self.autoreset:
             self.reset()
+        if self.verbose != self.verbose_global:
+            self.verbose = self.verbose_global
 
-    def start(self, message=None):
+    def start(self, message=None, verbose=None):
         """
         Same as reset except that a message can be printed
         """
+        if verbose is not None:
+            self.verbose = verbose
         self.message = message
         if self.colors:
             message = colored(message, 'green')
-        print(message)
+        if self.verbose:
+            print(message)
         self.t0 = time.time()
 
     def reset(self):
