@@ -122,6 +122,7 @@ class NNindex(object):
     >>> nnindex.annoyfilename
     'nnindex/annoy.ann'
     >>> nnindex.load()
+    Loading index with metric: euclidean
     >>> nnindex.query('c', k=3)
     (['c', 'g', 'e'], [0.0, 14.265301704406738, 14.367243766784668])
 
@@ -139,10 +140,6 @@ class NNindex(object):
     >>> nnindex.build(10)
     >>> nnindex.query('ghi', k=3)
     (['ghi', 'cde', 'fgh'], [0.0, 13.730531692504883, 14.671173095703125])
-    >>> nnindex.mapping.h5f['name_to_index']['a']['b']['c'].attrs['abc']
-    0
-    >>> nnindex.mapping.h5f['index_to_name']['1']['0']['0'].attrs['0']
-    'abc'
 
     Same names is not a problem
     >>> nnindex = NNindex(128)
@@ -180,6 +177,9 @@ class NNindex(object):
         self.is_on_disk = False
         self.mapping = Mapping(self.mappingfilename, hash_func_index=hash_func_index, hash_func_name=hash_func_name)
         self.metric = metric
+        if not self.mapping.h5f.attrs.__contains__('metric'):
+            # Store the metric in the h5f
+            self.mapping.h5f.attrs['metric'] = metric
         self.i = 0
 
     def add(self, v, name):
@@ -249,6 +249,9 @@ class NNindex(object):
         """
 
         """
+        self.metric = self.mapping.h5f.attrs['metric']
+        print(f'Loading index with metric: {self.metric}')
+        self.index = AnnoyIndex(self.dim, self.metric)
         self.index.load(self.annoyfilename)
 
 
@@ -326,7 +329,6 @@ class Mapping(object):
             number:
 
         Returns:
-            
 
         """
         number_hash = self.hash_func_index(number)

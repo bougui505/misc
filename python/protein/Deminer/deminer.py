@@ -43,6 +43,9 @@ from tqdm import tqdm
 from misc.protein.density import Density
 import glob
 from misc.annoy.NNindex import NNindex
+from misc.Timer import Timer
+
+TIMER = Timer(autoreset=True)
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -239,7 +242,16 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     return v.detach().numpy()[:, 0, ...]
 
 
-def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., indexdirname='nnindex', early_break=None):
+def encode_dir(directory,
+               ext,
+               model,
+               batch_size=4,
+               sigma=1.,
+               spacing=1.,
+               index_dirname='nnindex',
+               n_trees=10,
+               verbose=True,
+               early_break=None):
     """
 
     Args:
@@ -249,15 +261,37 @@ def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., indexd
         batch_size: the size of the batch (number of structures forwarded at once)
         sigma: sigma for the synthetic density map
         spacing: spacing for the synthetic density map
-        indexdirname: name of the directory to store the index (with nearest neighbor search)
+        index_dirname: name of the directory to store the index (with nearest neighbor search)
+        n_trees: number of trees for the Randomized Partition Trees (RP-Trees) see: annoy (https://github.com/spotify/annoy)
+        verbose: print timing
         early_break: take the given first files (for testing)
+    Returns:
+        nnindex: an NNindex object that can be used to query nearest neighbors (see: class NNindex)
 
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
     >>> model = trainer.load_model(model, filename='models/20221005_model.pt')
-    >>> encode_dir(directory='data/pdb', ext='cif.gz', model=model, early_break=9)
+    >>> nnindex = encode_dir(directory='data/pdb', ext='cif.gz', model=model, early_break=9, index_dirname='nnindex_test', verbose=False)
 
+    The returned index can be used for querying nearest neighbors (see: class NNindex)
+    >>> neighbors, distances = nnindex.query(name='3a9r', k=3)
+    >>> neighbors
+    ['3a9r', '6a92', '6a9u']
+    >>> distances
+    [0.9999999403953552, 0.8930299282073975, 0.8550390005111694]
+
+    The index is saved on disk in index_dirname and can be loaded afterward:
+    >>> del nnindex
+    >>> nnindex = NNindex(256, index_dirname='nnindex_test')
+    >>> nnindex.load()
+    Loading index with metric: dot
+    >>> neighbors, distances = nnindex.query(name='3a9r', k=3)
+    >>> neighbors
+    ['3a9r', '6a92', '6a9u']
+    >>> distances
+    [0.9999999403953552, 0.8930299282073975, 0.8550390005111694]
     """
-    nnindex = NNindex(dim, metric='dot', index_dirname=indexdirname)
+    dim = model(torch.randn(1, 1, 10, 10, 10)).shape[-1]
+    nnindex = NNindex(dim, metric='dot', index_dirname=index_dirname)
     filenames = glob.glob(f'{directory}/**/*.{ext}')
     if early_break is not None:
         filenames = filenames[:early_break]
@@ -265,6 +299,11 @@ def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., indexd
     for batch in tqdm(filenames):
         names = [os.path.basename(e).removesuffix('.' + ext) for e in batch]
         outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
+        nnindex.add_batch(outbatch, names)
+    TIMER.start(f'Building index with {n_trees} trees', verbose=verbose)
+    nnindex.build(n_trees=n_trees)
+    TIMER.stop()
+    return nnindex
 
 
 def get_similarity(pdb1=None, pdb2=None, dmap1=None, dmap2=None, model=None, sigma=1., spacing=1):
