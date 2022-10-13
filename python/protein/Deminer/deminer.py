@@ -297,9 +297,12 @@ def encode_dir(directory,
         filenames = filenames[:early_break]
     filenames = np.array_split(filenames, len(filenames) // batch_size)
     for batch in tqdm(filenames):
-        names = [os.path.basename(e).removesuffix('.' + ext) for e in batch]
-        outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
-        nnindex.add_batch(outbatch, names)
+        try:
+            names = [os.path.basename(e).removesuffix('.' + ext) for e in batch]
+            outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
+            nnindex.add_batch(outbatch, names)
+        except:
+            print(f'Cannot encode: {names}')
     TIMER.start(f'Building index with {n_trees} trees', verbose=verbose)
     nnindex.build(n_trees=n_trees)
     TIMER.stop()
