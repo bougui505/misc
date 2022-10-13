@@ -245,13 +245,13 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
 def encode_dir(directory,
                ext,
                model,
-               batch_size=4,
+               batch_size=1,
                sigma=1.,
                spacing=1.,
                index_dirname='nnindex',
                n_trees=10,
                verbose=True,
-               early_break=None):
+               early_break=np.inf):
     """
 
     Args:
@@ -275,9 +275,9 @@ def encode_dir(directory,
     The returned index can be used for querying nearest neighbors (see: class NNindex)
     >>> neighbors, distances = nnindex.query(name='3a9r', k=3)
     >>> neighbors
-    ['3a9r', '6a92', '6a9u']
+    ['3a9r', '7a9x', '6a9u']
     >>> distances
-    [0.9999999403953552, 0.8930299282073975, 0.8550390005111694]
+    [1.0000001192092896, 0.8570012450218201, 0.8555854558944702]
 
     The index is saved on disk in index_dirname and can be loaded afterward:
     >>> del nnindex
@@ -286,22 +286,33 @@ def encode_dir(directory,
     Loading index with metric: dot
     >>> neighbors, distances = nnindex.query(name='3a9r', k=3)
     >>> neighbors
-    ['3a9r', '6a92', '6a9u']
+    ['3a9r', '7a9x', '6a9u']
     >>> distances
-    [0.9999999403953552, 0.8930299282073975, 0.8550390005111694]
+    [1.0000001192092896, 0.8570012450218201, 0.8555854558944702]
     """
     dim = model(torch.randn(1, 1, 10, 10, 10).to(DEVICE)).shape[-1]
     nnindex = NNindex(dim, metric='dot', index_dirname=index_dirname)
-    filenames = glob.glob(f'{directory}/**/*.{ext}')
-    if early_break is not None:
-        filenames = filenames[:early_break]
-    filenames = np.array_split(filenames, len(filenames) // batch_size)
-    for batch in tqdm(filenames):
+    dataset = DensityLoader.DensityDataset(directory,
+                                           return_name=True,
+                                           nsample=1,
+                                           ext=ext,
+                                           random_chains=False,
+                                           random_rotation=False,
+                                           sigma=sigma)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=False,
+                                             num_workers=os.cpu_count(),
+                                             collate_fn=DensityLoader.collate_fn)
+    for i, batch in enumerate(tqdm(dataloader)):
+        if i > early_break:
+            break
         try:
-            names = [os.path.basename(e).removesuffix('.' + ext) for e in batch]
-            outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
+            densities = [e[0] for e in batch]
+            names = [e[1] for e in batch]
+            outbatch = encode(*densities, model=model)
             nnindex.add_batch(outbatch, names)
-        except:
+        except MemoryError:
             print(f'Cannot encode: {names}')
     TIMER.start(f'Building index with {n_trees} trees', verbose=verbose)
     nnindex.build(n_trees=n_trees)

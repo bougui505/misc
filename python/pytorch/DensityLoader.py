@@ -149,7 +149,29 @@ class DensityDataset(torch.utils.data.Dataset):
     >>> d0 = dataset[0]
     >>> [e.shape for e in d0]
     [(71, 96, 69), (79, 93, 66), (68, 60, 59)]
+
+    Test with return_name=True
+    Works only with nsample=1
+    >>> dataset = DensityDataset('/media/bougui/scratch/pdb', nsample=1, return_name=True)
+    >>> d0, name = dataset[0]
+    >>> d0.shape
+    (41, 49, 61)
+    >>> name
+    '1a9l'
+    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
+    >>> for i, batch in enumerate(dataloader):
+    ...     print(len(batch))
+    ...     if i == 0:
+    ...         break
+    4
+    >>> densities = [e[0] for e in batch]
+    >>> names = [e[1] for e in batch]
+    >>> [e.shape for e in densities]
+    [(32, 54, 64), (85, 64, 78), (81, 57, 64), (73, 133, 59)]
+    >>> names
+    ['1a9l', '3a9r', '4a9j', '6a92']
     """
+
     def __init__(self,
                  pdbpath,
                  return_name=False,
@@ -159,13 +181,35 @@ class DensityDataset(torch.utils.data.Dataset):
                  list_ids_file=None,
                  exclude_list=None,
                  verbose=False,
-                 skip_error=False):
+                 skip_error=False,
+                 random_rotation=True,
+                 random_chains=True,
+                 sigma=None):
         """
-        nsample: number of random sample (for rotations and chains) to get by system
+
+        Args:
+            pdbpath: Path to the directory with structure files
+            return_name: Return the name of the system along with the density
+            nsample: number of random sample (for rotations and chains) to get by system
+            ext: file extension to look at for the structure files in pdbpath
+            uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
+            list_ids_file: store the ids loaded in the given file
+            exclude_list: list of pdbs to remove from the list
+            verbose:
+            skip_error:
+            random_rotation: Do random rotation if True.
+            random_chains: Randomly select chains if True.
+            sigma: Sigma for the synthetic density map. Random if None
+
         uniprot_pdb: download the list of uniprot for the pdb (if not present) and use it for loading
         exclude_list: list of pdbs to remove from the list
         """
+        cmd.reinitialize()
         self.verbose = verbose
+        self.sigma = sigma
+        self.ext = ext
+        self.random_chains = random_chains
+        self.random_rotation = random_rotation
         self.skip_error = skip_error
         self.uniprot_pdb = uniprot_pdb
         if not self.uniprot_pdb:
@@ -193,18 +237,21 @@ class DensityDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         pdbfile = self.list_IDs[index]
+        name = os.path.basename(pdbfile).removesuffix('.' + self.ext)
         if self.verbose:
             log(f'Density for {pdbfile}')
-        sigma = np.random.uniform(1., 2.5)
+        if self.sigma is None:
+            sigma = np.random.uniform(1., 2.5)
+        else:
+            sigma = self.sigma
         if self.nsample == 1:
             try:
                 density, origin = Density(pdb=pdbfile,
                                           sigma=sigma,
                                           spacing=1,
                                           padding=(3, 3, 3),
-                                          random_rotation=True,
-                                          random_chains=True,
-                                          obj=index)
+                                          random_rotation=self.random_rotation,
+                                          random_chains=self.random_chains)
             except Exception:
                 if not self.skip_error:
                     raise
@@ -214,7 +261,10 @@ class DensityDataset(torch.utils.data.Dataset):
                     return None
             if self.verbose:
                 log(f'Density for {pdbfile} done')
-            return density
+            if self.return_name:
+                return density, name
+            else:
+                return density
         else:
             densities = []
             for i in range(self.nsample):
@@ -223,8 +273,8 @@ class DensityDataset(torch.utils.data.Dataset):
                                               sigma=sigma,
                                               spacing=1,
                                               padding=(3, 3, 3),
-                                              random_rotation=True,
-                                              random_chains=True)
+                                              random_rotation=self.random_rotation,
+                                              random_chains=self.random_chains)
                     densities.append(density)
                 except Exception:
                     if not self.skip_error:
