@@ -325,6 +325,13 @@ def get_similarity(pdb1=None, pdb2=None, dmap1=None, dmap2=None, model=None, sig
     return sim
 
 
+def load_model(modelfilename):
+    print(f'Loading DL model: {modelfilename}')
+    model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    model = trainer.load_model(model, modelfilename)
+    return model
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -369,7 +376,11 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int)
 
     parser.add_argument('--sim', nargs=2, help='Compute the similarity between the given 2 pdb (code or file)')
-    parser.add_argument('--model', help='DL-model to load')
+    parser.add_argument('--model', help='DL-model to load', default='models/20221005_model.pt~20221013-103512~')
+
+    parser.add_argument(
+        '--encode_dir',
+        help='encode the given directory (see: --ext to select the wanted file extension) and store it in an index')
     args = parser.parse_args()
     for k, v in args._get_kwargs():
         log(f'# {k}: {v}')
@@ -423,7 +434,10 @@ if __name__ == '__main__':
         if args.model is None:
             print('Please give a DL model using --model')
             sys.exit(1)
-        model = resnet3d.resnet3d(in_channels=1, out_channels=256)
-        model = trainer.load_model(model, args.model)
+        model = load_model(args.model)
         sim = get_similarity(pdb1=args.sim[0], pdb2=args.sim[1], model=model)
         print(sim)
+
+    if args.encode_dir is not None:
+        model = load_model(args.model)
+        encode_dir(directory=args.encode_dir, ext=args.ext, model=model, batch_size=args.batch_size)
