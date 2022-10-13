@@ -42,7 +42,7 @@ import numpy as np
 from tqdm import tqdm
 from misc.protein.density import Density
 import glob
-from tqdm import tqdm
+from misc.annoy.NNindex import NNindex
 
 LOSS = contrastive_loss.SupConLoss()
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -239,7 +239,7 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     return v.detach().numpy()[:, 0, ...]
 
 
-def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., early_break=None):
+def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., indexdirname='nnindex', early_break=None):
     """
 
     Args:
@@ -249,6 +249,7 @@ def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., early_
         batch_size: the size of the batch (number of structures forwarded at once)
         sigma: sigma for the synthetic density map
         spacing: spacing for the synthetic density map
+        indexdirname: name of the directory to store the index (with nearest neighbor search)
         early_break: take the given first files (for testing)
 
     >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
@@ -256,11 +257,13 @@ def encode_dir(directory, ext, model, batch_size=4, sigma=1., spacing=1., early_
     >>> encode_dir(directory='data/pdb', ext='cif.gz', model=model, early_break=9)
 
     """
+    nnindex = NNindex(dim, metric='dot', index_dirname=indexdirname)
     filenames = glob.glob(f'{directory}/**/*.{ext}')
     if early_break is not None:
         filenames = filenames[:early_break]
     filenames = np.array_split(filenames, len(filenames) // batch_size)
     for batch in tqdm(filenames):
+        names = [os.path.basename(e).removesuffix('.' + ext) for e in batch]
         outbatch = encode_pdb(*batch, model=model, sigma=sigma, spacing=spacing)
 
 

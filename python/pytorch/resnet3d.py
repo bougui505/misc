@@ -37,7 +37,6 @@
 #############################################################################
 import os
 import torchvision.models.video.resnet as resnet
-from torchsummary import summary
 from functools import partial
 import torch.nn as nn
 from typing import Type, Union, Sequence, List, Callable
@@ -56,6 +55,7 @@ from torch.utils.checkpoint import checkpoint
 
 class BasicStem(nn.Sequential):
     """The default conv-batchnorm-relu stem"""
+
     def __init__(self, in_channels=3) -> None:
         super().__init__(
             nn.Conv3d(in_channels, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2), padding=(1, 3, 3), bias=False),
@@ -66,6 +66,7 @@ class BasicStem(nn.Sequential):
 
 def resnet3d(in_channels=3, out_channels=400):
     """
+    >>> from torchsummary import summary
     >>> model = resnet3d()
     >>> summary(model, (3, 64, 64, 64))
     ----------------------------------------------------------------
@@ -242,6 +243,7 @@ def resnet3d(in_channels=3, out_channels=400):
 
 
 class VideoResNet(nn.Module):
+
     def __init__(
         self,
         block: Type[Union[resnet.BasicBlock, resnet.Bottleneck]],
