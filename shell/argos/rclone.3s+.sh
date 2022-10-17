@@ -61,7 +61,7 @@ rclone_info
 echo "---"
 
 if [ "$ARGOS_MENU_OPEN" == "true" ]; then
-    tail $INSTALLDIR/rclone.log
+    tail $INSTALLDIR/rclone.log | fold -w 80
 else
     echo "Loading..."
 fi
