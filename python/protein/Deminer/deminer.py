@@ -237,7 +237,7 @@ def encode_pdb(*args, model, sigma=1., spacing=1):
     >>> v.shape
     (2, 256)
     """
-    batch = [[Density(pdb, sigma=sigma, spacing=spacing)[0]] for pdb in args]
+    batch = [[Density(pdb, sigma=sigma, spacing=spacing, padding=(3, 3, 3))[0]] for pdb in args]
     v = forward_batch(batch, model, normalize=True)
     return v.detach().cpu().numpy()[:, 0, ...]
 
@@ -410,6 +410,10 @@ if __name__ == '__main__':
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--test_dataset', help='Test the full dataset', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+
+    parser.add_argument('--query', help='Query Deminer by pdb id')
+    parser.add_argument('-k', help='number of nearest neighbors to return', type=int, default=3)
+
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--pdbpath', help='Path to the PDB database (default: data/pdb)', default='data/pdb')
     parser.add_argument('--ext',
@@ -464,6 +468,11 @@ if __name__ == '__main__':
         for batch in tqdm(dataloader):
             pass
         sys.exit()
+    if args.query is not None:
+        model = load_model(args.model)
+        nnames, dists = query(model, pdb=args.query, k=args.k)
+        for n, d in zip(nnames, dists):
+            print(n, d)
     if args.train:
         train(latent_dim=256,
               pdbpath='data/pdb',
