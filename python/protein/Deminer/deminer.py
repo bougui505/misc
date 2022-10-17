@@ -47,7 +47,7 @@ from misc.Timer import Timer
 
 TIMER = Timer(autoreset=True)
 
-LOSS = contrastive_loss.SupConLoss()
+LOSS = contrastive_loss.SupConLoss(temperature=0.2, base_temperature=0.2)
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
