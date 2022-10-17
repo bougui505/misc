@@ -464,7 +464,8 @@ if __name__ == '__main__':
                                                  shuffle=True,
                                                  num_workers=num_workers,
                                                  collate_fn=DensityLoader.collate_fn,
-                                                 pin_memory=True)
+                                                 pin_memory=True,
+                                                 timeout=20)
         for batch in tqdm(dataloader):
             pass
         sys.exit()
