@@ -320,6 +320,38 @@ def encode_dir(directory,
     return nnindex
 
 
+def query(model, pdb=None, name=None, vector=None, k=3, search_k=None, index_dirname='nnindex'):
+    """
+
+    Args:
+        model: DL model -- encoder
+        pdb: pdb code to search neighbors for
+        name: name of the vector to search neighbors for (the vector must be in the annoy db)
+        vector: vector to search neighbors for
+        k: number of neighbors to return
+        search_k: number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
+
+    Returns:
+        nnames: the names of the neighbors
+        dists: the corresponding distances
+
+    >>> model = resnet3d.resnet3d(in_channels=1, out_channels=256)
+    >>> model = trainer.load_model(model, filename='models/20221005_model.pt~20221013-103512~')
+    >>> nnames, dists = query(model, name='1ycr', k=3)
+    Loading index with metric: dot
+    >>> nnames, dists
+    (['1ycr', '2zzt', '4q2m'], [1.0000001192092896, 0.9997105002403259, 0.9996662139892578])
+
+    """
+    dim = model(torch.randn(1, 1, 10, 10, 10).to(DEVICE)).shape[-1]
+    nnindex = NNindex(dim, metric='dot', index_dirname=index_dirname)
+    nnindex.load()
+    if pdb is not None:
+        vector = np.squeeze(encode_pdb(pdb, model=model))
+    nnames, dists = nnindex.query(name=name, vector=vector, k=k, search_k=search_k)
+    return nnames, dists
+
+
 def get_similarity(pdb1=None, pdb2=None, dmap1=None, dmap2=None, model=None, sigma=1., spacing=1):
     """
     >>> np.random.seed(0)

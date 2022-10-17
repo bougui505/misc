@@ -224,7 +224,7 @@ class NNindex(object):
             name: name of the vector for querying neighbors. The name corresponds to a vector in the annoy DB
             vector: vector to search neigbors of. Vector or name must be defined not both
             k: number of neighbors to retrieve
-            search_k:  number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
+            search_k: number of nodes to inspect during searching (see: https://github.com/spotify/annoy#tradeoffs)
 
         Returns:
             nnames: the names of the neighbors
