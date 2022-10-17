@@ -633,3 +633,5 @@ python/protein/Deminer/nnindex_test/mapping.h5
 singularity/annoy.sif
 singularity/default.sif
 python/pytorch/logs/deminer.log
+python/protein/Deminer/nnindex/annoy.ann
+python/protein/Deminer/nnindex/mapping.h5
