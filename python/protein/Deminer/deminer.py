@@ -191,7 +191,8 @@ def train(latent_dim=256,
                                              shuffle=True,
                                              num_workers=num_workers,
                                              collate_fn=DensityLoader.collate_fn,
-                                             pin_memory=True)
+                                             pin_memory=True,
+                                             timeout=20)
     trainer.train(model,
                   loss_function,
                   dataloader,
