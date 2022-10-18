@@ -44,6 +44,7 @@ from misc.protein.density import Density
 import glob
 from misc.annoy.NNindex import NNindex
 from misc.Timer import Timer
+from misc.Grid3 import mrc
 
 TIMER = Timer(autoreset=True)
 
@@ -321,11 +322,12 @@ def encode_dir(directory,
     return nnindex
 
 
-def query(model, pdb=None, name=None, vector=None, k=3, search_k=None, index_dirname='nnindex'):
+def query(model, mrcfilename=None, pdb=None, name=None, vector=None, k=3, search_k=None, index_dirname='nnindex'):
     """
 
     Args:
         model: DL model -- encoder
+        mrcfilename: mrc filename to read the density from
         pdb: pdb code to search neighbors for
         name: name of the vector to search neighbors for (the vector must be in the annoy db)
         vector: vector to search neighbors for
@@ -343,12 +345,21 @@ def query(model, pdb=None, name=None, vector=None, k=3, search_k=None, index_dir
     >>> nnames, dists
     (['1ycr', '2zzt', '4q2m'], [1.0000001192092896, 0.9997105002403259, 0.9996662139892578])
 
+    >>> nnames, dists = query(model, mrcfilename='data/1ycr_density.mrc', k=3)
+    Loading index with metric: dot
+    >>> nnames, dists
+    (['6ucw', '4pss', '1s6h'], [0.997984766960144, 0.9968208074569702, 0.9965625405311584])
+
     """
     dim = model(torch.randn(1, 1, 10, 10, 10).to(DEVICE)).shape[-1]
     nnindex = NNindex(dim, metric='dot', index_dirname=index_dirname)
     nnindex.load()
     if pdb is not None:
         vector = np.squeeze(encode_pdb(pdb, model=model))
+    if mrcfilename is not None:
+        data, origin, spacing = mrc.mrc_to_array(mrcfilename, normalize=True)
+        data, spacing_out = mrc.resample(data, spacing, spacing)
+        vector = np.squeeze(encode(data, model=model))
     nnames, dists = nnindex.query(name=name, vector=vector, k=k, search_k=search_k)
     return nnames, dists
 
@@ -412,7 +423,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_dataset', help='Test the full dataset', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
 
-    parser.add_argument('--query', help='Query Deminer by pdb id')
+    parser.add_argument('--query_pdb', help='Query Deminer by pdb id')
+    parser.add_argument('--query_mrc', help='Query Deminer by giving an MRC filename')
     parser.add_argument('-k', help='number of nearest neighbors to return', type=int, default=3)
 
     parser.add_argument('--train', action='store_true')
@@ -470,9 +482,9 @@ if __name__ == '__main__':
         for batch in tqdm(dataloader):
             pass
         sys.exit()
-    if args.query is not None:
+    if args.query_pdb is not None or args.query_mrc is not None:
         model = load_model(args.model)
-        nnames, dists = query(model, pdb=args.query, k=args.k)
+        nnames, dists = query(model, pdb=args.query_pdb, mrcfilename=args.query_mrc, k=args.k)
         for n, d in zip(nnames, dists):
             print(n, d)
     if args.train:
