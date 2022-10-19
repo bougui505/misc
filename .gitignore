@@ -640,3 +640,4 @@ python/protein/Deminer/data/emd_0540.map
 python/protein/Deminer/data/emd_25178.map.gz
 python/protein/Deminer/deminer_emd_0540.out
 singularity/conda/default.sif
+python/protein/Deminer/data/emd_2513.map.gz
