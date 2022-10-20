@@ -1,0 +1,26 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+# Get a ZSH user shell in a singularity container
+# Run it with:
+# singularity run --cleanenv shell.sif
+
+%post
+apt-get update
+apt-get install -y git
+apt-get install -y zsh
+apt-get install -y ipython3
+# apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
+apt-get install -y python3-pip
+pip3 install numpy
+
+cd /opt
+git clone https://github.com/sindresorhus/pure.git
+echo "fpath+=(/opt/pure)
+autoload -U promptinit
+promptinit
+prompt pure
+export PURE_PROMPT_SYMBOL='❮container❯'" >> /etc/zsh/zshenv 
+
+%runscript
+zsh --no-rcs
