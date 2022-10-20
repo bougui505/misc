@@ -51,7 +51,8 @@ Help message
 EOF
 }
 
-TIME=16:30:00  # Default value
+TIME1=16hour+30minute+00second  # Default value
+TIME2=6hour+30minute+00second+24hour
 while [ "$#" -gt 0 ]; do
     case $1 in
         -t|--time) TIME="$2"; shift ;;
@@ -62,6 +63,9 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-DURATION=$(pdd $TIME | tail -1 | tr -d s)
+DURATION=$(units --compact -1 "($TIME1) - ($(date +%Hhour+%Mminute+%Ssecond))" second)
+if [[ $DURATION -lt 0 ]]; then
+    DURATION=$(units --compact -1 "($TIME2) - ($(date +%Hhour+%Mminute+%Ssecond))" second)
+fi
 echo "Will hibernate for $DURATION s"
 sudo /usr/sbin/rtcwake -m disk -s $DURATION
