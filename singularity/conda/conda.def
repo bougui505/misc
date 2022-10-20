@@ -4,8 +4,6 @@ FROM: debian:11.5
 %post
 apt-get update
 apt-get install -y wget
-# apt-get install -y zsh
-# apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
 apt-get clean
 
 # Install conda in a directory already in path
