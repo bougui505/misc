@@ -33,29 +33,68 @@ mv plug.vim /usr/local/etc/nvim/autoload
 echo "
 set rtp+=/usr/local/etc/nvim
 
+set foldmethod=indent
+nnoremap <space> za
+vnoremap <space> zf
+set foldlevel=99  \" Open file totally unfolded
+
 call plug#begin('/opt/nvim-plugged')
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'dense-analysis/ale'
 Plug 'davidhalter/jedi-vim'
+Plug 'Shougo/echodoc.vim'
+Plug 'preservim/tagbar'
+Plug 'pixelneo/vim-python-docstring'
+Plug 'pseewald/vim-anyfold'
+Plug 'christoomey/vim-tmux-navigator'
 call plug#end()
+" >> /usr/local/etc/init.vim
 
+apt-get install -y flake8
+apt-get install -y yapf3 python3-yapf
+cd /usr/bin/
+ln -s yapf3 yapf
+cd -
+# apt-get install -y pylint
+nvim -u /usr/local/etc/init.vim +PlugInstall +qall
+
+echo "
 let g:airline_theme='papercolor'
 let g:airline#extensions#tagbar#enabled = 1
 
-let g:ale_linters = {'python3': 'flake8'}
-let g:ale_fixers = {'python': 'yapf'}
+\" Only run linters named in ale_linters settings.
+let g:ale_linters_explicit = 1
+let g:ale_linters = {'python': ['flake8']}
+let g:ale_fixers = {'python': ['yapf']}
 let g:ale_fix_on_save = 1
 let g:ale_lint_on_text_changed = 1
 let g:ale_sign_priority = 0
 
 let g:jedi#popup_on_dot = 0
 let g:jedi#use_splits_not_buffers = 'winwidth'
-let g:jedi#show_call_signatures = "0"
+let g:jedi#show_call_signatures = \"0\"
+
+set cmdheight=2
+let g:echodoc#enable_at_startup = 1
+
+\"tagbar configuration
+noremap tt :TagbarToggle<CR>
+let g:tagbar_sort = 0  \" Do not sort tags
+noremap t :TagbarOpen j<CR>
+
+autocmd Filetype * AnyFoldActivate
+let g:anyfold_fold_comments=1
+
+let g:tmux_navigator_no_mappings = 1
+nnoremap <silent> <S-Left> :TmuxNavigateLeft<cr>
+nnoremap <silent> <S-Down> :TmuxNavigateDown<cr>
+nnoremap <silent> <S-Up> :TmuxNavigateUp<cr>
+nnoremap <silent> <S-Right> :TmuxNavigateRight<cr>
+
+autocmd BufNewFile *.sh 0r ~/config/sh_template_file.sh
+autocmd BufNewFile *.py 0r ~/config/py_template_file.py
 " >> /usr/local/etc/init.vim
-apt-get install -y python3-flake8
-apt-get install -y yapf3 python3-yapf
-nvim -u /usr/local/etc/init.vim +PlugInstall +qall
 
 # PURE ZSH PROMPT
 cd /opt
