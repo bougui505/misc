@@ -9,6 +9,7 @@ FROM: debian:11.5
 apt-get update
 apt-get install -y git
 apt-get install -y zsh
+apt-get install -y fzf
 apt-get install -y ipython3
 # apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
 apt-get install -y python3-pip
@@ -22,12 +23,34 @@ autoload -U promptinit
 promptinit
 prompt pure
 export PURE_PROMPT_SYMBOL='❮container❯'" >> /etc/zsh/zshenv 
+chmod g-w,o-w /opt/pure
 
 # zsh-histdb
+apt-get install -y sqlite3
+apt-get install -y bsdextrautils  # for column utility
 cd /opt
 git clone https://github.com/larkery/zsh-histdb
 echo "source /opt/zsh-histdb/sqlite-history.zsh
-autoload -Uz add-zsh-hook" >> /etc/zsh/zshenv
+autoload -Uz add-zsh-hook
+source /opt/zsh-histdb/histdb-interactive.zsh
+bindkey '^r' _histdb-isearch
+" >> /etc/zsh/zshenv
+
+# fzf-tab
+cd /opt
+git clone https://github.com/Aloxaf/fzf-tab.git
+echo "
+autoload -U compinit
+compinit
+source /opt/fzf-tab/fzf-tab.plugin.zsh
+" >> /etc/zsh/zshenv
+
+# zsh-syntax-highlighting
+cd /opt
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
+echo "
+source /opt/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+" >> /etc/zsh/zshenv
 
 
 %runscript
