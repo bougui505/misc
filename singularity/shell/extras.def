@@ -1,3 +1,7 @@
+apt-get install -y git build-essential python3-dev libglew-dev libpng-dev libfreetype6-dev libxml2-dev libmsgpack-dev python3-pyqt5.qtopengl libglm-dev libnetcdf-dev
+apt-get install -y ipython3
+apt-get install -y python3-pip
+
 # oh-my-zsh
 cd /opt
 git clone https://github.com/ohmyzsh/ohmyzsh.git
@@ -8,3 +12,10 @@ source /opt/ohmyzsh/oh-my-zsh.sh
 plugins=(zsh-autosuggestions zsh-syntax-highlighting fzf)
 " >> /etc/zsh/zshenv
 chmod g-w,o-w /opt/ohmyzsh
+
+# FZF
+cd /usr/local/bin
+wget https://github.com/junegunn/fzf/releases/download/0.34.0/fzf-0.34.0-linux_amd64.tar.gz
+tar -xzvf fzf-0.34.0-linux_amd64.tar.gz
+rm fzf-0.34.0-linux_amd64.tar.gz
+
