@@ -1,0 +1,10 @@
+# oh-my-zsh
+cd /opt
+git clone https://github.com/ohmyzsh/ohmyzsh.git
+echo "
+export FZF_BASE=/usr/bin
+export ZSH=/opt/ohmyzsh
+source /opt/ohmyzsh/oh-my-zsh.sh
+plugins=(zsh-autosuggestions zsh-syntax-highlighting fzf)
+" >> /etc/zsh/zshenv
+chmod g-w,o-w /opt/ohmyzsh
