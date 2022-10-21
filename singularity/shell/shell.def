@@ -54,6 +54,7 @@ call plug#end()
 
 apt-get install -y flake8
 apt-get install -y yapf3 python3-yapf
+apt-get install -y exuberant-ctags
 cd /usr/bin/
 ln -s yapf3 yapf
 cd -
