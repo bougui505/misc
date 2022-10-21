@@ -642,3 +642,4 @@ python/protein/Deminer/deminer_emd_0540.out
 singularity/conda/default.sif
 python/protein/Deminer/data/emd_2513.map.gz
 singularity/shell/shell.sif
+singularity/shell/test.py
