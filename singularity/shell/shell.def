@@ -48,6 +48,7 @@ Plug 'preservim/tagbar'
 Plug 'pixelneo/vim-python-docstring'
 Plug 'pseewald/vim-anyfold'
 Plug 'christoomey/vim-tmux-navigator'
+Plug 'airblade/vim-gitgutter'
 call plug#end()
 " >> /usr/local/etc/init.vim
 
@@ -85,6 +86,32 @@ noremap t :TagbarOpen j<CR>
 
 autocmd Filetype * AnyFoldActivate
 let g:anyfold_fold_comments=1
+
+let g:gitgutter_max_signs=10000
+let g:gitgutter_override_sign_column_highlight = 0
+let g:gitgutter_preview_win_floating = 0
+\"let g:gitgutter_highlight_lines = 1
+\" No line highlight for deletions  
+\" highlight GitGutterDeleteLine ctermfg=0 ctermbg=0
+\" Use fontawesome icons as signs
+let g:gitgutter_sign_added = '+'
+let g:gitgutter_sign_modified = '>'
+let g:gitgutter_sign_removed = '-'
+let g:gitgutter_sign_removed_first_line = '^'
+let g:gitgutter_sign_modified_removed = '<'
+
+let g:gitgutter_sign_priority = 0
+let g:gitgutter_sign_allow_clobber = 0
+\" colors for signs:
+highlight GitGutterAdd ctermbg=Green
+highlight GitGutterDelete ctermbg=Red
+highlight GitGutterChange ctermbg=Blue
+\" Key map for hunks
+nmap ghs <Plug>(GitGutterStageHunk)
+nmap ghu <Plug>(GitGutterUndoHunk)
+nmap ghp <Plug>(GitGutterPreviewHunk)
+\" Update sign column every quarter second
+set updatetime=250
 
 let g:tmux_navigator_no_mappings = 1
 nnoremap <silent> <S-Left> :TmuxNavigateLeft<cr>
