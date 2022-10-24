@@ -22,6 +22,7 @@ apt-get install -y neovim
 echo "
 alias vim='nvim -u /usr/local/etc/init.vim'
 alias nvim='nvim -u /usr/local/etc/init.vim'
+export TERM=xterm-256color
 " >> /etc/zsh/zshenv
 
 # vim-plug
