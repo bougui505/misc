@@ -57,6 +57,16 @@ echo "
 alias ls='ls --color=auto'
 " >> /etc/zsh/zshenv
 
+# zsh-autosuggestions
+cd /opt
+git clone https://github.com/zsh-users/zsh-autosuggestions
+echo "
+source /opt/zsh-autosuggestions/zsh-autosuggestions.zsh
+export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=green,bg=cyan,bold,underline"
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=5'
+" >> /etc/zsh/zshenv
+
+
 # zsh-histdb
 apt-get install -y sqlite3
 apt-get install -y bsdextrautils  # for column utility
@@ -66,6 +76,16 @@ echo "source /opt/zsh-histdb/sqlite-history.zsh
 autoload -Uz add-zsh-hook
 source /opt/zsh-histdb/histdb-interactive.zsh
 bindkey '^r' _histdb-isearch
+_zsh_autosuggest_strategy_histdb_top_here() {
+    local query=\"select commands.argv from
+history left join commands on history.command_id = commands.rowid
+left join places on history.place_id = places.rowid
+where places.dir LIKE '\$(sql_escape \$PWD)%'
+and commands.argv LIKE '\$(sql_escape \$1)%'
+group by commands.argv order by count(*) desc limit 1\"
+    suggestion=\$(_histdb_query \"\$query\")
+}
+ZSH_AUTOSUGGEST_STRATEGY=histdb_top_here
 " >> /etc/zsh/zshenv
 
 # fzf-tab
