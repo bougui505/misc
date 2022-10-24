@@ -8,7 +8,6 @@ FROM: debian:11.5
 %files
 init.vim /usr/local/etc/
 github.vim /usr/local/etc/nvim/
-tmux.conf /etc/
 
 %post
 apt-get update
@@ -17,7 +16,6 @@ apt-get install -y wget
 apt-get install -y zsh
 apt-get install -y fzf
 apt-get install -y exa
-apt-get install -y tmux
 
 # nvim
 apt-get install -y neovim
