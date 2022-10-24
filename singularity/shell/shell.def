@@ -7,6 +7,8 @@ FROM: debian:11.5
 
 %files
 init.vim /usr/local/etc/
+github.vim /usr/local/etc/nvim/
+tmux.conf /etc/
 
 %post
 apt-get update
@@ -15,6 +17,7 @@ apt-get install -y wget
 apt-get install -y zsh
 apt-get install -y fzf
 apt-get install -y exa
+apt-get install -y tmux
 
 # nvim
 apt-get install -y neovim
@@ -26,7 +29,6 @@ alias nvim='nvim -u /usr/local/etc/init.vim'
 # vim-plug
 cd /opt
 mkdir /opt/nvim-plugged
-mkdir /usr/local/etc/nvim
 mkdir /usr/local/etc/nvim/autoload
 wget https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 mv plug.vim /usr/local/etc/nvim/autoload
@@ -50,6 +52,11 @@ promptinit
 prompt pure
 export PURE_PROMPT_SYMBOL='❮container❯'" >> /etc/zsh/zshenv 
 chmod g-w,o-w /opt/pure
+
+# Colors for ls
+echo "
+alias ls='ls --color=auto'
+" >> /etc/zsh/zshenv
 
 # zsh-histdb
 apt-get install -y sqlite3

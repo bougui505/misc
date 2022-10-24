@@ -1,5 +1,7 @@
 set rtp+=/usr/local/etc/nvim
 
+colorscheme github
+
 set foldmethod=indent
 nnoremap <space> za
 vnoremap <space> zf
