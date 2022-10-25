@@ -72,6 +72,10 @@ cd cod
 test -f cod || go build
 cd -
 
+# zsh-abbr
+cd /opt
+git clone https://github.com/olets/zsh-abbr.git
+
 apt-get clean
 
 %environment
