@@ -16,6 +16,7 @@ apt-get install -y wget
 apt-get install -y zsh
 apt-get install -y fzf
 apt-get install -y exa
+apt-get install -y golang-go
 
 # nvim
 apt-get install -y neovim
