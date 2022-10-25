@@ -16,6 +16,10 @@ apt-get install -y wget
 apt-get install -y zsh
 apt-get install -y fzf
 apt-get install -y exa
+apt-get install -y direnv
+apt-get install -y tmux
+apt-get install -y procps
+apt-get install -y bc
 apt-get install -y golang-go
 
 # nvim
