@@ -643,3 +643,4 @@ singularity/conda/default.sif
 python/protein/Deminer/data/emd_2513.map.gz
 singularity/shell/shell.sif
 singularity/shell/test.py
+singularity/shell/shell_install.sh
