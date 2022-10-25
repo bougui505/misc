@@ -43,7 +43,12 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-echo '#!/usr/bin/sh' > shell_install.sh
+echo '#!/usr/bin/env zsh
+set -e  # exit on error
+set -o pipefail  # exit when a process in the pipe fails
+set -o noclobber  # prevent overwritting redirection
+
+' > shell_install.sh
 
 awk  'BEGIN{DOPRINT=0}
 {
@@ -56,3 +61,5 @@ awk  'BEGIN{DOPRINT=0}
     if (DOPRINT==1){
         print
 }}' shell.def | grep -v '^%' >> shell_install.sh
+
+chmod +x shell_install.sh

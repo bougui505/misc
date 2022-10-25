@@ -19,16 +19,11 @@ apt-get install -y exa
 
 # nvim
 apt-get install -y neovim
-echo "
-alias vim='nvim -u /usr/local/etc/init.vim'
-alias nvim='nvim -u /usr/local/etc/init.vim'
-export TERM=xterm-256color
-" >> /etc/zsh/zshenv
 
 # vim-plug
 cd /opt
-mkdir /opt/nvim-plugged
-mkdir /usr/local/etc/nvim/autoload
+mkdir -p /opt/nvim-plugged
+mkdir -p /usr/local/etc/nvim/autoload
 wget https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 mv plug.vim /usr/local/etc/nvim/autoload
 
@@ -37,88 +32,50 @@ apt-get install -y flake8
 apt-get install -y yapf3 python3-yapf
 apt-get install -y exuberant-ctags
 cd /usr/bin/
-ln -s yapf3 yapf
+ln -s yapf3 yapf || echo 'yapf already exists'
 cd -
 # apt-get install -y pylint
-nvim -u /usr/local/etc/init.vim +PlugInstall +qall
+nvim +PlugInstall +qall
 
 # PURE ZSH PROMPT
 cd /opt
-git clone https://github.com/sindresorhus/pure.git
-echo "fpath+=(/opt/pure)
-autoload -U promptinit
-promptinit
-prompt pure
-export PURE_PROMPT_SYMBOL='❮container❯'" >> /etc/zsh/zshenv 
+git clone https://github.com/sindresorhus/pure.git || echo 'repo exists'
 chmod g-w,o-w /opt/pure
-
-# Colors for ls
-echo "
-alias ls='ls --color=auto'
-" >> /etc/zsh/zshenv
 
 # zsh-autosuggestions
 cd /opt
-git clone https://github.com/zsh-users/zsh-autosuggestions
-echo "
-source /opt/zsh-autosuggestions/zsh-autosuggestions.zsh
-export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=green,bg=cyan,bold,underline"
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=5'
-" >> /etc/zsh/zshenv
-
+git clone https://github.com/zsh-users/zsh-autosuggestions || echo 'repo exists'
 
 # zsh-histdb
 apt-get install -y sqlite3
 apt-get install -y bsdextrautils  # for column utility
 cd /opt
-git clone https://github.com/larkery/zsh-histdb
-echo "source /opt/zsh-histdb/sqlite-history.zsh
-autoload -Uz add-zsh-hook
-source /opt/zsh-histdb/histdb-interactive.zsh
-bindkey '^r' _histdb-isearch
-_zsh_autosuggest_strategy_histdb_top_here() {
-    local query=\"select commands.argv from
-history left join commands on history.command_id = commands.rowid
-left join places on history.place_id = places.rowid
-where places.dir LIKE '\$(sql_escape \$PWD)%'
-and commands.argv LIKE '\$(sql_escape \$1)%'
-group by commands.argv order by count(*) desc limit 1\"
-    suggestion=\$(_histdb_query \"\$query\")
-}
-ZSH_AUTOSUGGEST_STRATEGY=histdb_top_here
-" >> /etc/zsh/zshenv
+git clone https://github.com/larkery/zsh-histdb || echo 'repo exists'
 
 # fzf-tab
 cd /opt
-git clone https://github.com/Aloxaf/fzf-tab.git
-echo "
-autoload -U compinit
-compinit
-source /opt/fzf-tab/fzf-tab.plugin.zsh
-" >> /etc/zsh/zshenv
+git clone https://github.com/Aloxaf/fzf-tab.git || echo 'repo exists'
 
 # zsh-syntax-highlighting
 cd /opt
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
-echo "
-source /opt/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-" >> /etc/zsh/zshenv
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git || echo 'repo exists'
 
 # zsh-histdb-fzf
 cd /opt
-git clone https://github.com/m42e/zsh-histdb-fzf.git
-echo "
-source /opt/zsh-histdb-fzf/fzf-histdb.zsh
-# histdb-fzf-widget_dir () {histdb-fzf-widget -d}
-# zle -N histdb-fzf-widget_dir
-bindkey '^R' histdb-fzf-widget
-" >> /etc/zsh/zshenv
+git clone https://github.com/m42e/zsh-histdb-fzf.git || echo 'repo exists'
+
+# Cod
+cd /opt
+git clone https://github.com/dim-an/cod.git || echo 'repo exists'
+cd cod
+test -f cod || go build
+cd -
 
 apt-get clean
 
 %environment
-export SHELL=/usr/bin/zsh
-export PATH=$PATH:$HOME/bin
+# export SHELL=/usr/bin/zsh
+# export PATH=$PATH:$HOME/bin
 
 %runscript
-zsh --no-rcs
+zsh
