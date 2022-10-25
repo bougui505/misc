@@ -50,10 +50,22 @@ set -o noclobber  # prevent overwritting redirection
 
 ' > shell_install.sh
 
-awk  'BEGIN{DOPRINT=0}
+awk  'BEGIN{
+DOPRINT=0
+DOCP=0
+}
 {
+    if ($1=="%files"){
+        DOCP=1
+    }
+    if (DOCP==1){
+        if (NF==2){
+            print "cp "$1,$2
+        }
+    }
     if ($1=="%post"){
         DOPRINT=1
+        DOCP=0
     }
     else if (substr($1,1,1)=="%"){
         DOPRINT=0

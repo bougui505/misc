@@ -6,7 +6,7 @@ FROM: debian:11.5
 # singularity run --cleanenv shell.sif
 
 %files
-init.vim /usr/local/etc/
+init.vim /opt/
 github.vim /usr/local/etc/nvim/
 
 %post
@@ -36,7 +36,7 @@ cd /usr/bin/
 ln -s yapf3 yapf || echo 'yapf already exists'
 cd -
 # apt-get install -y pylint
-nvim +PlugInstall +qall
+nvim -u /opt/init.vim --headless +PlugInstall +qall
 
 # PURE ZSH PROMPT
 cd /opt
