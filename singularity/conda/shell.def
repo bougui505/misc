@@ -21,6 +21,7 @@ apt-get install -y tmux
 apt-get install -y procps
 apt-get install -y bc
 apt-get install -y golang-go
+apt-get install -y trash-cli
 
 # nvim
 apt-get install -y neovim
@@ -78,7 +79,7 @@ cd -
 
 # zsh-abbr
 cd /opt
-git clone https://github.com/olets/zsh-abbr.git
+git clone https://github.com/olets/zsh-abbr.git || echo 'repo exists'
 
 apt-get clean
 
