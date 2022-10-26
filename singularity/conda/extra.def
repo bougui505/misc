@@ -1,0 +1,11 @@
+BOOTSTRAP: localimage
+FROM: pymol.sif
+
+%files
+
+%post
+conda install -c conda-forge nvitop
+
+%environment
+
+%runscript
