@@ -645,3 +645,6 @@ singularity/shell/shell.sif
 singularity/shell/test.py
 singularity/shell/shell_install.sh
 singularity/shell/init.vim~20221024-105851~
+singularity/conda/pymol.sif
+singularity/conda/shell.sif
+singularity/cosh.sif

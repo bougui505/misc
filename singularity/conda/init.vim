@@ -1,0 +1,1 @@
+/home/bougui/config/init.vim
