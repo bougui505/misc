@@ -60,4 +60,4 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity run --nv $DIRSCRIPT/cosh.sif
+singularity run -B /ld18-1006 --nv $DIRSCRIPT/cosh.sif
