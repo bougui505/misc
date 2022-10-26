@@ -5,6 +5,7 @@ FROM: pymol.sif
 
 %post
 conda install -c conda-forge nvitop
+conda install scikit-learn
 
 %environment
 
