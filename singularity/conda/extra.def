@@ -1,5 +1,5 @@
 BOOTSTRAP: localimage
-FROM: pymol.sif
+FROM: shell.sif
 
 %files
 
@@ -8,6 +8,7 @@ conda install -c conda-forge nvitop
 conda install scikit-learn
 conda install pip
 pip install wget
+conda install -c conda-forge faiss-gpu
 
 %environment
 

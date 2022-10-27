@@ -1,5 +1,5 @@
 BOOTSTRAP: localimage
-FROM: extra.sif
+FROM: pymol.sif
 
 # Get a ZSH user shell in a singularity container
 # Run it with:
