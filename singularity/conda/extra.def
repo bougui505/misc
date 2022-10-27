@@ -7,12 +7,13 @@ FROM: shell.sif
 conda install pip
 pip install wget
 pip install prettytable
+pip install matplotlib
+pip install scikit-learn
+pip install biopython
+pip install dill
 
 conda install -c conda-forge nvitop
-conda install scikit-learn
 conda install -c conda-forge faiss-gpu
-conda install -c conda-forge matplotlib
-conda install -c conda-forge biopython
 
 %environment
 
