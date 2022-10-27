@@ -4,11 +4,15 @@ FROM: shell.sif
 %files
 
 %post
-conda install -c conda-forge nvitop
-conda install scikit-learn
 conda install pip
 pip install wget
+pip install prettytable
+
+conda install -c conda-forge nvitop
+conda install scikit-learn
 conda install -c conda-forge faiss-gpu
+conda install -c conda-forge matplotlib
+conda install -c conda-forge biopython
 
 %environment
 
