@@ -60,4 +60,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld18-1006 --nv $DIRSCRIPT/cosh.sif
+case $HOST in
+    "ld18-1006.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld18-1006 --nv $DIRSCRIPT/cosh.sif;;
+    "mantrisse") singularity run $DIRSCRIPT/cosh.sif;;
+esac
