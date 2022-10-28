@@ -24,7 +24,7 @@ apt-get install -y golang-go
 apt-get install -y trash-cli
 
 # exa
-cd /usr/local/bin
+cd /usr/local
 wget https://github.com/ogham/exa/releases/download/v0.10.1/exa-linux-x86_64-v0.10.1.zip
 unzip exa-linux-x86_64-v0.10.1.zip
 rm exa-linux-x86_64-v0.10.1.zip
