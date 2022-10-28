@@ -15,13 +15,19 @@ apt-get install -y git
 apt-get install -y wget
 apt-get install -y zsh
 apt-get install -y fzf
-apt-get install -y exa
+# apt-get install -y exa
 apt-get install -y direnv
 apt-get install -y tmux
 apt-get install -y procps
 apt-get install -y bc
 apt-get install -y golang-go
 apt-get install -y trash-cli
+
+# exa
+cd /usr/local
+wget https://github.com/ogham/exa/releases/download/v0.10.1/exa-linux-x86_64-v0.10.1.zip
+unzip exa-linux-x86_64-v0.10.1.zip
+rm exa-linux-x86_64-v0.10.1.zip
 
 # nvim
 apt-get install -y neovim
