@@ -6,7 +6,7 @@ FROM: shell.sif
 %post
 conda install pip
 pip install wget
-pip install prettytable
+pip install prettytable==0.7.2
 pip install matplotlib
 pip install scikit-learn
 pip install biopython
