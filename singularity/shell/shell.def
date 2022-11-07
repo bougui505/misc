@@ -22,6 +22,7 @@ apt-get install -y procps
 apt-get install -y bc
 apt-get install -y golang-go
 apt-get install -y trash-cli
+apt-get install -y unzip
 
 # exa
 cd /usr/local
