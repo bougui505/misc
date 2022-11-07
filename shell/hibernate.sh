@@ -52,7 +52,7 @@ EOF
 }
 
 TIME1=16hour+30minute+00second  # Default value
-TIME2=6hour+30minute+00second+24hour
+TIME2=5hour+45minute+00second+24hour
 while [ "$#" -gt 0 ]; do
     case $1 in
         -t|--time) TIME="$2"; shift ;;
