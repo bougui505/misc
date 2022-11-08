@@ -440,7 +440,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int)
 
     parser.add_argument('--sim', nargs=2, help='Compute the similarity between the given 2 pdb (code or file)')
-    parser.add_argument('--model', help='DL-model to load', default='models/20221005_model.pt~20221013-103512~')
+    parser.add_argument('--model', help='DL-model to load', default='models/20221005_model.pt~20221108-100139~')
 
     parser.add_argument(
         '--encode_dir',
