@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: UTF8 -*-
 
 #############################################################################
@@ -36,6 +36,7 @@
 #                                                                           #
 #############################################################################
 
+import matplotlib.pyplot as plt
 import misc.protein.sscl.encoder as encoder
 import misc.protein.sscl.utils as utils
 import misc.protein.get_pdb_title as get_pdb_title
@@ -48,7 +49,6 @@ from misc.eta import ETA
 import time
 import numpy as np
 import datetime
-import matplotlib.pyplot as plt
 from misc import kabsch
 import pymol
 from pymol import cmd
