@@ -37,6 +37,7 @@
 #############################################################################
 
 import matplotlib.pyplot as plt
+import misc.protein.coords_loader as coords_loader
 import misc.protein.sscl.encoder as encoder
 import misc.protein.sscl.utils as utils
 import misc.protein.get_pdb_title as get_pdb_title

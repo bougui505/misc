@@ -75,7 +75,7 @@ def fetch(code, name, pdbpath=f'{SCRIPTDIR}/pdb/'):
             chain = code[4]  # e.g. 1ycrA
     else:
         chain = None
-    pdbfilepath = f'{pdbpath}/{code[1]}{code[2]}/pdb{code[:4]}.ent.gz'
+    pdbfilepath = f'{pdbpath}/{code[1]}{code[2]}/{code[:4]}.cif.gz'
     # if os.path.exists(pdbfilepath):
     cmd.load(pdbfilepath, object=name)
     if chain is not None:
