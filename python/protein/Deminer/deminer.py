@@ -300,7 +300,8 @@ def encode_dir(directory,
                                            ext=ext,
                                            random_chains=False,
                                            random_rotation=False,
-                                           sigma=sigma)
+                                           sigma=sigma,
+                                           skip_error=True)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              shuffle=False,
