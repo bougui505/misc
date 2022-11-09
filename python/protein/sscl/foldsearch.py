@@ -198,7 +198,7 @@ class Align():
             except pymol.CmdException:
                 utils.fetch(code=self.pdb1, name='p1')
             try:
-                cmd.load(filename=self.pdb2, object='p1')
+                cmd.load(filename=self.pdb2, object='p2')
             except pymol.CmdException:
                 utils.fetch(code=self.pdb2, name='p2')
             cmd.remove(selection=f'not ({self.sel1}) and p1')
