@@ -1,3 +1,5 @@
+# Setting hibernate on Ubuntu 20.04.5 LTS
+
 See: https://askubuntu.com/a/1075516
 
 1. Disable the swap file and delete it (not really needed as you will overwrite it)
