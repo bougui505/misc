@@ -1,3 +1,5 @@
+See: https://askubuntu.com/a/1075516
+
 1. Disable the swap file and delete it (not really needed as you will overwrite it)
 ```
 sudo swapoff /swapfile
