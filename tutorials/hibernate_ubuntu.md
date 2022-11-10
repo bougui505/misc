@@ -73,3 +73,15 @@ HibernateDelaySec=15min
 ```
 sudo systemctl suspend-then-hibernate
 ```
+
+## Lid Close Action
+
+1. Edit `/etc/systemd/logind.conf`
+```
+HandleLidSwitch=suspend-then-hibernate
+```
+
+2. Then you need to restart systemd-logind service (warning! you user session will be restarted) by the next command:
+```
+sudo systemctl restart systemd-logind.service
+```
