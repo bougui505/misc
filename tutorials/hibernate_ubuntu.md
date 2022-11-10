@@ -61,3 +61,15 @@ sudo update-grub
 ```
 sudo systemctl hibernate
 ```
+
+## `suspend-then-hibernate` mode configuration
+
+1. Edit `/etc/systemd/sleep.conf`:
+```
+HibernateDelaySec=15min
+```
+
+2. Test the function:
+```
+sudo systemctl suspend-then-hibernate
+```
