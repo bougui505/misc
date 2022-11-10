@@ -26,3 +26,34 @@ sudo mkswap /swapfile
 ```
 sudo swapon /swapfile
 ```
+
+See: https://askubuntu.com/a/1321773
+
+6. Install dependencies:
+```
+sudo apt install pm-utils hibernate uswsusp
+```
+
+7. Find your UUID and swap offset:
+```
+findmnt -no UUID -T /swapfile && sudo swap-offset /swapfile
+```
+
+8. Edit `/etc/default/grub` and replace the string:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+```
+with your UUID and offset:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash resume=UUID=371b1a95-d91b-49f8-aa4a-da51cbf780b2 resume_offset=23888916"
+```
+
+9. Update GRUB:
+```
+sudo update-grub
+```
+
+10. Test your hibernation:
+```
+sudo systemctl hibernate
+```
