@@ -64,6 +64,8 @@ sudo systemctl hibernate
 
 ## `suspend-then-hibernate` mode configuration
 
+(see: https://askubuntu.com/a/1075860)
+
 1. Edit `/etc/systemd/sleep.conf`:
 ```
 HibernateDelaySec=15min
