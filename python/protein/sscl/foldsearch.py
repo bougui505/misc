@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
 #############################################################################
@@ -350,6 +350,57 @@ def get_important_features(feature_importance, threshold=0.5):
     return list(zip(important_features, importances))
 
 
+def pairwise_similarity(pdblistfile, model, latent_dims=512, batch_size=4, do_break=np.inf):
+    """
+    >>> model = encoder.load_model('models/sscl_fcn_20220615_2221.pt', latent_dims=512)
+    >>> pairwise_similarity(pdblistfile='data/scope_list.txt', model=model)
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    dataset = PDBloader.PDBdataset(pdblistfile=pdblistfile, return_name=True, do_fragment=False)
+    model = model.to(device)
+    model.eval()
+    num_workers = os.cpu_count()
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=False,
+                                             num_workers=num_workers,
+                                             collate_fn=PDBloader.collate_fn)
+    eta = ETA(total_steps=len(dataloader))
+    t_0 = time.time()
+    vectors = []
+    names = []
+    for i, data in enumerate(dataloader):
+        if i >= do_break:
+            break
+        batch = [dmat.to(device) for dmat, name in data if dmat is not None]
+        batch_names = [os.path.basename(os.path.splitext(name)[0]) for dmat, name in data if dmat is not None]
+        try:
+            with torch.no_grad():
+                latent_vectors = torch.cat([model(e) for e in batch])
+            # print(latent_vectors.shape)  # torch.Size([4, 512])
+            latent_vectors = latent_vectors.detach().cpu().numpy()
+            vectors.extend(latent_vectors)
+            names.extend(batch_names)
+        except RuntimeError:
+            print('System too large to fit in memory:')
+            print([name for dmat, name in data if dmat is not None])
+            print([dmat.shape for dmat, name in data if dmat is not None])
+            pass
+        eta_val = eta(i + 1)
+        print(f"step: {i+1}|eta: {eta_val}")
+    print('Computing pairwise distance...')
+    vectors = torch.tensor(np.asarray(vectors)).to(device)
+    names = np.asarray(names)
+    dmat = torch.cdist(vectors, vectors)
+    sorter = torch.argsort(dmat, dim=1).cpu().numpy()
+    names_tiled = np.tile(names, (len(dmat), 1))
+    dmat = np.take_along_axis(dmat.cpu().numpy(), sorter, axis=1)
+    names_tiled = np.take_along_axis(names_tiled, sorter, axis=1)
+    results = dict(zip(names, names_tiled))
+    with open('data/scop_results.pickle', 'wb') as outfile:
+        pickle.dump(results, outfile)
+
+
 def build_index(pdblistfile,
                 model,
                 latent_dims=512,
@@ -544,6 +595,7 @@ if __name__ == '__main__':
                         default=f'{GetScriptDir()}/models/sscl_fcn_20220615_2221.pt')
     parser.add_argument('--latent_dims', default=512, type=int)
     parser.add_argument('--build_index', help='Build the FAISS index', action='store_true')
+    parser.add_argument('--pairwise_similarity', help='Compute pairwise similarity for system in the given file')
     parser.add_argument('--save_every',
                         help='Save the FAISS index every given number of minutes when building it',
                         type=int,
@@ -556,10 +608,17 @@ if __name__ == '__main__':
                         help='FAISS index directory. Default: index_fcn_20220615_2221.faiss',
                         default=f'{GetScriptDir()}/index_fcn_20220615_2221.faiss')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        if args.func is None:
+            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        else:
+            for f in args.func:
+                print(f'Testing {f}')
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(f, globals())
         sys.exit()
 
     if args.similarity is not None:
@@ -622,3 +681,6 @@ if __name__ == '__main__':
                     batch_size=args.bs,
                     save_each=args.save_every,
                     indexfilename=args.index)
+    if args.pairwise_similarity is not None:
+        model = encoder.load_model(args.model, latent_dims=args.latent_dims)
+        pairwise_similarity(args.pairwise_similarity, model, latent_dims=512, batch_size=4, do_break=np.inf)

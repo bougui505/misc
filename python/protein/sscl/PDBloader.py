@@ -44,6 +44,8 @@ from misc.pytorch import torchify
 import misc.protein.sscl.utils as utils
 import numpy as np
 
+cmd.feedback(action='disable', module='all', mask='everything')
+
 
 def collate_fn(batch):
     return batch
@@ -54,51 +56,35 @@ class PDBdataset(torch.utils.data.Dataset):
     Load pdb files from a PDB database and return coordinates
     See: ~/source/misc/shell/updatePDB.sh to download the PDB
 
-    >>> # Generate random datapoints for testing
-    >>> dataset = PDBdataset('/media/bougui/scratch/pdb')
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> for i, batch in enumerate(dataloader):
-    ...     print(len(batch))
-    ...     print([(dmat.shape, dmat_fragment.shape) for dmat, dmat_fragment in batch])
-    ...     if i == 0:
-    ...         break
-    4
-    [(torch.Size([1, 1, 249, 249]), torch.Size([1, 1, ..., ...])), (torch.Size([1, 1, 639, 639]), torch.Size([1, 1, ..., ...])), (torch.Size([1, 1, 390, 390]), torch.Size([1, 1, ..., ...])), (torch.Size([1, 1, 131, 131]), torch.Size([1, 1, ..., ...]))]
-
-
-    >>> dataset = PDBdataset(pdblistfile='pdbfilelist.txt', return_name=True)
+    >>> seed = torch.manual_seed(0)
+    >>> dataset = PDBdataset(pdbpath='/media/bougui/scratch/pdb', return_name=True)
     >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
     >>> dataiter = iter(dataloader)
     >>> batch = next(dataiter)
     >>> len(batch)
     4
-    >>> [(dmat.shape, dmat_fragment.shape, name) for dmat, dmat_fragment, name in batch]
-    [(torch.Size([1, 1, 162, 162]), torch.Size([1, 1, ..., ...]), 'pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), torch.Size([1, 1, ..., ...]), 'pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 154, 154]), torch.Size([1, 1, ..., ...]), 'pdb/02/pdb102m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), torch.Size([1, 1, ..., ...]), 'pdb/02/pdb102l.ent.gz_A')]
-
-
-    >>> dataset = PDBdataset(pdblistfile='pdbfilelist.txt', return_name=True, do_fragment=False)
-    >>> dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, collate_fn=collate_fn)
-    >>> dataiter = iter(dataloader)
-    >>> batch = next(dataiter)
-    >>> len(batch)
-    4
-    >>> [(dmat.shape, name) for dmat, name in batch]
-    [(torch.Size([1, 1, 162, 162]), 'pdb/00/pdb200l.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/01/pdb101m.ent.gz_A'), (torch.Size([1, 1, 154, 154]), 'pdb/02/pdb102m.ent.gz_A'), (torch.Size([1, 1, 163, 163]), 'pdb/02/pdb102l.ent.gz_A')]
+    >>> for e in batch:
+    ...     if e[0] is not None:
+    ...         dmat, dmat_fragment, name = e
+    ...         print(dmat.shape, dmat_fragment.shape, name)
+    torch.Size([1, 1, 589, 589]) torch.Size([1, 1, 875, 875]) /media/bougui/scratch/pdb/a9/3a9r.cif.gz_C
+    torch.Size([1, 1, 116, 116]) torch.Size([1, 1, 199, 199]) /media/bougui/scratch/pdb/a9/4a9j.cif.gz_B
+    torch.Size([1, 1, 198, 198]) torch.Size([1, 1, 260, 260]) /media/bougui/scratch/pdb/a9/6a92.cif.gz_C
     """
     def __init__(
-            self,
-            pdbpath=None,
-            pdblist=None,
-            pdblistfile=None,  # format: pdbfilename chain
-            selection='polymer.protein and name CA',
-            return_name=False,
-            do_fragment=True):
+        self,
+        pdbpath=None,
+        pdblist=None,
+        pdblistfile=None,  # format: pdbfilename chain
+        selection='polymer.protein and name CA',
+        return_name=False,
+        do_fragment=True,
+        ext='cif.gz'):
         self.chain_from_list = False
         self.return_name = return_name
         self.do_fragment = do_fragment
         if pdbpath is not None:
-            self.list_IDs = glob.glob(f'{pdbpath}/**/*.ent.gz')
+            self.list_IDs = glob.glob(f'{pdbpath}/**/*.{ext}')
         if pdblist is not None:
             self.list_IDs = pdblist
         if pdblistfile is not None:
