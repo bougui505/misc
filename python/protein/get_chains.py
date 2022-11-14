@@ -82,9 +82,12 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Print the chain ids for the given pdb file')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-p', '--pdb')
+    parser.add_argument('--print_name',
+                        action='store_true',
+                        help='Print the name of the file or pdbcode before the chain ids')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -104,4 +107,7 @@ if __name__ == '__main__':
         sys.exit()
 
     chains = get_chains(args.pdb)
-    print(" ".join(chains))
+    if not args.print_name:
+        print(" ".join(chains))
+    else:
+        print(f'{args.pdb} {" ".join(chains)}')
