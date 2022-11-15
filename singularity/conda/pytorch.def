@@ -2,4 +2,4 @@ BOOTSTRAP: localimage
 FROM: conda.sif
 
 %post
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
