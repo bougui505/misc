@@ -655,3 +655,12 @@ python/protein/Deminer/.nfs0000000000408d370000000f
 singularity/.nfs0000000000025aed000001b8
 python/protein/sscl/data/scop_results.pickle
 python/protein/sscl/data/scope_list.txt
+python/protein/sscl/analysis/data/dir.des.scope.2.01-stable.txt
+python/protein/sscl/analysis/data/scop40_list.txt
+python/protein/sscl/analysis/data/scop_results.pickle
+python/protein/sscl/analysis/out/foldsearch_1.svg
+python/protein/sscl/analysis/out/foldsearch_1.txt
+python/protein/sscl/analysis/out/foldsearch_2.svg
+python/protein/sscl/analysis/out/foldsearch_2.txt
+python/protein/sscl/analysis/out/foldsearch_3.svg
+python/protein/sscl/analysis/out/foldsearch_3.txt
