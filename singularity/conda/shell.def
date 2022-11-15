@@ -24,7 +24,15 @@ apt-get install -y golang-go
 apt-get install -y trash-cli
 
 # nvim
-apt-get install -y neovim
+apt-get install -y ninja-build gettext libtool libtool-bin autoconf automake cmake g++ pkg-config unzip curl doxygen
+pip install --upgrade pynvim
+cd /opt
+git clone https://github.com/neovim/neovim
+cd neovim
+make CMAKE_BUILD_TYPE=RelWithDebInfo
+make install
+cd /opt
+rm -r neovim
 
 # vim-plug
 cd /opt
