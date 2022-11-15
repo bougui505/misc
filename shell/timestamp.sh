@@ -51,7 +51,10 @@ Add a timestamp to the given file
 EOF
 }
 
-IN=1  # Default value
+if [ $# -lt 1 ]; then
+    usage; exit 1
+fi
+
 while [ "$#" -gt 0 ]; do
     case $1 in
         -i|--input) IN="$2"; shift ;;
@@ -62,4 +65,6 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-mv $IN $(date +%Y%m%d)_$IN
+if [ -f $IN ] || [ -d $IN ]; then
+    mv -v $IN $(date +%Y%m%d)_$IN
+fi
