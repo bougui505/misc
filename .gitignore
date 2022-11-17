@@ -664,3 +664,9 @@ python/protein/sscl/analysis/out/foldsearch_2.svg
 python/protein/sscl/analysis/out/foldsearch_2.txt
 python/protein/sscl/analysis/out/foldsearch_3.svg
 python/protein/sscl/analysis/out/foldsearch_3.txt
+latex/fastbeamer/.fastbeamer/beamer_header.sty
+latex/fastbeamer/.fastbeamer/biblio.bib
+latex/fastbeamer/.fastbeamer/figures
+latex/fastbeamer/.fastbeamer/slide_0.tex
+latex/fastbeamer/.fastbeamer/slide_1.tex
+latex/fastbeamer/svg-inkscape/LaTeX_logo_svg-raw.pdf
