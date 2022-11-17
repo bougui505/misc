@@ -39,6 +39,8 @@ import os
 import glob
 import subprocess
 from PyPDF2 import PdfMerger
+from misc import hashfile
+import time
 
 
 def log(msg):
@@ -155,12 +157,23 @@ class Fastbeamer(object):
         Total number of slides: 2
         """
         self.texfilename = texfilename
-        self.header = get_header(self.texfilename)
-        self.footer = get_footer(self.texfilename)
-        self.slides = splitframes(self.texfilename, header=self.header, footer=self.footer)
-        self.cwd = os.getcwd()
-        self.pdfs = self.compile()
-        self.merge()
+        self.hash = None
+        isopened = False
+        p = subprocess.Popen('pwd', shell=True)
+        while True:
+            if hashfile.hash(self.texfilename) != self.hash:
+                self.hash = hashfile.hash(self.texfilename)
+                self.header = get_header(self.texfilename)
+                self.footer = get_footer(self.texfilename)
+                self.slides = splitframes(self.texfilename, header=self.header, footer=self.footer)
+                self.cwd = os.getcwd()
+                self.pdfs = self.compile()
+                self.merge()
+                # see: https://stackoverflow.com/a/43276598/1679629 for p.poll()
+                if os.path.exists('build/fastbeamer.pdf') and p.poll() is not None:
+                    p = subprocess.Popen('evince build/fastbeamer.pdf', shell=True)
+                    isopened = True
+            time.sleep(2)
 
     def compile(self):
         outpdf = []
