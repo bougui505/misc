@@ -39,21 +39,37 @@ import os
 import hashlib
 
 
-def hash(filename):
+def hash(inputdata):
     """
+    Hash a file
     >>> hash('Timer.py')
     '8868007b859ea0230f568bc9168d4e74'
+
+    Hash a directory
+    >>> hash('pymol')
+    '40febe9e301a604992e04659a0eee120'
     """
+    md5 = hashlib.md5()
+    inputdata = os.path.realpath(inputdata)
+    if os.path.isfile(inputdata):
+        md5 = update_md5(inputdata, md5)
+    if os.path.isdir(inputdata):
+        filelist = os.listdir(inputdata)
+        for filename in filelist:
+            md5 = update_md5(f'{inputdata}/{filename}', md5)
+    return md5.hexdigest()
+
+
+def update_md5(filename, md5):
     # buf_size is totally arbitrary, change for your app!
     buf_size = 65536  # lets read stuff in 64kb chunks!
-    md5 = hashlib.md5()
     with open(filename, 'rb') as f:
         while True:
             data = f.read(buf_size)
             if not data:
                 break
             md5.update(data)
-    return md5.hexdigest()
+    return md5
 
 
 def log(msg):
