@@ -1,0 +1,25 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{beamer_header}
+\title{My title}
+\begin{document}
+\maketitle
+
+\begin{frame}{First frame}
+    1st frame content\\
+    \includegraphics[width=.3\textwidth]{figures/LaTeX_logo.png}\\
+    \cite{Mallet_2020}
+\end{frame}
+
+\begin{frame}{Second frame}
+    2nd frame content\\
+    \includesvg[width=.3\textwidth]{figures/LaTeX_logo.svg}\\
+    \cite{10.1093/bioinformatics/btab849}
+\end{frame}
+
+
+\appendix
+\begin{frame}[allowframebreaks]{References}
+\bibliography{biblio}
+\bibliographystyle{apalike}
+\end{frame}
+\end{document}
