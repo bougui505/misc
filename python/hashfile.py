@@ -39,7 +39,7 @@ import os
 import hashlib
 
 
-def hash(inputdata):
+def hash(inputdata, md5=None, return_md5_obj=False):
     """
     Hash a file
     >>> hash('Timer.py')
@@ -49,7 +49,8 @@ def hash(inputdata):
     >>> hash('pymol')
     '40febe9e301a604992e04659a0eee120'
     """
-    md5 = hashlib.md5()
+    if md5 is None:
+        md5 = hashlib.md5()
     inputdata = os.path.realpath(inputdata)
     if os.path.isfile(inputdata):
         md5 = update_md5(inputdata, md5)
@@ -57,6 +58,21 @@ def hash(inputdata):
         filelist = os.listdir(inputdata)
         for filename in filelist:
             md5 = update_md5(f'{inputdata}/{filename}', md5)
+    if return_md5_obj:
+        return md5
+    else:
+        return md5.hexdigest()
+
+
+def cathash(list_of_data):
+    """
+    Hash a concatenation of files or directories
+    >>> cathash(['Timer.py', 'pymol'])
+    '2449d88b9a1e9b82793ba30b6382c4c9'
+    """
+    md5 = hashlib.md5()
+    for e in list_of_data:
+        md5 = hash(e, md5=md5, return_md5_obj=True)
     return md5.hexdigest()
 
 
