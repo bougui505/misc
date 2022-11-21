@@ -131,7 +131,7 @@ def get_coords(pdb,
     >>> [e.shape for e in coords]
     [(705, 3), (113, 3)]
 
-    Check that the created pymol object has been removed to avoid memory leak!
+    Check that the created pymol object has been deleted to avoid memory leak!
     >>> len(cmd.get_object_list())
     0
 
@@ -143,12 +143,12 @@ def get_coords(pdb,
     >>> selection
     'test and all and present'
 
-    Remarks: when return_selection=True, the pymol object is not removed.
+    Remarks: when return_selection=True, the pymol object is not deleted.
     Therefore the user can interact with it, using the given selection.
-    However, it has to be removed manually to avoid memory leak!
+    However, it has to be deleted manually to avoid memory leak!
     >>> len(cmd.get_object_list())
     1
-    >>> cmd.remove('test')
+    >>> cmd.delete('test')
     >>> len(cmd.get_object_list())
     0
     """
@@ -184,8 +184,8 @@ def get_coords(pdb,
                 coords_chain = rotate(coords_chain, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
             coords.append(coords_chain)
     if not return_selection:
-        # Remove the pymol object
-        cmd.remove(obj)
+        # delete the pymol object
+        cmd.delete(obj)
         return coords
     else:
         return coords, selection
