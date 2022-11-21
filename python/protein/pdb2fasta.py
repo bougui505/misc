@@ -53,6 +53,12 @@ def GetScriptDir():
     return scriptdir
 
 
+def pdb2fasta(pdb, selection):
+    _, selection = coords_loader.get_coords(pdb, selection=selection, return_selection=True, obj=pdb, verbose=False)
+    seq = cmd.get_fastastr(selection)
+    return seq
+
+
 if __name__ == '__main__':
     import sys
     import doctest
@@ -77,10 +83,5 @@ if __name__ == '__main__':
         sys.exit()
 
     if args.pdb is not None:
-        _, selection = coords_loader.get_coords(args.pdb,
-                                                selection=f'{args.selection}',
-                                                return_selection=True,
-                                                obj=args.pdb,
-                                                verbose=False)
-        seq = cmd.get_fastastr(selection)
+        seq = pdb2fasta(args.pdb, args.selection)
         print(seq)
