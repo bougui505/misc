@@ -36,7 +36,8 @@
 #                                                                           #
 #############################################################################
 import os
-from misc.protein import coords_loader
+from misc.protein.pdb2fasta import pdb2fasta
+from misc.writetmp import writetmp
 from pymol import cmd
 
 
@@ -53,13 +54,6 @@ def GetScriptDir():
     return scriptdir
 
 
-def pdb2fasta(pdb, selection):
-    _, selection = coords_loader.get_coords(pdb, selection=selection, return_selection=True, obj=pdb, verbose=False)
-    seq = cmd.get_fastastr(selection)
-    cmd.delete(selection)
-    return seq
-
-
 if __name__ == '__main__':
     import sys
     import doctest
@@ -67,22 +61,48 @@ if __name__ == '__main__':
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
-    # logfilename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    # if not os.path.isdir('logs'):
+    #     os.mkdir('logs')
+    # logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
     # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p', '--pdb')
-    parser.add_argument('-s', '--selection', default='all')
+    parser.add_argument('--pdb1', help='First pdb file to align')
+    parser.add_argument('--pdb2', help='Second pdb file to align')
+    parser.add_argument('--sel1', help='Selection for pdb1', default='polymer.protein')
+    parser.add_argument('--sel2', help='Selection for pdb2', default='polymer.protein')
+    parser.add_argument('--fasta1', help='First fasta file to align')
+    parser.add_argument('--fasta2', help='Second fasta file to align')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
+    # If log is present log the arguments to the log file:
+    for k, v in args._get_kwargs():
+        log(f'# {k}: {v}')
+
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        if args.func is None:
+            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        else:
+            for f in args.func:
+                print(f'Testing {f}')
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(f, globals())
         sys.exit()
 
-    if args.pdb is not None:
-        seq = pdb2fasta(args.pdb, args.selection)
-        print(seq)
+    fasta1 = args.fasta1
+    fasta2 = args.fasta2
+    if args.pdb1 is not None:
+        seq1 = pdb2fasta(args.pdb1, args.sel1)
+        fasta1 = writetmp(seq1)
+    if args.pdb2 is not None:
+        seq2 = pdb2fasta(args.pdb2, args.sel2)
+        fasta2 = writetmp(seq2)
+    outfile = writetmp('')
+    os.system(f'needle {fasta1} {fasta2} -gapopen 10.0 -gapextend 0.5 -outfile {outfile} -brief N')
+    with open(outfile, 'r') as f:
+        print(f.read())
