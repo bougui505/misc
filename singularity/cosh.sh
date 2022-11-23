@@ -63,6 +63,7 @@ done
 case $HOST in
     "ld18-1006.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld18-1006 --nv $DIRSCRIPT/cosh.sif;;
     "ld19-1020.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld19-1020 --nv $DIRSCRIPT/cosh.sif;;
+    "ld21-1017.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /pool --nv $DIRSCRIPT/cosh.sif;;
     "mantrisse") singularity run -B /media/bougui/scratch $DIRSCRIPT/cosh.sif;;
     "arcturus") singularity run -B /media/bougui/scratch --nv $DIRSCRIPT/cosh.sif;;
 esac
