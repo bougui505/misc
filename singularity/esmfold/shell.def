@@ -1,0 +1,101 @@
+BOOTSTRAP: localimage
+FROM: esm.sif
+
+# Get a ZSH user shell in a singularity container
+# Run it with:
+# singularity run --cleanenv shell.sif
+
+%files
+init.vim /opt/
+github.vim /usr/local/etc/nvim/
+
+%post
+pip install ipython
+apt-get update
+apt-get install -y git
+apt-get install -y wget
+apt-get install -y zsh
+apt-get install -y fzf
+apt-get install -y exa
+apt-get install -y direnv
+apt-get install -y tmux
+apt-get install -y procps
+apt-get install -y bc
+apt-get install -y golang-go
+apt-get install -y trash-cli
+
+# nvim
+apt-get install -y ninja-build gettext libtool libtool-bin autoconf automake cmake g++ pkg-config unzip curl doxygen
+pip install --upgrade pynvim
+cd /opt
+git clone https://github.com/neovim/neovim
+cd neovim
+make CMAKE_BUILD_TYPE=RelWithDebInfo
+make install
+cd /opt
+rm -r neovim
+
+# vim-plug
+cd /opt
+mkdir -p /opt/nvim-plugged
+mkdir -p /usr/local/etc/nvim/autoload
+wget https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+mv plug.vim /usr/local/etc/nvim/autoload
+
+# nvim plugins
+apt-get install -y flake8
+apt-get install -y yapf3 python3-yapf
+apt-get install -y exuberant-ctags
+cd /usr/bin/
+ln -s yapf3 yapf || echo 'yapf already exists'
+cd -
+# apt-get install -y pylint
+nvim -u /opt/init.vim --headless +PlugInstall +qall
+
+# PURE ZSH PROMPT
+cd /opt
+git clone https://github.com/sindresorhus/pure.git || echo 'repo exists'
+chmod g-w,o-w /opt/pure
+
+# zsh-autosuggestions
+cd /opt
+git clone https://github.com/zsh-users/zsh-autosuggestions || echo 'repo exists'
+
+# zsh-histdb
+apt-get install -y sqlite3
+apt-get install -y bsdextrautils  # for column utility
+cd /opt
+git clone https://github.com/larkery/zsh-histdb || echo 'repo exists'
+
+# fzf-tab
+cd /opt
+git clone https://github.com/Aloxaf/fzf-tab.git || echo 'repo exists'
+
+# zsh-syntax-highlighting
+cd /opt
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git || echo 'repo exists'
+
+# zsh-histdb-fzf
+cd /opt
+git clone https://github.com/m42e/zsh-histdb-fzf.git || echo 'repo exists'
+
+# Cod
+cd /opt
+git clone https://github.com/dim-an/cod.git || echo 'repo exists'
+cd cod
+test -f cod || go build
+cd -
+
+# zsh-abbr
+cd /opt
+git clone https://github.com/olets/zsh-abbr.git || echo 'repo exists'
+
+apt-get clean
+
+%environment
+# export SHELL=/usr/bin/zsh
+export PATH=/bin:/usr/bin:/usr/local/bin
+export PYTHONPATH="$PYTHONPATH:/opt/pymol/lib/python"
+
+%runscript
+zsh
