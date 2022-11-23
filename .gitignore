@@ -670,3 +670,6 @@ latex/fastbeamer/.fastbeamer/figures
 latex/fastbeamer/.fastbeamer/slide_0.tex
 latex/fastbeamer/.fastbeamer/slide_1.tex
 latex/fastbeamer/svg-inkscape/LaTeX_logo_svg-raw.pdf
+singularity/esmfold/esm.sif
+singularity/esmfold/pytorch.sif
+singularity/esmfold/shell.sif
