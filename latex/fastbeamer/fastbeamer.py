@@ -38,7 +38,7 @@
 import os
 import glob
 import subprocess
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfFileReader
 from misc import hashfile
 import time
 
@@ -196,7 +196,9 @@ class Fastbeamer(object):
         for pdf in self.pdfs:
             print(f"merging pdf {pdf}")
             with open(pdf, 'rb') as pdffile:
-                merger.append(fileobj=pdffile, pages=(0, 1))
+                readpdf = PdfFileReader(pdffile)
+                totalpages = readpdf.numPages
+                merger.append(fileobj=pdffile, pages=(0, totalpages - 1))
         with open('build/fastbeamer.pdf', 'wb') as output:
             merger.write(output)
         merger.close()
