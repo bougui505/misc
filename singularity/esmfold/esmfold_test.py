@@ -6,6 +6,8 @@
 import torch
 import esm
 
+torch.hub.set_dir('/c7/scratch/bougui/torch/hub')
+
 model = esm.pretrained.esmfold_v1()
 model = model.eval().cuda()
 
