@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# From https://github.com/facebookresearch/esm repository
+# See local copy in cloned repo in ~/source/esm/scripts/esmfold_inference.py
 import argparse
 import logging
 import sys
@@ -23,7 +26,6 @@ console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-
 PathLike = T.Union[str, Path]
 
 
@@ -31,9 +33,7 @@ def enable_cpu_offloading(model):
     from torch.distributed.fsdp import CPUOffload, FullyShardedDataParallel
     from torch.distributed.fsdp.wrap import enable_wrap, wrap
 
-    torch.distributed.init_process_group(
-        backend="nccl", init_method="tcp://localhost:9999", world_size=1, rank=0
-    )
+    torch.distributed.init_process_group(backend="nccl", init_method="tcp://localhost:9999", world_size=1, rank=0)
 
     wrapper_kwargs = dict(cpu_offload=CPUOffload(offload_params=True))
 
@@ -56,8 +56,8 @@ def init_model_on_gpu_with_cpu_offloading(model):
 
 
 def create_batched_sequence_datasest(
-    sequences: T.List[T.Tuple[str, str]], max_tokens_per_batch: int = 1024
-) -> T.Generator[T.Tuple[T.List[str], T.List[str]], None, None]:
+        sequences: T.List[T.Tuple[str, str]],
+        max_tokens_per_batch: int = 1024) -> T.Generator[T.Tuple[T.List[str], T.List[str]], None, None]:
 
     batch_headers, batch_sequences, num_tokens = [], [], 0
     for header, seq in sequences:
@@ -80,9 +80,7 @@ if __name__ == "__main__":
         type=Path,
         required=True,
     )
-    parser.add_argument(
-        "-o", "--pdb", help="Path to output PDB directory", type=Path, required=True
-    )
+    parser.add_argument("-o", "--pdb", help="Path to output PDB directory", type=Path, required=True)
     parser.add_argument(
         "--num-recycles",
         type=int,
@@ -144,14 +142,10 @@ if __name__ == "__main__":
         except RuntimeError as e:
             if e.args[0].startswith("CUDA out of memory"):
                 if len(sequences) > 1:
-                    logger.info(
-                        f"Failed (CUDA out of memory) to predict batch of size {len(sequences)}. "
-                        "Try lowering `--max-tokens-per-batch`."
-                    )
+                    logger.info(f"Failed (CUDA out of memory) to predict batch of size {len(sequences)}. "
+                                "Try lowering `--max-tokens-per-batch`.")
                 else:
-                    logger.info(
-                        f"Failed (CUDA out of memory) on sequence {headers[0]} of length {len(sequences[0])}."
-                    )
+                    logger.info(f"Failed (CUDA out of memory) on sequence {headers[0]} of length {len(sequences[0])}.")
 
                 continue
             raise
@@ -162,14 +156,11 @@ if __name__ == "__main__":
         time_string = f"{tottime / len(headers):0.1f}s"
         if len(sequences) > 1:
             time_string = time_string + f" (amortized, batch size {len(sequences)})"
-        for header, seq, pdb_string, mean_plddt, ptm in zip(
-            headers, sequences, pdbs, output["mean_plddt"], output["ptm"]
-        ):
+        for header, seq, pdb_string, mean_plddt, ptm in zip(headers, sequences, pdbs, output["mean_plddt"],
+                                                            output["ptm"]):
             output_file = args.pdb / f"{header}.pdb"
             output_file.write_text(pdb_string)
             num_completed += 1
-            logger.info(
-                f"Predicted structure for {header} with length {len(seq)}, pLDDT {mean_plddt:0.1f}, "
-                f"pTM {ptm:0.3f} in {time_string}. "
-                f"{num_completed} / {num_sequences} completed."
-            )
+            logger.info(f"Predicted structure for {header} with length {len(seq)}, pLDDT {mean_plddt:0.1f}, "
+                        f"pTM {ptm:0.3f} in {time_string}. "
+                        f"{num_completed} / {num_sequences} completed.")
