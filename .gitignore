@@ -673,3 +673,4 @@ latex/fastbeamer/svg-inkscape/LaTeX_logo_svg-raw.pdf
 singularity/esmfold/esm.sif
 singularity/esmfold/pytorch.sif
 singularity/esmfold/shell.sif
+singularity/esmfold/result.pdb
