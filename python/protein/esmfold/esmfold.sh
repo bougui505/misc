@@ -63,7 +63,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-execstr="singularity exec --nv esm.sif ./esmfold_inference.py -i $FASTA -o esmfold_results --cpu-offload"
+execstr="singularity exec --nv $DIRSCRIPT/esm.sif $DIRSCRIPT/esmfold_inference.py -i $FASTA -o esmfold_results --cpu-offload"
 if [ $CPU -eq 1 ]; then
     echo 'Running inference on CPU'
     execstr+=" --cpu-only"
