@@ -674,3 +674,4 @@ singularity/esmfold/esm.sif
 singularity/esmfold/pytorch.sif
 singularity/esmfold/shell.sif
 singularity/esmfold/result.pdb
+python/protein/esmfold/esmfold_results/test.pdb
