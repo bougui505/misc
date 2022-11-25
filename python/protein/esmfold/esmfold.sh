@@ -47,12 +47,15 @@ function usage () {
 Help message
     -h, --help print this help message and exit
     -f, --fasta sequence fasta file
+    --cpu CPU only inference
 EOF
 }
 
+CPU=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -f|--fasta) FASTA="$2"; shift ;;
+        --cpu) CPU=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -60,4 +63,11 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity exec --nv esm.sif ./esmfold_inference.py -i $FASTA -o esmfold_results
+execstr="singularity exec --nv esm.sif ./esmfold_inference.py -i $FASTA -o esmfold_results --cpu-offload"
+if [ $CPU -eq 1 ]; then
+    echo 'Running inference on CPU'
+    execstr+=" --cpu-only"
+fi
+echo "Running:"
+echo $execstr
+eval $execstr
