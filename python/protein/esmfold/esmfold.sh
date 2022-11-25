@@ -47,13 +47,13 @@ function usage () {
     cat << EOF
 Help message
     -h, --help print this help message and exit
+    -f, --fasta sequence fasta file
 EOF
 }
 
-N=1  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
-        -n|--number) N="$2"; shift ;;
+        -f|--fasta) FASTA="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -61,5 +61,4 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-
-
+singularity exec --nv esm.sif ./esmfold_inference.py -i $FASTA -o esmfold_results
