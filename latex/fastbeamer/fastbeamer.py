@@ -173,7 +173,7 @@ class Fastbeamer(object):
                 if os.path.exists('build/fastbeamer.pdf') and p.poll() is not None:
                     p = subprocess.Popen('evince build/fastbeamer.pdf', shell=True)
                     isopened = True
-            time.sleep(2)
+            time.sleep(1)
 
     def compile(self):
         outpdf = []
