@@ -171,7 +171,7 @@ class Fastbeamer(object):
                 self.merge()
                 # see: https://stackoverflow.com/a/43276598/1679629 for p.poll()
                 if os.path.exists('build/fastbeamer.pdf') and p.poll() is not None:
-                    p = subprocess.Popen('evince build/fastbeamer.pdf', shell=True)
+                    p = subprocess.Popen('okular build/fastbeamer.pdf', shell=True)
                     isopened = True
             time.sleep(1)
 
