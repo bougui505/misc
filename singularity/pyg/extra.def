@@ -1,0 +1,24 @@
+BOOTSTRAP: localimage
+FROM: shell.sif
+
+%files
+
+%post
+apt-get update
+apt-get install -y rename
+conda install pip
+pip install wget
+pip install prettytable==0.7.2
+pip install matplotlib
+pip install scikit-learn
+pip install biopython
+pip install dill
+pip install ipython
+
+conda install -c conda-forge nvitop
+conda install pyg -c pyg
+apt-get clean
+
+%environment
+
+%runscript
