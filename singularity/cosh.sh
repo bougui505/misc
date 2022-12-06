@@ -46,13 +46,14 @@ function usage () {
     cat << EOF
 Run the container shell (cosh) in $DIRSCRIPT/cosh.sif
     -h, --help print this help message and exit
+    -s, --sif sif file to run
 EOF
 }
 
-N=1  # Default value
+SIF="$DIRSCRIPT/cosh.sif"  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
-        -n|--number) N="$2"; shift ;;
+        -s|--sif) SIF="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -61,9 +62,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 case $HOST in
-    "ld18-1006.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld18-1006 --nv $DIRSCRIPT/cosh.sif;;
-    "ld19-1020.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld19-1020 --nv $DIRSCRIPT/cosh.sif;;
-    "ld21-1017.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /pool --nv $DIRSCRIPT/cosh.sif;;
-    "mantrisse") singularity run -B /media/bougui/scratch $DIRSCRIPT/cosh.sif;;
-    "arcturus") singularity run -B /media/bougui/scratch --nv $DIRSCRIPT/cosh.sif;;
+    "ld18-1006.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld18-1006 --nv $SIF;;
+    "ld19-1020.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld19-1020 --nv $SIF;;
+    "ld21-1017.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /pool --nv $SIF;;
+    "mantrisse") singularity run -B /media/bougui/scratch $SIF;;
+    "arcturus") singularity run -B /media/bougui/scratch --nv $SIF;;
 esac
