@@ -38,7 +38,68 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, GATConv
+
+
+class GCN(torch.nn.Module):
+    """
+    See: https://pytorch-geometric.readthedocs.io/en/latest/notes/introduction.html#data-handling-of-graphs
+    edge_index: Graph connectivity in COO format with shape [2, num_edges] and type torch.long
+    x: Node feature matrix with shape [num_nodes, num_node_features]
+    edge_weight: Edge weight vector [num_edges]
+    >>> edge_index = torch.tensor([[0, 1, 1, 2], [1, 0, 2, 1]], dtype=torch.long)
+    >>> x = torch.tensor([[0.3], [0.01], [0.5]], dtype=torch.float)
+    >>> edge_weight = torch.tensor([0.1, 0.5, 0.2, 0.3], dtype=torch.float)
+    >>> gcn = GCN(num_node_features=1, num_classes=4)
+    >>> out = gcn(x, edge_index, edge_weight)
+    >>> out.shape
+    torch.Size([3, 4])
+
+    """
+    def __init__(self, num_node_features, num_classes):
+        super().__init__()
+        self.conv1 = GCNConv(num_node_features, 16)
+        self.conv2 = GCNConv(16, num_classes)
+
+    def forward(self, x, edge_index, edge_weight):
+        x = self.conv1(x, edge_index, edge_weight)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index, edge_weight)
+
+        return F.log_softmax(x, dim=1)
+
+
+class GAT(torch.nn.Module):
+    """
+    See: https://pytorch-geometric.readthedocs.io/en/latest/notes/introduction.html#data-handling-of-graphs
+    edge_index: Graph connectivity in COO format with shape [2, num_edges] and type torch.long
+    x: Node feature matrix with shape [num_nodes, num_node_features]
+    edge_weight: Edge weight vector [num_edges]
+    >>> edge_index = torch.tensor([[0, 1, 1, 2, 0, 1, 2], [1, 0, 2, 1, 0, 1, 2]], dtype=torch.long)
+    >>> x = torch.tensor([[0.3], [0.01], [0.5], [0.3], [0.3], [0.3]], dtype=torch.float)
+    >>> edge_weight = torch.tensor([0.1, 0.5, 0.2, 0.3], dtype=torch.float)
+    >>> gat = GAT(num_node_features=1, num_classes=4)
+    >>> out, outedge, outweight = gat(x, edge_index, edge_weight)
+    >>> out.shape
+    torch.Size([6, 4])
+    >>> outedge
+    tensor([[0, 1, 1, 2, 0, 1, 2],
+            [1, 0, 2, 1, 0, 1, 2]])
+    >>> outweight.shape
+    torch.Size([7, 1])
+    """
+    def __init__(self, num_node_features, num_classes):
+        super().__init__()
+        self.conv1 = GATConv(num_node_features, 16, add_self_loops=False)
+        self.conv2 = GATConv(16, num_classes, add_self_loops=False)
+
+    def forward(self, x, edge_index, edge_weight):
+        x = self.conv1(x, edge_index, edge_weight)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x, (out_edge_index, out_edge_weight) = self.conv2(x, edge_index, edge_weight, return_attention_weights=True)
+        return F.log_softmax(x, dim=1), out_edge_index, out_edge_weight
 
 
 def log(msg):
