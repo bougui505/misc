@@ -1,0 +1,12 @@
+BOOTSTRAP: localimage
+FROM: shell.sif
+
+%post
+cd /opt
+conda install pytorch pytorch-cuda=11.7 -c pytorch -c nvidia
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
+git clone https://github.com/facebookresearch/esm
+cd esm
+pip install -e .
+cd /opt
