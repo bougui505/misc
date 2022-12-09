@@ -39,11 +39,12 @@ import os
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import RGCNConv
+from torch_scatter import scatter_max
 
 
 class RGCN(torch.nn.Module):
     """
-    >>> from misc.mols.graph.mol_to_graph import molfromsmiles, get_mol_graph
+    >>> from misc.mols.graph.mol_to_graph import molfromsmiles, get_mol_graph, MolDataset
     >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
     >>> mol = molfromsmiles(smiles)
     >>> mol.GetNumAtoms()
@@ -51,24 +52,99 @@ class RGCN(torch.nn.Module):
     >>> graph = get_mol_graph(mol)
     >>> graph
     Data(x=[48, 16], edge_index=[2, 104], edge_attr=[104, 4], pos=[48, 3], edge_type=[104])
-    >>> rgcn = RGCN(num_node_features=16, num_relations=4)
+    >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=False)
+    >>> parameters = rgcn.parameters()
+    >>> num_trainable_params = sum(p.numel() for p in parameters)
+    >>> num_trainable_params
+    14192
     >>> rgcn.conv1.weight.shape
     torch.Size([4, 16, 16])
     >>> out = rgcn(graph)
     >>> out.shape
-    torch.Size([48, 32])
+    torch.Size([48, 64])
+
+    >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=True)
+    >>> out = rgcn(graph)
+    >>> out.shape
+    torch.Size([64])
+
+    Try on a batch:
+    >>> from torch_geometric.loader import DataLoader
+    >>> seed = torch.manual_seed(0)
+    >>> smilesfilename = 'data/test.smi'
+    >>> dataset = MolDataset(smilesfilename)
+    >>> loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    >>> iterator = iter(loader)
+    >>> batch = next(iterator)
+    >>> batch
+    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], edge_type=[3912], batch=[1867], ptr=[33])
+    >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=False)
+    >>> out = rgcn(batch)
+    >>> out.shape
+    torch.Size([1867, 64])
+    >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=True)
+    >>> out = rgcn(batch)
+    >>> out.shape
+    torch.Size([32, 64])
     """
-    def __init__(self, num_node_features, num_relations):
+    def __init__(self, num_node_features, num_relations, maxpool=False):
         super().__init__()
         self.conv1 = RGCNConv(in_channels=num_node_features, out_channels=16, num_relations=num_relations)
         self.conv2 = RGCNConv(in_channels=16, out_channels=32, num_relations=num_relations)
+        self.conv3 = RGCNConv(in_channels=32, out_channels=64, num_relations=num_relations)
+        self.maxpool = maxpool
 
     def forward(self, graph):
-        x = self.conv1(x=graph.x, edge_index=graph.edge_index, edge_type=graph.edge_type)
+        x = graph.x
+        x = self.conv1(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv2(x=graph.x, edge_index=graph.edge_index, edge_type=graph.edge_type)
+        x = self.conv2(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv3(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
+        if self.maxpool:
+            if graph.batch is None:  # No batch
+                x = torch.max(x, axis=0)[0]
+            else:  # Take the max along the batch
+                x = scatter_max(x, graph.batch, dim=0)[0]
         return x  # F.log_softmax(x, dim=1)
+
+
+class MLP(torch.nn.Module):
+    def __init__(self, num_input_features, num_hidden_units, num_classes):
+        """
+        >>> seed = torch.manual_seed(0)
+        >>> embedding = torch.rand(48, 64)
+        >>> inp = torch.max(embedding, axis=0)[0]
+        >>> inp.shape
+        torch.Size([64])
+        """
+        super().__init__()
+
+        # Define the model layers
+        self.fc1 = torch.nn.Linear(num_input_features, num_hidden_units)
+        self.fc2 = torch.nn.Linear(num_hidden_units, num_hidden_units)
+        self.fc3 = torch.nn.Linear(num_hidden_units, num_classes)
+
+        # Define the activation functions
+        self.relu = torch.nn.ReLU()
+        self.softmax = torch.nn.Softmax(dim=1)
+
+    def forward(self, x):
+        # Apply the first linear layer and the ReLU activation function
+        x = self.fc1(x)
+        x = self.relu(x)
+
+        # Apply the second linear layer and the ReLU activation function
+        x = self.fc2(x)
+        x = self.relu(x)
+
+        # Apply the third linear layer and the softmax activation function
+        x = self.fc3(x)
+        x = self.softmax(x)
+
+        return x
 
 
 def log(msg):
