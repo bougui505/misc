@@ -92,13 +92,6 @@ def lig_atom_featurizer(mol):
     >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
     >>> mol = molfromsmiles(smiles)
     >>> atom_features = lig_atom_featurizer(mol)
-    >>> atom_features
-    tensor([[ 7,  0,  2,  5,  0,  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0],
-            [ 5,  1,  4,  5,  0,  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0],
-            [ 5,  1,  4,  5,  0,  0,  0,  2,  0,  1,  0,  0,  1,  0,  0,  0],
-            [ 7,  0,  2,  5,  0,  0,  0,  2,  0,  1,  0,  0,  1,  0,  0,  0],
-            [ 5,  2,  4,  5,  0,  0,  0,  2,  0,  1,  0,  0,  1,  0,  0,  0],
-            ...
     >>> mol.GetNumAtoms()
     48
     >>> atom_features.shape
@@ -125,7 +118,7 @@ def lig_atom_featurizer(mol):
             allowable_features['possible_is_in_ring7_list'].index(ringinfo.IsAtomInRingOfSize(idx, 7)),
             allowable_features['possible_is_in_ring8_list'].index(ringinfo.IsAtomInRingOfSize(idx, 8)),
         ])
-    return torch.tensor(atom_features_list)
+    return torch.tensor(atom_features_list, dtype=torch.float)
 
 
 def get_mol_graph(mol):
