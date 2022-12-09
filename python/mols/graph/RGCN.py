@@ -112,11 +112,17 @@ class RGCN(torch.nn.Module):
 
 
 class MLP(torch.nn.Module):
-    def __init__(self, num_input_features, num_hidden_units, num_classes):
+    def __init__(self, num_input_features, hidden_units, num_classes):
         """
         >>> seed = torch.manual_seed(0)
         >>> embedding = torch.rand(32, 64)
-        >>> mlp = MLP(64, 128, 12)
+
+        >>> mlp = MLP(64, [128], 12)
+        >>> out = mlp(embedding)
+        >>> out.shape
+        torch.Size([32, 12])
+
+        >>> mlp = MLP(64, [128, 256], 12)
         >>> out = mlp(embedding)
         >>> out.shape
         torch.Size([32, 12])
@@ -124,9 +130,14 @@ class MLP(torch.nn.Module):
         super().__init__()
 
         # Define the model layers
-        self.fc1 = torch.nn.Linear(num_input_features, num_hidden_units)
-        self.fc2 = torch.nn.Linear(num_hidden_units, num_hidden_units)
-        self.fc3 = torch.nn.Linear(num_hidden_units, num_classes)
+        self.fc1 = torch.nn.Linear(num_input_features, hidden_units[0])
+        self.fc_hidden_layers = []
+        if len(hidden_units) == 1:
+            hidden_units += hidden_units
+        for i, num_hidden_units in enumerate(hidden_units[:-1]):
+            nout = hidden_units[i + 1]
+            self.fc_hidden_layers.append(torch.nn.Linear(num_hidden_units, nout))
+        self.fclast = torch.nn.Linear(nout, num_classes)
 
         # Define the activation functions
         self.relu = torch.nn.ReLU()
@@ -138,11 +149,12 @@ class MLP(torch.nn.Module):
         x = self.relu(x)
 
         # Apply the second linear layer and the ReLU activation function
-        x = self.fc2(x)
-        x = self.relu(x)
+        for fc_hidden in self.fc_hidden_layers:
+            x = fc_hidden(x)
+            x = self.relu(x)
 
         # Apply the third linear layer and the softmax activation function
-        x = self.fc3(x)
+        x = self.fclast(x)
         x = self.softmax(x)
 
         return x

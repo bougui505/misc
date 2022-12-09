@@ -8,6 +8,7 @@ apt-get update
 apt-get install -y rename
 conda install pip
 pip install rdkit
+pip install torchsummary
 pip install wget
 pip install prettytable==0.7.2
 pip install matplotlib
