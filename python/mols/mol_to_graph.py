@@ -41,6 +41,7 @@ import torch.nn.functional as F
 from misc.mols.rdkit_fix import molfromsmiles
 from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Data
+from torch_geometric.data import Dataset
 
 allowable_features = {
     'possible_atomic_num_list':
@@ -151,6 +152,36 @@ def get_mol_graph(mol):
     edge_attr = F.one_hot(edge_type, num_classes=len(bonds)).to(torch.float)
     data = Data(x=atom_feats, edge_index=edge_index, edge_attr=edge_attr, pos=lig_coords)
     return data
+
+
+class MolDataset(Dataset):
+    """
+    >>> smilesfilename = 'data/test.smi'
+    >>> dataset = MolDataset(smilesfilename)
+    >>> dataset.get(10)
+    Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3])
+    """
+    def __init__(self, smilesfilename):
+        self.smilesfilename = smilesfilename
+
+    def len(self):
+        smilesfile = open(self.smilesfilename, 'r')
+        n = sum(1 for line in smilesfile)
+        return n
+
+    def get_line(self, infile, index):
+        for i, line in enumerate(infile):
+            if i == index:
+                break
+        infile.seek(0)
+        return line.strip()
+
+    def get(self, idx):
+        smilesfile = open(self.smilesfilename, 'r')
+        smiles = self.get_line(smilesfile, idx)
+        mol = molfromsmiles(smiles)
+        graph = get_mol_graph(mol)
+        return graph
 
 
 def log(msg):
