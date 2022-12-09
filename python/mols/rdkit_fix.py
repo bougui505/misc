@@ -13,14 +13,14 @@ import sys
 import re
 
 
-def molfromsmile(smile):
-    m = Chem.MolFromSmiles(smile)
+def molfromsmiles(smiles):
+    m = Chem.MolFromSmiles(smiles)
     m = fixmol(m)
     return m
 
 
-def coordsfromsmile(smile):
-    m = molfromsmile(smile)
+def coordsfromsmiles(smiles):
+    m = molfromsmiles(smiles)
     coords = get_coords(m)
     return coords
 
@@ -53,29 +53,18 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument(
-        '-m',
-        '--mol',
-        help='input mol file to fix. Multiple mol files can be given.',
-        nargs='+')
-    parser.add_argument(
-        '--constrain',
-        help='Constrained the molecule to get this conformation')
+    parser.add_argument('-m', '--mol', help='input mol file to fix. Multiple mol files can be given.', nargs='+')
+    parser.add_argument('--constrain', help='Constrained the molecule to get this conformation')
     parser.add_argument(
         '--template',
         help=
         'Template smiles file to assign bond orders to the molecule (--mol) based on the bond orders in this template molecule'
     )
-    parser.add_argument(
-        '-s',
-        '--smiles',
-        help=
-        'input smiles file to convert in 3D and fix. Multiple smiles can be given.',
-        nargs='+')
-    parser.add_argument('-t',
-                        '--tautomers',
-                        help='generate all tautomers',
-                        action='store_true')
+    parser.add_argument('-s',
+                        '--smiles',
+                        help='input smiles file to convert in 3D and fix. Multiple smiles can be given.',
+                        nargs='+')
+    parser.add_argument('-t', '--tautomers', help='generate all tautomers', action='store_true')
     args = parser.parse_args()
 
     if args.constrain is not None:
