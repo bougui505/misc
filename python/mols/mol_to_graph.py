@@ -160,8 +160,16 @@ class MolDataset(Dataset):
     >>> dataset = MolDataset(smilesfilename)
     >>> dataset.get(10)
     Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3])
+
+    >>> from torch_geometric.loader import DataLoader
+    >>> seed = torch.manual_seed(0)
+    >>> loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    >>> iterator = iter(loader)
+    >>> next(iterator)
+    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], batch=[1867], ptr=[33])
     """
     def __init__(self, smilesfilename):
+        super().__init__()
         self.smilesfilename = smilesfilename
 
     def len(self):
