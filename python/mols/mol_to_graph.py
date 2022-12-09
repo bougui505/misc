@@ -137,7 +137,7 @@ def get_mol_graph(mol):
     >>> mol = molfromsmiles(smiles)
     >>> graph = get_mol_graph(mol)
     >>> graph
-    Data(x=[48, 16], edge_index=[2, 104], edge_attr=[104, 4], pos=[48, 3])
+    Data(x=[48, 16], edge_index=[2, 104], edge_attr=[104, 4], pos=[48, 3], edge_type=[104])
     """
     lig_coords = torch.from_numpy(mol.GetConformer().GetPositions()).float()
     atom_feats = lig_atom_featurizer(mol)
@@ -150,7 +150,7 @@ def get_mol_graph(mol):
     edge_index = torch.tensor([row, col], dtype=torch.long)
     edge_type = torch.tensor(edge_type, dtype=torch.long)
     edge_attr = F.one_hot(edge_type, num_classes=len(bonds)).to(torch.float)
-    data = Data(x=atom_feats, edge_index=edge_index, edge_attr=edge_attr, pos=lig_coords)
+    data = Data(x=atom_feats, edge_index=edge_index, edge_type=edge_type, edge_attr=edge_attr, pos=lig_coords)
     return data
 
 
@@ -159,14 +159,14 @@ class MolDataset(Dataset):
     >>> smilesfilename = 'data/test.smi'
     >>> dataset = MolDataset(smilesfilename)
     >>> dataset.get(10)
-    Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3])
+    Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3], edge_type=[110])
 
     >>> from torch_geometric.loader import DataLoader
     >>> seed = torch.manual_seed(0)
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True)
     >>> iterator = iter(loader)
     >>> next(iterator)
-    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], batch=[1867], ptr=[33])
+    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], edge_type=[3912], batch=[1867], ptr=[33])
     """
     def __init__(self, smilesfilename):
         super().__init__()
