@@ -115,10 +115,11 @@ class MLP(torch.nn.Module):
     def __init__(self, num_input_features, num_hidden_units, num_classes):
         """
         >>> seed = torch.manual_seed(0)
-        >>> embedding = torch.rand(48, 64)
-        >>> inp = torch.max(embedding, axis=0)[0]
-        >>> inp.shape
-        torch.Size([64])
+        >>> embedding = torch.rand(32, 64)
+        >>> mlp = MLP(64, 128, 12)
+        >>> out = mlp(embedding)
+        >>> out.shape
+        torch.Size([32, 12])
         """
         super().__init__()
 
