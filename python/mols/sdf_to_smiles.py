@@ -47,12 +47,12 @@ def get_smiles(sdffile, outsmiles, properties=None):
     outsmiles: output smiles file to write
     properties: list of properties to write in the smiles file
     """
-    mols = [mol for mol in tqdm.tqdm(Chem.SDMolSupplier(sdffile)) if mol != None]
     writer = SmilesWriter(outsmiles, nameHeader='')
     if properties is not None:
         writer.SetProps(properties)
-    for mol in tqdm.tqdm(mols):
-        writer.write(mol)
+    for mol in tqdm.tqdm(Chem.SDMolSupplier(sdffile)):
+        if mol is not None:
+            writer.write(mol)
     writer.close()
 
 
