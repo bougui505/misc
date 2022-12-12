@@ -54,7 +54,8 @@ def get_smiles(sdffile, outsmiles, properties=None, startswith=None):
                 if startswith is not None:
                     properties = [p for p in all_properties if p.startswith(startswith)]
                 # writer.write(mol)
-                outprop = [mol.GetProp(prop) for prop in properties]
+                outprop = [mol.GetProp(prop).strip() for prop in properties]
+                outprop = [e for e in outprop if e != ""]
                 smi = Chem.MolToSmiles(mol).strip()
                 if len(outprop) > 0:
                     outfile.write(f"{smi} {' '.join(outprop)}\n")
