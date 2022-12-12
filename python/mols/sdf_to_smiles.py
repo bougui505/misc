@@ -41,19 +41,23 @@ from rdkit.Chem.rdmolfiles import SmilesWriter
 import tqdm
 
 
-def get_smiles(sdffile, outsmiles, properties=None):
+def get_smiles(sdffile, outsmiles, properties=None, startswith=None):
     """
     sdffile: input sdf file to read
     outsmiles: output smiles file to write
     properties: list of properties to write in the smiles file
     """
-    writer = SmilesWriter(outsmiles, nameHeader='')
-    if properties is not None:
-        writer.SetProps(properties)
-    for mol in tqdm.tqdm(Chem.SDMolSupplier(sdffile)):
-        if mol is not None:
-            writer.write(mol)
-    writer.close()
+    with open(outsmiles, 'w') as outfile:
+        for mol in tqdm.tqdm(Chem.SDMolSupplier(sdffile)):
+            if mol is not None:
+                all_properties = list(mol.GetPropNames())
+                if startswith is not None:
+                    properties = [p for p in all_properties if p.startswith(startswith)]
+                # writer.write(mol)
+                outprop = [mol.GetProp(prop) for prop in properties]
+                smi = Chem.MolToSmiles(mol).strip()
+                if len(outprop) > 0:
+                    outfile.write(f"{smi} {' '.join(outprop)}\n")
 
 
 def log(msg):
@@ -88,6 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--sdf', help='SDF file name to read')
     parser.add_argument('--smi', help='output SMILES file to write')
     parser.add_argument('--properties', help='Properties to write along with the SMILES', nargs='+')
+    parser.add_argument('--startswith',
+                        help='Properties to write along with the SMILES, starting with the given string')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -106,4 +112,4 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
 
-    get_smiles(args.sdf, args.smi, properties=args.properties)
+    get_smiles(args.sdf, args.smi, properties=args.properties, startswith=args.startswith)
