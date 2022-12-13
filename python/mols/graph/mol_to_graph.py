@@ -156,13 +156,29 @@ class MolDataset(Dataset):
 
     >>> from torch_geometric.loader import DataLoader
     >>> seed = torch.manual_seed(0)
-    >>> loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
     >>> iterator = iter(loader)
     >>> next(iterator)
     DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], edge_type=[3912], batch=[1867], ptr=[33])
+
+    >>> smilesfilename = 'data/HMT_mols_test.smi'
+    >>> dataset = MolDataset(smilesfilename, readclass=True)
+    >>> graph, graphclass = dataset.get(10)
+    >>> graph
+    Data(x=[48, 16], edge_index=[2, 106], edge_attr=[106, 4], pos=[48, 3], edge_type=[106])
+    >>> graphclass
+    'CARM1'
+    >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
+    >>> iterator = iter(loader)
+    >>> graphs, classes = next(iterator)
+    >>> graphs
+    DataBatch(x=[1727, 16], edge_index=[2, 3646], edge_attr=[3646, 4], pos=[1727, 3], edge_type=[3646], batch=[1727], ptr=[33])
+    >>> classes
+    ('PRMT1', 'SMYD2', 'PRDM6', 'CARM1', 'PRMT5', 'PRMT2', 'PRMT1', 'FBL', 'PRMT1', 'PRMT2', 'PCMT1', 'PRMT1', 'PRMT1', 'PRMT2', 'CARM1', 'MLL', 'MLL', 'PRDM6', 'PCMT1', 'CARM1', 'SETD2', 'CARM1', 'PRMT5', 'PRMT1', 'PRMT1', 'CARM1', 'PRDM16', 'PRDM5', 'PCMT1', 'PRMT2', 'PRMT5', 'MLL')
     """
-    def __init__(self, smilesfilename):
+    def __init__(self, smilesfilename, readclass=False):
         super().__init__()
+        self.readclass = readclass
         self.smilesfilename = smilesfilename
 
     def len(self):
@@ -179,10 +195,16 @@ class MolDataset(Dataset):
 
     def get(self, idx):
         smilesfile = open(self.smilesfilename, 'r')
-        smiles = self.get_line(smilesfile, idx)
+        inline = self.get_line(smilesfile, idx).split()
+        smiles = inline[0]
+        if self.readclass:
+            smiles_class = inline[1]
         mol = molfromsmiles(smiles)
         graph = get_mol_graph(mol)
-        return graph
+        if self.readclass:
+            return graph, smiles_class
+        else:
+            return graph
 
 
 def log(msg):
