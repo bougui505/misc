@@ -38,7 +38,7 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch.utils.data import WeightedRandomSampler
+from torch.utils.data import WeightedRandomSampler, random_split
 from misc.mols.rdkit_fix import molfromsmiles
 from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Data
@@ -210,9 +210,10 @@ class MolDataset(Dataset):
             return graph
 
 
-def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32):
+def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32, testset_len=None):
     """
     reweight: weight the dataloader according to classes population to avoid class imbalance
+    testset_len: if not None, give the desired length of the test set
     >>> seed = torch.manual_seed(0)
     >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
     >>> loader
@@ -221,8 +222,17 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32)
     >>> next(iterator)
     [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
              0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
+
+    >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
+    >>> iterator = iter(testloader)
+    >>> next(iterator)
+    [DataBatch(x=[454, 16], edge_index=[2, 956], edge_attr=[956, 4], pos=[454, 3], edge_type=[956], batch=[454], ptr=[9]), tensor([15,  4,  0, 38,  7, 38,  1,  2])]
     """
     dataset = MolDataset(smilesfilename, readclass=readclass)
+    if testset_len is not None:
+        lengths = (len(dataset) - testset_len, testset_len)
+        dataset, testset = random_split(dataset, lengths=lengths, generator=torch.Generator().manual_seed(42))
+        testloader = DataLoader(testset, batch_size=testset_len, num_workers=os.cpu_count())
     if reweight:
         classes = np.genfromtxt(smilesfilename, dtype=str, usecols=1, comments=None)
         classe_labels, counts = np.unique(classes, return_counts=True)
@@ -230,10 +240,13 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32)
         weights = torch.tensor([weight_per_class[class_] for class_ in classes], dtype=torch.double)
         sampler = WeightedRandomSampler(weights, len(classes))
     if reweight:
-        loader = DataLoader(dataset, batch_size=32, num_workers=os.cpu_count(), sampler=sampler)
+        loader = DataLoader(dataset, batch_size=batch_size, num_workers=os.cpu_count(), sampler=sampler)
     else:
-        loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
-    return loader
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+    if testset_len is None:
+        return loader
+    else:
+        return loader, testloader
 
 
 def log(msg):
