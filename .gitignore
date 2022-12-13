@@ -678,3 +678,4 @@ python/protein/esmfold/esmfold_results/test.pdb
 singularity/pyg/extra.sif
 singularity/diffdock/diffdock.sif
 singularity/diffdock/shell.sif
+python/mols/graph/logs/RGCN.log
