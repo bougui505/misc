@@ -160,6 +160,35 @@ class MLP(torch.nn.Module):
         return x
 
 
+class RGCNN(torch.nn.Module):
+    """
+    RGCN + MLP
+    >>> from misc.mols.graph.mol_to_graph import molDataLoader
+    >>> seed = torch.manual_seed(0)
+    >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
+    >>> loader
+    <torch_geometric.loader.dataloader.DataLoader object at ...
+    >>> iterator = iter(loader)
+    >>> batch = next(iterator)
+    >>> batch
+    [DataBatch(x=[1706, 16], edge_index=[2, 3590], edge_attr=[3590, 4], pos=[1706, 3], edge_type=[3590], batch=[1706], ptr=[33]), ('PRMT5', 'SMYD3', 'SETD2', 'PRDM6', 'MLL2', 'MLL', 'MLL', 'PRMT3', 'FBL', 'PCMT1', 'MLL', 'PRMT2', 'PRDM5', 'PRDM14', 'CARM1', 'NSD3', 'PRMT1', 'PRMT5', 'PRDM5', 'PCMT1', 'SMYD3', 'SUV39H1', 'SETDB1', 'MECOM', 'SETDB1', 'PRMT3', 'PRMT5', 'PRMT1', 'MECOM', 'MLL2', 'PRMT5', 'EZH1')]
+    >>> x, y = batch
+    >>> rgcnn = RGCNN(num_classes=26)
+    >>> y_pred = rgcnn(x)
+    >>> y_pred.shape
+    torch.Size([32, 26])
+    """
+    def __init__(self, num_classes, num_node_features=16, num_relations=4, hidden_units=[128, 256]):
+        super().__init__()
+        self.rgcn = RGCN(num_node_features=num_node_features, num_relations=num_relations, maxpool=True)
+        self.mlp = MLP(num_input_features=64, hidden_units=hidden_units, num_classes=num_classes)
+
+    def forward(self, x):
+        x = self.rgcn(x)
+        x = self.mlp(x)
+        return x
+
+
 def log(msg):
     try:
         logging.info(msg)
