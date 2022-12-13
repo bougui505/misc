@@ -180,6 +180,14 @@ class RGCNN(torch.nn.Module):
     >>> y_pred = rgcnn(x)
     >>> y_pred.shape
     torch.Size([32, 51])
+
+    Test on GPU
+    # >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # >>> rgcnn = rgcnn.to(device)
+    # >>> x = x.to(device)
+    # >>> y_pred = rgcnn(x)
+    # >>> y_pred.shape
+    # torch.Size([32, 51])
     """
     def __init__(self, num_classes, num_node_features=16, num_relations=4, hidden_units=[128, 256]):
         super().__init__()
@@ -231,7 +239,9 @@ def test_model(model, testloader):
 def train(smiles_filename, n_epochs, testset_len=128):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataloader, testloader = molDataLoader(smiles_filename, readclass=True, reweight=True, testset_len=testset_len)
+    dataiter = iter(dataloader)
     model = RGCNN(num_classes=51)
+    model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     loss = torch.nn.CrossEntropyLoss()
     epoch = 0
@@ -240,9 +250,16 @@ def train(smiles_filename, n_epochs, testset_len=128):
     t_0 = time.time()
     eta = ETA(total_steps=total_steps)
     for epoch in range(n_epochs):
-        for batch in dataloader:
+        while True:
+            try:
+                batch = next(dataiter)
+            except ValueError:
+                print(f"Error for batch {step}")
+                continue
             step += 1
             x, y_true = batch
+            x = x.to(device)
+            y_true = y_true.to(device)
             y_pred = model(x)
             loss_val = loss(y_pred, y_true)
             loss_val.backward()
