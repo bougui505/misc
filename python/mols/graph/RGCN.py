@@ -174,10 +174,10 @@ class RGCNN(torch.nn.Module):
     [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
              0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
     >>> x, y = batch
-    >>> rgcnn = RGCNN(num_classes=26)
+    >>> rgcnn = RGCNN(num_classes=51)
     >>> y_pred = rgcnn(x)
     >>> y_pred.shape
-    torch.Size([32, 26])
+    torch.Size([32, 51])
     """
     def __init__(self, num_classes, num_node_features=16, num_relations=4, hidden_units=[128, 256]):
         super().__init__()
@@ -188,6 +188,43 @@ class RGCNN(torch.nn.Module):
         x = self.rgcn(x)
         x = self.mlp(x)
         return x
+
+
+def metric(y_true, y_pred):
+    """
+    >>> seed = torch.manual_seed(0)
+    >>> y_true = torch.randint(low=0, high=51, size=(8,))
+    >>> y_true
+    tensor([41,  3, 29, 33, 19,  0, 16, 10])
+    >>> y_true[1] = 10  # Just for testing purpose
+    >>> y_true[6] = 23  # Just for testing purpose
+    >>> y_pred = torch.rand(size=(8, 51))
+    >>> y_pred.shape
+    torch.Size([8, 51])
+    >>> metric(y_true, y_pred)
+    0.25
+    """
+    _, class_pred = torch.max(y_pred, dim=1)
+    return float((class_pred == y_true).sum() / len(y_true))
+
+
+def test_model(model, testloader):
+    """
+    >>> from misc.mols.graph.mol_to_graph import molDataLoader
+    >>> seed = torch.manual_seed(0)
+    >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
+    >>> rgcnn = RGCNN(num_classes=51)
+    >>> test_model(rgcnn, testloader)
+    0.0
+    """
+    metric_val = 0
+    with torch.no_grad():
+        for batch in testloader:
+            x, y_true = batch
+            y_pred = model(x)
+            metric_val += metric(y_true, y_pred)
+    metric_val /= len(testloader)
+    return metric_val
 
 
 def log(msg):
