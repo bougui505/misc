@@ -232,7 +232,7 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32,
     if testset_len is not None:
         lengths = (len(dataset) - testset_len, testset_len)
         dataset, testset = random_split(dataset, lengths=lengths, generator=torch.Generator().manual_seed(42))
-        testloader = DataLoader(testset, batch_size=testset_len, num_workers=os.cpu_count())
+        testloader = DataLoader(testset, batch_size=min(testset_len, batch_size), num_workers=os.cpu_count())
     if reweight:
         classes = np.genfromtxt(smilesfilename, dtype=str, usecols=1, comments=None)
         classe_labels, counts = np.unique(classes, return_counts=True)
