@@ -167,16 +167,17 @@ class MolDataset(Dataset):
     >>> dataset = MolDataset(smilesfilename, readclass=True)
     >>> graph, graphclass = dataset.get(10)
     >>> graph
-    Data(x=[48, 16], edge_index=[2, 106], edge_attr=[106, 4], pos=[48, 3], edge_type=[106])
+    Data(x=[51, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[51, 3], edge_type=[110])
     >>> graphclass
-    'CARM1'
+    12
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
     >>> iterator = iter(loader)
     >>> graphs, classes = next(iterator)
     >>> graphs
-    DataBatch(x=[1727, 16], edge_index=[2, 3646], edge_attr=[3646, 4], pos=[1727, 3], edge_type=[3646], batch=[1727], ptr=[33])
+    DataBatch(x=[1832, 16], edge_index=[2, 3870], edge_attr=[3870, 4], pos=[1832, 3], edge_type=[3870], batch=[1832], ptr=[33])
     >>> classes
-    ('PRMT1', 'SMYD2', 'PRDM6', 'CARM1', 'PRMT5', 'PRMT2', 'PRMT1', 'FBL', 'PRMT1', 'PRMT2', 'PCMT1', 'PRMT1', 'PRMT1', 'PRMT2', 'CARM1', 'MLL', 'MLL', 'PRDM6', 'PCMT1', 'CARM1', 'SETD2', 'CARM1', 'PRMT5', 'PRMT1', 'PRMT1', 'CARM1', 'PRDM16', 'PRDM5', 'PCMT1', 'PRMT2', 'PRMT5', 'MLL')
+    tensor([37, 26,  0,  1,  1,  1,  0,  2,  1,  5, 13,  2,  1, 29,  5, 20,  1,  1,
+            20,  0, 38, 20, 20,  2, 12, 15, 15,  4,  1, 18,  9, 38])
     """
     def __init__(self, smilesfilename, readclass=False):
         super().__init__()
@@ -200,7 +201,7 @@ class MolDataset(Dataset):
         inline = self.get_line(smilesfile, idx).split()
         smiles = inline[0]
         if self.readclass:
-            smiles_class = inline[1]
+            smiles_class = int(inline[1])
         mol = molfromsmiles(smiles)
         graph = get_mol_graph(mol)
         if self.readclass:
@@ -218,7 +219,8 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32)
     <torch_geometric.loader.dataloader.DataLoader object at ...
     >>> iterator = iter(loader)
     >>> next(iterator)
-    [DataBatch(x=[1706, 16], edge_index=[2, 3590], edge_attr=[3590, 4], pos=[1706, 3], edge_type=[3590], batch=[1706], ptr=[33]), ('PRMT5', 'SMYD3', 'SETD2', 'PRDM6', 'MLL2', 'MLL', 'MLL', 'PRMT3', 'FBL', 'PCMT1', 'MLL', 'PRMT2', 'PRDM5', 'PRDM14', 'CARM1', 'NSD3', 'PRMT1', 'PRMT5', 'PRDM5', 'PCMT1', 'SMYD3', 'SUV39H1', 'SETDB1', 'MECOM', 'SETDB1', 'PRMT3', 'PRMT5', 'PRMT1', 'MECOM', 'MLL2', 'PRMT5', 'EZH1')]
+    [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
+             0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
     """
     dataset = MolDataset(smilesfilename, readclass=readclass)
     if reweight:

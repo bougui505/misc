@@ -171,7 +171,8 @@ class RGCNN(torch.nn.Module):
     >>> iterator = iter(loader)
     >>> batch = next(iterator)
     >>> batch
-    [DataBatch(x=[1706, 16], edge_index=[2, 3590], edge_attr=[3590, 4], pos=[1706, 3], edge_type=[3590], batch=[1706], ptr=[33]), ('PRMT5', 'SMYD3', 'SETD2', 'PRDM6', 'MLL2', 'MLL', 'MLL', 'PRMT3', 'FBL', 'PCMT1', 'MLL', 'PRMT2', 'PRDM5', 'PRDM14', 'CARM1', 'NSD3', 'PRMT1', 'PRMT5', 'PRDM5', 'PCMT1', 'SMYD3', 'SUV39H1', 'SETDB1', 'MECOM', 'SETDB1', 'PRMT3', 'PRMT5', 'PRMT1', 'MECOM', 'MLL2', 'PRMT5', 'EZH1')]
+    [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
+             0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
     >>> x, y = batch
     >>> rgcnn = RGCNN(num_classes=26)
     >>> y_pred = rgcnn(x)
