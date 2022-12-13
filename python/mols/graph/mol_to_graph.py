@@ -38,10 +38,13 @@
 import os
 import torch
 import torch.nn.functional as F
+from torch.utils.data import WeightedRandomSampler
 from misc.mols.rdkit_fix import molfromsmiles
 from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Data
 from torch_geometric.data import Dataset
+from torch_geometric.loader import DataLoader
+import numpy as np
 
 allowable_features = {
     'possible_atomic_num_list':
@@ -154,7 +157,6 @@ class MolDataset(Dataset):
     >>> dataset.get(10)
     Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3], edge_type=[110])
 
-    >>> from torch_geometric.loader import DataLoader
     >>> seed = torch.manual_seed(0)
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
     >>> iterator = iter(loader)
@@ -205,6 +207,31 @@ class MolDataset(Dataset):
             return graph, smiles_class
         else:
             return graph
+
+
+def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32):
+    """
+    reweight: weight the dataloader according to classes population to avoid class imbalance
+    >>> seed = torch.manual_seed(0)
+    >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
+    >>> loader
+    <torch_geometric.loader.dataloader.DataLoader object at ...
+    >>> iterator = iter(loader)
+    >>> next(iterator)
+    [DataBatch(x=[1706, 16], edge_index=[2, 3590], edge_attr=[3590, 4], pos=[1706, 3], edge_type=[3590], batch=[1706], ptr=[33]), ('PRMT5', 'SMYD3', 'SETD2', 'PRDM6', 'MLL2', 'MLL', 'MLL', 'PRMT3', 'FBL', 'PCMT1', 'MLL', 'PRMT2', 'PRDM5', 'PRDM14', 'CARM1', 'NSD3', 'PRMT1', 'PRMT5', 'PRDM5', 'PCMT1', 'SMYD3', 'SUV39H1', 'SETDB1', 'MECOM', 'SETDB1', 'PRMT3', 'PRMT5', 'PRMT1', 'MECOM', 'MLL2', 'PRMT5', 'EZH1')]
+    """
+    dataset = MolDataset(smilesfilename, readclass=readclass)
+    if reweight:
+        classes = np.genfromtxt(smilesfilename, dtype=str, usecols=1, comments=None)
+        classe_labels, counts = np.unique(classes, return_counts=True)
+        weight_per_class = {class_: 1. / counts for class_, counts in zip(classe_labels, counts)}
+        weights = torch.tensor([weight_per_class[class_] for class_ in classes], dtype=torch.double)
+        sampler = WeightedRandomSampler(weights, len(classes))
+    if reweight:
+        loader = DataLoader(dataset, batch_size=32, num_workers=os.cpu_count(), sampler=sampler)
+    else:
+        loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
+    return loader
 
 
 def log(msg):
