@@ -40,6 +40,9 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.nn import RGCNConv
 from torch_scatter import scatter_max
+from misc.eta import ETA
+from misc.mols.graph.mol_to_graph import molDataLoader
+import time
 
 
 class RGCN(torch.nn.Module):
@@ -163,7 +166,6 @@ class MLP(torch.nn.Module):
 class RGCNN(torch.nn.Module):
     """
     RGCN + MLP
-    >>> from misc.mols.graph.mol_to_graph import molDataLoader
     >>> seed = torch.manual_seed(0)
     >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
     >>> loader
@@ -210,7 +212,6 @@ def metric(y_true, y_pred):
 
 def test_model(model, testloader):
     """
-    >>> from misc.mols.graph.mol_to_graph import molDataLoader
     >>> seed = torch.manual_seed(0)
     >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
     >>> rgcnn = RGCNN(num_classes=51)
@@ -225,6 +226,30 @@ def test_model(model, testloader):
             metric_val += metric(y_true, y_pred)
     metric_val /= len(testloader)
     return metric_val
+
+
+def train(smiles_filename, n_epochs, testset_len=128):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    dataloader, testloader = molDataLoader(smiles_filename, readclass=True, reweight=True, testset_len=testset_len)
+    model = RGCNN(num_classes=51)
+    opt = torch.optim.Adam(model.parameters())
+    loss = torch.nn.CrossEntropyLoss()
+    epoch = 0
+    step = 0
+    total_steps = n_epochs * len(dataloader)
+    t_0 = time.time()
+    eta = ETA(total_steps=total_steps)
+    for epoch in range(n_epochs):
+        for batch in dataloader:
+            step += 1
+            x, y_true = batch
+            y_pred = model(x)
+            loss_val = loss(y_pred, y_true)
+            loss_val.backward()
+            opt.step()
+            opt.zero_grad()
+            eta_val = eta(step)
+            log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|eta: {eta_val}")
 
 
 def log(msg):
@@ -244,19 +269,21 @@ if __name__ == '__main__':
     import sys
     import doctest
     import argparse
-    # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # if not os.path.isdir('logs'):
-    #     os.mkdir('logs')
-    # logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
-    # ### ##################### ####
+    ### UNCOMMENT FOR LOGGING ####
+    import os
+    import logging
+    if not os.path.isdir('logs'):
+        os.mkdir('logs')
+    logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    logging.info(f"################ Starting {__file__} ################")
+    ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('--train', help='train the model', action='store_true')
+    parser.add_argument('--smiles', help='SMILES filename')
+    parser.add_argument('--nepochs', type=int, default=100)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -274,3 +301,5 @@ if __name__ == '__main__':
                 f = getattr(sys.modules[__name__], f)
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
+    if args.train:
+        train(smiles_filename=args.smiles, n_epochs=args.nepochs, testset_len=128)
