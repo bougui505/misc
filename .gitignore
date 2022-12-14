@@ -880,3 +880,6 @@ python/mols/graph/data/HMT_mols_test/097.smi.gz
 python/mols/graph/data/HMT_mols_test/098.smi.gz
 python/mols/graph/data/HMT_mols_test/099.smi.gz
 python/mols/graph/data/HMT_mols_test/100.smi.gz
+python/mols/graph/data/HMT_mols_test/034176.smi.gz
+python/mols/graph/data/HMT_mols_test_error/004664.smi.gz
+python/mols/graph/data/HMT_mols_test_error/034174.smi.gz
