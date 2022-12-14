@@ -45,6 +45,12 @@ from torch_geometric.data import Data
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
 import numpy as np
+import glob
+import gzip
+import tqdm
+import multiprocessing
+from functools import partial
+import shutil
 
 allowable_features = {
     'possible_atomic_num_list':
@@ -152,19 +158,18 @@ def get_mol_graph(mol):
 
 class MolDataset(Dataset):
     """
-    >>> smilesfilename = 'data/test.smi'
-    >>> dataset = MolDataset(smilesfilename)
+    >>> smilesdir = 'data/HMT_mols_test'
+    >>> dataset = MolDataset(smilesdir)
     >>> dataset.get(10)
-    Data(x=[52, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[52, 3], edge_type=[110])
+    Data(x=[51, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[51, 3], edge_type=[110])
 
     >>> seed = torch.manual_seed(0)
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
     >>> iterator = iter(loader)
     >>> next(iterator)
-    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], edge_type=[3912], batch=[1867], ptr=[33])
+    DataBatch(x=[1921, 16], edge_index=[2, 4052], edge_attr=[4052, 4], pos=[1921, 3], edge_type=[4052], batch=[1921], ptr=[33])
 
-    >>> smilesfilename = 'data/HMT_mols_test.smi'
-    >>> dataset = MolDataset(smilesfilename, readclass=True)
+    >>> dataset = MolDataset(smilesdir, readclass=True)
     >>> graph, graphclass = dataset.get(10)
     >>> graph
     Data(x=[51, 16], edge_index=[2, 110], edge_attr=[110, 4], pos=[51, 3], edge_type=[110])
@@ -179,29 +184,24 @@ class MolDataset(Dataset):
     tensor([37, 26,  0,  1,  1,  1,  0,  2,  1,  5, 13,  2,  1, 29,  5, 20,  1,  1,
             20,  0, 38, 20, 20,  2, 12, 15, 15,  4,  1, 18,  9, 38])
     """
-    def __init__(self, smilesfilename, readclass=False):
+    def __init__(self, smilesdir, readclass=False):
         super().__init__()
         self.readclass = readclass
-        self.smilesfilename = smilesfilename
+        self.smilesdir = smilesdir
+        self.smilesfiles = glob.glob(f'{self.smilesdir}/*.smi.gz')
+        self.smilesfiles = sorted(self.smilesfiles)
 
     def len(self):
-        smilesfile = open(self.smilesfilename, 'r')
-        n = sum(1 for line in smilesfile)
+        n = len(self.smilesfiles)
         return n
 
-    def get_line(self, infile, index):
-        for i, line in enumerate(infile):
-            if i == index:
-                break
-        infile.seek(0)
-        return line.strip()
-
-    def get(self, idx):
-        smilesfile = open(self.smilesfilename, 'r')
-        inline = self.get_line(smilesfile, idx).split()
+    def get(self, idx, return_only_class=False):
+        with gzip.open(self.smilesfiles[idx], 'rb') as f:
+            inline = f.read().split()
         smiles = inline[0]
-        if self.readclass:
-            smiles_class = int(inline[1])
+        smiles_class = int(inline[1])
+        if return_only_class:
+            return smiles_class
         mol = molfromsmiles(smiles)
         graph = get_mol_graph(mol)
         if self.readclass:
@@ -210,12 +210,22 @@ class MolDataset(Dataset):
             return graph
 
 
-def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32, testset_len=None):
+def get_all_classes(dataset):
+    classes = []
+    for i in tqdm.tqdm(range(len(dataset)), desc='Reading SMILES class'):
+        with gzip.open(dataset.smilesfiles[i], 'rb') as f:
+            inline = f.read().split()
+        smiles_class = int(inline[1])
+        classes.append(smiles_class)
+    return classes
+
+
+def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, testset_len=None):
     """
     reweight: weight the dataloader according to classes population to avoid class imbalance
     testset_len: if not None, give the desired length of the test set
     >>> seed = torch.manual_seed(0)
-    >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
+    >>> loader = molDataLoader('data/HMT_mols_test', readclass=True, reweight=True)
     >>> loader
     <torch_geometric.loader.dataloader.DataLoader object at ...
     >>> iterator = iter(loader)
@@ -223,18 +233,24 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32,
     [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
              0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
 
-    >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
+    >>> loader, testloader = molDataLoader('data/HMT_mols_test', readclass=True, reweight=True, testset_len=8)
+    >>> dir(loader)
+    ['_DataLoader__initialized', '_DataLoader__multiprocessing_context', '_IterableDataset_len_called', '__annotations__', '__class__', '__class_getitem__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__ne__', '__new__', '__orig_bases__', '__parameters__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '__weakref__', '_auto_collation', '_dataset_kind', '_get_iterator', '_index_sampler', '_is_protocol', '_iterator', 'batch_sampler', 'batch_size', 'check_worker_number_rationality', 'collate_fn', 'dataset', 'drop_last', 'exclude_keys', 'follow_batch', 'generator', 'multiprocessing_context', 'num_workers', 'persistent_workers', 'pin_memory', 'pin_memory_device', 'prefetch_factor', 'sampler', 'timeout', 'worker_init_fn']
     >>> iterator = iter(testloader)
     >>> next(iterator)
     [DataBatch(x=[454, 16], edge_index=[2, 956], edge_attr=[956, 4], pos=[454, 3], edge_type=[956], batch=[454], ptr=[9]), tensor([15,  4,  0, 38,  7, 38,  1,  2])]
     """
-    dataset = MolDataset(smilesfilename, readclass=readclass)
+    dataset = MolDataset(smilesdir, readclass=readclass)
     if testset_len is not None:
         lengths = (len(dataset) - testset_len, testset_len)
         dataset, testset = random_split(dataset, lengths=lengths, generator=torch.Generator().manual_seed(42))
         testloader = DataLoader(testset, batch_size=min(testset_len, batch_size), num_workers=os.cpu_count())
     if reweight:
-        classes = np.genfromtxt(smilesfilename, dtype=str, usecols=1, comments=None)
+        if testset_len is not None:
+            # dataset is a Subset object
+            classes = get_all_classes(dataset.dataset)
+        else:
+            classes = get_all_classes(dataset)
         classe_labels, counts = np.unique(classes, return_counts=True)
         weight_per_class = {class_: 1. / counts for class_, counts in zip(classe_labels, counts)}
         weights = torch.tensor([weight_per_class[class_] for class_ in classes], dtype=torch.double)
@@ -247,6 +263,45 @@ def molDataLoader(smilesfilename, readclass=False, reweight=True, batch_size=32,
         return loader
     else:
         return loader, testloader
+
+
+def test_dataset_item(dataset, i):
+    success = True
+    smifile = dataset.smilesfiles[i]
+    n = len(dataset)
+    if i % 100 == 0:
+        sys.stdout.write(f'{int(i * 100 / n):03d}%\r')
+        sys.stdout.flush()
+    try:
+        e = dataset.get(i)
+    except Exception as e:
+        success = False
+        print(e)
+        print(f'Error for {smifile}')
+    return smifile, success
+
+
+def test_dataset(dataset, fix=False):
+    pool = multiprocessing.Pool(os.cpu_count())
+    smifiles, success_results = [], []
+    for (smifile, success) in pool.map(partial(test_dataset_item, dataset), range(len(dataset))):
+        smifiles.append(smifile)
+        success_results.append(success)
+    print()
+    smifiles = np.asarray(smifiles)
+    success_results = np.asarray(success_results)
+    errorfiles = smifiles[~success_results]
+    print(f'Error for smiles: {errorfiles}')
+    if fix:
+        errordir = dataset.smilesdir + '_error'
+        if not os.path.exists(errordir):
+            os.mkdir(errordir)
+        for smifile in errorfiles:
+            print(f'{smifile}->{errordir}/')
+            shutil.move(smifile, errordir)
+    return smifiles, success_results
+    # for i in tqdm.tqdm(range(len(dataset)), desc='Testing dataset'):
+    #     smifile, success = test_dataset_item(dataset, i)
 
 
 def log(msg):
@@ -281,6 +336,11 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+    parser.add_argument(
+        '--test_dataset',
+        help=
+        'Load the entire given dataset for testing. The given argument is the directory containing the individual smiles gz files.'
+    )
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
@@ -296,3 +356,6 @@ if __name__ == '__main__':
                 f = getattr(sys.modules[__name__], f)
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
+    if args.test_dataset is not None:
+        dataset = MolDataset(args.test_dataset, readclass=True)
+        test_dataset(dataset, fix=True)
