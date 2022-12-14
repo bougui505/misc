@@ -37,7 +37,7 @@ def fixmol(mol, constrain=None, template=None):
         mol = AllChem.ConstrainedEmbed(mol, constrain)
     if all(elem is None for elem in [constrain, template]):
         mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=42)
         AllChem.MMFFOptimizeMolecule(mol)
     return mol
 
