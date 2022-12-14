@@ -256,7 +256,7 @@ def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, test
         weights = torch.tensor([weight_per_class[class_] for class_ in classes], dtype=torch.double)
         sampler = WeightedRandomSampler(weights, len(classes))
     if reweight:
-        loader = DataLoader(dataset, batch_size=batch_size, num_workers=os.cpu_count(), sampler=sampler)
+        loader = DataLoader(dataset.dataset, batch_size=batch_size, num_workers=os.cpu_count(), sampler=sampler)
     else:
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
     if testset_len is None:
