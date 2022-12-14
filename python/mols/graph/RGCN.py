@@ -248,9 +248,9 @@ def test_model(model, testloader):
     return metric_val
 
 
-def train(smiles_filename, n_epochs, testset_len=128):
+def train(smilesdir, n_epochs, testset_len=128):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    dataloader, testloader = molDataLoader(smiles_filename, readclass=True, reweight=True, testset_len=testset_len)
+    dataloader, testloader = molDataLoader(smilesdir, readclass=True, reweight=True, testset_len=testset_len)
     dataiter = iter(dataloader)
     model = RGCNN(num_classes=51)
     model = model.to(device)
@@ -311,7 +311,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
-    parser.add_argument('--smiles', help='SMILES filename')
+    parser.add_argument('--smiles', help='SMILES directory')
     parser.add_argument('--nepochs', type=int, default=100)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
@@ -331,4 +331,4 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
     if args.train:
-        train(smiles_filename=args.smiles, n_epochs=args.nepochs, testset_len=128)
+        train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=128)
