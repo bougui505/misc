@@ -66,8 +66,9 @@ done
 OUTDIR=$SMILESFILE:r
 [ ! -d $OUTDIR ] && mkdir $OUTDIR
 i=0
+n=$(wc -l $SMILESFILE | awk '{print $1}')
 while read LINE; do
-    echo $LINE > $OUTDIR/${(l:7::0:)i}.smi
+    echo $LINE | gzip > $OUTDIR/${(l:7::0:)i}.smi.gz
     (( i+=1 ))
+    vramsteg --min 1 --max $n --current $i
 done < $SMILESFILE
-tar -czvf $OUTDIR.tar.gz $OUTDIR && rm -r $OUTDIR
