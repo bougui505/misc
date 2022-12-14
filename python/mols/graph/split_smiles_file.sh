@@ -67,7 +67,7 @@ OUTDIR=$SMILESFILE:r
 [ ! -d $OUTDIR ] && mkdir $OUTDIR
 i=0
 while read LINE; do
-    echo $LINE > $OUTDIR/${(l:6::0:)i}.smi
+    echo $LINE > $OUTDIR/${(l:7::0:)i}.smi
     (( i+=1 ))
 done < $SMILESFILE
 tar -czvf $OUTDIR.tar.gz $OUTDIR && rm -r $OUTDIR
