@@ -67,8 +67,4 @@ OUTDIR=$SMILESFILE:r
 [ ! -d $OUTDIR ] && mkdir $OUTDIR
 i=0
 n=$(wc -l $SMILESFILE | awk '{print $1}')
-while read LINE; do
-    echo $LINE | gzip > $OUTDIR/${(l:7::0:)i}.smi.gz
-    (( i+=1 ))
-    vramsteg --min 1 --max $n --current $i
-done < $SMILESFILE
+parallel --rpl '{0#} $f = "%0".int(1+log(total_jobs())/log(10))."d"; $_=sprintf($f,$job->seq())' --bar -a $SMILESFILE "echo {} | gzip > $OUTDIR/{0#}.smi.gz"
