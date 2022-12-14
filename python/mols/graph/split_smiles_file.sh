@@ -67,4 +67,4 @@ OUTDIR=$SMILESFILE:r
 [ ! -d $OUTDIR ] && mkdir $OUTDIR
 i=0
 n=$(wc -l $SMILESFILE | awk '{print $1}')
-parallel --rpl '{0#} $f = "%0".int(1+log(total_jobs())/log(10))."d"; $_=sprintf($f,$job->seq())' --bar -a $SMILESFILE "echo {} | gzip > $OUTDIR/{0#}.smi.gz"
+parallel --rpl '{0#} $f = "%0".int(1+log(total_jobs())/log(10))."d"; $_=sprintf($f,$job->seq())' --bar -a $SMILESFILE "echo -E {} | gzip > $OUTDIR/{0#}.smi.gz"
