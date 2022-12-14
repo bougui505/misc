@@ -230,7 +230,7 @@ def metric(y_true, y_pred):
     return float((class_pred == y_true).sum() / len(y_true))
 
 
-def test_model(model, testloader):
+def test_model(model, testloader, device='cpu'):
     """
     >>> seed = torch.manual_seed(0)
     >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
@@ -242,16 +242,25 @@ def test_model(model, testloader):
     with torch.no_grad():
         for batch in testloader:
             x, y_true = batch
+            x = x.to(device)
+            y_true = y_true.to(device)
             y_pred = model(x)
             metric_val += metric(y_true, y_pred)
     metric_val /= len(testloader)
     return metric_val
 
 
-def train(smilesdir, n_epochs, testset_len=128):
+def save_model(model, filename):
+    torch.save(model.state_dict(), filename)
+
+
+def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rgcnn.pt'):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    dataloader, testloader = molDataLoader(smilesdir, readclass=True, reweight=True, testset_len=testset_len)
-    dataiter = iter(dataloader)
+    dataloader, testloader = molDataLoader(smilesdir,
+                                           readclass=True,
+                                           reweight=True,
+                                           testset_len=testset_len,
+                                           batch_size=batch_size)
     model = RGCNN(num_classes=51)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
@@ -262,12 +271,7 @@ def train(smilesdir, n_epochs, testset_len=128):
     t_0 = time.time()
     eta = ETA(total_steps=total_steps)
     for epoch in range(n_epochs):
-        while True:
-            try:
-                batch = next(dataiter)
-            except ValueError:
-                print(f"Error for batch {step}")
-                continue
+        for batch in dataloader:
             step += 1
             x, y_true = batch
             x = x.to(device)
@@ -279,6 +283,9 @@ def train(smilesdir, n_epochs, testset_len=128):
             opt.zero_grad()
             eta_val = eta(step)
             log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|eta: {eta_val}")
+        save_model(model, modelfilename)
+        metric_val = test_model(model, testloader, device=device)
+        log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|metric: {metric_val}|eta: {eta_val}")
 
 
 def log(msg):
@@ -312,7 +319,8 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
     parser.add_argument('--smiles', help='SMILES directory')
-    parser.add_argument('--nepochs', type=int, default=100)
+    parser.add_argument('--nepochs', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -331,4 +339,4 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
     if args.train:
-        train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=128)
+        train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=128, batch_size=args.batch_size)
