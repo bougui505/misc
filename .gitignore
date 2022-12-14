@@ -679,3 +679,4 @@ singularity/pyg/extra.sif
 singularity/diffdock/diffdock.sif
 singularity/diffdock/shell.sif
 python/mols/graph/logs/RGCN.log
+python/mols/graph/data/HMT_mols_test.tar.gz
