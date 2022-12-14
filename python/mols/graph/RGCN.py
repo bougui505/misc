@@ -89,6 +89,12 @@ class RGCN(torch.nn.Module):
     >>> out = rgcn(batch)
     >>> out.shape
     torch.Size([32, 64])
+
+    Test on GPU
+    >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    >>> rgcn = rgcn.to(device)
+    >>> graph = graph.to(device)
+    >>> out = rgcn(graph)
     """
     def __init__(self, num_node_features, num_relations, maxpool=False):
         super().__init__()
@@ -129,6 +135,12 @@ class MLP(torch.nn.Module):
         >>> out = mlp(embedding)
         >>> out.shape
         torch.Size([32, 12])
+
+        Test on GPU
+        >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        >>> mlp = mlp.to(device)
+        >>> embedding = embedding.to(device)
+        >>> out = mlp(embedding)
         """
         super().__init__()
 
@@ -140,6 +152,8 @@ class MLP(torch.nn.Module):
         for i, num_hidden_units in enumerate(hidden_units[:-1]):
             nout = hidden_units[i + 1]
             self.fc_hidden_layers.append(torch.nn.Linear(num_hidden_units, nout))
+            self.fc_hidden_layers.append(torch.nn.ReLU())
+        self.fc_hidden_layers = torch.nn.Sequential(*self.fc_hidden_layers)
         self.fclast = torch.nn.Linear(nout, num_classes)
 
         # Define the activation functions
@@ -152,9 +166,7 @@ class MLP(torch.nn.Module):
         x = self.relu(x)
 
         # Apply the second linear layer and the ReLU activation function
-        for fc_hidden in self.fc_hidden_layers:
-            x = fc_hidden(x)
-            x = self.relu(x)
+        x = self.fc_hidden_layers(x)
 
         # Apply the third linear layer and the softmax activation function
         x = self.fclast(x)
@@ -182,12 +194,12 @@ class RGCNN(torch.nn.Module):
     torch.Size([32, 51])
 
     Test on GPU
-    # >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    # >>> rgcnn = rgcnn.to(device)
-    # >>> x = x.to(device)
-    # >>> y_pred = rgcnn(x)
-    # >>> y_pred.shape
-    # torch.Size([32, 51])
+    >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    >>> rgcnn = rgcnn.to(device)
+    >>> x = x.to(device)
+    >>> y_pred = rgcnn(x)
+    >>> y_pred.shape
+    torch.Size([32, 51])
     """
     def __init__(self, num_classes, num_node_features=16, num_relations=4, hidden_units=[128, 256]):
         super().__init__()
