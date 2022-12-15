@@ -43,6 +43,7 @@ from torch_scatter import scatter_max
 from misc.eta import ETA
 from misc.mols.graph.mol_to_graph import molDataLoader
 import time
+import tqdm
 
 
 class RGCN(torch.nn.Module):
@@ -304,6 +305,7 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
     total_steps = n_epochs * len(dataloader)
     t_0 = time.time()
     eta = ETA(total_steps=total_steps)
+    pbar = tqdm.tqdm(total=total_steps, desc='Training')
     for epoch in range(n_epochs):
         for batch in dataloader:
             step += 1
@@ -317,9 +319,11 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
             opt.zero_grad()
             eta_val = eta(step)
             log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|eta: {eta_val}")
+            pbar.update(1)
         save_model(model, modelfilename)
         metric_val = test_model(model, testloader, device=device)
         log(f"epoch: {epoch+1}|step: {step}/{total_steps}|loss: {loss_val}|metric: {metric_val}|eta: {eta_val}")
+    pbar.close()
 
 
 def log(msg):
