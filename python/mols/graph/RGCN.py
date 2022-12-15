@@ -38,7 +38,7 @@
 import os
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import RGCNConv
+from torch_geometric.nn import RGCNConv, Sequential
 from torch_scatter import scatter_max
 from misc.eta import ETA
 from misc.mols.graph.mol_to_graph import molDataLoader
@@ -60,8 +60,6 @@ class RGCN(torch.nn.Module):
     >>> num_trainable_params = sum(p.numel() for p in parameters)
     >>> num_trainable_params
     14192
-    >>> rgcn.conv1.weight.shape
-    torch.Size([4, 16, 16])
     >>> out = rgcn(graph)
     >>> out.shape
     torch.Size([48, 64])
@@ -74,17 +72,17 @@ class RGCN(torch.nn.Module):
     Try on a batch:
     >>> from torch_geometric.loader import DataLoader
     >>> seed = torch.manual_seed(0)
-    >>> smilesfilename = 'data/test.smi'
+    >>> smilesfilename = 'data/HMT_mols_test/'
     >>> dataset = MolDataset(smilesfilename)
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True)
     >>> iterator = iter(loader)
     >>> batch = next(iterator)
     >>> batch
-    DataBatch(x=[1867, 16], edge_index=[2, 3912], edge_attr=[3912, 4], pos=[1867, 3], edge_type=[3912], batch=[1867], ptr=[33])
+    DataBatch(x=[1787, 16], edge_index=[2, 3766], edge_attr=[3766, 4], pos=[1787, 3], edge_type=[3766], batch=[1787], ptr=[33])
     >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=False)
     >>> out = rgcn(batch)
     >>> out.shape
-    torch.Size([1867, 64])
+    torch.Size([1787, 64])
     >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=True)
     >>> out = rgcn(batch)
     >>> out.shape
@@ -96,22 +94,24 @@ class RGCN(torch.nn.Module):
     >>> graph = graph.to(device)
     >>> out = rgcn(graph)
     """
-    def __init__(self, num_node_features, num_relations, maxpool=False):
+    def __init__(self, num_node_features, num_relations, channels=[16, 32, 64], maxpool=False):
         super().__init__()
-        self.conv1 = RGCNConv(in_channels=num_node_features, out_channels=16, num_relations=num_relations)
-        self.conv2 = RGCNConv(in_channels=16, out_channels=32, num_relations=num_relations)
-        self.conv3 = RGCNConv(in_channels=32, out_channels=64, num_relations=num_relations)
+        layers = [(RGCNConv(in_channels=num_node_features, out_channels=channels[0],
+                            num_relations=num_relations), 'x, edge_index, edge_type -> x'),
+                  torch.nn.ReLU()]
+        for in_channels, out_channels in zip(channels, channels[1:-1]):
+            layers.append((RGCNConv(in_channels=in_channels, out_channels=out_channels,
+                                    num_relations=num_relations), 'x, edge_index, edge_type -> x'))
+            layers.append(torch.nn.ReLU())
+        layers.append((RGCNConv(in_channels=channels[-2], out_channels=channels[-1],
+                                num_relations=num_relations), 'x, edge_index, edge_type -> x'))
+        # pytorch-geormetric Sequential class (see: https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#torch_geometric.nn.sequential.Sequential)
+        self.layers = Sequential('x, edge_index, edge_type', layers)
         self.maxpool = maxpool
 
     def forward(self, graph):
         x = graph.x
-        x = self.conv1(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv2(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv3(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
+        x = self.layers(x=x, edge_index=graph.edge_index, edge_type=graph.edge_type)
         if self.maxpool:
             if graph.batch is None:  # No batch
                 x = torch.max(x, axis=0)[0]
@@ -179,14 +179,14 @@ class RGCNN(torch.nn.Module):
     """
     RGCN + MLP
     >>> seed = torch.manual_seed(0)
-    >>> loader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True)
+    >>> loader = molDataLoader('data/HMT_mols_test/', readclass=True, reweight=True)
     >>> loader
     <torch_geometric.loader.dataloader.DataLoader object at ...
     >>> iterator = iter(loader)
     >>> batch = next(iterator)
     >>> batch
-    [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
-             0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
+    [DataBatch(x=[1787, 16], edge_index=[2, 3766], edge_attr=[3766, 4], pos=[1787, 3], edge_type=[3766], batch=[1787], ptr=[33]), tensor([34,  1,  1, 26,  1,  1, 12, 20,  1, 38,  0, 29, 22,  1,  0, 20,  0, 21,
+             2,  4,  7,  0, 20, 34,  8,  0,  5, 38, 26, 37,  4,  1])]
     >>> x, y = batch
     >>> rgcnn = RGCNN(num_classes=51)
     >>> y_pred = rgcnn(x)
@@ -233,7 +233,7 @@ def metric(y_true, y_pred):
 def test_model(model, testloader, device='cpu'):
     """
     >>> seed = torch.manual_seed(0)
-    >>> loader, testloader = molDataLoader('data/HMT_mols_test.smi', readclass=True, reweight=True, testset_len=8)
+    >>> loader, testloader = molDataLoader('data/HMT_mols_test/', readclass=True, reweight=True, testset_len=8)
     >>> rgcnn = RGCNN(num_classes=51)
     >>> test_model(rgcnn, testloader)
     0.0
@@ -336,7 +336,9 @@ if __name__ == '__main__':
             for f in args.func:
                 print(f'Testing {f}')
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f, globals())
+                doctest.run_docstring_examples(f,
+                                               globals(),
+                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=128, batch_size=args.batch_size)
