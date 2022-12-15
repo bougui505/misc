@@ -296,7 +296,14 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
                                            reweight=True,
                                            testset_len=testset_len,
                                            batch_size=batch_size)
-    model = RGCNN(num_classes=51)
+    if os.path.exists('rgcnn.pt'):
+        outstr = 'Loading model from rgcnn.pt'
+        print(outstr)
+        log(outstr)
+        model = load_model('rgcnn.pt')
+        model.train()
+    else:
+        model = RGCNN(num_classes=51)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     loss = torch.nn.CrossEntropyLoss()
@@ -357,7 +364,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
     parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
-    parser.add_argument('--testset', help'Size of the testset (default: 128)', type=int, default=128)
+    parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
     parser.add_argument('--smiles', help='SMILES directory')
     parser.add_argument('--nepochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=32)
