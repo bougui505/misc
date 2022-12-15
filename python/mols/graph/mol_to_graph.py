@@ -167,7 +167,7 @@ class MolDataset(Dataset):
     >>> loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=os.cpu_count())
     >>> iterator = iter(loader)
     >>> next(iterator)
-    DataBatch(x=[1921, 16], edge_index=[2, 4052], edge_attr=[4052, 4], pos=[1921, 3], edge_type=[4052], batch=[1921], ptr=[33])
+    DataBatch(x=[1787, 16], edge_index=[2, 3766], edge_attr=[3766, 4], pos=[1787, 3], edge_type=[3766], batch=[1787], ptr=[33])
 
     >>> dataset = MolDataset(smilesdir, readclass=True)
     >>> graph, graphclass = dataset.get(10)
@@ -179,10 +179,10 @@ class MolDataset(Dataset):
     >>> iterator = iter(loader)
     >>> graphs, classes = next(iterator)
     >>> graphs
-    DataBatch(x=[1832, 16], edge_index=[2, 3870], edge_attr=[3870, 4], pos=[1832, 3], edge_type=[3870], batch=[1832], ptr=[33])
+    DataBatch(x=[1816, 16], edge_index=[2, 3802], edge_attr=[3802, 4], pos=[1816, 3], edge_type=[3802], batch=[1816], ptr=[33])
     >>> classes
-    tensor([37, 26,  0,  1,  1,  1,  0,  2,  1,  5, 13,  2,  1, 29,  5, 20,  1,  1,
-            20,  0, 38, 20, 20,  2, 12, 15, 15,  4,  1, 18,  9, 38])
+    tensor([37, 29,  8,  0,  1,  1, 20,  2,  1, 34,  1,  5,  8, 26, 22, 38,  7,  4,
+             1,  1, 20,  1,  2,  1,  2, 17,  1, 13,  1, 15,  0,  2])
     """
     def __init__(self, smilesdir, readclass=False):
         super().__init__()
@@ -230,15 +230,15 @@ def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, test
     <torch_geometric.loader.dataloader.DataLoader object at ...
     >>> iterator = iter(loader)
     >>> next(iterator)
-    [DataBatch(x=[1951, 16], edge_index=[2, 4080], edge_attr=[4080, 4], pos=[1951, 3], edge_type=[4080], batch=[1951], ptr=[33]), tensor([34, 21,  8,  9,  1, 22, 19, 28,  5, 21, 22, 19,  1, 20, 21, 38, 13,  9,
-             0, 13,  9, 10,  5, 19,  7, 28,  4, 37, 19, 18,  4,  5])]
+    [DataBatch(x=[1787, 16], edge_index=[2, 3766], edge_attr=[3766, 4], pos=[1787, 3], edge_type=[3766], batch=[1787], ptr=[33]), tensor([34,  1,  1, 26,  1,  1, 12, 20,  1, 38,  0, 29, 22,  1,  0, 20,  0, 21,
+             2,  4,  7,  0, 20, 34,  8,  0,  5, 38, 26, 37,  4,  1])]
 
     >>> loader, testloader = molDataLoader('data/HMT_mols_test', readclass=True, reweight=True, testset_len=8)
     >>> dir(loader)
     ['_DataLoader__initialized', '_DataLoader__multiprocessing_context', '_IterableDataset_len_called', '__annotations__', '__class__', '__class_getitem__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__ne__', '__new__', '__orig_bases__', '__parameters__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '__weakref__', '_auto_collation', '_dataset_kind', '_get_iterator', '_index_sampler', '_is_protocol', '_iterator', 'batch_sampler', 'batch_size', 'check_worker_number_rationality', 'collate_fn', 'dataset', 'drop_last', 'exclude_keys', 'follow_batch', 'generator', 'multiprocessing_context', 'num_workers', 'persistent_workers', 'pin_memory', 'pin_memory_device', 'prefetch_factor', 'sampler', 'timeout', 'worker_init_fn']
     >>> iterator = iter(testloader)
     >>> next(iterator)
-    [DataBatch(x=[454, 16], edge_index=[2, 956], edge_attr=[956, 4], pos=[454, 3], edge_type=[956], batch=[454], ptr=[9]), tensor([15,  4,  0, 38,  7, 38,  1,  2])]
+    [DataBatch(x=[476, 16], edge_index=[2, 994], edge_attr=[994, 4], pos=[476, 3], edge_type=[994], batch=[476], ptr=[9]), tensor([19,  5,  1,  8,  0,  1,  0, 15])]
     """
     dataset = MolDataset(smilesdir, readclass=readclass)
     if testset_len is not None:
