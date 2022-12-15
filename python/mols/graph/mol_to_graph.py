@@ -226,7 +226,7 @@ def get_all_classes(dataset):
     return classes
 
 
-def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, testset_len=None):
+def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, testset_len=None, shuffle=True):
     """
     reweight: weight the dataloader according to classes population to avoid class imbalance
     testset_len: if not None, give the desired length of the test set
@@ -264,7 +264,7 @@ def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, test
     if testset_len is not None:
         loader = DataLoader(dataset.dataset, batch_size=batch_size, num_workers=os.cpu_count(), sampler=sampler)
     else:
-        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=os.cpu_count())
     if testset_len is None:
         return loader
     else:

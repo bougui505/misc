@@ -44,6 +44,7 @@ from misc.eta import ETA
 from misc.mols.graph.mol_to_graph import molDataLoader
 import time
 import tqdm
+import numpy as np
 
 
 class RGCN(torch.nn.Module):
@@ -263,11 +264,25 @@ def load_model(weightfile):
     return model
 
 
-def print_results(y_pred):
+def print_results(y_pred, idx_to_name, topn=3, y_true=None):
     """
     """
-    for probs in y_pred:
-        print(' '.join([f'{e:.2g}' for e in probs]))
+    if y_true is not None:
+        y_true = y_true.cpu().numpy()
+    for bi, probs in enumerate(y_pred):
+        probs = probs.cpu().numpy()
+        sorter = np.argsort(probs)[::-1][:topn]
+        probs = probs[sorter]
+        names = [idx_to_name[i] if i in idx_to_name else None for i in sorter]
+        # print(list(zip(names, probs)))
+        outstr = ""
+        for name, p in zip(names, probs):
+            outstr += f"{name}: {p:.2g}|"
+        if y_true is not None:
+            name_true = idx_to_name[y_true[bi]]
+            outstr += f"  ->  {name_true}"
+        print(outstr)
+    #     print(' '.join([f'{e:.2g}' for e in probs]))
 
 
 def predict(weightfile, smilesdir, readclass=True, batch_size=32):
@@ -275,14 +290,17 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32):
     >>> predict(weightfile='rgcnn.pt', smilesdir='data/HMT_mols_test/')
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    dataloader = molDataLoader(smilesdir, readclass=readclass, batch_size=batch_size)
+    mapping = np.load('mapping.npz', allow_pickle=True)
+    idx_to_name = mapping['idx_to_name'].item()
+    name_to_idx = mapping['name_to_idx'].item()
+    dataloader = molDataLoader(smilesdir, readclass=readclass, batch_size=batch_size, shuffle=False)
     model = load_model(weightfile)
     with torch.no_grad():
         for batch in dataloader:
             x, y_true = batch
             x = x.to(device)
             y_pred = model(x)  # Shape: (batch_size, nclasses)
-            print_results(y_pred)
+            print_results(y_pred, idx_to_name, y_true=y_true)
 
 
 def save_model(model, filename):
