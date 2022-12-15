@@ -241,7 +241,7 @@ def test_model(model, testloader, device='cpu'):
     """
     metric_val = 0
     with torch.no_grad():
-        for batch in testloader:
+        for batch in tqdm.tqdm(testloader, desc='Testing model'):
             x, y_true = batch
             x = x.to(device)
             y_true = y_true.to(device)
@@ -365,6 +365,9 @@ if __name__ == '__main__':
     parser.add_argument('--train', help='train the model', action='store_true')
     parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
     parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
+    parser.add_argument('--testmodel',
+                        help='Test the model with the given SMILES directory (see: --smiles option)',
+                        action='store_true')
     parser.add_argument('--smiles', help='SMILES directory')
     parser.add_argument('--nepochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=32)
@@ -387,7 +390,14 @@ if __name__ == '__main__':
                                                globals(),
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    weightfile = 'rgcnn_bs512.pt'
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
-        predict(weightfile='rgcnn.pt', smilesdir=args.smiles)
+        predict(weightfile=weightfile, smilesdir=args.smiles)
+    if args.testmodel:
+        model = load_model(weightfile=weightfile)
+        dataloader = molDataLoader(args.smiles, readclass=True, batch_size=args.batch_size)
+        metric_val = test_model(model, dataloader, device=device)
+        print(metric_val)
