@@ -78,4 +78,5 @@ BEGIN {
         }
     }
 printf "\n"
-}'
+}' \
+    | sed '/^$/d' 
