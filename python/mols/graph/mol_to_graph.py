@@ -195,15 +195,21 @@ class MolDataset(Dataset):
         n = len(self.smilesfiles)
         return n
 
-    def get(self, idx, return_only_class=False):
-        with gzip.open(self.smilesfiles[idx], 'rb') as f:
-            inline = f.read().split()
-        smiles = inline[0]
-        smiles_class = int(inline[1])
-        if return_only_class:
-            return smiles_class
-        mol = molfromsmiles(smiles)
-        graph = get_mol_graph(mol)
+    def get(self, idx):
+        smilesfile = self.smilesfiles[idx]
+        graphfile = smilesfile.rstrip('.smi.gz') + '.pt'
+        if os.path.exists(graphfile):
+            ptdata = torch.load(graphfile)
+            graph = ptdata['graph']
+            smiles_class = ptdata['smiles_class']
+        else:
+            with gzip.open(smilesfile, 'rb') as f:
+                inline = f.read().split()
+            smiles = inline[0]
+            smiles_class = int(inline[1])
+            mol = molfromsmiles(smiles)
+            graph = get_mol_graph(mol)
+            torch.save({'graph': graph, 'smiles_class': smiles_class}, graphfile)
         if self.readclass:
             return graph, smiles_class
         else:
