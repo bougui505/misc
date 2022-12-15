@@ -250,6 +250,40 @@ def test_model(model, testloader, device='cpu'):
     return metric_val
 
 
+def load_model(weightfile):
+    """
+    >>> model = load_model('rgcnn.pt')
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = RGCNN(num_classes=51)
+    model = model.to(device)
+    model.load_state_dict(torch.load(weightfile, map_location=torch.device(device)))
+    model.eval()
+    return model
+
+
+def print_results(y_pred):
+    """
+    """
+    for probs in y_pred:
+        print(' '.join([f'{e:.2g}' for e in probs]))
+
+
+def predict(weightfile, smilesdir, readclass=True, batch_size=32):
+    """
+    >>> predict(weightfile='rgcnn.pt', smilesdir='data/HMT_mols_test/')
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    dataloader = molDataLoader(smilesdir, readclass=readclass, batch_size=batch_size)
+    model = load_model(weightfile)
+    with torch.no_grad():
+        for batch in dataloader:
+            x, y_true = batch
+            x = x.to(device)
+            y_pred = model(x)  # Shape: (batch_size, nclasses)
+            print_results(y_pred)
+
+
 def save_model(model, filename):
     torch.save(model.state_dict(), filename)
 
@@ -318,6 +352,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
+    parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
     parser.add_argument('--smiles', help='SMILES directory')
     parser.add_argument('--nepochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=32)
@@ -342,3 +377,5 @@ if __name__ == '__main__':
         sys.exit()
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=128, batch_size=args.batch_size)
+    if args.predict:
+        predict(weightfile='rgcnn.pt', smilesdir=args.smiles)
