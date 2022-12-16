@@ -37,11 +37,12 @@
 #############################################################################
 import os
 import torch
+import torch_geometric
 import torch.nn.functional as F
 from torch_geometric.nn import RGCNConv, Sequential
 from torch_scatter import scatter_max
 from misc.eta import ETA
-from misc.mols.graph.mol_to_graph import molDataLoader
+from misc.mols.graph.mol_to_graph import molDataLoader, smiles_to_graph
 import time
 import tqdm
 import numpy as np
@@ -313,6 +314,10 @@ def print_results(y_pred, idx_to_name, topn=3, y_true=None):
 def predict(weightfile, smilesdir, readclass=True, batch_size=32):
     """
     >>> predict(weightfile='rgcnn.pt', smilesdir='data/HMT_mols_test/')
+    EEF2KMT: 0.4|SETD6: 0.13|PRMT6: 0.11|  ->  SMYD2
+    EEF2KMT: 0.48|SETD6: 0.12|MLL: 0.11|  ->  PRMT5
+    SETD6: 0.42|EEF2KMT: 0.21|PRMT6: 0.11|  ->  MLL
+    ...
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     mapping = np.load('mapping.npz', allow_pickle=True)
@@ -326,6 +331,41 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32):
             x = x.to(device)
             y_pred = model(x)  # Shape: (batch_size, nclasses)
             print_results(y_pred, idx_to_name, y_true=y_true)
+
+
+def predict_from_smiles(model, smiles, mapping, printout=False):
+    """
+    >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
+    >>> model = load_model('rgcnn_bs512.pt')
+    >>> mapping = np.load('mapping.npz', allow_pickle=True)
+    >>> probs = predict_from_smiles(model, smiles, mapping, printout=True)
+    PRMT5: 1|CARM1: 1.5e-16|MLL: 8.7e-17|
+    >>> probs
+    array([[2.9097538e-32, 1.0000000e+00, 8.7469069e-17, 4.6242849e-43,
+            4.8743914e-31, 1.4505446e-18, 0.0000000e+00, 4.3973867e-30,
+            5.1946134e-42, 5.6051939e-45, 4.5224106e-29, 1.2737243e-40,
+            0.0000000e+00, 3.2751062e-33, 9.6240995e-31, 2.3822074e-44,
+            2.8963438e-41, 4.4356850e-36, 1.5198403e-16, 0.0000000e+00,
+            5.3305394e-42, 0.0000000e+00, 1.7128134e-19, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 8.6590713e-30, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 1.0314344e-19, 0.0000000e+00,
+            0.0000000e+00, 2.9351904e-27, 0.0000000e+00, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 0.0000000e+00, 0.0000000e+00,
+            0.0000000e+00, 0.0000000e+00, 9.8090893e-45]], dtype=float32)
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    idx_to_name = mapping['idx_to_name'].item()
+    graph = smiles_to_graph(smiles).to(device)
+    # Add batch dimension
+    graph = torch_geometric.data.Batch.from_data_list([graph])
+    with torch.no_grad():
+        probs = model(graph)
+    if printout:
+        print_results(probs, idx_to_name)
+    probs = probs.cpu().numpy()
+    return probs
 
 
 def embed(weightfile, smilesdir, batch_size=32, outfile=None):
@@ -435,6 +475,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
     parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
+    parser.add_argument('--predict_smiles', help='Make a prediction for the given smilesi as a string')
     parser.add_argument('--embed', help='Embed the given smiles (see: --smiles)', action='store_true')
     parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
     parser.add_argument('--testmodel',
@@ -463,11 +504,16 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    weightfile = 'rgcnn_bs512.pt'
+    scriptdir = GetScriptDir()
+    weightfile = f'{scriptdir}/rgcnn_bs512.pt'
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
         predict(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size)
+    if args.predict_smiles is not None:
+        model = load_model(weightfile=weightfile)
+        mapping = np.load('mapping.npz', allow_pickle=True)
+        predict_from_smiles(model, args.predict_smiles, mapping, printout=True)
     if args.embed:
         embedfile = os.path.splitext(args.smiles)[0] + '_embedding.npz'
         embed(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size, outfile=embedfile)
