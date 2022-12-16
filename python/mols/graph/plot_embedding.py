@@ -113,13 +113,14 @@ def tsne_embedding(embedfile):
     # plt.show()
     xmin, xmax = X_embedded[:, 0].min(), X_embedded[:, 0].max()
     ymin, ymax = X_embedded[:, 1].min(), X_embedded[:, 1].max()
+    plt.rcParams['axes.grid'] = True
     f, axes = plt.subplots(5, 10, sharey=True, sharex=True)
     for label in range(50):
         i, j = np.unravel_index(label, (5, 10))
         sel = (labels == label)
         x = X_embedded[:, 0][sel]
         y = X_embedded[:, 1][sel]
-        axes[i, j].scatter(x, y, marker='.', s=1.)
+        axes[i, j].scatter(x, y, marker='.', s=1., alpha=0.25)
         # axes[i, j].hist2d(x, y, bins=50, cmap=cm.hot, range=((xmin, xmax), (ymin, ymax)))
         axes[i, j].set_title(idx_to_name[label])
     plt.show()
