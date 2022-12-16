@@ -337,11 +337,11 @@ def embed(weightfile, smilesdir, batch_size=32, outfile=None):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = load_model(weightfile)
     rgcn = model.rgcn
-    dataloader = molDataLoader(smilesdir, readclass=False, batch_size=batch_size, shuffle=False)
+    dataloader = molDataLoader(smilesdir, readclass=True, batch_size=batch_size, shuffle=False)
     embedding = []
     with torch.no_grad():
         for batch in tqdm.tqdm(dataloader, desc='Embedding'):
-            x = batch
+            x, labels = batch
             x = x.to(device)
             out = rgcn(x)
             embedding.append(out)
@@ -349,7 +349,7 @@ def embed(weightfile, smilesdir, batch_size=32, outfile=None):
     embedding = embedding.cpu().numpy()
     if outfile is not None:
         print(f'Saving embedding to: {outfile}')
-        np.save(outfile, embedding)
+        np.savez(outfile, embedding=embedding, labels=labels)
     return embedding
 
 
@@ -466,7 +466,7 @@ if __name__ == '__main__':
     if args.predict:
         predict(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size)
     if args.embed:
-        embedfile = os.path.splitext(args.smiles)[0] + '_embedding.npy'
+        embedfile = os.path.splitext(args.smiles)[0] + '_embedding.npz'
         embed(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size, outfile=embedfile)
     if args.testmodel:
         model = load_model(weightfile=weightfile)

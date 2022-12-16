@@ -6,13 +6,14 @@ FROM: shell.sif
 %post
 apt-get update
 apt-get install -y rename
+conda install scikit-image
 conda install pip
 pip install rdkit
 pip install torchsummary
 pip install wget
 pip install prettytable==0.7.2
 pip install matplotlib
-pip install scikit-learn
+pip install scikit-learn==1.1.0
 pip install biopython
 pip install dill
 pip install ipython
