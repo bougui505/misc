@@ -986,3 +986,4 @@ python/mols/graph/data/HMT_mols_test/098.pt
 python/mols/graph/data/HMT_mols_test/099.pt
 python/mols/graph/data/HMT_mols_test/100.pt
 python/mols/graph/mapping.npz
+python/mols/graph/rgcnn_bs512.pt
