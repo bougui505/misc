@@ -988,3 +988,7 @@ python/mols/graph/data/HMT_mols_test/100.pt
 python/mols/graph/mapping.npz
 python/mols/graph/rgcnn_bs512.pt
 python/mols/graph/data/HMT_mols_test_embedding.npy
+python/mols/graph/data/HMT_mols_test_embedding.npz
+python/mols/graph/data/HMT_mols_test_embedding_som.pickle
+python/mols/graph/data/HMT_mols_test_embedding_tsne.npy
+python/mols/graph/som.log
