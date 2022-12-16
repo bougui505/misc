@@ -339,14 +339,17 @@ def embed(weightfile, smilesdir, batch_size=32, outfile=None):
     rgcn = model.rgcn
     dataloader = molDataLoader(smilesdir, readclass=True, batch_size=batch_size, shuffle=False)
     embedding = []
+    labels = []
     with torch.no_grad():
         for batch in tqdm.tqdm(dataloader, desc='Embedding'):
-            x, labels = batch
+            x, label_batch = batch
+            labels.extend(list(label_batch.cpu().numpy()))
             x = x.to(device)
             out = rgcn(x)
             embedding.append(out)
     embedding = torch.cat(embedding, dim=0)
     embedding = embedding.cpu().numpy()
+    labels = np.asarray(labels)
     if outfile is not None:
         print(f'Saving embedding to: {outfile}')
         np.savez(outfile, embedding=embedding, labels=labels)
