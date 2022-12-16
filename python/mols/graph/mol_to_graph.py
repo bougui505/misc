@@ -130,6 +130,18 @@ def lig_atom_featurizer(mol):
     return torch.tensor(atom_features_list, dtype=torch.float)
 
 
+def smiles_to_graph(smiles):
+    """
+    >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
+    >>> graph = smiles_to_graph(smiles)
+    >>> graph
+    Data(x=[48, 16], edge_index=[2, 104], edge_attr=[104, 4], pos=[48, 3], edge_type=[104])
+    """
+    mol = molfromsmiles(smiles)
+    graph = get_mol_graph(mol)
+    return graph
+
+
 def get_mol_graph(mol):
     """
     Adapted from: get_lig_graph from diffdock (https://github.com/gcorso/DiffDock)
@@ -207,8 +219,7 @@ class MolDataset(Dataset):
                 inline = f.read().split()
             smiles = inline[0]
             smiles_class = int(inline[1])
-            mol = molfromsmiles(smiles)
-            graph = get_mol_graph(mol)
+            graph = smiles_to_graph(mol)
             torch.save({'graph': graph, 'smiles_class': smiles_class}, graphfile)
         if self.readclass:
             return graph, smiles_class
