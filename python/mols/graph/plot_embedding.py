@@ -42,6 +42,8 @@ import torch
 import matplotlib.pyplot as plt
 import tqdm
 from MulticoreTSNE import MulticoreTSNE as TSNE
+import matplotlib.cm as cm
+from matplotlib.colors import LogNorm
 
 
 def som_fit(embedfile, m=50, n=50, n_epoch=10, batch_size=32):
@@ -93,6 +95,9 @@ def som_fit(embedfile, m=50, n=50, n_epoch=10, batch_size=32):
 def tsne_embedding(embedfile):
     """
     """
+    mapping = np.load('mapping.npz', allow_pickle=True)
+    idx_to_name = mapping['idx_to_name'].item()
+    name_to_idx = mapping['name_to_idx'].item()
     tsnefilename = os.path.splitext(embedfile)[0] + '_tsne.npy'
     data = np.load(embedfile)
     X = data['embedding']
@@ -106,6 +111,8 @@ def tsne_embedding(embedfile):
         np.save(tsnefilename, X_embedded)
     # plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=labels, cmap="tab20", marker='.')
     # plt.show()
+    xmin, xmax = X_embedded[:, 0].min(), X_embedded[:, 0].max()
+    ymin, ymax = X_embedded[:, 1].min(), X_embedded[:, 1].max()
     f, axes = plt.subplots(5, 10, sharey=True, sharex=True)
     for label in range(50):
         i, j = np.unravel_index(label, (5, 10))
@@ -113,7 +120,8 @@ def tsne_embedding(embedfile):
         x = X_embedded[:, 0][sel]
         y = X_embedded[:, 1][sel]
         axes[i, j].scatter(x, y, marker='.', s=1.)
-        axes[i, j].set_title(label)
+        # axes[i, j].hist2d(x, y, bins=50, cmap=cm.hot, range=((xmin, xmax), (ymin, ymax)))
+        axes[i, j].set_title(idx_to_name[label])
     plt.show()
 
 
