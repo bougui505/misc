@@ -254,7 +254,32 @@ def test_model(model, testloader, device='cpu'):
 
 def load_model(weightfile):
     """
-    >>> model = load_model('rgcnn.pt')
+    >>> seed = torch.manual_seed(0)
+    >>> model = load_model('rgcnn_bs512.pt')
+    >>> dir(model)
+    ['T_destination', '__annotations__', '__call__', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattr__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setstate__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_apply', '_backward_hooks', '_buffers', '_call_impl', '_forward_hooks', '_forward_pre_hooks', '_get_backward_hooks', '_get_name', '_is_full_backward_hook', '_load_from_state_dict', '_load_state_dict_post_hooks', '_load_state_dict_pre_hooks', '_maybe_warn_non_full_backward_hook', '_modules', '_named_members', '_non_persistent_buffers_set', '_parameters', '_register_load_state_dict_pre_hook', '_register_state_dict_hook', '_replicate_for_data_parallel', '_save_to_state_dict', '_slow_forward', '_state_dict_hooks', '_version', 'add_module', 'apply', 'bfloat16', 'buffers', 'children', 'cpu', 'cuda', 'double', 'dump_patches', 'eval', 'extra_repr', 'float', 'forward', 'get_buffer', 'get_extra_state', 'get_parameter', 'get_submodule', 'half', 'ipu', 'load_state_dict', 'mlp', 'modules', 'named_buffers', 'named_children', 'named_modules', 'named_parameters', 'parameters', 'register_backward_hook', 'register_buffer', 'register_forward_hook', 'register_forward_pre_hook', 'register_full_backward_hook', 'register_load_state_dict_post_hook', 'register_module', 'register_parameter', 'requires_grad_', 'rgcn', 'set_extra_state', 'share_memory', 'state_dict', 'to', 'to_empty', 'train', 'training', 'type', 'xpu', 'zero_grad']
+    >>> loader = molDataLoader('data/HMT_mols_test/', readclass=True, reweight=True)
+    >>> loader
+    <torch_geometric.loader.dataloader.DataLoader object at ...
+    >>> iterator = iter(loader)
+    >>> batch = next(iterator)
+    >>> batch
+    [DataBatch(x=[1965, 16], edge_index=[2, 4144], edge_attr=[4144, 4], pos=[1965, 3], edge_type=[4144], batch=[1965], ptr=[33]), tensor([20,  8,  0,  5, 20,  1,  2,  0,  5,  5,  0,  1,  4, 12,  2,  5,  2,  1,
+             0,  0,  1, 38,  0,  1,  1,  5,  2,  2,  1,  0, 12, 19])]
+    >>> x, y = batch
+    >>> device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    >>> x = x.to(device)
+
+    Testing full model (RGCNN = RGCN + MLP)
+    >>> out = model(x)
+    >>> out.shape
+    torch.Size([32, 51])
+
+    Testing embedding (RGCN only)
+    >>> rgcn = model.rgcn
+    >>> out = rgcn(x)
+    >>> out.shape
+    torch.Size([32, 64])
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = RGCNN(num_classes=51)
@@ -301,6 +326,28 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32):
             x = x.to(device)
             y_pred = model(x)  # Shape: (batch_size, nclasses)
             print_results(y_pred, idx_to_name, y_true=y_true)
+
+
+def embed(weightfile, smilesdir, batch_size=32):
+    """
+    >>> embedding = embed(weightfile='rgcnn_bs512.pt', smilesdir='data/HMT_mols_test/')
+    >>> embedding.shape
+    (101, 64)
+    """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = load_model(weightfile)
+    rgcn = model.rgcn
+    dataloader = molDataLoader(smilesdir, readclass=False, batch_size=batch_size, shuffle=False)
+    embedding = []
+    with torch.no_grad():
+        for batch in tqdm.tqdm(dataloader, desc='Embedding'):
+            x = batch
+            x = x.to(device)
+            out = rgcn(x)
+            embedding.append(out)
+    embedding = torch.cat(embedding, dim=0)
+    embedding = embedding.cpu().numpy()
+    return embedding
 
 
 def save_model(model, filename):
