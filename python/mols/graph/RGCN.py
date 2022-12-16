@@ -328,7 +328,7 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32):
             print_results(y_pred, idx_to_name, y_true=y_true)
 
 
-def embed(weightfile, smilesdir, batch_size=32):
+def embed(weightfile, smilesdir, batch_size=32, outfile=None):
     """
     >>> embedding = embed(weightfile='rgcnn_bs512.pt', smilesdir='data/HMT_mols_test/')
     >>> embedding.shape
@@ -347,6 +347,9 @@ def embed(weightfile, smilesdir, batch_size=32):
             embedding.append(out)
     embedding = torch.cat(embedding, dim=0)
     embedding = embedding.cpu().numpy()
+    if outfile is not None:
+        print(f'Saving embedding to: {outfile}')
+        np.save(outfile, embedding)
     return embedding
 
 
@@ -429,6 +432,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
     parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
+    parser.add_argument('--embed', help='Embed the given smiles (see: --smiles)', action='store_true')
     parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
     parser.add_argument('--testmodel',
                         help='Test the model with the given SMILES directory (see: --smiles option)',
@@ -460,7 +464,10 @@ if __name__ == '__main__':
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
-        predict(weightfile=weightfile, smilesdir=args.smiles)
+        predict(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size)
+    if args.embed:
+        embedfile = os.path.splitext(args.smiles)[0] + '_embedding.npy'
+        embed(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size, outfile=embedfile)
     if args.testmodel:
         model = load_model(weightfile=weightfile)
         dataloader = molDataLoader(args.smiles, readclass=True, batch_size=args.batch_size)
