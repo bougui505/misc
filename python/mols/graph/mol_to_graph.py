@@ -219,7 +219,7 @@ class MolDataset(Dataset):
                 inline = f.read().split()
             smiles = inline[0]
             smiles_class = int(inline[1])
-            graph = smiles_to_graph(mol)
+            graph = smiles_to_graph(smiles)
             torch.save({'graph': graph, 'smiles_class': smiles_class}, graphfile)
         if self.readclass:
             return graph, smiles_class
