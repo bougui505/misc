@@ -408,7 +408,7 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
                                            testset_len=testset_len,
                                            batch_size=batch_size)
     if os.path.exists('rgcnn.pt'):
-        outstr = 'Loading model from rgcnn.pt'
+        outstr = '# Loading model from rgcnn.pt'
         print(outstr)
         log(outstr)
         model = load_model('rgcnn.pt')
