@@ -29,3 +29,5 @@ done
 # See: https://www.gnu.org/software/ddrescue/manual/ddrescue_manual.html#Optical-media
 ddrescue -n -b2048 /dev/dvd dvdimage mapfile
 ddrescue -d -r1 -b2048 /dev/dvd dvdimage mapfile
+# See: https://askubuntu.com/a/1209008
+ddrescue -d -R -r1 -b2048 /dev/dvd dvdimage mapfile
