@@ -400,11 +400,11 @@ def save_model(model, filename):
     torch.save(model.state_dict(), filename)
 
 
-def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rgcnn.pt'):
+def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rgcnn.pt', reweight=True):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     dataloader, testloader = molDataLoader(smilesdir,
                                            readclass=True,
-                                           reweight=True,
+                                           reweight=reweight,
                                            testset_len=testset_len,
                                            batch_size=batch_size)
     if os.path.exists('rgcnn.pt'):
