@@ -29,17 +29,19 @@ done
 
 MAXLEN=100 # Maximum length of the bar
 
-cat /dev/stdin | awk -v FIELD=$FIELD -v MAXLEN=$MAXLEN -v SCALE=$SCALE '{
+cat /dev/stdin \
+    | awk -v FIELD=$FIELD -v MAXLEN=$MAXLEN -v SCALE=$SCALE '{
     printf $0"\t"
     LENGTH=$FIELD*SCALE
     if (LENGTH > MAXLEN){
         LENGTH=MAXLEN
     }
     for (i=1;i<=LENGTH;i++){
-        printf "■"
+        printf "#"
     }
     if (LENGTH > MAXLEN){
         printf "..."
     }
     printf "\n"
-}'
+}' \
+    | column -t
