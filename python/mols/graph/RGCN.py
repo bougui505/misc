@@ -47,6 +47,8 @@ import time
 import tqdm
 import numpy as np
 
+NUM_CLASSES = 39
+
 
 class RGCN(torch.nn.Module):
     """
@@ -243,7 +245,7 @@ def test_model(model, testloader, device='cpu'):
     """
     metric_val = 0
     with torch.no_grad():
-        for batch in tqdm.tqdm(testloader, desc='Testing model'):
+        for batch in testloader:
             x, y_true = batch
             x = x.to(device)
             y_true = y_true.to(device)
@@ -283,7 +285,7 @@ def load_model(weightfile):
     torch.Size([32, 64])
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = RGCNN(num_classes=51)
+    model = RGCNN(num_classes=NUM_CLASSES)
     model = model.to(device)
     model.load_state_dict(torch.load(weightfile, map_location=torch.device(device)))
     model.eval()
@@ -414,7 +416,7 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
         model = load_model('rgcnn.pt')
         model.train()
     else:
-        model = RGCNN(num_classes=51)
+        model = RGCNN(num_classes=NUM_CLASSES)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
     loss = torch.nn.CrossEntropyLoss()
@@ -506,7 +508,7 @@ if __name__ == '__main__':
         sys.exit()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     scriptdir = GetScriptDir()
-    weightfile = f'{scriptdir}/rgcnn_bs512.pt'
+    weightfile = f'{scriptdir}/rgcnn.pt~20230103-114434~'
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
@@ -524,7 +526,7 @@ if __name__ == '__main__':
         metric_val = test_model(model, dataloader, device=device)
         print(metric_val)
     if args.summary:
-        model = RGCNN(num_classes=51)
+        model = RGCNN(num_classes=NUM_CLASSES)
         print('RGCN:')
         print(model.rgcn.layers)
         print("______________________________________________________________")
