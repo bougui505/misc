@@ -237,7 +237,7 @@ def get_all_classes(dataset):
     return classes
 
 
-def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, testset_len=None, shuffle=True):
+def molDataLoader(smilesdir, readclass=False, return_weight=False, batch_size=32, testset_len=None, shuffle=True):
     """
     reweight: weight the dataloader according to classes population to avoid class imbalance
     testset_len: if not None, give the desired length of the test set
@@ -262,26 +262,29 @@ def molDataLoader(smilesdir, readclass=False, reweight=True, batch_size=32, test
         lengths = (len(dataset) - testset_len, testset_len)
         dataset, testset = random_split(dataset, lengths=lengths, generator=torch.Generator().manual_seed(42))
         testloader = DataLoader(testset, batch_size=min(testset_len, batch_size), num_workers=os.cpu_count())
-    if reweight:
+    if return_weight:
         if testset_len is not None:
             # dataset is a Subset object
             classes = get_all_classes(dataset.dataset)
         else:
             classes = get_all_classes(dataset)
         classe_labels, counts = np.unique(classes, return_counts=True)
-        weight_per_class = {class_: 1. / counts for class_, counts in zip(classe_labels, counts)}
-        weights = torch.tensor([weight_per_class[class_] for class_ in classes], dtype=torch.double)
-        sampler = WeightedRandomSampler(weights, len(classes))
-    else:
-        sampler = None
+        counts = list(counts) + [0]
+        weights = torch.tensor(counts) / sum(counts)
     if testset_len is not None:
-        loader = DataLoader(dataset.dataset, batch_size=batch_size, num_workers=os.cpu_count(), sampler=sampler)
+        loader = DataLoader(dataset.dataset, batch_size=batch_size, shuffle=shuffle, num_workers=os.cpu_count())
     else:
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=os.cpu_count())
     if testset_len is None:
-        return loader
+        if return_weight:
+            return loader, weights
+        else:
+            return loader
     else:
-        return loader, testloader
+        if return_weight:
+            return loader, testloader, weights
+        else:
+            return loader, testloader
 
 
 def test_dataset_item(dataset, i):
