@@ -407,11 +407,17 @@ def save_model(model, filename):
 
 def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rgcnn.pt', reweight=True):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    dataloader, testloader = molDataLoader(smilesdir,
-                                           readclass=True,
-                                           reweight=reweight,
-                                           testset_len=testset_len,
-                                           batch_size=batch_size)
+    out = molDataLoader(smilesdir,
+                        readclass=True,
+                        return_weight=reweight,
+                        testset_len=testset_len,
+                        batch_size=batch_size)
+    if reweight:
+        dataloader, testloader, weights = out
+        weights = weights.to(device)
+    else:
+        dataloader, testloader = out
+        weights = None
     if os.path.exists('rgcnn.pt'):
         outstr = '# Loading model from rgcnn.pt'
         print(outstr)
@@ -422,7 +428,7 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
         model = RGCNN(num_classes=NUM_CLASSES)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
-    loss = torch.nn.NLLLoss()
+    loss = torch.nn.NLLLoss(weight=weights)
     epoch = 0
     step = 0
     total_steps = n_epochs * len(dataloader)
