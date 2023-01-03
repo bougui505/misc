@@ -311,7 +311,7 @@ def print_results(y_pred, idx_to_name, topn=3, y_true=None, raw_output=False):
             outstr += f"{name}: {p:.2g}|"
         if y_true is not None:
             name_true = idx_to_name[y_true[bi]]
-            outstr += f"  ->  {name_true}"
+            outstr += f"->:  {name_true}"
         print(outstr)
     #     print(' '.join([f'{e:.2g}' for e in probs]))
 
