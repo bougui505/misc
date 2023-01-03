@@ -163,7 +163,7 @@ class MLP(torch.nn.Module):
 
         # Define the activation functions
         self.relu = torch.nn.ReLU()
-        self.softmax = torch.nn.Softmax(dim=1)
+        self.logsoftmax = torch.nn.LogSoftmax(dim=1)
 
     def forward(self, x):
         # Apply the first linear layer and the ReLU activation function
@@ -175,7 +175,7 @@ class MLP(torch.nn.Module):
 
         # Apply the third linear layer and the softmax activation function
         x = self.fclast(x)
-        x = self.softmax(x)
+        x = self.logsoftmax(x)
 
         return x
 
@@ -249,7 +249,7 @@ def test_model(model, testloader, device='cpu'):
             x, y_true = batch
             x = x.to(device)
             y_true = y_true.to(device)
-            y_pred = model(x)
+            y_pred = torch.exp(model(x))
             metric_val += metric(y_true, y_pred)
     metric_val /= len(testloader)
     return metric_val
@@ -334,7 +334,7 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32, raw_output=Fal
         for batch in dataloader:
             x, y_true = batch
             x = x.to(device)
-            y_pred = model(x)  # Shape: (batch_size, nclasses)
+            y_pred = torch.exp(model(x))  # Shape: (batch_size, nclasses)
             print_results(y_pred, idx_to_name, y_true=y_true, raw_output=raw_output)
 
 
@@ -366,7 +366,7 @@ def predict_from_smiles(model, smiles, mapping, printout=False):
     # Add batch dimension
     graph = torch_geometric.data.Batch.from_data_list([graph])
     with torch.no_grad():
-        probs = model(graph)
+        probs = torch.exp(model(graph))
     if printout:
         print_results(probs, idx_to_name)
     probs = probs.cpu().numpy()
@@ -422,7 +422,7 @@ def train(smilesdir, n_epochs, testset_len=128, batch_size=32, modelfilename='rg
         model = RGCNN(num_classes=NUM_CLASSES)
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters())
-    loss = torch.nn.CrossEntropyLoss()
+    loss = torch.nn.NLLLoss()
     epoch = 0
     step = 0
     total_steps = n_epochs * len(dataloader)
