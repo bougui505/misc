@@ -292,14 +292,17 @@ def load_model(weightfile):
     return model
 
 
-def print_results(y_pred, idx_to_name, topn=3, y_true=None):
+def print_results(y_pred, idx_to_name, topn=3, y_true=None, raw_output=False):
     """
     """
     if y_true is not None:
         y_true = y_true.cpu().numpy()
     for bi, probs in enumerate(y_pred):
         probs = probs.cpu().numpy()
-        sorter = np.argsort(probs)[::-1][:topn]
+        if raw_output:
+            sorter = np.arange(len(probs))
+        else:
+            sorter = np.argsort(probs)[::-1][:topn]
         probs = probs[sorter]
         names = [idx_to_name[i] if i in idx_to_name else None for i in sorter]
         # print(list(zip(names, probs)))
@@ -313,7 +316,7 @@ def print_results(y_pred, idx_to_name, topn=3, y_true=None):
     #     print(' '.join([f'{e:.2g}' for e in probs]))
 
 
-def predict(weightfile, smilesdir, readclass=True, batch_size=32):
+def predict(weightfile, smilesdir, readclass=True, batch_size=32, raw_output=False):
     """
     >>> predict(weightfile='rgcnn.pt', smilesdir='data/HMT_mols_test/')
     EEF2KMT: 0.4|SETD6: 0.13|PRMT6: 0.11|  ->  SMYD2
@@ -332,7 +335,7 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32):
             x, y_true = batch
             x = x.to(device)
             y_pred = model(x)  # Shape: (batch_size, nclasses)
-            print_results(y_pred, idx_to_name, y_true=y_true)
+            print_results(y_pred, idx_to_name, y_true=y_true, raw_output=raw_output)
 
 
 def predict_from_smiles(model, smiles, mapping, printout=False):
@@ -476,8 +479,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--train', help='train the model', action='store_true')
-    parser.add_argument('--predict', help='Make a prediction for the given smiles', action='store_true')
-    parser.add_argument('--predict_smiles', help='Make a prediction for the given smilesi as a string')
+    parser.add_argument(
+        '--predict',
+        help='Make a prediction for the given smiles (see smiles option). See raw_output option for formatting.',
+        action='store_true')
+    parser.add_argument('--raw_output', help='Print raw output for the prediction', action='store_true')
+    parser.add_argument('--predict_smiles', help='Make a prediction for the given smiles as a string')
     parser.add_argument('--embed', help='Embed the given smiles (see: --smiles)', action='store_true')
     parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
     parser.add_argument('--testmodel',
@@ -512,7 +519,7 @@ if __name__ == '__main__':
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
-        predict(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size)
+        predict(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size, raw_output=args.raw_output)
     if args.predict_smiles is not None:
         model = load_model(weightfile=weightfile)
         mapping = np.load('mapping.npz', allow_pickle=True)
