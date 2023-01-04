@@ -270,7 +270,7 @@ def molDataLoader(smilesdir, readclass=False, return_weight=False, batch_size=32
             classes = get_all_classes(dataset)
         classe_labels, counts = np.unique(classes, return_counts=True)
         counts = list(counts) + [0]
-        weights = torch.tensor(counts) / sum(counts)
+        weights = sum(counts) / (len(classe_labels) * torch.tensor(counts))
     if testset_len is not None:
         loader = DataLoader(dataset.dataset, batch_size=batch_size, shuffle=shuffle, num_workers=os.cpu_count())
     else:
