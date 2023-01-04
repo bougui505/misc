@@ -521,7 +521,7 @@ if __name__ == '__main__':
         sys.exit()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     scriptdir = GetScriptDir()
-    weightfile = f'{scriptdir}/rgcnn.pt~20230103-114434~'
+    weightfile = f'{scriptdir}/rgcnn.pt~20230104-100357~'
     if args.train:
         train(smilesdir=args.smiles, n_epochs=args.nepochs, testset_len=args.testset, batch_size=args.batch_size)
     if args.predict:
