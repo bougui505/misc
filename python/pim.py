@@ -58,20 +58,25 @@ class PIM(object):
     """
     Edit a pipe stream with vim in tmux (pipe + vim -> pim)
     """
-    def __init__(self):
+    def __init__(self, pim_name=None):
         """
         """
         with open('.inpipe', 'w') as f:
             f.write(sys.stdin.read())
-        self.print_results(apply_cmd=False)
-        self.pim_name = get_pim_name()
-        with open(self.pim_name, 'w') as f:
-            f.writelines(['#!/usr/bin/env zsh\n', ' '])
-        self.chmod()
+        has_changed = False
+        if pim_name is None:
+            self.pim_name = get_pim_name()
+            with open(self.pim_name, 'w') as f:
+                f.writelines(['#!/usr/bin/env zsh\n', ' '])
+            self.chmod()
+            self.print_results(apply_cmd=False)
+        else:
+            has_changed = True
+            self.pim_name = pim_name
+            self.print_results(apply_cmd=True)
         self.hash_current = self.hash
         p = subprocess.Popen(f'tmux splitw -v nvim -c ":2" -c "AutoSaveToggle" {self.pim_name}', shell=True)
         exit_code = p.wait()
-        has_changed = False
         try:
             while True:
                 if self.hash != self.hash_current:
@@ -132,7 +137,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
+    parser.add_argument('-p', '--pim', help='Optional pim file name to run. If not given creates an empty one.')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -153,4 +158,4 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    pim = PIM()
+    pim = PIM(pim_name=args.pim)
