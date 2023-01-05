@@ -69,7 +69,7 @@ class PIM(object):
             f.writelines(['#!/usr/bin/env zsh\n', ' '])
         self.chmod()
         self.hash_current = self.hash
-        p = subprocess.Popen(f'tmux splitw -v nvim -c ":2" {self.pim_name}', shell=True)
+        p = subprocess.Popen(f'tmux splitw -v nvim -c ":2" -c "AutoSaveToggle" {self.pim_name}', shell=True)
         exit_code = p.wait()
         has_changed = False
         try:
