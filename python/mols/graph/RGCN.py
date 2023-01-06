@@ -84,10 +84,14 @@ class RGCN(torch.nn.Module):
     >>> batch = next(iterator)
     >>> batch
     DataBatch(x=[1787, 16], edge_index=[2, 3766], edge_attr=[3766, 4], pos=[1787, 3], edge_type=[3766], batch=[1787], ptr=[33])
+
     >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=False)
     >>> out = rgcn(batch)
-    >>> out.shape
-    torch.Size([1787, 64])
+    >>> len(out)
+    32
+    >>> [e.shape for e in out]
+    [torch.Size([59, 64]), torch.Size([47, 64]), torch.Size([45, 64]), torch.Size([68, 64]), torch.Size([78, 64]), torch.Size([44, 64]), torch.Size([42, 64]), torch.Size([42, 64]), torch.Size([74, 64]), torch.Size([70, 64]), torch.Size([69, 64]), torch.Size([32, 64]), torch.Size([35, 64]), torch.Size([50, 64]), torch.Size([48, 64]), torch.Size([45, 64]), torch.Size([61, 64]), torch.Size([62, 64]), torch.Size([46, 64]), torch.Size([54, 64]), torch.Size([51, 64]), torch.Size([54, 64]), torch.Size([77, 64]), torch.Size([61, 64]), torch.Size([37, 64]), torch.Size([73, 64]), torch.Size([38, 64]), torch.Size([95, 64]), torch.Size([64, 64]), torch.Size([47, 64]), torch.Size([69, 64]), torch.Size([50, 64])]
+
     >>> rgcn = RGCN(num_node_features=16, num_relations=4, maxpool=True)
     >>> out = rgcn(batch)
     >>> out.shape
@@ -122,6 +126,10 @@ class RGCN(torch.nn.Module):
                 x = torch.max(x, axis=0)[0]
             else:  # Take the max along the batch
                 x = scatter_max(x, graph.batch, dim=0)[0]
+        else:
+            if graph.batch is not None:
+                unique = torch.unique(graph.batch)
+                x = [x[graph.batch == i] for i in unique]
         return x  # F.log_softmax(x, dim=1)
 
 
@@ -373,15 +381,23 @@ def predict_from_smiles(model, smiles, mapping, printout=False):
     return probs
 
 
-def embed(weightfile, smilesdir, batch_size=32, outfile=None):
+def embed(weightfile, smilesdir, batch_size=32, outfile=None, maxpool=True):
     """
-    >>> embedding = embed(weightfile='rgcnn_bs512.pt', smilesdir='data/HMT_mols_test/')
+    >>> embedding = embed(weightfile='rgcnn.pt~20230104-100357~', smilesdir='data/HMT_mols_test/')
     >>> embedding.shape
     (101, 64)
+
+    Testing without maxpool (atomic embedding)
+    >>> embedding = embed(weightfile='rgcnn.pt~20230104-100357~', smilesdir='data/HMT_mols_test/', maxpool=False)
+    >>> len(embedding)
+    101
+    >>> [e.shape for e in embedding]
+    [(43, 64), (50, 64), (55, 64), (32, 64), (78, 64), (35, 64), (68, 64), (61, 64), (40, 64), (61, 64), (51, 64), (45, 64), (56, 64), (35, 64), (70, 64), (69, 64), (55, 64), (88, 64), (61, 64), (74, 64), (61, 64), (25, 64), (64, 64), (54, 64), (50, 64), (51, 64), (78, 64), (41, 64), (47, 64), (57, 64), (40, 64), (52, 64), (46, 64), (55, 64), (137, 64), (65, 64), (42, 64), (47, 64), (95, 64), (68, 64), (95, 64), (33, 64), (63, 64), (62, 64), (60, 64), (61, 64), (55, 64), (62, 64), (69, 64), (73, 64), (44, 64), (50, 64), (77, 64), (38, 64), (45, 64), (34, 64), (46, 64), (69, 64), (37, 64), (38, 64), (58, 64), (73, 64), (75, 64), (57, 64), (55, 64), (54, 64), (61, 64), (65, 64), (67, 64), (45, 64), (54, 64), (59, 64), (79, 64), (72, 64), (53, 64), (52, 64), (42, 64), (71, 64), (50, 64), (74, 64), (79, 64), (59, 64), (47, 64), (42, 64), (47, 64), (48, 64), (65, 64), (64, 64), (94, 64), (70, 64), (78, 64), (33, 64), (61, 64), (70, 64), (39, 64), (38, 64), (47, 64), (72, 64), (71, 64), (54, 64), (49, 64)]
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = load_model(weightfile)
     rgcn = model.rgcn
+    rgcn.maxpool = maxpool
     dataloader = molDataLoader(smilesdir, readclass=True, batch_size=batch_size, shuffle=False)
     embedding = []
     labels = []
@@ -391,9 +407,12 @@ def embed(weightfile, smilesdir, batch_size=32, outfile=None):
             labels.extend(list(label_batch.cpu().numpy()))
             x = x.to(device)
             out = rgcn(x)
-            embedding.append(out)
-    embedding = torch.cat(embedding, dim=0)
-    embedding = embedding.cpu().numpy()
+            if maxpool:
+                embedding.append(out.cpu().numpy())
+            else:
+                embedding.extend([e.cpu().numpy() for e in out])
+    if maxpool:
+        embedding = np.concatenate(embedding, axis=0)
     labels = np.asarray(labels)
     if outfile is not None:
         print(f'Saving embedding to: {outfile}')
