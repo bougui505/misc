@@ -115,7 +115,7 @@ def tsne_embedding(embedfile):
     ymin, ymax = X_embedded[:, 1].min(), X_embedded[:, 1].max()
     plt.rcParams['axes.grid'] = True
     f, axes = plt.subplots(4, 10, sharey=True, sharex=True)
-    for label in range(38):
+    for label in np.unique(labels):
         i, j = np.unravel_index(label, (4, 10))
         sel = (labels == label)
         x = X_embedded[:, 0][sel]
