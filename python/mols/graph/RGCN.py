@@ -42,7 +42,8 @@ import torch.nn.functional as F
 from torch_geometric.nn import RGCNConv, Sequential
 from torch_scatter import scatter_max
 from misc.eta import ETA
-from misc.mols.graph.mol_to_graph import molDataLoader, smiles_to_graph
+from misc.mols.graph.mol_to_graph import molDataLoader, smiles_to_graph, molfromsmiles, get_mol_graph
+from misc.mols.graph.utils import draw_mol_features
 import time
 import tqdm
 import numpy as np
@@ -346,7 +347,7 @@ def predict(weightfile, smilesdir, readclass=True, batch_size=32, raw_output=Fal
             print_results(y_pred, idx_to_name, y_true=y_true, raw_output=raw_output)
 
 
-def predict_from_smiles(model, smiles, mapping, printout=False):
+def predict_from_smiles(model, smiles, mapping, printout=False, figfilename=None):
     """
     >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
     >>> model = load_model('rgcnn_bs512.pt')
@@ -370,7 +371,8 @@ def predict_from_smiles(model, smiles, mapping, printout=False):
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     idx_to_name = mapping['idx_to_name'].item()
-    graph = smiles_to_graph(smiles).to(device)
+    mol = molfromsmiles(smiles)
+    graph = get_mol_graph(mol).to(device)
     # Add batch dimension
     graph = torch_geometric.data.Batch.from_data_list([graph])
     with torch.no_grad():
@@ -378,6 +380,10 @@ def predict_from_smiles(model, smiles, mapping, printout=False):
     if printout:
         print_results(probs, idx_to_name)
     probs = probs.cpu().numpy()
+    if figfilename is not None:
+        model.rgcn.maxpool = False
+        features = model.rgcn(graph)[0].detach().cpu().numpy().max(axis=1)
+        draw_mol_features(mol, features, outfilename=figfilename)
     return probs
 
 
@@ -510,6 +516,7 @@ if __name__ == '__main__':
         action='store_true')
     parser.add_argument('--raw_output', help='Print raw output for the prediction', action='store_true')
     parser.add_argument('--predict_smiles', help='Make a prediction for the given smiles as a string')
+    parser.add_argument('--figure', help='Figure filename to plot the atomic features')
     parser.add_argument('--embed', help='Embed the given smiles (see: --smiles)', action='store_true')
     parser.add_argument('--testset', help='Size of the testset (default: 128)', type=int, default=128)
     parser.add_argument('--testmodel',
@@ -548,7 +555,7 @@ if __name__ == '__main__':
     if args.predict_smiles is not None:
         model = load_model(weightfile=weightfile)
         mapping = np.load('mapping.npz', allow_pickle=True)
-        predict_from_smiles(model, args.predict_smiles, mapping, printout=True)
+        predict_from_smiles(model, args.predict_smiles, mapping, printout=True, figfilename=args.figure)
     if args.embed:
         embedfile = os.path.splitext(args.smiles)[0] + '_embedding.npz'
         embed(weightfile=weightfile, smilesdir=args.smiles, batch_size=args.batch_size, outfile=embedfile)
