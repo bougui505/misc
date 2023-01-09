@@ -37,6 +37,10 @@
 #############################################################################
 import os
 import numpy as np
+from misc.mols.rdkit_fix import molfromsmiles
+from rdkit.Chem import AllChem
+from rdkit.Chem.Draw import SimilarityMaps
+import matplotlib.pyplot as plt
 
 
 def get_mapping(smilefile, mappingfile='mapping.npz', print_mapping=False):
@@ -66,6 +70,23 @@ def get_mapping(smilefile, mappingfile='mapping.npz', print_mapping=False):
         for name, idx in zip(names, ids):
             print(idx, name)
     return idx_to_name, name_to_idx
+
+
+def draw_mol_features(mol, features, outfilename):
+    """
+    >>> smiles = "O[C@@H]([C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc2C3=NCC(O)N3C=Nc12)c1ccc(Cl)cc1"
+    >>> mol = molfromsmiles(smiles)
+    >>> natoms = mol.GetNumAtoms()
+    >>> natoms
+    48
+    >>> features = np.random.uniform(size=natoms)
+    >>> draw_mol_features(mol, features, outfilename='test.png')
+    """
+    natoms = mol.GetNumAtoms()
+    assert len(features) == natoms
+    AllChem.Compute2DCoords(mol)
+    fig = SimilarityMaps.GetSimilarityMapFromWeights(mol, features, colorMap='PiYG', alpha=0.25)
+    plt.savefig(outfilename)
 
 
 def log(msg):
