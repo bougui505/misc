@@ -132,6 +132,27 @@ def data_request(pdb, url=DATAURL):
     return results
 
 
+def print_pdb_data(data, prepend=None):
+    for key in data:
+        value = data[key]
+        if not isinstance(value, dict) and not isinstance(value, list):
+            outstr = f'{key}: {value}'
+            if prepend is not None:
+                outstr = f'{prepend}:' + outstr
+            print(outstr)
+        elif isinstance(value, dict):
+            print_pdb_data(value, prepend=key)
+        else:  # list
+            for elt in value:
+                if isinstance(elt, dict):
+                    print_pdb_data(elt, prepend=key)
+                else:
+                    outstr = f"{key}: {elt}"
+                    if prepend is not None:
+                        outstr = f'{prepend}:' + outstr
+                    print(outstr)
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -172,7 +193,7 @@ if __name__ == '__main__':
 
     if args.data:
         r = data_request(args.pdb)
-        print(r)
+        print_pdb_data(r)
     if args.structure:
         r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
     if args.text is not None:
