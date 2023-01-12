@@ -90,6 +90,32 @@ def structure(entry_id, url=URL, operator='relaxed_shape_match', max_results=10,
     return r
 
 
+def textsearch(text, url=URL, max_results=10, verbose=False):
+    """
+    Performs text search in the pdb
+
+    """
+    params = {
+        "query": {
+            "type": "terminal",
+            "service": "full_text",
+            "parameters": {
+                "value": text
+            }
+        },
+        "return_type": "entry"
+    }
+    params.update(max_result(max_results))
+    # See: https://github.com/sbliven/rcsbsearch/blob/c7f8cb7e9f26ed5c78af1688af972fd345de8978/rcsbsearch/search.py#L1024
+    r = __make_request__(params, url=url)
+    if verbose:
+        results = r.json()['result_set']
+        print('id\tscore')
+        for d in results:
+            print(f"{d['identifier']}\t{d['score']:.4f}")
+    return r
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -117,6 +143,7 @@ if __name__ == '__main__':
         help=
         'Performs fast searches matching a global 3D shape of assemblies or chains of a given entry (identified by PDB ID), in either strict (strict_shape_match) or relaxed (relaxed_shape_match) modes, using a BioZernike descriptor strategy.',
         action='store_true')
+    parser.add_argument('--text', help='Text search in the PDB')
     parser.add_argument('-n',
                         '--max_results',
                         help='maximum number of results to return (default=10)',
@@ -127,6 +154,8 @@ if __name__ == '__main__':
 
     if args.structure:
         r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
+    if args.text is not None:
+        r = textsearch(args.text, verbose=True, max_results=args.max_results)
 
     if args.test:
         doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
