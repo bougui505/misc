@@ -41,7 +41,8 @@
 import requests
 import json
 
-URL = "http://search.rcsb.org/rcsbsearch/v2/query"  # "https://search.rcsb.org/rcsbsearch/v2/query?json="
+SEARCHURL = "http://search.rcsb.org/rcsbsearch/v2/query"  # "https://search.rcsb.org/rcsbsearch/v2/query?json="
+DATAURL = "https://data.rcsb.org/rest/v1/core/entry"
 
 
 def __make_request__(params, url):
@@ -59,7 +60,7 @@ def max_result(n):
     return params
 
 
-def structure(entry_id, url=URL, operator='relaxed_shape_match', max_results=10, verbose=False):
+def structure(entry_id, url=SEARCHURL, operator='relaxed_shape_match', max_results=10, verbose=False):
     """
     Performs fast searches matching a global 3D shape of assemblies or chains of a given entry (identified by PDB ID), in either strict (strict_shape_match) or relaxed (relaxed_shape_match) modes, using a BioZernike descriptor strategy.
 
@@ -90,7 +91,7 @@ def structure(entry_id, url=URL, operator='relaxed_shape_match', max_results=10,
     return r
 
 
-def textsearch(text, url=URL, max_results=10, verbose=False):
+def textsearch(text, url=SEARCHURL, max_results=10, verbose=False):
     """
     Performs text search in the pdb
 
@@ -116,6 +117,21 @@ def textsearch(text, url=URL, max_results=10, verbose=False):
     return r
 
 
+def data_request(pdb, url=DATAURL):
+    """
+    >>> results = data_request('1t4e')
+    >>> results.keys()
+    dict_keys(['audit_author', 'cell', 'citation', 'diffrn', 'diffrn_detector', 'diffrn_radiation', 'diffrn_source', 'entry', 'exptl', 'exptl_crystal', 'exptl_crystal_grow', 'pdbx_audit_revision_category', 'pdbx_audit_revision_details', 'pdbx_audit_revision_group', 'pdbx_audit_revision_history', 'pdbx_audit_revision_item', 'pdbx_database_related', 'pdbx_database_status', 'pdbx_vrpt_summary', 'rcsb_accession_info', 'rcsb_entry_container_identifiers', 'rcsb_entry_info', 'rcsb_primary_citation', 'refine', 'refine_analyze', 'refine_hist', 'refine_ls_restr', 'reflns', 'reflns_shell', 'software', 'struct', 'struct_keywords', 'symmetry', 'rcsb_id', 'rcsb_binding_affinity'])
+    >>> results['rcsb_entry_info']
+    {'assembly_count': 1, 'branched_entity_count': 0, 'cis_peptide_count': 0, 'deposited_atom_count': 1682, 'deposited_hydrogen_atom_count': 0, 'deposited_model_count': 1, 'deposited_modeled_polymer_monomer_count': 192, 'deposited_nonpolymer_entity_instance_count': 2, 'deposited_polymer_entity_instance_count': 2, 'deposited_polymer_monomer_count': 192, 'deposited_solvent_atom_count': 50, 'deposited_unmodeled_polymer_monomer_count': 0, 'diffrn_radiation_wavelength_maximum': 1.5418, 'diffrn_radiation_wavelength_minimum': 1.5418, 'disulfide_bond_count': 0, 'entity_count': 3, 'experimental_method': 'X-ray', 'experimental_method_count': 1, 'inter_mol_covalent_bond_count': 0, 'inter_mol_metalic_bond_count': 0, 'molecular_weight': 23.47, 'na_polymer_entity_types': 'Other', 'nonpolymer_entity_count': 1, 'nonpolymer_molecular_weight_maximum': 0.58, 'nonpolymer_molecular_weight_minimum': 0.58, 'polymer_composition': 'homomeric protein', 'polymer_entity_count': 1, 'polymer_entity_count_dna': 0, 'polymer_entity_count_rna': 0, 'polymer_entity_count_nucleic_acid': 0, 'polymer_entity_count_nucleic_acid_hybrid': 0, 'polymer_entity_count_protein': 1, 'polymer_entity_taxonomy_count': 1, 'polymer_molecular_weight_maximum': 11.16, 'polymer_molecular_weight_minimum': 11.16, 'polymer_monomer_count_maximum': 96, 'polymer_monomer_count_minimum': 96, 'resolution_combined': [2.6], 'selected_polymer_entity_types': 'Protein (only)', 'software_programs_combined': ['CNX', 'PROTEUM PLUS'], 'solvent_entity_count': 1, 'structure_determination_methodology': 'experimental', 'structure_determination_methodology_priority': 10, 'diffrn_resolution_high': {'provenance_source': 'Depositor assigned', 'value': 2.4}}
+    >>> results['struct']
+    {'pdbx_descriptor': 'Ubiquitin-protein ligase E3 Mdm2 (E.C.6.3.2.-)', 'title': 'Structure of Human MDM2 in complex with a Benzodiazepine Inhibitor'}
+    """
+    response = requests.get(f'{url}/{pdb}')
+    results = response.json()
+    return results
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -138,6 +154,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='pdb code to search')
+    parser.add_argument('--data', help='Print all the data available for the given pdb', action='store_true')
     parser.add_argument(
         '--structure',
         help=
@@ -150,13 +167,25 @@ if __name__ == '__main__':
                         type=int,
                         default=10)
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
+    if args.data:
+        r = data_request(args.pdb)
+        print(r)
     if args.structure:
         r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
     if args.text is not None:
         r = textsearch(args.text, verbose=True, max_results=args.max_results)
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        if args.func is None:
+            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        else:
+            for f in args.func:
+                print(f'Testing {f}')
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(f,
+                                               globals(),
+                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
