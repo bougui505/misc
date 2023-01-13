@@ -40,6 +40,7 @@
 
 import requests
 import json
+import numpy as np
 
 SEARCHURL = "http://search.rcsb.org/rcsbsearch/v2/query"  # "https://search.rcsb.org/rcsbsearch/v2/query?json="
 DATAURL = "https://data.rcsb.org/rest/v1/core/entry"
@@ -91,7 +92,7 @@ def structure(entry_id, url=SEARCHURL, operator='relaxed_shape_match', max_resul
     return r
 
 
-def textsearch(text, url=SEARCHURL, max_results=10, verbose=False):
+def textsearch(text, url=SEARCHURL, max_results=10, verbose=False, fields=['title']):
     """
     Performs text search in the pdb
 
@@ -104,6 +105,9 @@ def textsearch(text, url=SEARCHURL, max_results=10, verbose=False):
                 "value": text
             }
         },
+        "request_options": {
+            "return_all_hits": True
+        },
         "return_type": "entry"
     }
     params.update(max_result(max_results))
@@ -111,10 +115,54 @@ def textsearch(text, url=SEARCHURL, max_results=10, verbose=False):
     r = __make_request__(params, url=url)
     if verbose:
         results = r.json()['result_set']
-        print('id\tscore')
+        header = '#id\t#score'
+        for field in fields:
+            header += f'\t#{field}'
+        print(header)
         for d in results:
-            print(f"{d['identifier']}\t{d['score']:.4f}")
+            outstr = ''
+            pdb = d['identifier']
+            score = d['score']
+            outstr += f'{pdb}\t{score:.2f}'
+            if len(fields) > 0:
+                data = data_request(pdb)
+            if 'title' in fields:
+                outstr += f'\t{get_title(data)}'
+            if 'ligand' in fields:
+                outstr += f'\t{get_ligands(data)}'
+            print(outstr)
     return r
+
+
+def get_title(data):
+    """
+    Returns the title field from the data structure returned by data_request
+    """
+    return data['struct']['title']
+
+
+def get_ligands(data):
+    try:
+        liglist = data['rcsb_binding_affinity']
+        liglist = np.unique([e['comp_id'] for e in liglist])
+    except KeyError:
+        liglist = []
+    return liglist
+
+
+def print_data(data, keys=[]):
+    if len(keys) == 0:
+        print(data)
+    else:
+        outstr = ''
+        for key in keys:
+            if key == 'title':
+                outstr += f'{key}: {get_title(data)}\n'
+            if key == 'ligand':
+                ligands = get_ligands(data)
+                for ligand in ligands:
+                    outstr += f'{key}: {ligand}\n'
+        print(outstr)
 
 
 def data_request(pdb, url=DATAURL):
@@ -130,37 +178,6 @@ def data_request(pdb, url=DATAURL):
     response = requests.get(f'{url}/{pdb}')
     results = response.json()
     return results
-
-
-def print_pdb_data(data, prepend=None, filters=None):
-    """
-    - data: return of data_request
-    - prepend: prepend the printing with the given string
-    - filter: list of keys to filter the informations printed out (e.g. to print the title filters=["struct", "title"])
-    """
-    for key in data:
-        if filters is not None:
-            if key not in filters:
-                continue
-        value = data[key]
-        if not isinstance(value, dict) and not isinstance(value, list):
-            outstr = f'{key}: {value}'
-            if prepend is not None:
-                outstr = f'{prepend}:' + outstr
-            if filters is not None:
-                if key in filters:
-                    print(outstr)
-        elif isinstance(value, dict):
-            print_pdb_data(value, prepend=key, filters=filters)
-        else:  # list
-            for elt in value:
-                if isinstance(elt, dict):
-                    print_pdb_data(elt, prepend=key, filters=filters)
-                else:
-                    outstr = f"{key}: {elt}"
-                    if prepend is not None:
-                        outstr = f'{prepend}:' + outstr
-                    print(outstr)
 
 
 def log(msg):
@@ -186,7 +203,10 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='pdb code to search')
     parser.add_argument('--data', help='Print all the data available for the given pdb', action='store_true')
-    parser.add_argument('--keys', help='List of data keys to print out', nargs='+')
+    parser.add_argument('--keys',
+                        help='List of data keys to print out. For text search, available keys are: - title',
+                        nargs='+',
+                        default=[])
     parser.add_argument(
         '--structure',
         help=
@@ -203,12 +223,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.data:
-        r = data_request(args.pdb)
-        print_pdb_data(r, filters=args.keys)
+        data = data_request(args.pdb)
+        print_data(data, keys=args.keys)
+        # print_pdb_data(r, filters=args.keys)
     if args.structure:
         r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
     if args.text is not None:
-        r = textsearch(args.text, verbose=True, max_results=args.max_results)
+        r = textsearch(args.text, verbose=True, max_results=args.max_results, fields=args.keys)
 
     if args.test:
         if args.func is None:
