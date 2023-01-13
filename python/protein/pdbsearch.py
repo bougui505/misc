@@ -132,20 +132,30 @@ def data_request(pdb, url=DATAURL):
     return results
 
 
-def print_pdb_data(data, prepend=None):
+def print_pdb_data(data, prepend=None, filters=None):
+    """
+    - data: return of data_request
+    - prepend: prepend the printing with the given string
+    - filter: list of keys to filter the informations printed out (e.g. to print the title filters=["struct", "title"])
+    """
     for key in data:
+        if filters is not None:
+            if key not in filters:
+                continue
         value = data[key]
         if not isinstance(value, dict) and not isinstance(value, list):
             outstr = f'{key}: {value}'
             if prepend is not None:
                 outstr = f'{prepend}:' + outstr
-            print(outstr)
+            if filters is not None:
+                if key in filters:
+                    print(outstr)
         elif isinstance(value, dict):
-            print_pdb_data(value, prepend=key)
+            print_pdb_data(value, prepend=key, filters=filters)
         else:  # list
             for elt in value:
                 if isinstance(elt, dict):
-                    print_pdb_data(elt, prepend=key)
+                    print_pdb_data(elt, prepend=key, filters=filters)
                 else:
                     outstr = f"{key}: {elt}"
                     if prepend is not None:
@@ -176,6 +186,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='pdb code to search')
     parser.add_argument('--data', help='Print all the data available for the given pdb', action='store_true')
+    parser.add_argument('--keys', help='List of data keys to print out', nargs='+')
     parser.add_argument(
         '--structure',
         help=
@@ -193,7 +204,7 @@ if __name__ == '__main__':
 
     if args.data:
         r = data_request(args.pdb)
-        print_pdb_data(r)
+        print_pdb_data(r, filters=args.keys)
     if args.structure:
         r = structure(args.pdb, operator='relaxed_shape_match', verbose=True, max_results=args.max_results)
     if args.text is not None:
