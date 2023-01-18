@@ -37,6 +37,7 @@
 #############################################################################
 import os
 import numpy as np
+import h5py
 
 
 def add_to_dataset(grp, key, X):
@@ -44,6 +45,28 @@ def add_to_dataset(grp, key, X):
     del grp[key]
     data_new = np.concatenate((data, X))
     grp.create_dataset(key, data=data_new)
+
+
+def txt_to_h5(txt):
+    """
+    Store each line of a txt file to a hdf5 file
+    >>> txt_to_h5('test.txt')
+    >>> h5 = h5py.File('test.h5', 'r')
+    >>> list(h5.keys())
+    ['0', '1', '2']
+    >>> h5['0'][()]
+    'a'
+    >>> h5['1'][()]
+    'b'
+    >>> h5['2'][()]
+    'c'
+    """
+    h5filename = os.path.splitext(txt)[0] + '.h5'
+    with h5py.File(h5filename, 'w') as h5:
+        with open(txt, 'r') as f:
+            for i, line in enumerate(f):
+                line = line.strip()
+                h5.create_dataset(f'{i}', data=line)
 
 
 def log(msg):
