@@ -8,6 +8,7 @@ apt-get update
 apt-get install -y rename
 conda install scikit-image
 conda install pip
+pip install molgrid
 pip install h5py
 pip install MulticoreTSNE
 pip install rdkit
