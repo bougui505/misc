@@ -45,7 +45,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Help message
+Concatenate columns with different number of rows
+    Usage:
+        catcol -- a.txt b.txt c.txt
     -h, --help print this help message and exit
 EOF
 }
