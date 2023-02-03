@@ -154,7 +154,10 @@ def print_data(data, keys=[]):
     if len(keys) == 0:
         # required to be able to parse the output with jq:
         # See: https://github.com/stedolan/jq/issues/501
-        print(str(data).replace("'", '"'))
+        # print(data)
+        print(
+            str(data).replace(" '", ' "').replace("':", '":').replace("',", '",').replace("'}", '"}').replace(
+                "{'", '{"').replace("['", '["').replace("']", '"]'))
     else:
         outstr = ''
         for key in keys:
