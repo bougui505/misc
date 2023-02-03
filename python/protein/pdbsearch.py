@@ -204,7 +204,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='pdb code to search')
-    parser.add_argument('--data', help='Print all the data available for the given pdb', action='store_true')
+    parser.add_argument('--data', help='Print all the data available for the given pdb. The output can be piped to jq program to parse the json output.', action='store_true')
     parser.add_argument('--keys',
                         help='List of data keys to print out. For text search, available keys are: - title',
                         nargs='+',
