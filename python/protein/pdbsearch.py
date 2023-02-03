@@ -152,7 +152,9 @@ def get_ligands(data):
 
 def print_data(data, keys=[]):
     if len(keys) == 0:
-        print(data)
+        # required to be able to parse the output with jq:
+        # See: https://github.com/stedolan/jq/issues/501
+        print(str(data).replace("'", '"'))
     else:
         outstr = ''
         for key in keys:
