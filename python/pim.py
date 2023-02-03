@@ -102,6 +102,9 @@ class PIM(object):
         """
         """
         subprocess.Popen('clear')
+        print(
+            '________________________________________________________________________________________________________________________________'
+        )
         if not apply_cmd:
             subprocess.Popen(f'cat .inpipe', shell=True)
         else:
