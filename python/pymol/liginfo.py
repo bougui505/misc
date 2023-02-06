@@ -54,7 +54,6 @@ def load_pdb(pdb):
     """
     coords, sel = coords_loader.get_coords(pdb, return_selection=True, verbose=False)
     obj = sel.split()[0]
-    cmd.remove('solvent')
     return obj
 
 
@@ -85,17 +84,23 @@ def selection_to_smi(selection):
     """
     molfilename = lig_to_mol(selection)
     mol = Chem.MolFromMolFile(molfilename)
+    os.remove(molfilename)
     if mol is None:
         return None
     if mol.GetNumHeavyAtoms() < 5:
         return None
-    os.remove(molfilename)
     try:
         smi = Chem.MolToSmiles(mol)
     except:
         sys.stderr.write(f'Cannot convert to SMILES for selection {selection}\n')
         return None
     return smi
+
+
+def clean_system():
+    to_clean = ['polymer.nucleic', 'inorganic', 'solvent', 'metals']
+    sel = '|'.join(to_clean)
+    cmd.remove(sel)
 
 
 HEADER = '#SMILES #PDB #resname #chain #resid'
@@ -109,6 +114,7 @@ def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True):
     array(['DIZ:112:A', 'DIZ:112:B'], dtype='<U9')
     """
     obj = load_pdb(pdb)
+    clean_system()
     if check_if_protein:
         nres = cmd.select('polymer.protein')
         if nres == 0:
