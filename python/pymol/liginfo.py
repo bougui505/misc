@@ -89,6 +89,9 @@ def selection_to_smi(selection):
     return smi
 
 
+HEADER = '#SMILES #PDB #resname #chain #resid'
+
+
 def get_ligands(pdb, delete=True, outsmifilename=None):
     """
     >>> pdb = '1t4e'
@@ -100,7 +103,6 @@ def get_ligands(pdb, delete=True, outsmifilename=None):
     myspace = {'identifiers': []}
     cmd.iterate(f'{obj} and not polymer.protein', 'identifiers.append(f"{resn}:{resi}:{chain}")', space=myspace)
     identifiers = np.unique(myspace['identifiers'])
-    header = '#SMILES #PDB #resname #chain #resid'
     if outsmifilename is not None:
         if not os.path.exists(outsmifilename):
             write_header = True
@@ -108,10 +110,9 @@ def get_ligands(pdb, delete=True, outsmifilename=None):
             write_header = False
         outsmifile = open(outsmifilename, 'a')
         if write_header:
-            outsmifile.write(header + '\n')
+            outsmifile.write(HEADER + '\n')
     else:
         outsmifile = None
-        print(header)
     for identifier in identifiers:
         resn, resi, chain = identifier.split(':')
         selection = identifier_to_selection(identifier, obj)
@@ -156,6 +157,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb', help='PDB file(s) or ID(s) to extract the ligand from', nargs='+')
+    parser.add_argument('--pdblist', help='Text file with a list of pdbs')
     parser.add_argument('--smi', help='Output SMILES file to write the results out. If not given write to stdout')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
@@ -177,5 +179,13 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    for pdb in args.pdb:
+    pdblist = []
+    if args.pdb is not None:
+        pdblist.extend(args.pdb)
+    if args.pdblist is not None:
+        with open(args.pdblist, 'r') as pdblistfile:
+            pdblist.extend([e.strip() for e in pdblistfile.readlines()])
+    if args.smi is None:
+        print(HEADER)
+    for pdb in pdblist:
         get_ligands(pdb, outsmifilename=args.smi)
