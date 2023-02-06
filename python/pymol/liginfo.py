@@ -41,6 +41,7 @@ import numpy as np
 from misc.protein import coords_loader
 from misc import randomgen
 from rdkit import Chem
+from tqdm import tqdm
 
 
 def load_pdb(pdb):
@@ -84,15 +85,23 @@ def selection_to_smi(selection):
     """
     molfilename = lig_to_mol(selection)
     mol = Chem.MolFromMolFile(molfilename)
+    if mol is None:
+        return None
+    if mol.GetNumHeavyAtoms() < 5:
+        return None
     os.remove(molfilename)
-    smi = Chem.MolToSmiles(mol)
+    try:
+        smi = Chem.MolToSmiles(mol)
+    except:
+        sys.stderr.write(f'Cannot convert to SMILES for selection {selection}\n')
+        return None
     return smi
 
 
 HEADER = '#SMILES #PDB #resname #chain #resid'
 
 
-def get_ligands(pdb, delete=True, outsmifilename=None):
+def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True):
     """
     >>> pdb = '1t4e'
     >>> obj, identifiers = get_ligands(pdb, outsmifilename=f'{pdb}.smi')
@@ -100,6 +109,10 @@ def get_ligands(pdb, delete=True, outsmifilename=None):
     array(['DIZ:112:A', 'DIZ:112:B'], dtype='<U9')
     """
     obj = load_pdb(pdb)
+    if check_if_protein:
+        nres = cmd.select('polymer.protein')
+        if nres == 0:
+            return None, None
     myspace = {'identifiers': []}
     cmd.iterate(f'{obj} and not polymer.protein', 'identifiers.append(f"{resn}:{resi}:{chain}")', space=myspace)
     identifiers = np.unique(myspace['identifiers'])
@@ -187,5 +200,9 @@ if __name__ == '__main__':
             pdblist.extend([e.strip() for e in pdblistfile.readlines()])
     if args.smi is None:
         print(HEADER)
+    else:
+        pbar = tqdm(total=len(pdblist))
     for pdb in pdblist:
         get_ligands(pdb, outsmifilename=args.smi)
+        if args.smi is not None:
+            pbar.update(1)
