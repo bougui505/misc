@@ -98,7 +98,7 @@ def selection_to_smi(selection):
 
 
 def clean_system():
-    to_clean = ['polymer.nucleic', 'inorganic', 'solvent', 'metals']
+    to_clean = ['polymer.nucleic', 'inorganic', 'solvent']  #, 'metals'
     sel = '|'.join(to_clean)
     cmd.remove(sel)
 
