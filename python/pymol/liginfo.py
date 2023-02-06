@@ -101,6 +101,9 @@ def clean_system():
     to_clean = ['polymer.nucleic', 'inorganic', 'solvent']  #, 'metals'
     sel = '|'.join(to_clean)
     cmd.remove(sel)
+    # Remove alternate locations (see: https://pymol.org/dokuwiki/doku.php?id=concept:alt):
+    cmd.remove("not alt ''+A")
+    cmd.alter("all", "alt=''")
 
 
 HEADER = '#SMILES #PDB #resname #chain #resid'
