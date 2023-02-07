@@ -217,7 +217,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--npy', help='Read a npy file and create a MRC file (see: --out)')
-    parser.add_argument('--origin', type=float, nargs='+', default=None, help='Origin for the MRC file')  # 10. 20. 30.
+    parser.add_argument('--origin', type=float, nargs='+', default=[0., 0., 0.],
+                        help='Origin for the MRC file')  # 10. 20. 30.
     parser.add_argument('--center', help='Set the origin to 0 0 0', action='store_true')
     parser.add_argument('--resample',
                         help='Resample the grid by the given ratio. >1: bigger grid. <1: smaller grid',
