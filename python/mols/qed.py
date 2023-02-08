@@ -45,9 +45,10 @@ from tqdm import tqdm
 
 def get_qed(smifilename):
     outfilename = os.path.splitext(smifilename)[0] + "_QED.smi"
+    num_lines = sum(1 for line in open(smifilename))
     with open(smifilename, 'r') as smifile:
         with open(outfilename, 'w') as outfile:
-            for line in tqdm(smifile):
+            for line in tqdm(smifile, total=num_lines):
                 line = line.strip()
                 if line.startswith("#"):
                     print(line + ' #QED')
