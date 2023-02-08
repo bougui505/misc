@@ -51,7 +51,7 @@ def get_qed(smifilename):
             for line in tqdm(smifile, total=num_lines):
                 line = line.strip()
                 if line.startswith("#"):
-                    print(line + ' #QED')
+                    outfile.write(line + ' #QED\n')
                     continue
                 fields = line.split()
                 smiles = fields[0]
