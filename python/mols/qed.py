@@ -40,25 +40,28 @@
 import os
 from rdkit import Chem
 from rdkit.Chem import QED
+from tqdm import tqdm
 
 
 def get_qed(smifilename):
+    outfilename = os.path.splitext(smifilename)[0] + "_QED.smi"
     with open(smifilename, 'r') as smifile:
-        for line in smifile:
-            line = line.strip()
-            if line.startswith("#"):
-                print(line + ' #QED')
-                continue
-            fields = line.split()
-            smiles = fields[0]
-            others = fields[1:]
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is not None:
-                qed = QED.qed(mol)
-            else:
-                qed = -1
-            outstr = f"{smiles} {' '.join(others)} {qed:.2f}"
-            print(outstr)
+        with open(outfilename, 'w') as outfile:
+            for line in tqdm(smifile):
+                line = line.strip()
+                if line.startswith("#"):
+                    print(line + ' #QED')
+                    continue
+                fields = line.split()
+                smiles = fields[0]
+                others = fields[1:]
+                mol = Chem.MolFromSmiles(smiles)
+                if mol is not None:
+                    qed = QED.qed(mol)
+                else:
+                    qed = -1
+                outstr = f"{smiles} {' '.join(others)} {qed:.2f}"
+                outfile.write(outstr + "\n")
 
 
 def log(msg):
