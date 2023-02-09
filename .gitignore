@@ -992,3 +992,4 @@ python/mols/graph/data/HMT_mols_test_embedding_som.pickle
 python/mols/graph/data/HMT_mols_test_embedding_tsne.npy
 python/mols/graph/som.log
 python/HDF5/test.h5
+python/mols/DUDE_1000_properties.smi
