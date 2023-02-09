@@ -42,7 +42,7 @@ from rdkit import Chem
 from rdkit.Chem import QED
 from tqdm import tqdm
 
-AVAILABLE_PROPERTIES = ['qed']
+AVAILABLE_PROPERTIES = ['qed', 'num_heavy']
 
 
 def get_props(smifilename, properties):
@@ -66,18 +66,32 @@ def get_props(smifilename, properties):
                 fields = line.split()
                 smiles = fields[0]
                 others = fields[1:]
+                outstr = f"{smiles} {' '.join(others)}"
                 mol = Chem.MolFromSmiles(smiles)
-                qed = get_qed(mol)
-                outstr = f"{smiles} {' '.join(others)} {qed:.2f}"
+                for prop in properties:
+                    if prop == 'qed':
+                        qed, outstr = get_qed(mol, outstr)
+                    if prop == 'num_heavy':
+                        num_heavy, outstr = get_num_heavy(mol, outstr)
                 outfile.write(outstr + "\n")
 
 
-def get_qed(mol):
+def get_qed(mol, outstr):
     if mol is not None:
         qed = QED.qed(mol)
     else:
         qed = -1
-    return qed
+    outstr += f" {qed:.2f}"
+    return qed, outstr
+
+
+def get_num_heavy(mol, outstr):
+    if mol is not None:
+        num_heavy = mol.GetNumHeavyAtoms()
+    else:
+        num_heavy = -1
+    outstr += f" {num_heavy}"
+    return num_heavy, outstr
 
 
 def log(msg):
@@ -110,7 +124,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--smi', help="SMILES file to process")
-    parser.add_argument('--properties', help=f"Properties to compute. Available properties: {AVAILABLE_PROPERTIES}")
+    parser.add_argument('--properties',
+                        help=f"Properties to compute. Available properties: {AVAILABLE_PROPERTIES}",
+                        nargs='+')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -131,4 +147,4 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.smi is not None:
-        get_props(args.smi, properties=['qed'])
+        get_props(args.smi, properties=args.properties)
