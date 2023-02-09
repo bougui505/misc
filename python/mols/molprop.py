@@ -60,7 +60,7 @@ def get_props(smifilename, properties):
                 if line.startswith("#"):
                     header = line
                     for prop in properties:
-                        header += f" {prop}"
+                        header += f" #{prop}"
                     outfile.write(header + "\n")
                     continue
                 fields = line.split()
