@@ -42,27 +42,42 @@ from rdkit import Chem
 from rdkit.Chem import QED
 from tqdm import tqdm
 
+AVAILABLE_PROPERTIES = ['qed']
 
-def get_qed(smifilename):
-    outfilename = os.path.splitext(smifilename)[0] + "_QED.smi"
+
+def get_props(smifilename, properties):
+    """
+    properties: list of properties to compute
+    """
+    unavailable_properties = set(properties) - set(AVAILABLE_PROPERTIES)
+    assert len(unavailable_properties) == 0, f"Unavailable properties: {unavailable_properties}"
+    outfilename = os.path.splitext(smifilename)[0] + "_properties.smi"
     num_lines = sum(1 for line in open(smifilename))
     with open(smifilename, 'r') as smifile:
         with open(outfilename, 'w') as outfile:
             for line in tqdm(smifile, total=num_lines):
                 line = line.strip()
                 if line.startswith("#"):
-                    outfile.write(line + ' #QED\n')
+                    header = line
+                    for prop in properties:
+                        header += f" {prop}"
+                    outfile.write(header + "\n")
                     continue
                 fields = line.split()
                 smiles = fields[0]
                 others = fields[1:]
                 mol = Chem.MolFromSmiles(smiles)
-                if mol is not None:
-                    qed = QED.qed(mol)
-                else:
-                    qed = -1
+                qed = get_qed(mol)
                 outstr = f"{smiles} {' '.join(others)} {qed:.2f}"
                 outfile.write(outstr + "\n")
+
+
+def get_qed(mol):
+    if mol is not None:
+        qed = QED.qed(mol)
+    else:
+        qed = -1
+    return qed
 
 
 def log(msg):
@@ -95,6 +110,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--smi', help="SMILES file to process")
+    parser.add_argument('--properties', help=f"Properties to compute. Available properties: {AVAILABLE_PROPERTIES}")
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -115,4 +131,4 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.smi is not None:
-        get_qed(args.smi)
+        get_props(args.smi, properties=['qed'])
