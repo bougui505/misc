@@ -40,6 +40,7 @@ from pymol import cmd
 from pymol import stored
 import numpy as np
 import scipy.spatial.distance as scidist
+import collections
 
 
 def log(msg):
@@ -66,6 +67,7 @@ def get_footprint(rec, ligs, cutoff=6.):
     cmd.iterate_state(state=1, selection='rec', expression='stored.coords_rec.append([x, y, z])')
     stored.coords_rec = np.asarray(stored.coords_rec)
     lignames = []
+    footprint = collections.defaultdict(int)
     for i, lig in enumerate(ligs):
         stored.lig = []
         stored.coords_lig = []
@@ -77,10 +79,20 @@ def get_footprint(rec, ligs, cutoff=6.):
         stored.coords_lig = np.asarray(stored.coords_lig)
         dmat = scidist.cdist(stored.coords_lig, stored.coords_rec)
         sel = (dmat <= cutoff).any(axis=0)
+        print("### DISTANCES ###")
         for reslabel, dist in zip(stored.rec[sel], dmat[:, sel]):
             resn, chain, resi = reslabel
-            print(resn, chain, resi, f'{dist.min():.4f}')
-        print("================")
+            distmin = dist.min()
+            footprint[tuple(reslabel)] += 1. - distmin / cutoff
+            print(resn, chain, resi, f'{distmin:.4f}')
+    print("### FOOTPRINT ###")
+    pymolsel = ''
+    for k in footprint:
+        resn, chain, resi = k
+        pymolsel += f'resn {resn} and chain {chain} and resi {resi} | '
+        print(resn, chain, resi, f'{footprint[k]:.4f}')
+    print("### PYMOL SEL ###")
+    print(pymolsel)
 
 
 if __name__ == '__main__':
