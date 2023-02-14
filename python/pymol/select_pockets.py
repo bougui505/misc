@@ -66,10 +66,11 @@ def get_coms(sdflist):
     return np.asarray(comlist)
 
 
-def get_pockets(pdb, comlist, radius, natom_cutoff=None):
+def get_pockets(pdb, sdflist, radius, natom_cutoff=None):
     """
     Split pdb to get natom_cutoff maximum number of atoms
     """
+    comlist = get_coms(sdflist)
     selection = f'byres((com around {radius}) and pdb)'
     cmd.load(pdb, 'pdb')
     index = 0
@@ -141,5 +142,4 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    coms = get_coms(args.sdf)
-    get_pockets(args.pdb, coms, args.radius, natom_cutoff=args.natom_cutoff)
+    get_pockets(args.pdb, args.sdf, args.radius, natom_cutoff=args.natom_cutoff)
