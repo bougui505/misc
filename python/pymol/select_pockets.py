@@ -38,6 +38,7 @@
 import os
 from pymol import cmd
 import numpy as np
+from tqdm import tqdm
 
 
 def log(msg):
@@ -74,7 +75,12 @@ def get_pockets(pdb, sdflist, radius, natom_cutoff=None, smiles=None):
     selection = f'byres((com around {radius}) and pdb)'
     cmd.load(pdb, 'pdb')
     index = 0
+    current_smiles = []
+    current_sdf = []
     for i, com in enumerate(comlist):
+        current_sdf.append(sdflist[i])
+        if smiles is not None:
+            current_smiles.append(smiles[i])
         cmd.pseudoatom(object='com', pos=tuple(com))
         natoms = cmd.select(name='pockets', selection=selection)
         if natom_cutoff is not None:
@@ -82,13 +88,19 @@ def get_pockets(pdb, sdflist, radius, natom_cutoff=None, smiles=None):
             if natoms > natom_cutoff:
                 outfilename = save_pocket(pdb, selection, index=index)
                 if smiles is not None:
-                    print(smiles[i], outfilename, sdflist[i])
+                    # print(smiles[i], outfilename, sdflist[i])
+                    for sm, sd in zip(current_smiles, current_sdf):
+                        print(sm, outfilename, sd)
                 index += 1
+                current_smiles = []
+                current_sdf = []
     try:
         natoms = cmd.select(name='pockets', selection=selection)
         outfilename = save_pocket(pdb, selection, index=index)
         if smiles is not None:
-            print(smiles[i], outfilename, sdflist[i])
+            # print(smiles[i], outfilename, sdflist[i])
+            for sm, sd in zip(current_smiles, current_sdf):
+                print(sm, outfilename, sd)
     except:
         pass
     cmd.delete('pdb')
@@ -161,7 +173,7 @@ if __name__ == '__main__':
         smiles = []
         bn, ext = os.path.splitext(args.smi)
         outsmifilename = bn + "_pocket" + ext
-        for i, line in enumerate(open(args.smi)):
+        for i, line in tqdm(enumerate(open(args.smi)), total=n):
             line = line.strip()
             if line.startswith('#'):
                 continue
