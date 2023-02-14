@@ -77,7 +77,7 @@ def get_pockets(pdb, comlist, radius, natom_cutoff=None):
         cmd.pseudoatom(object='com', pos=tuple(com))
         natoms = cmd.select(name='pockets', selection=selection)
         if natom_cutoff is not None:
-            print(f'npockets: {i+1}|natoms: {natoms}')
+            # print(f'npockets: {i+1}|natoms: {natoms}')
             if natoms > natom_cutoff:
                 save_pocket(pdb, selection, index=index)
                 index += 1
