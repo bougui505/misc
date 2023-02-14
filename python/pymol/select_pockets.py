@@ -66,17 +66,39 @@ def get_coms(sdflist):
     return np.asarray(comlist)
 
 
-def get_pockets(pdb, comlist, radius):
+def get_pockets(pdb, comlist, radius, natom_cutoff=None):
     """
+    Split pdb to get natom_cutoff maximum number of atoms
     """
+    selection = f'byres((com around {radius}) and pdb)'
     cmd.load(pdb, 'pdb')
-    for com in comlist:
+    index = 0
+    for i, com in enumerate(comlist):
         cmd.pseudoatom(object='com', pos=tuple(com))
-    cmd.select(name='pockets', selection=f'(com around {radius}) and pdb')
-    cmd.delete('com')
-    outfilename = os.path.splitext(pdb)[0] + '_pocket.pdb'
-    cmd.save(outfilename, selection='pockets')
+        natoms = cmd.select(name='pockets', selection=selection)
+        if natom_cutoff is not None:
+            print(f'npockets: {i+1}|natoms: {natoms}')
+            if natoms > natom_cutoff:
+                save_pocket(pdb, selection, index=index)
+                index += 1
+    try:
+        natoms = cmd.select(name='pockets', selection=selection)
+        save_pocket(pdb, selection, index=index)
+    except:
+        pass
     cmd.delete('pdb')
+
+
+def save_pocket(pdb, selection, index=None):
+    cmd.select(name='pockets', selection=selection)
+    cmd.delete('com')
+    if index is None:
+        suffix = '_pocket.pdb'
+    else:
+        suffix = f'_pocket_{index}.pdb'
+    outfilename = os.path.splitext(pdb)[0] + suffix
+    cmd.save(outfilename, selection='pockets')
+    cmd.delete('pocket')
 
 
 if __name__ == '__main__':
@@ -98,6 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdb')
     parser.add_argument('--sdf', nargs='+')
     parser.add_argument('--radius', type=float, required=True)
+    parser.add_argument('--natom_cutoff', type=int, help='Split the output pdb if more than natom_cutoff atoms')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -119,4 +142,4 @@ if __name__ == '__main__':
         sys.exit()
 
     coms = get_coms(args.sdf)
-    get_pockets(args.pdb, coms, args.radius)
+    get_pockets(args.pdb, coms, args.radius, natom_cutoff=args.natom_cutoff)
