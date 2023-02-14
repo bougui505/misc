@@ -66,7 +66,7 @@ def get_coms(sdflist):
     return np.asarray(comlist)
 
 
-def get_pockets(pdb, sdflist, radius, natom_cutoff=None):
+def get_pockets(pdb, sdflist, radius, natom_cutoff=None, smiles=None):
     """
     Split pdb to get natom_cutoff maximum number of atoms
     """
@@ -80,11 +80,15 @@ def get_pockets(pdb, sdflist, radius, natom_cutoff=None):
         if natom_cutoff is not None:
             # print(f'npockets: {i+1}|natoms: {natoms}')
             if natoms > natom_cutoff:
-                save_pocket(pdb, selection, index=index)
+                outfilename = save_pocket(pdb, selection, index=index)
+                if smiles is not None:
+                    print(smiles[i], outfilename, sdflist[i])
                 index += 1
     try:
         natoms = cmd.select(name='pockets', selection=selection)
-        save_pocket(pdb, selection, index=index)
+        outfilename = save_pocket(pdb, selection, index=index)
+        if smiles is not None:
+            print(smiles[i], outfilename, sdflist[i])
     except:
         pass
     cmd.delete('pdb')
@@ -100,6 +104,7 @@ def save_pocket(pdb, selection, index=None):
     outfilename = os.path.splitext(pdb)[0] + suffix
     cmd.save(outfilename, selection='pockets')
     cmd.delete('pocket')
+    return outfilename
 
 
 if __name__ == '__main__':
@@ -120,6 +125,11 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('--pdb')
     parser.add_argument('--sdf', nargs='+')
+    parser.add_argument(
+        '--smi',
+        help=
+        'SMILES to read data. Format must be 3 columns: smiles rec lig. rec and lig are the path to receptor file and ligand file respectively'
+    )
     parser.add_argument('--radius', type=float, required=True)
     parser.add_argument('--natom_cutoff', type=int, help='Split the output pdb if more than natom_cutoff atoms')
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -142,4 +152,32 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    get_pockets(args.pdb, args.sdf, args.radius, natom_cutoff=args.natom_cutoff)
+    if args.pdb is not None and args.sdf is not None:
+        get_pockets(args.pdb, args.sdf, args.radius, natom_cutoff=args.natom_cutoff)
+    if args.smi is not None:
+        n = sum(1 for i in open(args.smi))
+        recset = set()
+        ligs = []
+        smiles = []
+        bn, ext = os.path.splitext(args.smi)
+        outsmifilename = bn + "_pocket" + ext
+        for i, line in enumerate(open(args.smi)):
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            if i > 0:
+                rec = _rec_
+            _smiles_, _rec_, _lig_ = line.split()
+            if i == 0:
+                rec = _rec_
+            if _rec_ not in recset:
+                if len(recset) > 0:
+                    # print(rec, ligs, smiles)
+                    get_pockets(rec, ligs, args.radius, natom_cutoff=args.natom_cutoff, smiles=smiles)
+                ligs = []
+                smiles = []
+                recset.add(_rec_)
+            ligs.append(_lig_)
+            smiles.append(_smiles_)
+        # print(rec, ligs, smiles)
+        get_pockets(rec, ligs, args.radius, natom_cutoff=args.natom_cutoff, smiles=smiles)
