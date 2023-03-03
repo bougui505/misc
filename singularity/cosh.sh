@@ -66,5 +66,5 @@ case $HOST in
     "ld19-1020.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /ld19-1020 --nv $SIF;;
     "ld21-1017.bis.pasteur.fr") singularity run -B /usr/lib64/libGL.so.1.7.0:/var/lib/dcv-gl/lib64/libGL_SYS.so.1.0.0 -B /pool --nv $SIF;;
     "mantrisse") singularity run -B /media/bougui/scratch $SIF;;
-    "arcturus") singularity run -B /media/bougui/scratch --nv $SIF;;
+    "arcturus") [[ -d /media/bougui/scratch ]] && singularity run -B /media/bougui/scratch --nv $SIF || echo "No scratch mounted"; singularity run --nv $SIF;;
 esac
