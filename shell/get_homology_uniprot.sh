@@ -58,8 +58,8 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 
-http "https://www.uniprot.org/uniprot/${U1}.fasta" > tmp.fasta
-http "https://www.uniprot.org/uniprot/${U2}.fasta" >> tmp.fasta
+wget "https://www.uniprot.org/uniprot/${U1}.fasta" -q -O- > tmp.fasta
+wget "https://www.uniprot.org/uniprot/${U2}.fasta" -q -O- >> tmp.fasta
 
 muscle -scorefile score.txt -clw -in tmp.fasta
 
