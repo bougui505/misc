@@ -41,7 +41,7 @@ import numpy as np
 
 def reweight(x):
     """
-    >>> x = np.random.normal(size=1000000)
+    >>> x = np.random.normal(size=1000)
     >>> weights, nbins = reweight(x)
     >>> hist, _ = np.histogram(x, bins=nbins, density=True, weights=weights)
     >>> np.isclose(hist, hist[0]).all()
