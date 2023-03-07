@@ -115,6 +115,7 @@ if __name__ == '__main__':
         x = sys.stdin.readlines()
         x = np.asarray([float(e.strip()) for e in x])
         weights, nbins = reweight(x)
+        print(f'#nbins: {nbins}')
         print('#value #weight')
         for v, w in zip(x, weights):
             print(v, w)
