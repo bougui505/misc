@@ -52,6 +52,7 @@ field1: value|field2: value|...
     -h, --help print this help message and exit
     -F, --field field name to extract. If multiple, the format is: key1,key2,...
     -f, --file file to read
+    -v, --var pass a variable to print at first column
 EOF
 }
 
@@ -59,6 +60,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         -F|--field) FIELD="$2"; shift ;;
         -f|--file) FILE="$2"; shift ;;
+        -v|--var) VAR="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -67,14 +69,20 @@ done
 
 sed 's/ //g' $FILE \
     | grep -v "#" \
-    | awk -F '[|:]' -v "KEY=$FIELD" '
+    | awk -F '[|:]' -v "KEY=$FIELD" -v "VAR=$VAR" '
 BEGIN {
     split(KEY, arr, ",")
 }
 {
     for (id=1;id<=length(arr);id++){
         for (i=1;i<=NF;i++){
-            if ($i==arr[id]){printf $(i+1); printf " "}
+            if ($i==arr[id]){
+                if (VAR!=""){
+                    printf VAR" "
+                }
+                printf $(i+1)
+                printf " "
+            }
         }
     }
 printf "\n"
