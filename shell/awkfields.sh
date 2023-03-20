@@ -74,12 +74,12 @@ BEGIN {
     split(KEY, arr, ",")
 }
 {
+    if (VAR!=""){
+        printf VAR" "
+    }
     for (id=1;id<=length(arr);id++){
         for (i=1;i<=NF;i++){
             if ($i==arr[id]){
-                if (VAR!=""){
-                    printf VAR" "
-                }
                 printf $(i+1)
                 printf " "
             }
