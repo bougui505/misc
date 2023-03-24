@@ -79,11 +79,11 @@ def lig_to_mol(selection, outmolfilename=None):
     return outmolfilename
 
 
-def selection_to_smi(selection):
+def selection_to_smi(selection, sanitize=True):
     """
     """
     molfilename = lig_to_mol(selection)
-    mol = Chem.MolFromMolFile(molfilename)
+    mol = Chem.MolFromMolFile(molfilename, sanitize=sanitize)
     os.remove(molfilename)
     if mol is None:
         return None
@@ -109,7 +109,7 @@ def clean_system():
 HEADER = '#SMILES #PDB #resname #chain #resid'
 
 
-def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True):
+def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True, sanitize=True):
     """
     >>> pdb = '1t4e'
     >>> obj, identifiers = get_ligands(pdb, outsmifilename=f'{pdb}.smi')
@@ -138,7 +138,7 @@ def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True):
     for identifier in identifiers:
         resn, resi, chain = identifier.split(':')
         selection = identifier_to_selection(identifier, obj)
-        smi = selection_to_smi(selection)
+        smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f'{smi} {pdb} {resn} {chain} {resi}'
         if outsmifile is None:
             print(outstr)
@@ -181,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdb', help='PDB file(s) or ID(s) to extract the ligand from', nargs='+')
     parser.add_argument('--pdblist', help='Text file with a list of pdbs')
     parser.add_argument('--smi', help='Output SMILES file to write the results out. If not given write to stdout')
+    parser.add_argument('--no_sanitize', help='Do not sanitize the molecule', dest='sanitize', action='store_false')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -212,6 +213,8 @@ if __name__ == '__main__':
     else:
         pbar = tqdm(total=len(pdblist))
     for pdb in pdblist:
-        get_ligands(pdb, outsmifilename=args.smi)
+        if not args.sanitize:
+            print("# not-sanitized molecules")
+        get_ligands(pdb, outsmifilename=args.smi, sanitize=args.sanitize)
         if args.smi is not None:
             pbar.update(1)
