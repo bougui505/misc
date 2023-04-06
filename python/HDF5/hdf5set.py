@@ -42,25 +42,35 @@ import numpy as np
 
 class HDF5set(object):
     """
+    Instanciate the object
     >>> h5filename = '/tmp/test.h5'
+    >>> if os.path.exists(h5filename):
+    ...     os.remove(h5filename)
     >>> hdf5set = HDF5set(h5filename)
 
-
+    Adding a single data point
     >>> key = 'a'
     >>> data = np.random.uniform(size=(10, 10))
     >>> hdf5set.add(key, data)
 
+    Adding a batch
     >>> batch = np.random.uniform(size=(32, 10, 10))
     >>> keys = [f'{e}' for e in range(32)]
     >>> hdf5set.add_batch(keys, batch)
 
+    Retrieve a single data point
     >>> data = hdf5set.get('3')
     >>> data.shape
     (10, 10)
 
+    Retrieve a batch
     >>> batch = hdf5set.get_batch(['3', '6', '8'])
     >>> batch.shape
     (3, 10, 10)
+
+    Test the exception when the same key is given when adding data
+    >>> hdf5set.add('a', data)
+    # key "a" already exists in /tmp/test.h5
 
     >>> os.remove(h5filename)
     """
@@ -75,7 +85,10 @@ class HDF5set(object):
         with h5py.File(self.h5filename, 'a') as h5file:
             for i, key in enumerate(keys):
                 data = batch[i]
-                h5file.create_dataset(name=key, data=data)
+                try:
+                    h5file.create_dataset(name=key, data=data)
+                except RuntimeError:
+                    print(f'# key "{key}" already exists in {self.h5filename}')
 
     def add(self, key, data):
         """
