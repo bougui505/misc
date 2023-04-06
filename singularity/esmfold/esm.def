@@ -8,6 +8,7 @@ export TORCH_HOME="/opt/torch"
 apt-get update
 apt-get install -y g++
 apt-get install -y git
+pip install h5py
 pip install termcolor
 conda install pandas
 pip install "fair-esm[esmfold]"
