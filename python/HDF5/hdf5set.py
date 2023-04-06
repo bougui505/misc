@@ -89,6 +89,8 @@ class HDF5set(object):
                     h5file.create_dataset(name=key, data=data)
                 except RuntimeError:
                     print(f'# key "{key}" already exists in {self.h5filename}')
+                except ValueError:
+                    print(f'# key "{key}" already exists in {self.h5filename}')
 
     def add(self, key, data):
         """
