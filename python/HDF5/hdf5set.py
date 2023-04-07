@@ -48,6 +48,10 @@ class HDF5set(object):
     ...     os.remove(h5filename)
     >>> hdf5set = HDF5set(h5filename)
 
+    List keys in hdf5set (returns a set) => should be an empty set
+    >>> hdf5set.keys()
+    set()
+
     Adding a single data point
     >>> key = 'a'
     >>> data = np.random.uniform(size=(10, 10))
@@ -85,6 +89,8 @@ class HDF5set(object):
         self.h5filename = h5filename
 
     def keys(self):
+        if not os.path.exists(self.h5filename):
+            return set()
         with h5py.File(self.h5filename, 'r') as h5file:
             return set(h5file.keys())
 
