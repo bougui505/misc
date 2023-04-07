@@ -72,12 +72,21 @@ class HDF5set(object):
     >>> hdf5set.add('a', data)
     # key "a" already exists in /tmp/test.h5
 
+    List keys in hdf5set (returns a set)
+    >>> sorted(hdf5set.keys())
+    ['0', '1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '2', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '3', '30', '31', '4', '5', '6', '7', '8', '9', 'a']
+
+
     >>> os.remove(h5filename)
     """
     def __init__(self, h5filename):
         """
         """
         self.h5filename = h5filename
+
+    def keys(self):
+        with h5py.File(self.h5filename, 'r') as h5file:
+            return set(h5file.keys())
 
     def add_batch(self, keys, batch):
         """
