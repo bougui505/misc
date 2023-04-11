@@ -198,7 +198,7 @@ class Fastbeamer(object):
             with open(pdf, 'rb') as pdffile:
                 readpdf = PdfFileReader(pdffile)
                 totalpages = readpdf.numPages
-                merger.append(fileobj=pdffile, pages=(0, totalpages - 1))
+                merger.append(fileobj=pdffile, pages=(0, 1))
         with open('build/fastbeamer.pdf', 'wb') as output:
             merger.write(output)
         merger.close()
