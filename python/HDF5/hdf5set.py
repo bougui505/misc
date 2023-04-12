@@ -83,29 +83,28 @@ class HDF5set(object):
 
     >>> os.remove(h5filename)
     """
-    def __init__(self, h5filename):
+    def __init__(self, h5filename, mode='a'):
         """
         """
         self.h5filename = h5filename
+        self.h5file = h5py.File(self.h5filename, mode)
 
     def keys(self):
         if not os.path.exists(self.h5filename):
             return set()
-        with h5py.File(self.h5filename, 'r') as h5file:
-            return set(h5file.keys())
+        return set(self.h5file.keys())
 
     def add_batch(self, keys, batch):
         """
         """
-        with h5py.File(self.h5filename, 'a') as h5file:
-            for i, key in enumerate(keys):
-                data = batch[i]
-                try:
-                    h5file.create_dataset(name=key, data=data)
-                except RuntimeError:
-                    print(f'# key "{key}" already exists in {self.h5filename}')
-                except ValueError:
-                    print(f'# key "{key}" already exists in {self.h5filename}')
+        for i, key in enumerate(keys):
+            data = batch[i]
+            try:
+                self.h5file.create_dataset(name=key, data=data)
+            except RuntimeError:
+                print(f'# key "{key}" already exists in {self.h5filename}')
+            except ValueError:
+                print(f'# key "{key}" already exists in {self.h5filename}')
 
     def add(self, key, data):
         """
@@ -119,16 +118,14 @@ class HDF5set(object):
     def get(self, key):
         """
         """
-        with h5py.File(self.h5filename, 'r') as h5file:
-            data = h5file[key][()]
+        data = self.h5file[key][()]
         return data
 
     def get_batch(self, keys):
-        with h5py.File(self.h5filename, 'r') as h5file:
-            batch = []
-            for key in keys:
-                data = h5file[key][()]
-                batch.append(data)
+        batch = []
+        for key in keys:
+            data = self.h5file[key][()]
+            batch.append(data)
         batch = np.asarray(batch)
         return batch
 
@@ -198,6 +195,7 @@ if __name__ == '__main__':
             v = np.random.uniform(size=(100, 100))
             hdf5set.add(str(i), v)
         timer.stop()
+        hdf5set = HDF5set(h5filename, mode='r')
         timer.start(message='# reading data ...')
         for i in tqdm(range(n)):
             v = hdf5set.get(str(i))
