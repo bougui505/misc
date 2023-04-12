@@ -164,6 +164,7 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument('--test_long', help='Test the code by creating an hdf5 file', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
@@ -181,4 +182,24 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f,
                                                globals(),
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        sys.exit()
+    if args.test_long:
+        from tqdm import tqdm
+        from misc.Timer import Timer
+        timer = Timer(autoreset=True, colors=True)
+        h5filename = 'test.h5'
+        if os.path.exists(h5filename):
+            os.remove(h5filename)
+        hdf5set = HDF5set(h5filename)
+        n = 10000
+        print()
+        timer.start(message='# writing data ...')
+        for i in tqdm(range(n)):
+            v = np.random.uniform(size=(100, 100))
+            hdf5set.add(str(i), v)
+        timer.stop()
+        timer.start(message='# reading data ...')
+        for i in tqdm(range(n)):
+            v = hdf5set.get(str(i))
+        timer.stop()
         sys.exit()
