@@ -83,9 +83,16 @@ class HDF5set(object):
     >>> hdf5set.add('a', data)
     # key "a" already exists in /tmp/test.h5
 
+    Creating datasets in subgroups. 'ac' group contains group 'a' and a dataset
+    >>> hdf5set.add('ab', np.random.uniform(size=(10, 10)))
+    >>> hdf5set.add('aca', np.random.uniform(size=(10, 10)))
+    >>> hdf5set.add('ac', np.random.uniform(size=(10, 10)))
+    >>> hdf5set.get('ac')
+    array([[...
+
     List keys in hdf5set (returns a set)
     >>> sorted(hdf5set.keys())
-    ['0', '1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '2', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '3', '30', '31', '4', '5', '6', '7', '8', '9', 'a']
+    ['0', '1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '2', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '3', '30', '31', '4', '5', '6', '7', '8', '9', 'a', 'ab', 'ac', 'aca']
 
 
     >>> os.remove(h5filename)
@@ -115,9 +122,12 @@ class HDF5set(object):
             try:
                 grp = self.h5file.create_group(hierarchy)
             except ValueError:
+                grp = self.h5file[hierarchy]
+            try:
+                grp.create_dataset(name='data', data=data)
+            except RuntimeError:
                 print(f'# key "{key}" already exists in {self.h5filename}')
                 continue
-            grp.create_dataset(name='data', data=data)
             self.h5file['keys'].create_group(str(key))
 
     def add(self, key, data):
