@@ -40,6 +40,7 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 from misc.Timer import Timer
+import random
 
 
 class HDF5set(object):
@@ -68,11 +69,15 @@ class HDF5set(object):
     >>> data = hdf5set.get('3')
     >>> data.shape
     (10, 10)
+    >>> data
+    array([[...
 
     Retrieve a batch
     >>> batch = hdf5set.get_batch(['3', '6', '8'])
     >>> batch.shape
     (3, 10, 10)
+    >>> batch
+    array([[[...
 
     Test the exception when the same key is given when adding data
     >>> hdf5set.add('a', data)
@@ -90,23 +95,30 @@ class HDF5set(object):
         """
         self.h5filename = h5filename
         self.h5file = h5py.File(self.h5filename, mode)
+        try:
+            self.h5file.create_group('keys')
+        except ValueError:
+            pass
 
     def keys(self):
         if not os.path.exists(self.h5filename):
             return set()
-        return set(self.h5file.keys())
+        keys_set = set(self.h5file['keys'])
+        return keys_set
 
     def add_batch(self, keys, batch):
         """
         """
         for i, key in enumerate(keys):
             data = batch[i]
+            hierarchy = get_hierarchy(key)
             try:
-                self.h5file.create_dataset(name=key, data=data)
-            except RuntimeError:
-                print(f'# key "{key}" already exists in {self.h5filename}')
+                grp = self.h5file.create_group(hierarchy)
             except ValueError:
                 print(f'# key "{key}" already exists in {self.h5filename}')
+                continue
+            grp.create_dataset(name='data', data=data)
+            self.h5file['keys'].create_group(str(key))
 
     def add(self, key, data):
         """
@@ -120,16 +132,32 @@ class HDF5set(object):
     def get(self, key):
         """
         """
-        data = self.h5file[key][()]
+        hierarchy = get_hierarchy(key)
+        data = self.h5file[hierarchy]['data'][()]
         return data
 
     def get_batch(self, keys):
         batch = []
         for key in keys:
-            data = self.h5file[key][()]
+            hierarchy = get_hierarchy(key)
+            data = self.h5file[hierarchy]['data'][()]
             batch.append(data)
         batch = np.asarray(batch)
         return batch
+
+
+def get_hierarchy(key):
+    """
+    >>> key = 123456
+    >>> get_hierarchy(key)
+    '1/2/3/4/5/6'
+    >>> key = 'a'
+    >>> get_hierarchy(key)
+    'a'
+    """
+    key = str(key)
+    hierarchy = '/'.join(list(key))
+    return hierarchy
 
 
 def log(msg):
@@ -218,6 +246,8 @@ if __name__ == '__main__':
         keys = hdf5set.keys()
         timer.stop()
         timer.start(message='# reading data ...')
+        keys = list(keys)
+        random.shuffle(keys)
         for k in tqdm(keys):
             v = hdf5set.get(k)
         timer.stop()
