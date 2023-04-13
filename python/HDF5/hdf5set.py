@@ -41,6 +41,7 @@ import numpy as np
 from tqdm import tqdm
 from misc.Timer import Timer
 import random
+import string
 
 
 class HDF5set(object):
@@ -50,6 +51,7 @@ class HDF5set(object):
     >>> if os.path.exists(h5filename):
     ...     os.remove(h5filename)
     >>> hdf5set = HDF5set(h5filename)
+    # h5py version: 2.10.0
 
     List keys in hdf5set (returns a set) => should be an empty set
     >>> hdf5set.keys()
@@ -100,6 +102,7 @@ class HDF5set(object):
     def __init__(self, h5filename, mode='a'):
         """
         """
+        print(f'# h5py version: {h5py.__version__}')
         self.h5filename = h5filename
         self.h5file = h5py.File(self.h5filename, mode)
         try:
@@ -170,6 +173,18 @@ def get_hierarchy(key):
     return hierarchy
 
 
+def random_key(min_len=8, max_len=128):
+    """
+    >>> np.random.seed(0)
+    >>> random_key()
+    'VaddNjtvYKxgyymbMNxUyrLznijuZqZfpVasJyXZDttoNGbjGFkx'
+    """
+    klen = np.random.randint(low=min_len, high=max_len)
+    key = np.random.choice(list(string.ascii_letters), size=klen)
+    key = ''.join(key)
+    return key
+
+
 def log(msg):
     try:
         logging.info(msg)
@@ -237,13 +252,19 @@ if __name__ == '__main__':
         print()
         timer.start(message=f'# writing {n} data with size {s} ...')
         for i in tqdm(range(n)):
+            k = random_key()
             v = np.random.uniform(size=s)
-            hdf5set.add(str(i), v)
+            hdf5set.add(k, v)
         timer.stop()
         hdf5set = HDF5set(h5filename, mode='r')
+        timer.start(message='# reading keys')
+        keys = list(hdf5set.keys())
+        timer.stop()
+        random.shuffle(keys)
         timer.start(message=f'# reading {n} data with size {s} ...')
         for i in tqdm(range(n)):
-            v = hdf5set.get(str(i))
+            k = keys[i]
+            v = hdf5set.get(k)
         timer.stop()
         sys.exit()
 
