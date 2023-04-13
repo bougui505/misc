@@ -38,6 +38,8 @@
 import os
 import h5py
 import numpy as np
+from tqdm import tqdm
+from misc.Timer import Timer
 
 
 class HDF5set(object):
@@ -162,6 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--test_long', help='Test the code by creating an hdf5 file', action='store_true')
+    parser.add_argument('--speed_test_read', help='Speed test for reading the given hdf5 file')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
@@ -181,8 +184,6 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.test_long:
-        from tqdm import tqdm
-        from misc.Timer import Timer
         timer = Timer(autoreset=True, colors=True)
         h5filename = 'test.h5'
         if os.path.exists(h5filename):
@@ -199,5 +200,19 @@ if __name__ == '__main__':
         timer.start(message='# reading data ...')
         for i in tqdm(range(n)):
             v = hdf5set.get(str(i))
+        timer.stop()
+        sys.exit()
+
+    if args.speed_test_read is not None:
+        timer = Timer(autoreset=True, colors=True)
+        h5filename = args.speed_test_read
+        hdf5set = HDF5set(h5filename, mode='r')
+        print()
+        timer.start(message='# reading keys')
+        keys = hdf5set.keys()
+        timer.stop()
+        timer.start(message='# reading data ...')
+        for k in tqdm(keys):
+            v = hdf5set.get(k)
         timer.stop()
         sys.exit()
