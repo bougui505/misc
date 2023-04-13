@@ -105,33 +105,23 @@ class HDF5set(object):
         print(f'# h5py version: {h5py.__version__}')
         self.h5filename = h5filename
         self.h5file = h5py.File(self.h5filename, mode)
-        try:
-            self.h5file.create_group('keys')
-        except ValueError:
-            pass
 
     def keys(self):
         if not os.path.exists(self.h5filename):
             return set()
-        keys_set = set(self.h5file['keys'])
-        return keys_set
+        return set(self.h5file.keys())
 
     def add_batch(self, keys, batch):
         """
         """
         for i, key in enumerate(keys):
             data = batch[i]
-            hierarchy = get_hierarchy(key)
             try:
-                grp = self.h5file.create_group(hierarchy)
-            except ValueError:
-                grp = self.h5file[hierarchy]
-            try:
-                grp.create_dataset(name='data', data=data)
+                self.h5file.create_dataset(name=key, data=data)
             except RuntimeError:
                 print(f'# key "{key}" already exists in {self.h5filename}')
-                continue
-            self.h5file['keys'].create_group(str(key))
+            except ValueError:
+                print(f'# key "{key}" already exists in {self.h5filename}')
 
     def add(self, key, data):
         """
@@ -145,32 +135,16 @@ class HDF5set(object):
     def get(self, key):
         """
         """
-        hierarchy = get_hierarchy(key)
-        data = self.h5file[hierarchy]['data'][()]
+        data = self.h5file[key][()]
         return data
 
     def get_batch(self, keys):
         batch = []
         for key in keys:
-            hierarchy = get_hierarchy(key)
-            data = self.h5file[hierarchy]['data'][()]
+            data = self.h5file[key][()]
             batch.append(data)
         batch = np.asarray(batch)
         return batch
-
-
-def get_hierarchy(key):
-    """
-    >>> key = 123456
-    >>> get_hierarchy(key)
-    '1/2/3/4/5/6'
-    >>> key = 'a'
-    >>> get_hierarchy(key)
-    'a'
-    """
-    key = str(key)
-    hierarchy = '/'.join(list(key))
-    return hierarchy
 
 
 def random_key(min_len=8, max_len=128):
