@@ -38,15 +38,19 @@
 import os
 from netCDF4 import Dataset
 import numpy as np
+from misc.Timer import Timer
+from tqdm import tqdm
+import string
+import random
 
 
-class NetCDF4set(object):
+class N4set(object):
     """
     >>> n4filename = '/tmp/test.nc'
     >>> if os.path.exists(n4filename):
     ...     os.remove(n4filename)
     >>> shape = (3, 3)
-    >>> n4set = NetCDF4set(n4filename, shape=shape)
+    >>> n4set = N4set(n4filename, shape=shape)
     >>> n4set.add('a', np.ones(shape))
     >>> n4set.add_batch(['b', 'c', 'd'], np.stack((np.ones(shape)*2, np.ones(shape)*3, np.ones(shape)*4)))
     >>> n4set.add('a', np.random.uniform(size=(shape)))
@@ -71,7 +75,8 @@ class NetCDF4set(object):
         """
         self.n4filename = n4filename
         self.n4file = Dataset(n4filename, mode, format="NETCDF4")
-        self.dimensions = self.create_dimensions(shape)
+        if mode == 'w':
+            self.dimensions = self.create_dimensions(shape)
 
     def get_keys(self):
         keys = self.n4file.variables.keys()
@@ -100,6 +105,18 @@ class NetCDF4set(object):
     def get(self, key):
         n4var = self.n4file.variables[key]
         return n4var[:].data
+
+
+def random_key(min_len=8, max_len=128):
+    """
+    >>> np.random.seed(0)
+    >>> random_key()
+    'VaddNjtvYKxgyymbMNxUyrLznijuZqZfpVasJyXZDttoNGbjGFkx'
+    """
+    klen = np.random.randint(low=min_len, high=max_len)
+    key = np.random.choice(list(string.ascii_letters), size=klen)
+    key = ''.join(key)
+    return key
 
 
 def log(msg):
@@ -133,6 +150,12 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument(
+        '--test_long',
+        help=
+        'Test the code by creating an hdf5 file. Take 2 arguments: the number of elements to store and the size of the element',
+        type=int,
+        nargs=2)
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
@@ -150,4 +173,29 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f,
                                                globals(),
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        sys.exit()
+    if args.test_long is not None:
+        timer = Timer(autoreset=True, colors=True)
+        n4filename = 'test.nc'
+        if os.path.exists(n4filename):
+            os.remove(n4filename)
+        n = args.test_long[0]
+        s = args.test_long[1]
+        n4set = N4set(n4filename, shape=(s, ))
+        timer.start(message=f'# writing {n} data with size {s} ...')
+        for i in tqdm(range(n)):
+            k = random_key()
+            v = np.random.uniform(size=s)
+            n4set.add(k, v)
+        timer.stop()
+        n4set = N4set(n4filename, mode='r', shape=(s, ))
+        timer.start(message='# reading keys')
+        keys = list(n4set.get_keys())
+        timer.stop()
+        random.shuffle(keys)
+        timer.start(message=f'# reading {n} data with size {s} ...')
+        for i in tqdm(range(n)):
+            k = keys[i]
+            v = n4set.get(k)
+        timer.stop()
         sys.exit()
