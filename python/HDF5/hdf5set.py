@@ -193,9 +193,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--test_long',
         help=
-        'Test the code by creating an hdf5 file. Take 2 arguments: the number of elements to store and the size of the element',
+        'Test the code by creating an hdf5 file. Take n arguments: the number of elements to store and the shape of the element',
         type=int,
-        nargs=2)
+        nargs='+')
     parser.add_argument('--speed_test_read', help='Speed test for reading the given hdf5 file')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -222,7 +222,7 @@ if __name__ == '__main__':
             os.remove(h5filename)
         hdf5set = HDF5set(h5filename)
         n = args.test_long[0]
-        s = args.test_long[1]
+        s = tuple(args.test_long[1:])
         print()
         timer.start(message=f'# writing {n} data with size {s} ...')
         for i in tqdm(range(n)):
