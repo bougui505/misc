@@ -57,8 +57,8 @@ class Shelveset(object):
     >>> shelveset.get_batch(['b', 'd']).shape
     (2, 4, 4)
     """
-    def __init__(self, filename):
-        self.shelve = shelve.open(filename)
+    def __init__(self, filename, mode='c'):
+        self.shelve = shelve.open(filename, flag=mode)
         self.filename = filename
 
     def get_keys(self):
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     if args.speed_test_read is not None:
         timer = Timer(autoreset=True, colors=True)
         filename = args.speed_test_read
-        sset = Shelveset(filename)
+        sset = Shelveset(filename, mode='r')
         timer.start(message='# reading keys')
         keys = sset.get_keys()
         timer.stop()
