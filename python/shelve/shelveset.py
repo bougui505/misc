@@ -59,6 +59,7 @@ class Shelveset(object):
     """
     def __init__(self, filename):
         self.shelve = shelve.open(filename)
+        self.filename = filename
 
     def get_keys(self):
         return self.shelve.keys()
@@ -139,6 +140,7 @@ if __name__ == '__main__':
         'Test the code by creating an hdf5 file. Take 2 arguments: the number of elements to store and the size of the element',
         type=int,
         nargs=2)
+    parser.add_argument('--speed_test_read', help='Speed test for reading the given hdf5 file')
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
@@ -182,4 +184,18 @@ if __name__ == '__main__':
             v = sset.get(k)
         timer.stop()
         sset.close()
+        sys.exit()
+    if args.speed_test_read is not None:
+        timer = Timer(autoreset=True, colors=True)
+        filename = args.speed_test_read
+        sset = Shelveset(filename)
+        timer.start(message='# reading keys')
+        keys = sset.get_keys()
+        timer.stop()
+        timer.start(message='# reading data ...')
+        keys = list(keys)
+        random.shuffle(keys)
+        for k in tqdm(keys):
+            v = sset.get(k)
+        timer.stop()
         sys.exit()
