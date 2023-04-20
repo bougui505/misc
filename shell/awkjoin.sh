@@ -50,14 +50,17 @@ function usage () {
     cat << EOF
 Join files given in column based on the given columns
     -h, --help print this help message and exit
-    -c, --col column number (starting from 1) to base the joining (e.g. 1)
+    -f, --field field number (starting from 1) to base the joining (e.g. 1)
+    -- file1 file2 ...
+Example:
+awkjoin -f 1 -- data/a.txt data/b2.txt data/c2.txt
 EOF
 }
 
 TEST=0
 while [ "$#" -gt 0 ]; do
     case $1 in
-        -c|--col) COL="$2"; shift ;;
+        -f|--field) COL="$2"; shift ;;
         --test) TEST=1;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
@@ -112,4 +115,4 @@ END{
         printf "\n"
     }
 }    
-' $OTHER
+' $(echo $OTHER)
