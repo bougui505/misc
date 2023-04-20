@@ -104,6 +104,7 @@ END{
     p=maxnf
     # print total_fnum, n, p
     for (i in x){
+        printf x[i]","
         for (fnum=1;fnum<=total_fnum;fnum++){
             for (j=1;j<=p;j++){
                 if (j!=col){
@@ -115,4 +116,5 @@ END{
         printf "\n"
     }
 }    
-' $(echo $OTHER)
+' $(echo $OTHER) \
+    | sort -t, -k 1 -n
