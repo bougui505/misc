@@ -52,15 +52,15 @@ def GetScriptDir():
     return scriptdir
 
 
-def add(key, value, basename):
+def add(key, value, filename):
     """
     """
-    with dbm.open(basename, 'c') as db:
+    with dbm.open(filename, 'c') as db:
         db[key] = value
 
 
-def get(key, basename):
-    with dbm.open(basename, 'r') as db:
+def get(key, filename):
+    with dbm.open(filename, 'r') as db:
         if key in db:
             return db[key].decode()
         else:
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-f', '--file', help='DBM filename without extension')
+    parser.add_argument('-f', '--file', help='DBM filename')
     parser.add_argument('-a', '--add', help='Add the given key value pair', nargs=2, type=str)
     parser.add_argument(
         '-g',
