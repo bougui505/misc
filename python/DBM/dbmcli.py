@@ -37,6 +37,7 @@
 #############################################################################
 import os
 import dbm
+from tqdm import tqdm
 
 
 def log(msg):
@@ -57,6 +58,18 @@ def add(key, value, filename):
     """
     with dbm.open(filename, 'c') as db:
         db[key] = value
+
+
+def add_from_file(txtfile, filename):
+    """
+    Add data to the dbm from the given txtfile containing key value per line
+    """
+    n = sum(1 for line in open(txtfile, 'r'))
+    with dbm.open(filename, 'c') as db:
+        with open(txtfile, 'r') as infile:
+            for line in tqdm(infile, total=n):
+                k, v = line.strip().split()
+                db[k] = v
 
 
 def get(key, filename):
@@ -85,6 +98,9 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument('-f', '--file', help='DBM filename')
     parser.add_argument('-a', '--add', help='Add the given key value pair', nargs=2, type=str)
+    parser.add_argument('--add_from_file',
+                        help='Add the given key value pair from the given text file containing key value per line',
+                        type=str)
     parser.add_argument(
         '-g',
         '--get',
@@ -113,6 +129,8 @@ if __name__ == '__main__':
     if args.add is not None:
         key, value = args.add
         add(key, value, args.file)
+    if args.add_from_file is not None:
+        add_from_file(args.add_from_file, args.file)
     if args.get is not None:
         value = get(args.get, args.file)
         print(value)

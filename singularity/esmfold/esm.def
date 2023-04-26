@@ -23,5 +23,6 @@ import torch
 import esm
 # torch.hub.set_dir("/opt/torch/hub")
 model = esm.pretrained.esm2_t36_3B_UR50D()
+model = esm.pretrained.esm1v_t33_650M_UR90S_1()
 '
 chmod -R ugo+r /opt/torch/hub
