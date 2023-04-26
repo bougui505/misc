@@ -56,6 +56,13 @@ class Shelveset(object):
     >>> shelveset.add_batch(['b', 'c', 'd'], np.random.uniform(size=(3, 4, 4)))
     >>> shelveset.get_batch(['b', 'd']).shape
     (2, 4, 4)
+
+    Test with string data
+    >>> shelveset.add('0', 'Hello world')
+    >>> shelveset.get('0')
+    'Hello world'
+
+    >>> shelveset.close()
     """
     def __init__(self, filename, mode='c'):
         self.shelve = shelve.open(filename, flag=mode)
