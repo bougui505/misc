@@ -36,7 +36,7 @@
 #                                                                           #
 #############################################################################
 import os
-import dbm
+import dbm.gnu as dbm
 from tqdm import tqdm
 
 
@@ -70,6 +70,7 @@ def add_from_file(txtfile, filename):
             for line in tqdm(infile, total=n):
                 k, v = line.strip().split()
                 db[k] = v
+        db.reorganize()
 
 
 def get(key, filename):
