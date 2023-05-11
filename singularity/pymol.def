@@ -2,6 +2,8 @@ BOOTSTRAP: localimage
 FROM: debian.sif
 
 %post
+cd /usr/lib/x86_64-linux-gnu
+ln -s libnetcdf.so.18 libnetcdf.so.15
 cd /opt
 git clone https://github.com/schrodinger/pymol-open-source.git
 git clone https://github.com/rcsb/mmtf-cpp.git
