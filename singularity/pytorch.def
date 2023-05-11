@@ -21,6 +21,7 @@ pip3 install mrcfile
 pip3 install sklearn
 pip3 install wget
 pip3 install torchsummary
+pip3 install torch_geometric
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
