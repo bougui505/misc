@@ -1,0 +1,6 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+%post
+apt-get update
+apt-get install -y meld
