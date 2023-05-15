@@ -995,3 +995,4 @@ python/HDF5/test.h5
 python/mols/DUDE_1000_properties.smi
 python/DBM/data.txt
 meld.sif
+python/protein/graph/logs/proteingraph.log
