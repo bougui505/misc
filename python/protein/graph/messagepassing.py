@@ -36,107 +36,59 @@
 #                                                                           #
 #############################################################################
 import os
-import pymol2
-import numpy as np
 import torch
-import scipy.spatial.distance as scidist
-import logging
-if not os.path.isdir('logs'):
-    os.mkdir('logs')
-logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
-logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-logging.info(f"################ Starting {__file__} ################")
-
-AMINO_ACIDS = [
-    'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER',
-    'THR', 'TRP', 'TYR', 'VAL', 'XXX'
-]
-
-ATOMS = [
-    'CE3', 'CG1', 'ND1', 'N', 'NE1', 'CG2', 'ND2', 'CZ', 'O', 'CH2', 'NE2', 'C', 'CA', 'CB', 'NH1', 'NE', 'OD1', 'NH2',
-    'CD', 'CE', 'OE1', 'OD2', 'CZ2', 'OG', 'OE2', 'OH', 'CZ3', 'OG1', 'SD', 'CG', 'CD1', 'CE1', 'CD2', 'SG', 'CE2',
-    'NZ', 'XXX'
-]
+from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import add_self_loops, degree
+import proteingraph
 
 
-def getclasslist(mapping, inplist):
-    classlist = []
-    for e in inplist:
-        if e in mapping:
-            classlist.append(mapping[e])
-        else:
-            classlist.append(mapping['XXX'])
-            log(f"unknown key {e}")
-    return torch.tensor(classlist)
-
-
-def seq_to_1hot(seqlist):
+class Graph_conv(MessagePassing):
     """
-    >>> seqlist = ['GLY', 'SER', 'GLN', 'ILE', 'PRO', 'ALA', 'SER', 'GLU', 'GLN', 'GLU', 'DLY', 'THR', 'LEU']
-    >>> len(seqlist)
-    13
-    >>> onehot = seq_to_1hot(seqlist)
-    >>> onehot.shape
-    torch.Size([13, 21])
-    >>> onehot[0]
-    tensor([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    >>> onehot[10]
-    tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    """
-    mapping = dict(zip(AMINO_ACIDS, range(len(AMINO_ACIDS))))
-    classlist = getclasslist(mapping, seqlist)
-    onehot = torch.nn.functional.one_hot(classlist, num_classes=len(AMINO_ACIDS))
-    return onehot
-
-
-def atomlist_to_1hot(atomlist):
-    """
-    >>> atomlist = ['ND1', 'CE3', 'CG1', 'Y', 'CA']
-    >>> len(atomlist)
-    5
-    >>> onehot = atomlist_to_1hot(atomlist)
-    >>> onehot.shape
-    torch.Size([5, 37])
-    >>> onehot[0]
-    tensor([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    >>> onehot[3]
-    tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    """
-    mapping = dict(zip(ATOMS, range(len(ATOMS))))
-    classlist = getclasslist(mapping, atomlist)
-    onehot = torch.nn.functional.one_hot(classlist, num_classes=len(ATOMS))
-    return onehot
-
-
-def prot_to_graph(pdb, selection=None):
-    """
-    >>> node_features, edge_index, edge_features = prot_to_graph('1t4e.pdb')
+    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('1t4e.pdb')
     >>> node_features.shape
     torch.Size([1568, 58])
     >>> edge_index.shape
     torch.Size([2, 123218])
     >>> edge_features.shape
     torch.Size([123218, 1])
+    >>> n_n = node_features.shape[1]
+    >>> n_e = edge_features.shape[1]
+    >>> graph_conv = Graph_conv(n_n, n_e, 512)
+    >>> out = graph_conv(node_features, edge_index, edge_features)
+    >>> out.shape
+    torch.Size([1568, 58])
     """
-    log(f"pdbfile: {pdb}")
-    if selection is None:
-        selection = 'polymer.protein'
-    with pymol2.PyMOL() as p:
-        p.cmd.load(pdb, 'prot')
-        coords = p.cmd.get_coords(selection=selection)
-        space = {'resnames': [], 'atomnames': []}
-        p.cmd.iterate(selection=selection, space=space, expression='resnames.append(resn); atomnames.append(name)')
-        resnames = np.asarray(space['resnames'])
-        atomnames = np.asarray(space['atomnames'])
-    resnames_onehot = seq_to_1hot(resnames)
-    atomnames_onehot = atomlist_to_1hot(atomnames)
-    node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
-    dmat = scidist.squareform(scidist.pdist(coords))
-    edge_index = torch.tensor(np.asarray(np.where(dmat < 8.)))  # edge_index has shape [2, E] with E the number of edges
-    edge_features = torch.tensor(dmat[tuple(edge_index)])[:, None]
-    return node_features.to(torch.float32), edge_index, edge_features.to(torch.float32)
+    def __init__(self, n_n, n_e, n_o):
+        """
+        n_n: number of node features
+        n_e: number of edge features
+        n_o: number of output features
+        """
+        super().__init__(aggr='add')
+        self.lin_nodes = torch.nn.Linear(n_n, n_o)
+        self.lin_edges = torch.nn.Linear(n_e, n_o)
+        self.lin_message = torch.nn.Linear(n_o, n_n)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.lin_nodes.reset_parameters()
+        self.lin_edges.reset_parameters()
+        self.lin_message.reset_parameters()
+
+    def forward(self, x, edge_index, edge_features):
+        # x has shape [N, in_channels]
+        # edge_index has shape [2, E]
+        out = self.propagate(edge_index, x=x, edge_features=edge_features)
+        return out
+
+    def message(self, x_i, x_j, edge_features):
+        m_n = self.lin_nodes(x_j)
+        m_e = self.lin_edges(edge_features)
+        m = torch.tanh(self.lin_message(m_n * m_e))
+        return m
+
+    def update(self, aggr_out, x):
+        return x + aggr_out
 
 
 def log(msg):
@@ -158,11 +110,17 @@ if __name__ == '__main__':
     import argparse
     # ### UNCOMMENT FOR LOGGING ####
     # import os
+    # import logging
+    # if not os.path.isdir('logs'):
+    #     os.mkdir('logs')
+    # logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p', '--pdb')
+    parser.add_argument('-a', '--arg1')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -182,5 +140,3 @@ if __name__ == '__main__':
                                                globals(),
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
-    if args.pdb is not None:
-        prot_to_graph(args.pdb)
