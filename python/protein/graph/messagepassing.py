@@ -37,7 +37,7 @@
 #############################################################################
 import os
 import torch
-from torch_geometric.nn import MessagePassing
+from torch_geometric.nn import MessagePassing, Sequential
 from torch_geometric.utils import add_self_loops, degree
 import proteingraph
 
@@ -56,10 +56,10 @@ class Graph_conv(MessagePassing):
     >>> graph_conv = Graph_conv(n_n, n_e, 512)
     >>> out = graph_conv(node_features, edge_index, edge_features)
     >>> out.shape
-    torch.Size([1568, 58])
+    torch.Size([1568, 512])
 
     >>> count_parameters(graph_conv)
-    60986
+    293888
     """
     def __init__(self, n_n, n_e, n_o):
         """
@@ -70,7 +70,7 @@ class Graph_conv(MessagePassing):
         super().__init__(aggr='add')
         self.lin_nodes = torch.nn.Linear(n_n, n_o)
         self.lin_edges = torch.nn.Linear(n_e, n_o)
-        self.lin_message = torch.nn.Linear(n_o, n_n)
+        self.lin_message = torch.nn.Linear(n_o, n_o)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -91,7 +91,47 @@ class Graph_conv(MessagePassing):
         return m
 
     def update(self, aggr_out, x):
-        return x + aggr_out
+        out = self.lin_nodes(x) + aggr_out
+        return out
+
+
+class GCN(torch.nn.Module):
+    """
+    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('1t4e.pdb')
+    >>> node_features.shape
+    torch.Size([1568, 58])
+    >>> edge_index.shape
+    torch.Size([2, 123218])
+    >>> edge_features.shape
+    torch.Size([123218, 1])
+    >>> n_n = node_features.shape[1]
+    >>> n_e = edge_features.shape[1]
+    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
+    >>> out = gcn(node_features, edge_index, edge_features)
+    >>> out.shape
+    torch.Size([512])
+
+    >>> count_parameters(gcn)
+    2062336
+    """
+    def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=15):
+        """
+        n_n: number of node features
+        n_e: number of edge features
+        n_o: number of output features
+        """
+        super().__init__()
+        layers = [(Graph_conv(n_n, n_e, n_o), 'x, edge_index, edge_features -> x')]
+        for i in range(nlayers - 1):
+            layers.append((Graph_conv(n_o, n_e, n_o), 'x, edge_index, edge_features -> x'))
+        self.convolutions = Sequential('x, edge_index, edge_features', layers)
+        self.linear = torch.nn.Linear(n_o, embedding_dim)
+
+    def forward(self, x, edge_index, edge_features):
+        out = self.convolutions(x, edge_index, edge_features)
+        out, _ = torch.max(out, dim=-2)
+        out = self.linear(out)
+        return out
 
 
 def count_parameters(model):
