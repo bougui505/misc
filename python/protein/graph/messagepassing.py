@@ -57,6 +57,9 @@ class Graph_conv(MessagePassing):
     >>> out = graph_conv(node_features, edge_index, edge_features)
     >>> out.shape
     torch.Size([1568, 58])
+
+    >>> count_parameters(graph_conv)
+    60986
     """
     def __init__(self, n_n, n_e, n_o):
         """
@@ -89,6 +92,10 @@ class Graph_conv(MessagePassing):
 
     def update(self, aggr_out, x):
         return x + aggr_out
+
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def log(msg):
