@@ -50,6 +50,9 @@ class Tempshelve(object):
     False
     >>> tmpshelve.get('a')
     [0, 1, 2]
+    >>> tmpshelve.add('a', 1)
+    >>> tmpshelve.get('a')
+    1
     """
     def __init__(self):
         """
@@ -58,10 +61,7 @@ class Tempshelve(object):
         self.shelve = shelve.open(tmpfilename)
 
     def add(self, key, data):
-        if key not in self.shelve:
-            self.shelve[key] = data
-        else:
-            print(f'# key "{key}" already exists in {self.filename}')
+        self.shelve[key] = data
 
     def get(self, key):
         data = self.shelve[key]
