@@ -996,3 +996,4 @@ python/mols/DUDE_1000_properties.smi
 python/DBM/data.txt
 meld.sif
 python/protein/graph/logs/proteingraph.log
+singularity/nvitop/nvitop.sif
