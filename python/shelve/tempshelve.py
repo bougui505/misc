@@ -57,8 +57,8 @@ class Tempshelve(object):
     def __init__(self):
         """
         """
-        tmpfilename = tempfile.NamedTemporaryFile().name
-        self.shelve = shelve.open(tmpfilename)
+        self.tmpfilename = tempfile.NamedTemporaryFile().name
+        self.shelve = shelve.open(self.tmpfilename)
 
     def add(self, key, data):
         self.shelve[key] = data
@@ -67,8 +67,14 @@ class Tempshelve(object):
         data = self.shelve[key]
         return data
 
+    def keys(self):
+        return self.shelve.keys()
+
     def has_key(self, key):
         return key in self.shelve.keys()
+
+    def __del__(self):
+        os.remove(self.tmpfilename)
 
 
 def log(msg):
