@@ -73,8 +73,8 @@ class Tempshelve(object):
     def has_key(self, key):
         return key in self.shelve.keys()
 
-    def __del__(self):
-        os.remove(self.tmpfilename)
+    # def __del__(self):
+    #     os.remove(self.tmpfilename)
 
 
 def log(msg):

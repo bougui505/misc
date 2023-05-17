@@ -40,6 +40,7 @@ import pymol2
 import numpy as np
 import torch
 import scipy.spatial.distance as scidist
+from misc.shelve.tempshelve import Tempshelve
 import logging
 if not os.path.isdir('logs'):
     os.mkdir('logs')
@@ -110,21 +111,37 @@ def atomlist_to_1hot(atomlist):
     return onehot
 
 
-def prot_to_graph(pdb, selection=None):
+def prot_to_graph(pdb, extrafile=None, selection=None):
     """
-    >>> node_features, edge_index, edge_features = prot_to_graph('1t4e.pdb')
+    - pdb: main pdb file to load. The pymol object name is myprot
+    - extrafile: extra pdb file to load. The pymol object name is extra
+
+    >>> node_features, edge_index, edge_features = prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
-    torch.Size([1568, 58])
+    torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 123218])
+    torch.Size([2, 59616])
     >>> edge_features.shape
-    torch.Size([123218, 1])
+    torch.Size([59616, 1])
+
+    The extrafile can be used to select a pocket around a ligand
+    Below the pocket is defined as all residues around 6 A of the ligand
+    >>> node_features, edge_index, edge_features = prot_to_graph('data/1t4e.pdb', extrafile='data/lig.pdb', selection='byres(polymer.protein and (extra around 6))')
+    >>> node_features.shape
+    torch.Size([231, 58])
+    >>> edge_index.shape
+    torch.Size([2, 10991])
+    >>> edge_features.shape
+    torch.Size([10991, 1])
     """
     log(f"pdbfile: {pdb}")
     if selection is None:
         selection = 'polymer.protein'
     with pymol2.PyMOL() as p:
-        p.cmd.load(pdb, 'prot')
+        p.cmd.load(pdb, 'myprot')
+        if extrafile is not None:
+            p.cmd.load(extrafile, 'extra')
+        selection = f"({selection}) and myprot"
         coords = p.cmd.get_coords(selection=selection)
         space = {'resnames': [], 'atomnames': []}
         p.cmd.iterate(selection=selection, space=space, expression='resnames.append(resn); atomnames.append(name)')
@@ -137,6 +154,66 @@ def prot_to_graph(pdb, selection=None):
     edge_index = torch.tensor(np.asarray(np.where(dmat < 8.)))  # edge_index has shape [2, E] with E the number of edges
     edge_features = torch.tensor(dmat[tuple(edge_index)])[:, None]
     return node_features.to(torch.float32), edge_index, edge_features.to(torch.float32)
+
+
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, txtfile, radius=6):
+        """
+        - txtfile: a txtfile containing the list of data. The format is the following:
+
+            key path/to/pdb/protein/file.pdb optional/path/to/ligand/file.sdf
+
+            - key is any string
+            - path/to/pdb/protein/file.pdb is the protein pdb file to pass to prot_to_graph
+            - optional/path/to/ligand/file.sdf is optional. It give the path to a ligand file to optionaly select a
+              pocket in path/to/pdb/protein/file.pdb
+
+        - radius: radius in Angstrom to optionnaly define a protein pocket around a ligand given in txtfile
+
+        >>> dataset = Dataset('data/dude_test_100.smi')
+        >>> dataset.__len__()
+        100
+        >>> key, (node_features, edge_index, edge_features) = dataset[3]
+        >>> key
+        'OC(=O)Cn4cc(Cc2nc1c(F)c(F)cc(F)c1s2)c5cc(OCc3ccccc3)ccc45'
+        >>> node_features.shape
+        torch.Size([343, 58])
+        >>> edge_index.shape
+        torch.Size([2, 21197])
+        >>> edge_features.shape
+        torch.Size([21197, 1])
+        """
+        self.txtfile = txtfile
+        self.radius = radius
+        self.len = 0
+        self.shelve = Tempshelve()
+        self.read_txtfile()
+
+    def read_txtfile(self):
+        with open(self.txtfile, 'r') as inp:
+            for i, line in enumerate(inp):
+                data = line.split()
+                self.shelve.add(str(i), data)
+                self.len += 1
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, index):
+        data = self.shelve.get(str(index))
+        key = data[0]
+        value = data[1:]
+        protfilename = value[0]
+        if len(value) > 1:
+            ligfilename = value[1]
+            selection = f'byres(polymer.protein and (extra around {self.radius}))'
+        else:
+            ligfilename = None
+            selection = None
+        node_features, edge_index, edge_features = prot_to_graph(protfilename,
+                                                                 extrafile=ligfilename,
+                                                                 selection=selection)
+        return key, (node_features, edge_index, edge_features)
 
 
 def log(msg):

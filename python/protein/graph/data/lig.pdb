@@ -1,0 +1,66 @@
+CRYST1   98.486   98.486   74.038  90.00  90.00 120.00 P 32 2 1      0
+HETATM    1 CL1  DIZ A 112      46.990  12.507  23.963  1.00 23.67      C   Cl  
+HETATM    2 CL2  DIZ A 112      42.851   7.955  25.617  1.00 21.93      C   Cl  
+HETATM    3  C1  DIZ A 112      46.459  13.078  25.479  1.00 19.71      C    C  
+HETATM    4  N1  DIZ A 112      43.871  13.399  29.794  1.00 20.21      C    N  
+HETATM    5  O1  DIZ A 112      45.128  16.883  29.170  1.00 19.82      C    O  
+HETATM    6  C2  DIZ A 112      45.473  14.089  25.525  1.00 20.30      C    C  
+HETATM    7  N2  DIZ A 112      40.986  12.802  30.650  1.00 20.55      C    N  
+HETATM    8  O2  DIZ A 112      43.224  16.042  29.950  1.00 19.25      C    O  
+HETATM    9  C3  DIZ A 112      44.995  14.553  26.771  1.00 20.35      C    C  
+HETATM   10  O3  DIZ A 112      44.998  13.033  31.782  1.00 18.53      C    O  
+HETATM   11  C4  DIZ A 112      45.507  14.004  28.010  1.00 19.96      C    C  
+HETATM   12  O4  DIZ A 112      40.624  14.335  29.051  1.00 24.87      C    O  
+HETATM   13  C5  DIZ A 112      46.522  12.992  27.934  1.00 19.16      C    C  
+HETATM   14  C6  DIZ A 112      46.993  12.532  26.669  1.00 19.05      C    C  
+HETATM   15  C7  DIZ A 112      44.960  14.431  29.387  1.00 19.88      C    C  
+HETATM   16  C8  DIZ A 112      44.482  15.900  29.479  1.00 19.11      C    C  
+HETATM   17  C9  DIZ A 112      44.037  12.771  31.037  1.00 19.90      C    C  
+HETATM   18  C10 DIZ A 112      43.086  11.753  31.524  1.00 20.59      C    C  
+HETATM   19  C11 DIZ A 112      43.671  10.672  32.209  1.00 21.46      C    C  
+HETATM   20  C12 DIZ A 112      42.884   9.636  32.703  1.00 22.62      C    C  
+HETATM   21  C13 DIZ A 112      41.486   9.633  32.527  1.00 21.39      C    C  
+HETATM   22  C14 DIZ A 112      40.878  10.720  31.834  1.00 21.18      C    C  
+HETATM   23  C15 DIZ A 112      41.675  11.792  31.325  1.00 21.13      C    C  
+HETATM   24  C16 DIZ A 112      41.375  13.473  29.512  1.00 21.76      C    C  
+HETATM   25  C17 DIZ A 112      42.739  13.151  28.806  1.00 21.19      C    C  
+HETATM   26  C18 DIZ A 112      42.714  11.792  28.013  1.00 21.92      C    C  
+HETATM   27  C19 DIZ A 112      43.911  11.091  27.724  1.00 22.07      C    C  
+HETATM   28  C20 DIZ A 112      43.944   9.900  26.994  1.00 22.59      C    C  
+HETATM   29  C21 DIZ A 112      42.766   9.364  26.518  1.00 20.71      C    C  
+HETATM   30  C22 DIZ A 112      41.529   9.989  26.772  1.00 22.54      C    C  
+HETATM   31  C23 DIZ A 112      41.502  11.204  27.521  1.00 22.97      C    C  
+HETATM   32  I1  DIZ A 112      43.831   8.120  33.679  1.00 28.56      C    I  
+CONECT    1    3
+CONECT    2   29
+CONECT    3    1    6   14
+CONECT    4   17   25   15
+CONECT    5   16
+CONECT    6    3    9
+CONECT    7   24   23
+CONECT    8   16
+CONECT    9    6   11
+CONECT   10   17
+CONECT   11    9   13   15
+CONECT   12   24
+CONECT   13   11   14
+CONECT   14    3   13
+CONECT   15   11    4   16
+CONECT   16   15    5    8
+CONECT   17    4   10   18
+CONECT   18   17   19   23
+CONECT   19   18   20
+CONECT   20   19   21   32
+CONECT   21   20   22
+CONECT   22   21   23
+CONECT   23   18   22    7
+CONECT   24    7   12   25
+CONECT   25    4   24   26
+CONECT   26   25   27   31
+CONECT   27   26   28
+CONECT   28   27   29
+CONECT   29   28    2   30
+CONECT   30   29   31
+CONECT   31   26   30
+CONECT   32   20
+END
