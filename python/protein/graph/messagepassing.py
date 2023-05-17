@@ -44,19 +44,19 @@ import proteingraph
 
 class Graph_conv(MessagePassing):
     """
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('1t4e.pdb')
+    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
-    torch.Size([1568, 58])
+    torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 123218])
+    torch.Size([2, 59616])
     >>> edge_features.shape
-    torch.Size([123218, 1])
+    torch.Size([59616, 1])
     >>> n_n = node_features.shape[1]
     >>> n_e = edge_features.shape[1]
     >>> graph_conv = Graph_conv(n_n, n_e, 512)
     >>> out = graph_conv(node_features, edge_index, edge_features)
     >>> out.shape
-    torch.Size([1568, 512])
+    torch.Size([784, 512])
 
     >>> count_parameters(graph_conv)
     293888
@@ -97,13 +97,13 @@ class Graph_conv(MessagePassing):
 
 class GCN(torch.nn.Module):
     """
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('1t4e.pdb')
+    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
-    torch.Size([1568, 58])
+    torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 123218])
+    torch.Size([2, 59616])
     >>> edge_features.shape
-    torch.Size([123218, 1])
+    torch.Size([59616, 1])
     >>> n_n = node_features.shape[1]
     >>> n_e = edge_features.shape[1]
     >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
@@ -112,9 +112,9 @@ class GCN(torch.nn.Module):
     torch.Size([512])
 
     >>> count_parameters(gcn)
-    2062336
+    3779584
     """
-    def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=15):
+    def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=28):
         """
         n_n: number of node features
         n_e: number of edge features
