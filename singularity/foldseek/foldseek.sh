@@ -28,4 +28,14 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity exec foldseek.sif foldseek easy-search 5usr_b.pdb /opt/pdb ${PDB:r}_foldseek.out $MYTMP
+INPDB=$MYTMP/$PDB:t
+echo $INPDB
+if [ ! -f $PDB ]; then
+    echo "Downloading pdb $PDB"
+    getpdb -p $PDB --out $INPDB.pdb
+else
+    cp -v $PDB $INPDB.pdb
+fi
+
+# DB can be /opt/pdb or /opt/afdb
+singularity exec foldseek.sif foldseek easy-search $INPDB.pdb /opt/afdb ${PDB:r}_foldseek.out $MYTMP
