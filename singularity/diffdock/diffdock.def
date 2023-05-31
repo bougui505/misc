@@ -1,13 +1,26 @@
 BOOTSTRAP: localimage
-FROM: shell.sif
+FROM: esm.sif
 
 %post
-pip install ipython
+pip3 install rdkit
+pip3 install torch_geometric
+pip3 install torch-cluster
+pip3 install torch-scatter
+pip3 install e3nn
+pip3 install spyrmsd
 cd /opt
-conda install pytorch pytorch-cuda=11.7 -c pytorch -c nvidia
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-python -m pip install PyYAML scipy "networkx[default]" biopython rdkit-pypi e3nn spyrmsd pandas biopandas
-git clone https://github.com/facebookresearch/esm
-cd esm
-pip install -e .
-cd /opt
+git clone https://github.com/gcorso/DiffDock.git
+cd DiffDock
+sed -i '1s,^,#!/usr/bin/env python\n,' inference.py
+# Saving cache files
+sed -i 's,.p.npy,/opt/DiffDock/.p.npy,g' utils/torus.py
+sed -i 's,.score.npy,/opt/DiffDock/.score.npy,g' utils/torus.py
+sed -i 's,.so3_cdf_vals2.npy,/opt/DiffDock/.so3_cdf_vals2.npy,g' utils/so3.py
+sed -i 's,.so3_exp_score_norms2.npy,/opt/DiffDock/.so3_exp_score_norms2.npy,g' utils/so3.py
+sed -i 's,.so3_omegas_array2.npy,/opt/DiffDock/.so3_omegas_array2.npy,g' utils/so3.py
+sed -i 's,.so3_score_norms2.npy,/opt/DiffDock/.so3_score_norms2.npy,g' utils/so3.py
+head inference.py
+chmod +x inference.py
+cd /usr/bin
+ln -s /opt/DiffDock/inference.py diffdock
+./diffdock -h

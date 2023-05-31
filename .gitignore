@@ -998,3 +998,7 @@ meld.sif
 python/protein/graph/logs/proteingraph.log
 singularity/nvitop/nvitop.sif
 singularity/foldseek/foldseek.sif
+singularity/diffdock/data/inp.csv
+singularity/diffdock/data/lig.smi
+singularity/diffdock/data/protein.pdb
+singularity/diffdock/esm.sif
