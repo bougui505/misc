@@ -44,7 +44,7 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
-trap 'rm -rvf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
+trap 'rm -rf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
 
 function usage () {
     cat << EOF
@@ -64,4 +64,7 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-singularity exec $DIRSCRIPT/diffdock.sif diffdock -h
+singularity exec $DIRSCRIPT/diffdock.sif diffdock \
+    --model_dir /opt/DiffDock/workdir/paper_score_model \
+    --confidence_model_dir /opt/DiffDock/workdir/paper_confidence_model \
+    --protein_ligand_csv $CSV
