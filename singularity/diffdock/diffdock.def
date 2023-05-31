@@ -2,12 +2,20 @@ BOOTSTRAP: localimage
 FROM: esm.sif
 
 %post
+
+# Downloading required ESM weight files
+python -c '
+import esm
+model = esm.pretrained.esm2_t33_650M_UR50D()
+'
+
 pip3 install rdkit
 pip3 install torch_geometric
 pip3 install torch-cluster
 pip3 install torch-scatter
 pip3 install e3nn
 pip3 install spyrmsd
+
 cd /opt
 git clone https://github.com/gcorso/DiffDock.git
 cd DiffDock
