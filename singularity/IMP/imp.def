@@ -1,0 +1,15 @@
+BOOTSTRAP: docker
+FROM: ubuntu:22.04
+
+%post
+apt-get update
+apt-get install -y wget python3-fastcluster
+
+
+
+echo "deb https://integrativemodeling.org/latest/download jammy/" >> /etc/apt/sources.list
+wget -O /etc/apt/trusted.gpg.d/salilab.asc https://salilab.org/~ben/pubkey256.asc
+
+apt-get update
+apt-get install -y imp
+apt-get clean
