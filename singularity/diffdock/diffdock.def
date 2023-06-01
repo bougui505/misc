@@ -9,17 +9,18 @@ import esm
 model = esm.pretrained.esm2_t33_650M_UR50D()
 '
 
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
 pip3 install rdkit
-pip3 install torch_geometric
-pip3 install torch-cluster
-pip3 install torch-scatter
 pip3 install e3nn
 pip3 install spyrmsd
 
 cd /opt
-git clone https://github.com/gcorso/DiffDock.git
+git clone https://github.com/bougui505/DiffDock.git
 cd DiffDock
+
+# Header
 sed -i '1s,^,#!/usr/bin/env python\n,' inference.py
+
 # Saving cache files
 sed -i 's,.p.npy,/opt/DiffDock/.p.npy,g' utils/torus.py
 sed -i 's,.score.npy,/opt/DiffDock/.score.npy,g' utils/torus.py
@@ -27,6 +28,7 @@ sed -i 's,.so3_cdf_vals2.npy,/opt/DiffDock/.so3_cdf_vals2.npy,g' utils/so3.py
 sed -i 's,.so3_exp_score_norms2.npy,/opt/DiffDock/.so3_exp_score_norms2.npy,g' utils/so3.py
 sed -i 's,.so3_omegas_array2.npy,/opt/DiffDock/.so3_omegas_array2.npy,g' utils/so3.py
 sed -i 's,.so3_score_norms2.npy,/opt/DiffDock/.so3_score_norms2.npy,g' utils/so3.py
+
 head inference.py
 chmod +x inference.py
 cd /usr/bin
