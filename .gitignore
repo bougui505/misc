@@ -1002,3 +1002,14 @@ singularity/diffdock/data/inp.csv
 singularity/diffdock/data/lig.smi
 singularity/diffdock/data/protein.pdb
 singularity/diffdock/esm.sif
+singularity/diffdock/results/user_inference/complex_0/rank1.sdf
+singularity/diffdock/results/user_inference/complex_0/rank10_confidence-3.23.sdf
+singularity/diffdock/results/user_inference/complex_0/rank1_confidence-1.26.sdf
+singularity/diffdock/results/user_inference/complex_0/rank2_confidence-1.55.sdf
+singularity/diffdock/results/user_inference/complex_0/rank3_confidence-1.60.sdf
+singularity/diffdock/results/user_inference/complex_0/rank4_confidence-1.77.sdf
+singularity/diffdock/results/user_inference/complex_0/rank5_confidence-1.96.sdf
+singularity/diffdock/results/user_inference/complex_0/rank6_confidence-2.07.sdf
+singularity/diffdock/results/user_inference/complex_0/rank7_confidence-2.80.sdf
+singularity/diffdock/results/user_inference/complex_0/rank8_confidence-2.98.sdf
+singularity/diffdock/results/user_inference/complex_0/rank9_confidence-3.12.sdf
