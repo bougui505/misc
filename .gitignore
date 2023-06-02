@@ -1014,3 +1014,4 @@ singularity/diffdock/results/user_inference/complex_0/rank7_confidence-2.80.sdf
 singularity/diffdock/results/user_inference/complex_0/rank8_confidence-2.98.sdf
 singularity/diffdock/results/user_inference/complex_0/rank9_confidence-3.12.sdf
 singularity/IMP/imp.sif
+singularity/decimer/decimer.sif
