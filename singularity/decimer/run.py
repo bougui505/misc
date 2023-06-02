@@ -94,4 +94,4 @@ if __name__ == '__main__':
 
     for img in args.img:
         SMILES = predict_SMILES(img)
-        print(SMILES)
+        print(SMILES, img)

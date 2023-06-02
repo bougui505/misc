@@ -44,23 +44,18 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
-trap 'rm -rvf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
+trap 'rm -rf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
 
 function usage () {
     cat << EOF
 Generate a SMILES from a molecule image file
-    -i, --img Image filename for the molecule. Multiple files can be given
+Usage:
+    img2smi image1.png image2.png ...
 EOF
 }
 
-while [ "$#" -gt 0 ]; do
-    case $1 in
-        -i|--img) N="$2"; shift ;;
-        -h|--help) usage; exit 0 ;;
-        --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
-        *) usage; exit 1 ;;
-    esac
-    shift
-done
+case $1 in
+    -h|--help) usage; exit 0 ;;
+esac
 
-singularity exec --nv decimer.sif ./run.py --img $IMG 2> /dev/null
+singularity exec --nv $DIRSCRIPT/decimer.sif $DIRSCRIPT/run.py --img $@ 2> >(grep -v -i tensorflow | grep -v registering | grep -v INFO)
