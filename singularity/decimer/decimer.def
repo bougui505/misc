@@ -1,0 +1,25 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+%post
+apt-get update
+apt-get install -y wget git libglib2.0-0 libgl1
+apt-get clean
+
+# Install conda in a directory already in path
+cd /opt
+wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh
+bash Miniconda3-py39_4.12.0-Linux-x86_64.sh -b -f -p /usr/local
+rm Miniconda3-py39_4.12.0-Linux-x86_64.sh
+conda update conda
+
+conda install pip
+python3 -m pip install -U pip
+pip install git+https://github.com/Kohulan/DECIMER-Image_Transformer.git
+
+# set the path to the model weight:
+export PYSTOW_HOME=/opt
+python -c "from DECIMER import predict_SMILES"
+
+%environment
+export PYSTOW_HOME=/opt
