@@ -50,8 +50,6 @@ function usage () {
     cat << EOF
 Help message
     -h, --help print this help message and exit
-    --prot, path to the protein structure file
-    --lig, path to the ligand description file
     --csv path to the input csv file: complexname,protein_path,SMILES or file path to ligand sdf
           The csv file must contain the following header:
           complex_name,protein_path,ligand_description,protein_sequence
@@ -61,8 +59,6 @@ EOF
 while [ "$#" -gt 0 ]; do
     case $1 in
         --csv) CSV="$2"; shift ;;
-        --prot) PROT="$2"; shift;;
-        --lig) LIG=$2; shift;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
