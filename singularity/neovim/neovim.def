@@ -1,0 +1,13 @@
+BOOTSTRAP: localimage
+FROM: base.sif
+
+%files
+py_template_file.py /etc/xdg/nvim
+sh_template_file.sh /etc/xdg/nvim
+vimrc.vim /etc/xdg/nvim
+
+%post
+cat << EOF >> /etc/xdg/nvim/init.lua
+local vimrc = vim.fn.stdpath("config") .. "/vimrc.vim"
+vim.cmd.source(vimrc)
+EOF
