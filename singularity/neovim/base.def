@@ -1,11 +1,11 @@
 BOOTSTRAP: docker
-FROM: debian:stable
+FROM: debian:sid
 
 %post
 
 # install required packages
 apt-get update
-apt-get install -y wget curl lua-nvim git unzip npm python3-numpy python3-venv fzf
+apt-get install -y wget curl lua-nvim git unzip python3-numpy python3-venv fzf xz-utils npm
 apt-get clean
 
 # install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
