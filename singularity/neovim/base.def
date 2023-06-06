@@ -20,6 +20,7 @@ pip install tqdm
 pip install rdkit
 pip install scipy
 pip install torch
+pip install torch-geometric
 
 # install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
