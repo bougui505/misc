@@ -5,7 +5,7 @@ FROM: debian:sid
 
 # install required packages
 apt-get update
-apt-get install -y wget curl lua-nvim git unzip python3-numpy python3-venv fzf xz-utils npm
+apt-get install -y bash zsh wget curl lua-nvim git unzip python3-numpy python3-venv fzf xz-utils npm
 apt-get clean
 
 # install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
@@ -24,7 +24,7 @@ ln -s /opt/nvim-linux64/bin/nvim .
 
 # configure neovim
 cd /opt
-git clone https://github.com/AstroNvim/AstroNvim.git
+git clone --depth 1 https://github.com/AstroNvim/AstroNvim.git
 mkdir -p /etc/xdg
 cd /etc/xdg
 ln -s /opt/AstroNvim nvim
