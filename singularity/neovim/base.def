@@ -1,0 +1,41 @@
+BOOTSTRAP: docker
+FROM: debian:stable
+
+%post
+
+# install required packages
+apt-get update
+apt-get install -y wget curl lua-nvim git unzip npm python3-numpy python3-venv fzf
+apt-get clean
+
+# install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+&& sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+&& sudo apt update \
+&& sudo apt install gh -y
+
+# install neovim
+cd /opt
+wget https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz
+tar xzvf nvim-linux64.tar.gz
+cd /usr/local/bin
+ln -s /opt/nvim-linux64/bin/nvim .
+
+# configure neovim
+cd /opt
+git clone https://github.com/AstroNvim/AstroNvim.git
+mkdir -p /etc/xdg
+cd /etc/xdg
+ln -s /opt/AstroNvim nvim
+
+# install tree-sitter-cli
+npm install -g tree-sitter-cli
+
+# cleaning
+apt-get purge -y wget unzip
+apt-get autoremove -y
+apt-get clean
+
+%environment
+export XDG_CONFIG_HOME=/etc/xdg

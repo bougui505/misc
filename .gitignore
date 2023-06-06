@@ -1025,3 +1025,5 @@ singularity/diffdock/results/user_inference/complex_0/rank6_confidence-1.49.sdf
 singularity/diffdock/results/user_inference/complex_0/rank7_confidence-1.65.sdf
 singularity/diffdock/results/user_inference/complex_0/rank8_confidence-1.67.sdf
 singularity/diffdock/results/user_inference/complex_0/rank9_confidence-1.88.sdf
+singularity/neovim/base.sif
+singularity/neovim/neovim.sif
