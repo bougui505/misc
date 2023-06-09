@@ -39,6 +39,8 @@ import os
 import pymol2
 import numpy as np
 import torch
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 import scipy.spatial.distance as scidist
 from misc.shelve.tempshelve import Tempshelve
 import logging
@@ -219,7 +221,7 @@ def prot_to_graph(pdb, extrafile=None, selection=None):
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, txtfile, radius=6):
+    def __init__(self, txtfile, radius=6, return_pyg_graph=False):
         """
         - txtfile: a txtfile containing the list of data. The format is the following:
 
@@ -234,20 +236,33 @@ class Dataset(torch.utils.data.Dataset):
 
         >>> dataset = Dataset('data/dude_test_100.smi')
         >>> dataset.__len__()
-        100
+        99
         >>> key, (node_features, edge_index, edge_features) = dataset[3]
         >>> key
-        'OC(=O)Cn4cc(Cc2nc1c(F)c(F)cc(F)c1s2)c5cc(OCc3ccccc3)ccc45'
+        'COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4'
         >>> node_features.shape
-        torch.Size([343, 58])
+        torch.Size([242, 58])
         >>> edge_index.shape
-        torch.Size([2, 21197])
+        torch.Size([2, 13368])
         >>> edge_features.shape
-        torch.Size([21197, 1])
+        torch.Size([13368, 1])
+
+        >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True)
+        >>> graph = dataset[3]
+        >>> graph
+        Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y='COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4')
+
+        Try a dataloader:
+        >>> loader = DataLoader(dataset, batch_size=8)
+        >>> for batch in loader:
+        ...     break
+        >>> batch
+        DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
         """
         self.txtfile = txtfile
         self.radius = radius
         self.len = 0
+        self.return_pyg_graph = return_pyg_graph
         self.shelve = Tempshelve()
         self.read_txtfile()
 
@@ -275,7 +290,12 @@ class Dataset(torch.utils.data.Dataset):
         node_features, edge_index, edge_features = prot_to_graph(
             protfilename, extrafile=ligfilename, selection=selection
         )
-        return key, (node_features, edge_index, edge_features)
+        if not self.return_pyg_graph:
+            return key, (node_features, edge_index, edge_features)
+        else:
+            return Data(
+                x=node_features, edge_index=edge_index, edge_attr=edge_features, y=key
+            )
 
 
 def log(msg):
