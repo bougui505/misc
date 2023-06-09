@@ -40,7 +40,6 @@ import pymol2
 import numpy as np
 import torch
 from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
 import scipy.spatial.distance as scidist
 from misc.shelve.tempshelve import Tempshelve
 import logging
@@ -253,6 +252,7 @@ class Dataset(torch.utils.data.Dataset):
         Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y='COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4')
 
         Try a dataloader:
+        >>> from torch_geometric.loader import DataLoader
         >>> loader = DataLoader(dataset, batch_size=8)
         >>> for batch in loader:
         ...     break
