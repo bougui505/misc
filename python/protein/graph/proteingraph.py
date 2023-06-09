@@ -42,21 +42,77 @@ import torch
 import scipy.spatial.distance as scidist
 from misc.shelve.tempshelve import Tempshelve
 import logging
-if not os.path.isdir('logs'):
-    os.mkdir('logs')
-logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
-logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+
+if not os.path.isdir("logs"):
+    os.mkdir("logs")
+logfilename = "logs/" + os.path.splitext(os.path.basename(__file__))[0] + ".log"
+logging.basicConfig(
+    filename=logfilename, level=logging.INFO, format="%(asctime)s: %(message)s"
+)
 logging.info(f"################ Starting {__file__} ################")
 
 AMINO_ACIDS = [
-    'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER',
-    'THR', 'TRP', 'TYR', 'VAL', 'XXX'
+    "ALA",
+    "ARG",
+    "ASN",
+    "ASP",
+    "CYS",
+    "GLN",
+    "GLU",
+    "GLY",
+    "HIS",
+    "ILE",
+    "LEU",
+    "LYS",
+    "MET",
+    "PHE",
+    "PRO",
+    "SER",
+    "THR",
+    "TRP",
+    "TYR",
+    "VAL",
+    "XXX",
 ]
 
 ATOMS = [
-    'CE3', 'CG1', 'ND1', 'N', 'NE1', 'CG2', 'ND2', 'CZ', 'O', 'CH2', 'NE2', 'C', 'CA', 'CB', 'NH1', 'NE', 'OD1', 'NH2',
-    'CD', 'CE', 'OE1', 'OD2', 'CZ2', 'OG', 'OE2', 'OH', 'CZ3', 'OG1', 'SD', 'CG', 'CD1', 'CE1', 'CD2', 'SG', 'CE2',
-    'NZ', 'XXX'
+    "CE3",
+    "CG1",
+    "ND1",
+    "N",
+    "NE1",
+    "CG2",
+    "ND2",
+    "CZ",
+    "O",
+    "CH2",
+    "NE2",
+    "C",
+    "CA",
+    "CB",
+    "NH1",
+    "NE",
+    "OD1",
+    "NH2",
+    "CD",
+    "CE",
+    "OE1",
+    "OD2",
+    "CZ2",
+    "OG",
+    "OE2",
+    "OH",
+    "CZ3",
+    "OG1",
+    "SD",
+    "CG",
+    "CD1",
+    "CE1",
+    "CD2",
+    "SG",
+    "CE2",
+    "NZ",
+    "XXX",
 ]
 
 
@@ -66,7 +122,7 @@ def getclasslist(mapping, inplist):
         if e in mapping:
             classlist.append(mapping[e])
         else:
-            classlist.append(mapping['XXX'])
+            classlist.append(mapping["XXX"])
             log(f"unknown key {e}")
     return torch.tensor(classlist)
 
@@ -136,22 +192,28 @@ def prot_to_graph(pdb, extrafile=None, selection=None):
     """
     log(f"pdbfile: {pdb}")
     if selection is None:
-        selection = 'polymer.protein'
+        selection = "polymer.protein"
     with pymol2.PyMOL() as p:
-        p.cmd.load(pdb, 'myprot')
+        p.cmd.load(pdb, "myprot")
         if extrafile is not None:
-            p.cmd.load(extrafile, 'extra')
+            p.cmd.load(extrafile, "extra")
         selection = f"({selection}) and myprot"
         coords = p.cmd.get_coords(selection=selection)
-        space = {'resnames': [], 'atomnames': []}
-        p.cmd.iterate(selection=selection, space=space, expression='resnames.append(resn); atomnames.append(name)')
-        resnames = np.asarray(space['resnames'])
-        atomnames = np.asarray(space['atomnames'])
+        space = {"resnames": [], "atomnames": []}
+        p.cmd.iterate(
+            selection=selection,
+            space=space,
+            expression="resnames.append(resn); atomnames.append(name)",
+        )
+        resnames = np.asarray(space["resnames"])
+        atomnames = np.asarray(space["atomnames"])
     resnames_onehot = seq_to_1hot(resnames)
     atomnames_onehot = atomlist_to_1hot(atomnames)
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
     dmat = scidist.squareform(scidist.pdist(coords))
-    edge_index = torch.tensor(np.asarray(np.where(dmat < 8.)))  # edge_index has shape [2, E] with E the number of edges
+    edge_index = torch.tensor(
+        np.asarray(np.where(dmat < 8.0))
+    )  # edge_index has shape [2, E] with E the number of edges
     edge_features = torch.tensor(dmat[tuple(edge_index)])[:, None]
     return node_features.to(torch.float32), edge_index, edge_features.to(torch.float32)
 
@@ -190,7 +252,7 @@ class Dataset(torch.utils.data.Dataset):
         self.read_txtfile()
 
     def read_txtfile(self):
-        with open(self.txtfile, 'r') as inp:
+        with open(self.txtfile, "r") as inp:
             for i, line in enumerate(inp):
                 data = line.split()
                 self.shelve.add(str(i), data)
@@ -206,13 +268,13 @@ class Dataset(torch.utils.data.Dataset):
         protfilename = value[0]
         if len(value) > 1:
             ligfilename = value[1]
-            selection = f'byres(polymer.protein and (extra around {self.radius}))'
+            selection = f"byres(polymer.protein and (extra around {self.radius}))"
         else:
             ligfilename = None
             selection = None
-        node_features, edge_index, edge_features = prot_to_graph(protfilename,
-                                                                 extrafile=ligfilename,
-                                                                 selection=selection)
+        node_features, edge_index, edge_features = prot_to_graph(
+            protfilename, extrafile=ligfilename, selection=selection
+        )
         return key, (node_features, edge_index, edge_features)
 
 
@@ -229,35 +291,40 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-p', '--pdb')
-    parser.add_argument('--test', help='Test the code', action='store_true')
-    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+    parser.add_argument("-p", "--pdb")
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
-        log(f'# {k}: {v}')
+        log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f,
-                                               globals(),
-                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
         sys.exit()
     if args.pdb is not None:
         prot_to_graph(args.pdb)
