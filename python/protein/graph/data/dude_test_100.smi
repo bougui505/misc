@@ -1,5 +1,4 @@
 Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34 data/DUDE100/src/receptor.pdb data/DUDE100/src/crystal_ligand.sdf
-CCCCN(C)c1cc(C(F)(F)F)c(C#N)cn1 data/DUDE100/andr/receptor.pdb data/DUDE100/andr/crystal_ligand.sdf
 CC(C)NC(=O)Nc3nc2nc(NCCCN1CCN(C)CC1)ncc2cc3c4c(Cl)cccc4Cl data/DUDE100/src/receptor.pdb data/DUDE100/src/crystal_ligand.sdf
 OC(=O)Cn4cc(Cc2nc1c(F)c(F)cc(F)c1s2)c5cc(OCc3ccccc3)ccc45 data/DUDE100/aldr/receptor.pdb data/DUDE100/aldr/crystal_ligand.sdf
 COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4 data/DUDE100/mmp13/receptor.pdb data/DUDE100/mmp13/crystal_ligand.sdf
