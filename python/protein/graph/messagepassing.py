@@ -61,13 +61,14 @@ class Graph_conv(MessagePassing):
     >>> count_parameters(graph_conv)
     293888
     """
+
     def __init__(self, n_n, n_e, n_o):
         """
         n_n: number of node features
         n_e: number of edge features
         n_o: number of output features
         """
-        super().__init__(aggr='add')
+        super().__init__(aggr="add")
         self.lin_nodes = torch.nn.Linear(n_n, n_o)
         self.lin_edges = torch.nn.Linear(n_e, n_o)
         self.lin_message = torch.nn.Linear(n_o, n_o)
@@ -114,6 +115,7 @@ class GCN(torch.nn.Module):
     >>> count_parameters(gcn)
     3779584
     """
+
     def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=28):
         """
         n_n: number of node features
@@ -121,10 +123,12 @@ class GCN(torch.nn.Module):
         n_o: number of output features
         """
         super().__init__()
-        layers = [(Graph_conv(n_n, n_e, n_o), 'x, edge_index, edge_features -> x')]
-        for i in range(nlayers - 1):
-            layers.append((Graph_conv(n_o, n_e, n_o), 'x, edge_index, edge_features -> x'))
-        self.convolutions = Sequential('x, edge_index, edge_features', layers)
+        layers = [(Graph_conv(n_n, n_e, n_o), "x, edge_index, edge_features -> x")]
+        for _ in range(nlayers - 1):
+            layers.append(
+                (Graph_conv(n_o, n_e, n_o), "x, edge_index, edge_features -> x")
+            )
+        self.convolutions = Sequential("x, edge_index, edge_features", layers)
         self.linear = torch.nn.Linear(n_o, embedding_dim)
 
     def forward(self, x, edge_index, edge_features):
@@ -151,10 +155,11 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -165,25 +170,29 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--test', help='Test the code', action='store_true')
-    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
-        log(f'# {k}: {v}')
+        log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f,
-                                               globals(),
-                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
         sys.exit()
