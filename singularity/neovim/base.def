@@ -5,7 +5,7 @@ FROM: debian:sid
 
 # install required packages
 apt-get update
-apt-get install -y bash zsh wget curl lua-nvim git unzip fzf xz-utils npm texlive ripgrep
+apt-get install -y bash zsh wget curl lua-nvim git unzip fzf xz-utils npm texlive ripgrep default-jre
 apt-get clean
 
 # Install conda in a directory already in path
