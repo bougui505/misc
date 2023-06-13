@@ -38,7 +38,6 @@
 #############################################################################
 
 set -e  # exit on error
-set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
@@ -46,4 +45,4 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
 
-singularity exec $DIRSCRIPT/RFdiffusion.sif /opt/RFdiffusion/scripts/run_inference.py "inference.schedule_directory_path=schedule" $@
+singularity exec --nv $DIRSCRIPT/RFdiffusion.sif /opt/RFdiffusion/scripts/run_inference.py "inference.schedule_directory_path=schedule" $@
