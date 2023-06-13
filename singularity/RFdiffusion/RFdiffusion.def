@@ -25,7 +25,7 @@ pip install hydra-core
 pip install dgl
 pip install pyrsistent
 
-cd /opt
+cd /opt/RFdiffusion
 mkdir models
 cd models
 wget http://files.ipd.uw.edu/pub/RFdiffusion/6f5902ac237024bdd0c176cb93063dc4/Base_ckpt.pt
