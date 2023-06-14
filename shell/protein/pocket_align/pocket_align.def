@@ -1,0 +1,15 @@
+BOOTSTRAP: localimage
+FROM: pymol.sif
+
+%files
+pocket_align.sh /usr/bin/pocket_align
+pocket_selector.py /usr/bin/pocket_selector.py
+
+%post
+apt-get install -y wget
+cd /usr/local/lib/python3.9/dist-packages
+wget https://raw.github.com/vsergeev/u-msgpack-python/master/umsgpack/__init__.py -O umsgpack.py
+cd /usr/local/bin
+wget https://zhanggroup.org/TM-align/TMalign.cpp
+g++ -static -O3 -ffast-math -lm -o TMalign TMalign.cpp
+rm TMalign.cpp
