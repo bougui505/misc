@@ -55,11 +55,12 @@ Returns the TMscore average for normalized on length of protein1 and length of p
     -l1, --lig1 First selection or file for ligand1
     -l2, --lig2 First selection or file for ligand2
     -r, --radius Radius in Angstrom to define the pocket around the ligand
+    --raw Display raw TMalign output
     -h, --help print this help message and exit
 EOF
 }
 
-N=1  # Default value
+RAW=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -s1|--struct1) STRUCT1="$2"; shift ;;
@@ -67,6 +68,7 @@ while [ "$#" -gt 0 ]; do
         -l1|--lig1) LIG1="$2"; shift ;;
         -l2|--lig2) LIG2="$2"; shift ;;
         -r|--radius) RADIUS="$2"; shift ;;
+        --raw) RAW=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -77,4 +79,9 @@ done
 $DIRSCRIPT/pocket_selector.py -p $STRUCT1 -l $LIG1 -r $RADIUS -o $MYTMP/pocket1.pdb
 $DIRSCRIPT/pocket_selector.py -p $STRUCT2 -l $LIG2 -r $RADIUS -o $MYTMP/pocket2.pdb
 # Print the average TMscore normalized by lenght of protein1 and protein2
-TMalign $MYTMP/pocket1.pdb $MYTMP/pocket2.pdb -outfmt 2 | awk 'NR==2{print ($3+$4)/2}'
+TMalign $MYTMP/pocket1.pdb $MYTMP/pocket2.pdb -outfmt 2 > $MYTMP/out.txt 
+if [ $RAW -eq 1 ]; then
+    cat $MYTMP/out.txt | column -t
+else
+    cat $MYTMP/out.txt | awk 'NR==2{print ($3+$4)/2}'
+fi
