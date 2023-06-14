@@ -1028,3 +1028,4 @@ singularity/diffdock/results/user_inference/complex_0/rank9_confidence-1.88.sdf
 singularity/neovim/base.sif
 singularity/neovim/neovim.sif
 singularity/RFdiffusion/RFdiffusion.sif
+singularity/RFdiffusion/sing.log

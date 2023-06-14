@@ -7,17 +7,17 @@ apt-get install -y wget git build-essential
 
 # Install conda in a directory already in path
 cd /opt
-wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh
-bash Miniconda3-py39_4.12.0-Linux-x86_64.sh -b -f -p /usr/local
-rm Miniconda3-py39_4.12.0-Linux-x86_64.sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.3.1-0-Linux-x86_64.sh
+bash Miniconda3-py39_23.3.1-0-Linux-x86_64.sh -b -f -p /usr/local
 conda update conda
 
 # Install
 cd /opt
 git clone https://github.com/RosettaCommons/RFdiffusion.git
 cd RFdiffusion
-pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-pip install dgl-cu111
+pip install torch
+pip install  dgl -f https://data.dgl.ai/wheels/cu117/repo.html
+pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
 pip install hydra-core pyrsistent
 
 cd env/SE3Transformer
