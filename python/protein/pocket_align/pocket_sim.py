@@ -180,9 +180,9 @@ def pairwise_pocket_sim(listfile, radius=6):
     results = p.map(_parallel_pocket_sim, inputs)
     p.close()
     p.join()
-    results = scidist.squareform(results)
+    results = scidist.squareform(np.asarray(results))
     np.fill_diagonal(results, 1.0)
-    return results
+    return results, pocketlist
 
 
 if __name__ == "__main__":
@@ -259,10 +259,11 @@ if __name__ == "__main__":
         )
         print(sim)
     if args.pairwise is not None:
-        res = pairwise_pocket_sim(args.pairwise, radius=args.radius)
+        res, pocketlist = pairwise_pocket_sim(args.pairwise, radius=args.radius)
         n = len(res)
         out = ""
         for i in range(n):
+            out += pocketlist[i][0] + " "
             for j in range(n):
                 out += f"{res[i,j]:.2f} "
             out += "\n"
