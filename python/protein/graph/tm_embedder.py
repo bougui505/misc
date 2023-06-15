@@ -36,145 +36,14 @@
 #                                                                           #
 #############################################################################
 import os
+
+import proteingraph
+import messagepassing
+from torch_geometric.loader import DataLoader
 import torch
-from torch_geometric.nn import MessagePassing, Sequential
-from torch_geometric.utils import add_self_loops, degree
+from misc.protein.pocket_align.pocket_sim import pairwise_pocket_sim
 
-
-class Graph_conv(MessagePassing):
-    """
-    >>> import proteingraph
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
-    >>> node_features.shape
-    torch.Size([784, 58])
-    >>> edge_index.shape
-    torch.Size([2, 59616])
-    >>> edge_features.shape
-    torch.Size([59616, 1])
-    >>> n_n = node_features.shape[1]
-    >>> n_e = edge_features.shape[1]
-    >>> graph_conv = Graph_conv(n_n, n_e, 512)
-    >>> out = graph_conv(node_features, edge_index, edge_features)
-    >>> out.shape
-    torch.Size([784, 512])
-
-    >>> count_parameters(graph_conv)
-    293888
-    """
-
-    def __init__(self, n_n, n_e, n_o):
-        """
-        n_n: number of node features
-        n_e: number of edge features
-        n_o: number of output features
-        """
-        super().__init__(aggr="add")
-        self.lin_nodes = torch.nn.Linear(n_n, n_o)
-        self.lin_edges = torch.nn.Linear(n_e, n_o)
-        self.lin_message = torch.nn.Linear(n_o, n_o)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        self.lin_nodes.reset_parameters()
-        self.lin_edges.reset_parameters()
-        self.lin_message.reset_parameters()
-
-    def forward(self, x, edge_index, edge_features):
-        # x has shape [N, in_channels]
-        # edge_index has shape [2, E]
-        out = self.propagate(edge_index, x=x, edge_features=edge_features)
-        return out
-
-    def message(self, x_i, x_j, edge_features):
-        m_n = self.lin_nodes(x_j)
-        m_e = self.lin_edges(edge_features)
-        m = torch.tanh(self.lin_message(m_n * m_e))
-        return m
-
-    def update(self, aggr_out, x):
-        out = self.lin_nodes(x) + aggr_out
-        return out
-
-
-class GCN(torch.nn.Module):
-    """
-    >>> import proteingraph
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
-    >>> node_features.shape
-    torch.Size([784, 58])
-    >>> edge_index.shape
-    torch.Size([2, 59616])
-    >>> edge_features.shape
-    torch.Size([59616, 1])
-    >>> n_n = node_features.shape[1]
-    >>> n_e = edge_features.shape[1]
-    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
-    >>> out = gcn(node_features, edge_index, edge_features)
-    >>> out.shape
-    torch.Size([512])
-
-    >>> count_parameters(gcn)
-    3779584
-
-    Try a dataloader:
-    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True)
-    >>> from torch_geometric.loader import DataLoader
-    >>> loader = DataLoader(dataset, batch_size=8)
-    >>> for batch in loader:
-    ...     break
-    >>> batch
-    DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
-    >>> batch.batch
-    tensor([0, 0, 0,  ..., 7, 7, 7])
-
-    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
-    >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch)
-    >>> out.shape
-    torch.Size([8, 512])
-
-    Check the normalization:
-    >>> torch.norm(out, p=2, dim=-1)
-    tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
-           grad_fn=<LinalgVectorNormBackward0>)
-    """
-
-    def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=28, normalize=True):
-        """
-        n_n: number of node features
-        n_e: number of edge features
-        n_o: number of output features
-        normalize: If normalize, enforce the output vector to unit vector
-        """
-        super().__init__()
-        layers = [(Graph_conv(n_n, n_e, n_o), "x, edge_index, edge_features -> x")]
-        for _ in range(nlayers - 1):
-            layers.append(
-                (Graph_conv(n_o, n_e, n_o), "x, edge_index, edge_features -> x")
-            )
-        self.convolutions = Sequential("x, edge_index, edge_features", layers)
-        self.linear = torch.nn.Linear(n_o, embedding_dim)
-        self.normalize = normalize
-
-    def forward(self, x, edge_index, edge_features, batch_index=None):
-        out = self.convolutions(x, edge_index, edge_features)
-        if batch_index is not None:
-            labels = torch.unique(batch_index)
-            out = torch.stack(
-                [
-                    self.linear(torch.max(out[batch_index == i], dim=-2)[0])
-                    for i in labels
-                ]
-            )
-        else:
-            out, _ = torch.max(out, dim=-2)
-            out = self.linear(out)
-        if self.normalize:
-            out = torch.nn.functional.normalize(out, dim=-1)
-        return out
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def log(msg):
@@ -188,6 +57,38 @@ def GetScriptDir():
     scriptpath = os.path.realpath(__file__)
     scriptdir = os.path.dirname(scriptpath)
     return scriptdir
+
+
+def tmloss(out, tmscore):
+    prod = out.matmul(out.T)
+    return ((prod - tmscore) ** 2).mean()
+
+
+def learn(pocketfile, radius=6.0, batch_size=8, n_epochs=100, device=None):
+    if device is None:
+        device = DEVICE
+    print(f"Training on {device}")
+    dataset = proteingraph.Dataset(
+        txtfile=pocketfile, radius=radius, return_pyg_graph=True
+    )
+    trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    gcn = messagepassing.GCN(n_n=58, n_e=1, n_o=256, embedding_dim=512)
+    gcn = gcn.to(device)
+    optimizer = torch.optim.Adam(gcn.parameters())
+    for epoch in range(n_epochs):
+        for i, batch in enumerate(trainloader):
+            optimizer.zero_grad()
+            pocketlist = [e[1:] for e in batch.y]
+            tmscore, _ = pairwise_pocket_sim(pocketlist=pocketlist)
+            tmscore = torch.from_numpy(tmscore).to(device)
+            batch = batch.to(device)
+            out = gcn(
+                batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch
+            )
+            lossval = tmloss(out, tmscore)
+            lossval.backward()
+            optimizer.step()
+            print(f"epoch: {epoch}|step: {i}|loss: {lossval:.2g}")
 
 
 if __name__ == "__main__":
@@ -207,7 +108,8 @@ if __name__ == "__main__":
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--pocketfile")
+    parser.add_argument("--device")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -231,3 +133,5 @@ if __name__ == "__main__":
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
+    if args.pocketfile is not None:
+        learn(args.pocketfile, device=args.device)
