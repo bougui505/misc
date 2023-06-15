@@ -44,4 +44,4 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 
-singularity run --nv $DIRSCRIPT/base.sif $@
+singularity run --nv $DIRSCRIPT/bougui.sif $@
