@@ -39,11 +39,11 @@ import os
 import torch
 from torch_geometric.nn import MessagePassing, Sequential
 from torch_geometric.utils import add_self_loops, degree
-import proteingraph
 
 
 class Graph_conv(MessagePassing):
     """
+    >>> import proteingraph
     >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
     torch.Size([784, 58])
@@ -98,6 +98,7 @@ class Graph_conv(MessagePassing):
 
 class GCN(torch.nn.Module):
     """
+    >>> import proteingraph
     >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
     torch.Size([784, 58])
@@ -114,6 +115,22 @@ class GCN(torch.nn.Module):
 
     >>> count_parameters(gcn)
     3779584
+
+    Try a dataloader:
+    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True)
+    >>> from torch_geometric.loader import DataLoader
+    >>> loader = DataLoader(dataset, batch_size=8)
+    >>> for batch in loader:
+    ...     break
+    >>> batch
+    DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
+    >>> batch.batch
+    tensor([0, 0, 0,  ..., 7, 7, 7])
+
+    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
+    >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch)
+    >>> out.shape
+    torch.Size([8, 512])
     """
 
     def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=28):
@@ -131,10 +148,19 @@ class GCN(torch.nn.Module):
         self.convolutions = Sequential("x, edge_index, edge_features", layers)
         self.linear = torch.nn.Linear(n_o, embedding_dim)
 
-    def forward(self, x, edge_index, edge_features):
+    def forward(self, x, edge_index, edge_features, batch_index=None):
         out = self.convolutions(x, edge_index, edge_features)
-        out, _ = torch.max(out, dim=-2)
-        out = self.linear(out)
+        if batch_index is not None:
+            labels = torch.unique(batch_index)
+            out = torch.stack(
+                [
+                    self.linear(torch.max(out[batch_index == i], dim=-2)[0])
+                    for i in labels
+                ]
+            )
+        else:
+            out, _ = torch.max(out, dim=-2)
+            out = self.linear(out)
         return out
 
 

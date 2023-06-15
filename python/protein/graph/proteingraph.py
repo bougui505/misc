@@ -235,7 +235,7 @@ class Dataset(torch.utils.data.Dataset):
 
         >>> dataset = Dataset('data/dude_test_100.smi')
         >>> dataset.__len__()
-        99
+        97
         >>> key, (node_features, edge_index, edge_features) = dataset[3]
         >>> key
         'COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4'
@@ -250,6 +250,8 @@ class Dataset(torch.utils.data.Dataset):
         >>> graph = dataset[3]
         >>> graph
         Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y='COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4')
+        >>> print(graph.batch)
+        None
 
         Try a dataloader:
         >>> from torch_geometric.loader import DataLoader
@@ -258,6 +260,10 @@ class Dataset(torch.utils.data.Dataset):
         ...     break
         >>> batch
         DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
+
+        Get the index to split back the batch
+        >>> batch.batch
+        tensor([0, 0, 0,  ..., 7, 7, 7])
         """
         self.txtfile = txtfile
         self.radius = radius
