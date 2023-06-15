@@ -238,7 +238,7 @@ class Dataset(torch.utils.data.Dataset):
         97
         >>> key, (node_features, edge_index, edge_features) = dataset[3]
         >>> key
-        'COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4'
+        ('COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4', 'data/DUDE100/mmp13/receptor.pdb', 'data/DUDE100/mmp13/crystal_ligand.sdf')
         >>> node_features.shape
         torch.Size([242, 58])
         >>> edge_index.shape
@@ -249,7 +249,7 @@ class Dataset(torch.utils.data.Dataset):
         >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True)
         >>> graph = dataset[3]
         >>> graph
-        Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y='COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4')
+        Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y=[3])
         >>> print(graph.batch)
         None
 
@@ -260,6 +260,8 @@ class Dataset(torch.utils.data.Dataset):
         ...     break
         >>> batch
         DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
+        >>> batch.y
+        [('Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34', 'data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ...
 
         Get the index to split back the batch
         >>> batch.batch
@@ -284,9 +286,11 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         data = self.shelve.get(str(index))
-        key = data[0]
+        label = data[0]
         value = data[1:]
         protfilename = value[0]
+        ligand = value[1]
+        key = (label, protfilename, ligand)
         if len(value) > 1:
             ligfilename = value[1]
             selection = f"byres(polymer.protein and (extra around {self.radius}))"
