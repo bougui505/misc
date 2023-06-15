@@ -1,0 +1,16 @@
+Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34 data/DUDE100/src/receptor.pdb data/DUDE100/src/crystal_ligand.sdf
+CC(C)NC(=O)Nc3nc2nc(NCCCN1CCN(C)CC1)ncc2cc3c4c(Cl)cccc4Cl data/DUDE100/src/receptor.pdb data/DUDE100/src/crystal_ligand.sdf
+OC(=O)Cn4cc(Cc2nc1c(F)c(F)cc(F)c1s2)c5cc(OCc3ccccc3)ccc45 data/DUDE100/aldr/receptor.pdb data/DUDE100/aldr/crystal_ligand.sdf
+COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4 data/DUDE100/mmp13/receptor.pdb data/DUDE100/mmp13/crystal_ligand.sdf
+OC(=O)c5ccc4OCc1ccccc1C(SCCN3CCN(Cc2ccccc2)CC3)c4c5 data/DUDE100/pgh2/receptor.pdb data/DUDE100/pgh2/crystal_ligand.sdf
+CN(Cc2cnc1nc(N)nc(N)c1n2)c3ccc(C(=O)N[C@@H](CCC(O)=O)C(O)=O)cc3 data/DUDE100/tysy/receptor.pdb data/DUDE100/tysy/crystal_ligand.sdf
+ONC(=O)CC(c1ccccc1)S(=O)(=O)c2ccccc2 data/DUDE100/def/receptor.pdb data/DUDE100/def/crystal_ligand.sdf
+COC(=O)N2CC1(CC1)C[C@H](C(=O)NO)[C@H]2C(=O)N4CCC(c3ccccc3)=CC4 data/DUDE100/ada17/receptor.pdb data/DUDE100/ada17/crystal_ligand.sdf
+CC(=O)N[C@@H]1[C@@H](N)CC(C(O)=O)=C[C@H]1OCc2ccccc2 data/DUDE100/nram/receptor.pdb data/DUDE100/nram/crystal_ligand.sdf
+c1cc(ccc1CCCCCc2cc3c(=O)[nH]c(nc3s2)N)C(=O)N[C@@H](CCC(=O)O)C(=O)O data/DUDE100/pur2/receptor.pdb data/DUDE100/pur2/crystal_ligand.sdf
+CN(C)Cc1ccccc1c6ccc(N5CCc4c(C(F)(F)F)nn(c2cccc3onc(N)c23)c4C5=O)cc6 data/DUDE100/fa10/receptor.pdb data/DUDE100/fa10/crystal_ligand.sdf
+CCO/N=C(\c1ccc(C(O)=O)cc1)c2cc3c(cc2C)C(C)(C)CCC3(C)C data/DUDE100/rxra/receptor.pdb data/DUDE100/rxra/crystal_ligand.sdf
+C/C(CCCCN2C(=O)C(CCOc1ccccc1CC(O)=O)Oc3ccccc23)=N\O data/DUDE100/pparg/receptor.pdb data/DUDE100/pparg/crystal_ligand.sdf
+O/C(C1CCC1)=C(/C#N)C(=O)Nc2ccc(C(F)(F)F)cc2 data/DUDE100/pyrd/receptor.pdb data/DUDE100/pyrd/crystal_ligand.sdf
+NC(=N)c5cc4c(OC(COC(=O)Nc1ccccc1CN2CCNCC2)c3ccccc3)cccc4s5 data/DUDE100/urok/receptor.pdb data/DUDE100/urok/crystal_ligand.sdf
+Cc4n[nH]c5cnc(c3cncc(OC[C@@H](N)Cc1c[nH]c2ccccc12)c3)cc45 data/DUDE100/akt1/receptor.pdb data/DUDE100/akt1/crystal_ligand.sdf
