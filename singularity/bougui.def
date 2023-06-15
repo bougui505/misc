@@ -31,6 +31,13 @@ pip3 install --break-system-packages tmtools
 # ipython
 pip3 install --break-system-packages ipython
 
+################################ MISC REPO ###############################
+cd /opt
+git clone https://github.com/bougui505/misc.git
+cd /usr/local/lib/python3.11/dist-packages
+ln -s /opt/misc/python misc
+##########################################################################
+
 ################################# NEOVIM ##################################
 # install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md) required for neovim
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
