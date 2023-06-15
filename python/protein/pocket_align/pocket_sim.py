@@ -139,7 +139,7 @@ def pocket_sim(
 
 def _read_listfile(listfile):
     """
-    >>> _read_listfile("data/dude_test_100.smi")
+    >>> _read_listfile(listfile="data/dude_test_16.smi")
     [('data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ('data/DUDE100/src/receptor.pdb', ...
     """
     pocketlist = []
@@ -158,15 +158,26 @@ def _parallel_pocket_sim(args):
     return sim
 
 
-def pairwise_pocket_sim(listfile, radius=6):
+def pairwise_pocket_sim(listfile=None, pocketlist=None, radius=6):
     """
     - listfile: text file containing a list formatted as below:
     label pdbfilename ligandfilename
 
-    # >>> pairwise_pocket_sim("data/dude_test_100.smi")
+    >>> results, pocketlist = pairwise_pocket_sim("data/dude_test_16.smi")
+    >>> results.shape
+    (16, 16)
+    >>> pocketlist
+    [('data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ('data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ('data/DUDE100/aldr/receptor.pdb', 'data/DUDE100/aldr/crystal_ligand.sdf'), ...
+
+    >>> results, pocketlist = pairwise_pocket_sim(pocketlist=[("data/DUDE100/src/receptor.pdb", "data/DUDE100/src/crystal_ligand.sdf"), ("data/DUDE100/fa10/receptor.pdb", "data/DUDE100/fa10/crystal_ligand.sdf"), ("data/DUDE100/pur2/receptor.pdb", "data/DUDE100/pur2/crystal_ligand.sdf")])
+    >>> results
+    array([[1.        , 0.44591815, 0.42486217],
+           [0.44591815, 1.        , 0.43623708],
+           [0.42486217, 0.43623708, 1.        ]])
     """
     p = mp.Pool(processes=os.cpu_count())
-    pocketlist = _read_listfile(listfile)
+    if listfile is not None:
+        pocketlist = _read_listfile(listfile=listfile)
     n = len(pocketlist)
     inputs = []
     for i in range(n):
