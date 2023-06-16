@@ -53,5 +53,5 @@ rsyncy -a --update --info=progress2 -h --delete $DIRSCRIPT/ $HOST:$REMOTEDIR/
 ssh $HOST tree $REMOTEDIR
 ssh $HOST <<EOF
 cd $REMOTEDIR
-singularity run -B /var/lib/dcv-gl/lib64 --nv /c7/scratch2/bougui/singularity/pymol.sif ./tm_embedder.py --pocketfile data/dude_test_100.smi
+singularity run -B /var/lib/dcv-gl/lib64 --nv /c7/scratch2/bougui/singularity/bougui.sif ./tm_embedder.py --pocketfile data/dude_test_100.smi
 EOF
