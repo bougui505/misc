@@ -58,12 +58,14 @@ def GetScriptDir():
     scriptdir = os.path.dirname(scriptpath)
     return scriptdir
 
+
 def get_off_diag(a):
     """
     see: https://discuss.pytorch.org/t/keep-off-diagonal-elements-only-from-square-matrix/54379/2
     """
     n = a.shape[0]
-    return a.flatten()[1:].view(n-1, n+1)[:,:-1].reshape(n, n-1)
+    return a.flatten()[1:].view(n - 1, n + 1)[:, :-1].reshape(n, n - 1)
+
 
 def tmloss(out, tmscore):
     prod = out.matmul(out.T)
@@ -85,7 +87,7 @@ def learn(pocketfile, radius=6.0, batch_size=8, n_epochs=100, device=None):
         for i, batch in enumerate(trainloader):
             optimizer.zero_grad()
             pocketlist = [e[1:] for e in batch.y]
-            tmscore, _ = pairwise_pocket_sim(pocketlist=pocketlist)
+            tmscore, _ = pairwise_pocket_sim(pocketlist=pocketlist, radius=radius)
             tmscore = torch.from_numpy(tmscore).to(device)
             batch = batch.to(device)
             out = gcn(

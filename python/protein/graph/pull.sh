@@ -49,10 +49,4 @@ trap 'rm -rf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
 HOST=desk
 REMOTEDIR=/tmp/20230615_1627
 
-rsyncy -a --update --info=progress2 -h --delete $DIRSCRIPT/ $HOST:$REMOTEDIR/
-ssh $HOST tree $REMOTEDIR
-ssh $HOST <<EOF
-cd $REMOTEDIR
-singularity run -B /var/lib/dcv-gl/lib64 --nv /c7/scratch2/bougui/singularity/bougui.sif ./tm_embedder.py --pocketfile data/dude_test_100.smi | tee train.log
-EOF
-# -B /var/lib/dcv-gl/lib64 
+rsyncy -a --update --info=progress2 -h $HOST:$REMOTEDIR/ .
