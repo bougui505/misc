@@ -1032,3 +1032,4 @@ singularity/RFdiffusion/sing.log
 shell/protein/pocket_align/pocket_align.sif
 shell/protein/pocket_align/pymol.sif
 singularity/bougui.sif
+python/protein/graph/train.log
