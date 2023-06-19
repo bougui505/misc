@@ -72,7 +72,7 @@ def tmloss(out, tmscore):
     return ((prod - tmscore) ** 2).mean()
 
 
-def learn(pocketfile, radius=6.0, batch_size=8, n_epochs=100, device=None):
+def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
     if device is None:
         device = DEVICE
     print(f"Training on {device}")

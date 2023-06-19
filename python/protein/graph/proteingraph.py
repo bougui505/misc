@@ -177,9 +177,9 @@ def prot_to_graph(pdb, extrafile=None, selection=None):
     >>> node_features.shape
     torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 59616])
+    torch.Size([2, 10030])
     >>> edge_features.shape
-    torch.Size([59616, 1])
+    torch.Size([10030, 1])
 
     The extrafile can be used to select a pocket around a ligand
     Below the pocket is defined as all residues around 6 A of the ligand
@@ -187,9 +187,9 @@ def prot_to_graph(pdb, extrafile=None, selection=None):
     >>> node_features.shape
     torch.Size([231, 58])
     >>> edge_index.shape
-    torch.Size([2, 10991])
+    torch.Size([2, 2363])
     >>> edge_features.shape
-    torch.Size([10991, 1])
+    torch.Size([2363, 1])
     """
     log(f"pdbfile: {pdb}")
     if selection is None:
@@ -213,7 +213,7 @@ def prot_to_graph(pdb, extrafile=None, selection=None):
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
     dmat = scidist.squareform(scidist.pdist(coords))
     edge_index = torch.tensor(
-        np.asarray(np.where(dmat < 8.0))
+        np.asarray(np.where(dmat < 4.0))
     )  # edge_index has shape [2, E] with E the number of edges
     edge_features = torch.tensor(dmat[tuple(edge_index)])[:, None]
     return node_features.to(torch.float32), edge_index, edge_features.to(torch.float32)
@@ -242,14 +242,14 @@ class Dataset(torch.utils.data.Dataset):
         >>> node_features.shape
         torch.Size([242, 58])
         >>> edge_index.shape
-        torch.Size([2, 13368])
+        torch.Size([2, 3074])
         >>> edge_features.shape
-        torch.Size([13368, 1])
+        torch.Size([3074, 1])
 
         >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True)
         >>> graph = dataset[3]
         >>> graph
-        Data(x=[242, 58], edge_index=[2, 13368], edge_attr=[13368, 1], y=[3])
+        Data(x=[242, 58], edge_index=[2, 3074], edge_attr=[3074, 1], y=[3])
         >>> print(graph.batch)
         None
 
@@ -259,7 +259,7 @@ class Dataset(torch.utils.data.Dataset):
         >>> for batch in loader:
         ...     break
         >>> batch
-        DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
+        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], batch=[2534], ptr=[9])
         >>> batch.y
         [('Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34', 'data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ...
 
