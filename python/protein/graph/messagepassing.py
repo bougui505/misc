@@ -44,13 +44,13 @@ from torch_geometric.utils import add_self_loops, degree
 class Graph_conv(MessagePassing):
     """
     >>> import proteingraph
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
+    >>> node_features, edge_index, edge_features, _ = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
     torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 59616])
+    torch.Size([2, 10030])
     >>> edge_features.shape
-    torch.Size([59616, 1])
+    torch.Size([10030, 1])
     >>> n_n = node_features.shape[1]
     >>> n_e = edge_features.shape[1]
     >>> graph_conv = Graph_conv(n_n, n_e, 512)
@@ -99,13 +99,13 @@ class Graph_conv(MessagePassing):
 class GCN(torch.nn.Module):
     """
     >>> import proteingraph
-    >>> node_features, edge_index, edge_features = proteingraph.prot_to_graph('data/1t4e.pdb')
+    >>> node_features, edge_index, edge_features, _ = proteingraph.prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
     torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 59616])
+    torch.Size([2, 10030])
     >>> edge_features.shape
-    torch.Size([59616, 1])
+    torch.Size([10030, 1])
     >>> n_n = node_features.shape[1]
     >>> n_e = edge_features.shape[1]
     >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512)
@@ -117,13 +117,13 @@ class GCN(torch.nn.Module):
     3779584
 
     Try a dataloader:
-    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True)
+    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True, compute_sasa=True)
     >>> from torch_geometric.loader import DataLoader
     >>> loader = DataLoader(dataset, batch_size=8)
     >>> for batch in loader:
     ...     break
     >>> batch
-    DataBatch(x=[2534, 58], edge_index=[2, 141292], edge_attr=[141292, 1], y=[8], batch=[2534], ptr=[9])
+    DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], sasa=[8], batch=[2534], ptr=[9])
     >>> batch.batch
     tensor([0, 0, 0,  ..., 7, 7, 7])
 
@@ -136,9 +136,23 @@ class GCN(torch.nn.Module):
     >>> torch.norm(out, p=2, dim=-1)
     tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
            grad_fn=<LinalgVectorNormBackward0>)
+
+    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512, predict_sasa=True)
+    >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch)
+    >>> out.shape
+    torch.Size([8])
     """
 
-    def __init__(self, n_n, n_e, n_o, embedding_dim, nlayers=28, normalize=True):
+    def __init__(
+        self,
+        n_n,
+        n_e,
+        n_o,
+        embedding_dim,
+        nlayers=28,
+        normalize=True,
+        predict_sasa=False,
+    ):
         """
         n_n: number of node features
         n_e: number of edge features
@@ -153,6 +167,10 @@ class GCN(torch.nn.Module):
             )
         self.convolutions = Sequential("x, edge_index, edge_features", layers)
         self.linear = torch.nn.Linear(n_o, embedding_dim)
+        if predict_sasa:
+            self.predict_one = torch.nn.Linear(embedding_dim, 1)
+        else:
+            self.predict_one = None
         self.normalize = normalize
 
     def forward(self, x, edge_index, edge_features, batch_index=None):
@@ -170,6 +188,9 @@ class GCN(torch.nn.Module):
             out = self.linear(out)
         if self.normalize:
             out = torch.nn.functional.normalize(out, dim=-1)
+        if self.predict_one is not None:
+            out = self.predict_one(out)
+            out = torch.squeeze(out)
         return out
 
 
