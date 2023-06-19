@@ -234,7 +234,7 @@ def prot_to_graph(pdb, extrafile=None, selection=None, compute_sasa=False):
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, txtfile, radius=6, return_pyg_graph=False, compute_sasa=False):
+    def __init__(self, txtfile, radius=6.0, return_pyg_graph=False, compute_sasa=False):
         """
         - txtfile: a txtfile containing the list of data. The format is the following:
 
