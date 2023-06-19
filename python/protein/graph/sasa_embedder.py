@@ -91,7 +91,7 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
             out = gcn(
                 batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch
             )
-            lossval = loss(out, batch.sasa)
+            lossval = loss(out, batch.sasa[:, None])
             lossval.backward()
             optimizer.step()
             rel_error = (torch.abs(out - batch.sasa) / batch.sasa).mean()
