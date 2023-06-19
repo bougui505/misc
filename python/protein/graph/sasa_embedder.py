@@ -82,7 +82,6 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
     )
     gcn = gcn.to(device)
     optimizer = torch.optim.Adam(gcn.parameters(), lr=0.001)
-    # optimizer = torch.optim.SGD(gcn.parameters(), lr=0.0001)
     loss = torch.nn.MSELoss()
     for epoch in range(n_epochs):
         for i, batch in enumerate(trainloader):
