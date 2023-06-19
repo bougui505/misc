@@ -38,7 +38,6 @@
 import os
 import torch
 from torch_geometric.nn import MessagePassing, Sequential
-from torch_geometric.utils import add_self_loops, degree
 
 
 class Graph_conv(MessagePassing):
@@ -133,14 +132,14 @@ class GCN(torch.nn.Module):
     torch.Size([8, 512])
 
     Check the normalization:
-    >>> torch.norm(out, p=2, dim=-1)
-    tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
-           grad_fn=<LinalgVectorNormBackward0>)
+    # >>> torch.norm(out, p=2, dim=-1)
+    # tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
+    #        grad_fn=<LinalgVectorNormBackward0>)
 
     >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512, predict_sasa=True)
     >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch)
     >>> out.shape
-    torch.Size([8])
+    torch.Size([8, 1])
     """
 
     def __init__(
@@ -150,7 +149,7 @@ class GCN(torch.nn.Module):
         n_o,
         embedding_dim,
         nlayers=28,
-        normalize=True,
+        normalize=False,
         predict_sasa=False,
     ):
         """
@@ -176,21 +175,18 @@ class GCN(torch.nn.Module):
     def forward(self, x, edge_index, edge_features, batch_index=None):
         out = self.convolutions(x, edge_index, edge_features)
         if batch_index is not None:
-            labels = torch.unique(batch_index)
-            out = torch.stack(
-                [
-                    self.linear(torch.max(out[batch_index == i], dim=-2)[0])
-                    for i in labels
-                ]
-            )
-        else:
-            out, _ = torch.max(out, dim=-2)
             out = self.linear(out)
+            labels = torch.unique(batch_index)
+            out = torch.stack([out[batch_index == i].mean(dim=-2) for i in labels])
+        else:
+            out = self.linear(out)
+            out = torch.mean(out, dim=-2)
+            # out = self.linear(out)
         if self.normalize:
             out = torch.nn.functional.normalize(out, dim=-1)
         if self.predict_one is not None:
             out = self.predict_one(out)
-            out = torch.squeeze(out)
+            # out = torch.squeeze(out)
         return out
 
 
