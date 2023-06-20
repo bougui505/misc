@@ -232,6 +232,7 @@ def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
     resnames_onehot = seq_to_1hot(resnames)
     atomnames_onehot = atomlist_to_1hot(atomnames)
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
+    #      58   =                 21          +      37
     if masked_atom:
         node_features, masked_features, masked_atom_id = mask_atom(node_features)
     dmat = scidist.squareform(scidist.pdist(coords))
@@ -251,7 +252,7 @@ def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
             node_features.to(torch.float32),
             edge_index,
             edge_features.to(torch.float32),
-            masked_features,
+            masked_features.float(),
             masked_atom_id,
         )
 
