@@ -95,7 +95,7 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
             optimizer.step()
             rel_error = (torch.abs(out - batch.sasa) / batch.sasa).mean()
             print(
-                f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}|sasa: {batch.sasa.mean():.4g}|relative_error: {rel_error:.4g}"
+                f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}|sasa: {batch.sasa.mean():.4g}|sasa_pred: {out.mean():.4g}|relative_error: {rel_error:.4g}"
             )
 
 

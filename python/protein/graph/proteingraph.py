@@ -221,10 +221,11 @@ def prot_to_graph(pdb, extrafile=None, selection=None, compute_sasa=False):
     atomnames_onehot = atomlist_to_1hot(atomnames)
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
     dmat = scidist.squareform(scidist.pdist(coords))
+    d_threshold = 4.0
     edge_index = torch.tensor(
-        np.asarray(np.where(dmat < 4.0))
+        np.asarray(np.where(dmat < d_threshold))
     )  # edge_index has shape [2, E] with E the number of edges
-    edge_features = torch.tensor(dmat[tuple(edge_index)])[:, None]
+    edge_features = 1.0 - torch.tensor(dmat[tuple(edge_index)])[:, None] / d_threshold
     return (
         node_features.to(torch.float32),
         edge_index,
