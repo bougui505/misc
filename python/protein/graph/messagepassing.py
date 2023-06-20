@@ -84,7 +84,7 @@ class Graph_conv(MessagePassing):
         out = self.propagate(edge_index, x=x, edge_features=edge_features)
         return out
 
-    def message(self, x_i, x_j, edge_features):
+    def message(self, x_j, edge_features):
         m_n = self.lin_nodes(x_j)
         m_e = self.lin_edges(edge_features)
         m = torch.tanh(self.lin_message(m_n * m_e))
@@ -171,6 +171,7 @@ class GCN(torch.nn.Module):
         else:
             self.predict_one = None
         self.normalize = normalize
+        self.relu = torch.nn.ReLU()
 
     def forward(self, x, edge_index, edge_features, batch_index=None):
         out = self.convolutions(x, edge_index, edge_features)
@@ -186,6 +187,7 @@ class GCN(torch.nn.Module):
             out = torch.nn.functional.normalize(out, dim=-1)
         if self.predict_one is not None:
             out = self.predict_one(out)
+            out = self.relu(out)
             # out = torch.squeeze(out)
         return out
 
