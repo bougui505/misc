@@ -68,11 +68,11 @@ def get_off_diag(a):
 
 
 def tmloss(out, tmscore):
-    prod = out.matmul(out.T)
-    return ((prod - tmscore) ** 2).mean()
+    tm_pred = out.matmul(out.T)
+    return ((tm_pred - tmscore) ** 2).mean(), tm_pred
 
 
-def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
+def learn(pocketfile, radius=6.0, batch_size=8, n_epochs=100, device=None):
     if device is None:
         device = DEVICE
     print(f"Training on {device}")
@@ -80,7 +80,7 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
         txtfile=pocketfile, radius=radius, return_pyg_graph=True
     )
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    gcn = messagepassing.GCN(n_n=58, n_e=1, n_o=256, embedding_dim=512)
+    gcn = messagepassing.GCN(n_n=58, n_e=1, n_o=256, embedding_dim=512, normalize=True)
     gcn = gcn.to(device)
     optimizer = torch.optim.Adam(gcn.parameters())
     for epoch in range(n_epochs):
@@ -93,10 +93,12 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=100, device=None):
             out = gcn(
                 batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch
             )
-            lossval = tmloss(out, tmscore)
+            lossval, tm_pred = tmloss(out, tmscore)
             lossval.backward()
             optimizer.step()
-            print(f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}")
+            print(
+                f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}|tm_pred: {tm_pred.mean():.4g}|tm_score {tmscore.mean()}"
+            )
 
 
 if __name__ == "__main__":

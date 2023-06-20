@@ -168,32 +168,49 @@ def atomlist_to_1hot(atomlist):
     return onehot
 
 
-def prot_to_graph(pdb, extrafile=None, selection=None, compute_sasa=False):
+def mask_atom(node_features):
+    n_atoms = node_features.shape[0]
+    masked_atom_id = np.random.choice(n_atoms)
+    masked_features = torch.clone(node_features[masked_atom_id])
+    node_features[masked_atom_id] = torch.zeros_like(masked_features)
+    return node_features, masked_features, masked_atom_id
+
+
+def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
     """
     - pdb: main pdb file to load. The pymol object name is myprot
     - extrafile: extra pdb file to load. The pymol object name is extra
 
-    >>> node_features, edge_index, edge_features, sasa = prot_to_graph('data/1t4e.pdb', compute_sasa=True)
+    >>> node_features, edge_index, edge_features = prot_to_graph('data/1t4e.pdb')
     >>> node_features.shape
     torch.Size([784, 58])
     >>> edge_index.shape
     torch.Size([2, 10030])
     >>> edge_features.shape
     torch.Size([10030, 1])
-    >>> sasa
-    10119.4404296875
 
     The extrafile can be used to select a pocket around a ligand
     Below the pocket is defined as all residues around 6 A of the ligand
-    >>> node_features, edge_index, edge_features, sasa = prot_to_graph('data/1t4e.pdb', extrafile='data/lig.pdb', selection='byres(polymer.protein and (extra around 6))', compute_sasa=True)
+    >>> node_features, edge_index, edge_features = prot_to_graph('data/1t4e.pdb', extrafile='data/lig.pdb', selection='byres(polymer.protein and (extra around 6))')
     >>> node_features.shape
     torch.Size([231, 58])
     >>> edge_index.shape
     torch.Size([2, 2363])
     >>> edge_features.shape
     torch.Size([2363, 1])
-    >>> sasa
-    2959.5849609375
+
+    Masking atoms
+    >>> node_features, edge_index, edge_features, masked_features, masked_atom_id = prot_to_graph('data/1t4e.pdb', extrafile='data/lig.pdb', selection='byres(polymer.protein and (extra around 6))', masked_atom=True)
+    >>> masked_features.shape
+    torch.Size([58])
+    >>> (masked_features == 0).all()
+    tensor(False)
+    >>> node_features[masked_atom_id].shape
+    torch.Size([58])
+    >>> (node_features[masked_atom_id]==0).all()
+    tensor(True)
+    >>> (node_features[masked_atom_id-1]==0).all()
+    tensor(False)
     """
     log(f"pdbfile: {pdb}")
     if selection is None:
@@ -212,30 +229,35 @@ def prot_to_graph(pdb, extrafile=None, selection=None, compute_sasa=False):
         )
         resnames = np.asarray(space["resnames"])
         atomnames = np.asarray(space["atomnames"])
-        if compute_sasa:
-            p.cmd.remove(selection="myprot and not polymer.protein")
-            sasa = p.cmd.get_area(selection=selection)
-        else:
-            sasa = None
     resnames_onehot = seq_to_1hot(resnames)
     atomnames_onehot = atomlist_to_1hot(atomnames)
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
+    if masked_atom:
+        node_features, masked_features, masked_atom_id = mask_atom(node_features)
     dmat = scidist.squareform(scidist.pdist(coords))
     d_threshold = 4.0
     edge_index = torch.tensor(
         np.asarray(np.where(dmat < d_threshold))
     )  # edge_index has shape [2, E] with E the number of edges
     edge_features = 1.0 - torch.tensor(dmat[tuple(edge_index)])[:, None] / d_threshold
-    return (
-        node_features.to(torch.float32),
-        edge_index,
-        edge_features.to(torch.float32),
-        sasa,
-    )
+    if not masked_atom:
+        return (
+            node_features.to(torch.float32),
+            edge_index,
+            edge_features.to(torch.float32),
+        )
+    else:
+        return (
+            node_features.to(torch.float32),
+            edge_index,
+            edge_features.to(torch.float32),
+            masked_features,
+            masked_atom_id,
+        )
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, txtfile, radius=6.0, return_pyg_graph=False, compute_sasa=False):
+    def __init__(self, txtfile, radius=6.0, return_pyg_graph=False, masked_atom=False):
         """
         - txtfile: a txtfile containing the list of data. The format is the following:
 
@@ -245,14 +267,13 @@ class Dataset(torch.utils.data.Dataset):
             - path/to/pdb/protein/file.pdb is the protein pdb file to pass to prot_to_graph
             - optional/path/to/ligand/file.sdf is optional. It give the path to a ligand file to optionaly select a
               pocket in path/to/pdb/protein/file.pdb
-            - compute_sasa: if True returns the SASA in the y feature of the graph when return_pyg_graph=True
 
         - radius: radius in Angstrom to optionnaly define a protein pocket around a ligand given in txtfile
 
         >>> dataset = Dataset('data/dude_test_100.smi')
         >>> dataset.__len__()
         97
-        >>> key, (node_features, edge_index, edge_features), sasa = dataset[3]
+        >>> key, (node_features, edge_index, edge_features) = dataset[3]
         >>> key
         ('COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4', 'data/DUDE100/mmp13/receptor.pdb', 'data/DUDE100/mmp13/crystal_ligand.sdf')
         >>> node_features.shape
@@ -262,10 +283,10 @@ class Dataset(torch.utils.data.Dataset):
         >>> edge_features.shape
         torch.Size([3074, 1])
 
-        >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True, compute_sasa=True)
+        >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True)
         >>> graph = dataset[3]
         >>> graph
-        Data(x=[242, 58], edge_index=[2, 3074], edge_attr=[3074, 1], y=[3], sasa=2694.87060546875)
+        Data(x=[242, 58], edge_index=[2, 3074], edge_attr=[3074, 1], y=[3])
         >>> print(graph.batch)
         None
 
@@ -275,16 +296,23 @@ class Dataset(torch.utils.data.Dataset):
         >>> for batch in loader:
         ...     break
         >>> batch
-        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], sasa=[8], batch=[2534], ptr=[9])
+        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], batch=[2534], ptr=[9])
         >>> batch.y
         [('Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34', 'data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ...
-        >>> batch.sasa
-        tensor([3873.5662, 3873.5662, 3605.4141, 2694.8706, 3514.5415, 3902.6648,
-                3083.0132, 2916.6514])
 
         Get the index to split back the batch
         >>> batch.batch
         tensor([0, 0, 0,  ..., 7, 7, 7])
+
+        Try with masked atoms
+        >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True, masked_atom=True)
+        >>> dataset[0]
+        Data(x=[351, 58], edge_index=[2, 4331], edge_attr=[4331, 1], y=[3], masked_features=[58], masked_atom_id=...)
+        >>> loader = DataLoader(dataset, batch_size=8)
+        >>> for batch in loader:
+        ...     break
+        >>> batch
+        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], masked_features=[464], masked_atom_id=[8], batch=[2534], ptr=[9])
         """
         self.txtfile = txtfile
         self.radius = radius
@@ -292,7 +320,7 @@ class Dataset(torch.utils.data.Dataset):
         self.return_pyg_graph = return_pyg_graph
         self.shelve = Tempshelve()
         self.read_txtfile()
-        self.compute_sasa = compute_sasa
+        self.masked_atom = masked_atom
 
     def read_txtfile(self):
         with open(self.txtfile, "r") as inp:
@@ -317,21 +345,28 @@ class Dataset(torch.utils.data.Dataset):
         else:
             ligfilename = None
             selection = None
-        node_features, edge_index, edge_features, sasa = prot_to_graph(
+        graph_features = prot_to_graph(
             protfilename,
             extrafile=ligfilename,
             selection=selection,
-            compute_sasa=self.compute_sasa,
+            masked_atom=self.masked_atom,
         )
+        node_features, edge_index, edge_features = graph_features[:3]
+        if self.masked_atom:
+            masked_features, masked_atom_id = graph_features[-2:]
+        else:
+            masked_features = None
+            masked_atom_id = None
         if not self.return_pyg_graph:
-            return key, (node_features, edge_index, edge_features), sasa
+            return key, (node_features, edge_index, edge_features)
         else:
             return Data(
                 x=node_features,
                 edge_index=edge_index,
                 edge_attr=edge_features,
                 y=key,
-                sasa=sasa,
+                masked_features=masked_features,
+                masked_atom_id=masked_atom_id,
             )
 
 

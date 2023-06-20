@@ -113,16 +113,16 @@ class GCN(torch.nn.Module):
     torch.Size([512])
 
     >>> count_parameters(gcn)
-    3779584
+    3809338
 
     Try a dataloader:
-    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True, compute_sasa=True)
+    >>> dataset = proteingraph.Dataset('data/dude_test_100.smi', return_pyg_graph=True)
     >>> from torch_geometric.loader import DataLoader
     >>> loader = DataLoader(dataset, batch_size=8)
     >>> for batch in loader:
     ...     break
     >>> batch
-    DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], sasa=[8], batch=[2534], ptr=[9])
+    DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], batch=[2534], ptr=[9])
     >>> batch.batch
     tensor([0, 0, 0,  ..., 7, 7, 7])
 
@@ -131,15 +131,18 @@ class GCN(torch.nn.Module):
     >>> out.shape
     torch.Size([8, 512])
 
+    Return node features
+    >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch, return_node_features=True)
+    >>> len(out)
+    8
+    >>> [e.shape for e in out]
+    [torch.Size([351, 58]), torch.Size([351, 58]), torch.Size([343, 58]), torch.Size([242, 58]), torch.Size([333, 58]), torch.Size([366, 58]), torch.Size([280, 58]), torch.Size([268, 58])]
+
     Check the normalization:
     # >>> torch.norm(out, p=2, dim=-1)
     # tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
     #        grad_fn=<LinalgVectorNormBackward0>)
 
-    >>> gcn = GCN(n_n, n_e, n_o=256, embedding_dim=512, predict_sasa=True)
-    >>> out = gcn(batch.x, batch.edge_index, batch.edge_attr, batch_index=batch.batch)
-    >>> out.shape
-    torch.Size([8, 1])
     """
 
     def __init__(
@@ -150,7 +153,6 @@ class GCN(torch.nn.Module):
         embedding_dim,
         nlayers=28,
         normalize=False,
-        predict_sasa=False,
     ):
         """
         n_n: number of node features
@@ -166,29 +168,29 @@ class GCN(torch.nn.Module):
             )
         self.convolutions = Sequential("x, edge_index, edge_features", layers)
         self.linear = torch.nn.Linear(n_o, embedding_dim)
-        if predict_sasa:
-            self.predict_one = torch.nn.Linear(embedding_dim, 1)
-        else:
-            self.predict_one = None
+        self.linear_node_feature = torch.nn.Linear(embedding_dim, n_n)
         self.normalize = normalize
-        self.relu = torch.nn.ReLU()
 
-    def forward(self, x, edge_index, edge_features, batch_index=None):
+    def forward(
+        self, x, edge_index, edge_features, batch_index=None, return_node_features=False
+    ):
         out = self.convolutions(x, edge_index, edge_features)
+        out = self.linear(out)
         if batch_index is not None:
-            out = self.linear(out)
             labels = torch.unique(batch_index)
-            out = torch.stack([out[batch_index == i].mean(dim=-2) for i in labels])
+            if not return_node_features:
+                out = torch.stack([out[batch_index == i].mean(dim=-2) for i in labels])
+            else:
+                out = self.linear_node_feature(out)
+                out = [out[batch_index == i] for i in labels]
         else:
-            out = self.linear(out)
-            out = torch.mean(out, dim=-2)
+            if not return_node_features:
+                out = torch.mean(out, dim=-2)
+            else:
+                out = self.linear_node_feature(out)
             # out = self.linear(out)
         if self.normalize:
             out = torch.nn.functional.normalize(out, dim=-1)
-        if self.predict_one is not None:
-            out = self.predict_one(out)
-            out = self.relu(out)
-            # out = torch.squeeze(out)
         return out
 
 
