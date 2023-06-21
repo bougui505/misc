@@ -64,10 +64,29 @@ def GetScriptDir():
     return scriptdir
 
 
+def split_feaures(batch):
+    res_batch = batch[:, :21]
+    atom_batch = batch[:, 21:]
+    return res_batch, atom_batch
+
+
+def success_rate(pred, target):
+    """
+    pred.shape: torch.Size([BS, 21]) for residue and torch.Size([BS, 37]) for atoms
+    """
+    _, ind_pred = pred.max(dim=1)
+    _, ind_target = target.max(dim=1)
+    bs = ind_target.shape[0]
+    rate = (ind_pred == ind_target).sum() / bs
+    return rate
+
+
 def maskingLoss(out, batch):
-    # Assuming batch size (BS) is 16
-    # out.shape: [torch.Size([284, 58]), torch.Size([320, 58]), torch.Size([316, 58]), ...
-    # DataBatch(x=[5188, 58], edge_index=[2, 65462], edge_attr=[65462, 1], y=[16], masked_features=[928], masked_atom_id=[16], batch=[5188], ptr=[17])
+    """
+    Assuming batch size (BS) is 16
+    out.shape: [torch.Size([284, 58]), torch.Size([320, 58]), torch.Size([316, 58]), ...
+    DataBatch(x=[5188, 58], edge_index=[2, 65462], edge_attr=[65462, 1], y=[16], masked_features=[928], masked_atom_id=[16], batch=[5188], ptr=[17])
+    """
     pred_mask = []
     for i, e in enumerate(out):
         masked_atom_id = batch.masked_atom_id[i]
@@ -77,18 +96,18 @@ def maskingLoss(out, batch):
     target = batch.masked_features.reshape(-1, 58)  # torch.Size([16, 58])
     # The sum must be 2 (1 hot for the residue type for the 21 dimension and 1 hot for the atom type for the 37 last dimension):
     assert (target.sum(dim=-1) == 2).all()
-    res_pred = pred_mask[:, :21]
-    atom_pred = pred_mask[:, 21:]
-    res_target = target[:, :21]
-    atom_target = target[:, 21:]
+    res_pred, atom_pred = split_feaures(pred_mask)
+    res_target, atom_target = split_feaures(target)
     assert (res_target.sum(dim=-1) == 1).all()
     assert (atom_target.sum(dim=-1) == 1).all()
     loss_res = torch.nn.functional.cross_entropy(res_pred, res_target)
     loss_atom = torch.nn.functional.cross_entropy(atom_pred, atom_target)
-    return loss_res, loss_atom
+    sr_res = success_rate(res_pred, res_target)
+    sr_atom = success_rate(atom_pred, atom_target)
+    return loss_res, loss_atom, sr_res, sr_atom
 
 
-def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=300, device=None):
+def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=1000, device=None):
     if device is None:
         device = DEVICE
     print(f"Training on {device}")
@@ -101,7 +120,7 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=300, device=None):
     # optimizer = torch.optim.SGD(
     #     gcn.parameters(), lr=0.0001, momentum=0.9, nesterov=False, dampening=0.9
     # )
-    optimizer = torch.optim.Adam(gcn.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(gcn.parameters())
     for epoch in range(n_epochs):
         for i, batch in enumerate(trainloader):
             optimizer.zero_grad()
@@ -114,12 +133,12 @@ def learn(pocketfile, radius=6.0, batch_size=16, n_epochs=300, device=None):
                 batch_index=batch.batch,
                 return_node_features=True,
             )
-            loss_res, loss_atom = maskingLoss(out, batch)
+            loss_res, loss_atom, sr_res, sr_atom = maskingLoss(out, batch)
             lossval = loss_res + loss_atom
             lossval.backward()
             optimizer.step()
             print(
-                f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}|loss_res: {loss_res:.4g}|loss_atom: {loss_atom:.4g}"
+                f"epoch: {epoch}|step: {i}|loss: {lossval:.4g}|loss_res: {loss_res:.4g}|loss_atom: {loss_atom:.4g}|sr_res: {sr_res:.4g}|sr_atom: {sr_atom:.4g}"
             )
 
 

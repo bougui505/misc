@@ -176,7 +176,9 @@ def mask_atom(node_features):
     return node_features, masked_features, masked_atom_id
 
 
-def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
+def prot_to_graph(
+    pdb, extrafile=None, selection=None, masked_atom=False, d_threshold=5.0
+):
     """
     - pdb: main pdb file to load. The pymol object name is myprot
     - extrafile: extra pdb file to load. The pymol object name is extra
@@ -219,6 +221,8 @@ def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
         p.cmd.load(pdb, "myprot")
         if extrafile is not None:
             p.cmd.load(extrafile, "extra")
+        p.cmd.remove("hydrogens")
+        p.cmd.remove("resn hoh")
         selection = f"({selection}) and myprot"
         coords = p.cmd.get_coords(selection=selection)
         space = {"resnames": [], "atomnames": []}
@@ -236,7 +240,6 @@ def prot_to_graph(pdb, extrafile=None, selection=None, masked_atom=False):
     if masked_atom:
         node_features, masked_features, masked_atom_id = mask_atom(node_features)
     dmat = scidist.squareform(scidist.pdist(coords))
-    d_threshold = 4.0
     edge_index = torch.tensor(
         np.asarray(np.where(dmat < d_threshold))
     )  # edge_index has shape [2, E] with E the number of edges
