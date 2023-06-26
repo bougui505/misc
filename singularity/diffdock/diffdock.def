@@ -20,6 +20,10 @@ cd /opt
 git clone https://github.com/bougui505/DiffDock.git
 cd DiffDock
 
+# Set the truncation sequence length for ESM embedding longer (experimental)
+sed -i 's/truncation_seq_length = 1022/truncation_seq_length = 9999/' utils/inference_utils.py
+grep "truncation_seq_length =" utils/inference_utils.py
+
 # Header
 sed -i '1s,^,#!/usr/bin/env python\n,' inference.py
 
