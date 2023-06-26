@@ -43,4 +43,4 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-singularity exec $DIRSCRIPT/bougui.sif nvim $@
+singularity exec -B $PWD $DIRSCRIPT/bougui.sif nvim $@
