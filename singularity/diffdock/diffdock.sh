@@ -45,29 +45,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the script
 
-function usage () {
-    cat << EOF
-Help message
-    -h, --help print this help message and exit
-    --csv path to the input csv file: complexname,protein_path,SMILES or file path to ligand sdf
-          The csv file must contain the following header:
-          complex_name,protein_path,ligand_description,protein_sequence
-EOF
-}
-
-while [ "$#" -gt 0 ]; do
-    case $1 in
-        --csv) CSV="$2"; shift ;;
-        -h|--help) usage; exit 0 ;;
-        --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
-        *) usage; exit 1 ;;
-    esac
-    shift
-done
-
 singularity exec --nv $DIRSCRIPT/diffdock.sif diffdock \
     --model_dir /opt/DiffDock/workdir/paper_score_model \
     --confidence_model_dir /opt/DiffDock/workdir/paper_confidence_model \
-    --protein_ligand_csv $CSV
+    $@
     # --protein_path $PROT \
     # --ligand $LIG
