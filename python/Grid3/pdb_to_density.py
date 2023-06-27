@@ -95,9 +95,13 @@ def get_density(coords, spacing=1.0, sigma=1.7, padding=2.0):
         np.arange(start=ymin, stop=ymax, step=spacing),
         np.arange(start=zmin, stop=zmax, step=spacing),
     ]
-    density, edges = np.histogramdd(coords, bins=drange)
-    density = distance_transform_edt(density == 0)
-    density = np.exp(-(density**2) / (2 * sigma**2))
+    count, edges = np.histogramdd(coords, bins=drange)
+    weights = np.unique(count)
+    density = np.zeros(count.shape)
+    for w in weights:
+        if w != 0:
+            edt = distance_transform_edt(~(count == w))
+            density += w * np.exp(-(edt**2) / (2 * sigma**2))
     return density, edges
 
 
@@ -165,7 +169,9 @@ if __name__ == "__main__":
         sys.exit()
 
     coords = get_all_coords(pdblist=args.pdb)
-    density, edges = get_density(coords=coords, padding=args.padding)
+    density, edges = get_density(
+        coords=coords, padding=args.padding, spacing=args.spacing
+    )
     print("density.shape:", density.shape)
     origin = [e.min() for e in edges]
     print("origin:", origin)
