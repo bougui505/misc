@@ -143,6 +143,12 @@ if __name__ == "__main__":
         type=float,
         default=2.0,
     )
+    parser.add_argument(
+        "--sigma",
+        help="sigma for the gaussians (default: 1.7 Å)",
+        type=float,
+        default=1.7,
+    )
     parser.add_argument("-o", "--out", help="output MRC filename")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -170,7 +176,7 @@ if __name__ == "__main__":
 
     coords = get_all_coords(pdblist=args.pdb)
     density, edges = get_density(
-        coords=coords, padding=args.padding, spacing=args.spacing
+        coords=coords, padding=args.padding, spacing=args.spacing, sigma=args.sigma
     )
     print("density.shape:", density.shape)
     origin = [e.min() for e in edges]
