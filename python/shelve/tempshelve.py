@@ -53,11 +53,22 @@ class Tempshelve(object):
     >>> tmpshelve.add('a', 1)
     >>> tmpshelve.get('a')
     1
+
+    >>> tmpshelve = Tempshelve(dir="./tmp")
+    >>> tmpshelve.add('a', 1)
+    >>> tmpshelve.get('a')
+    1
     """
-    def __init__(self):
+
+    def __init__(self, dir=None):
         """
+        dir: tmp dir to use. Is None, the default is used (usually /tmp)
         """
-        self.tmpfilename = tempfile.NamedTemporaryFile().name
+        if dir is not None:
+            if not os.path.exists(dir):
+                os.mkdir(dir)
+        tmpdir = tempfile.TemporaryDirectory(dir=dir)
+        self.tmpfilename = tmpdir.name + "/tempshelve"
         self.shelve = shelve.open(self.tmpfilename)
 
     def add(self, key, data):
@@ -90,10 +101,11 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -104,25 +116,29 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--test', help='Test the code', action='store_true')
-    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
-        log(f'# {k}: {v}')
+        log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f,
-                                               globals(),
-                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
         sys.exit()
