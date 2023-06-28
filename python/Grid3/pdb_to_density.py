@@ -72,7 +72,7 @@ def get_all_coords(pdblist):
     return all_coords
 
 
-def get_density(coords, spacing=1.0, sigma=1.7, padding=2.0):
+def get_density(coords, spacing=1.0, sigma=1.7, padding=2.0, normalize=False):
     """
     >>> pdblist = ["1ycr", "1t4e"]
     >>> coords = get_all_coords(pdblist)
@@ -102,6 +102,9 @@ def get_density(coords, spacing=1.0, sigma=1.7, padding=2.0):
         if w != 0:
             edt = distance_transform_edt(~(count == w))
             density += w * np.exp(-(edt**2) / (2 * sigma**2))
+    if normalize:
+        density -= density.min()
+        density /= density.max()
     return density, edges
 
 
@@ -149,6 +152,11 @@ if __name__ == "__main__":
         type=float,
         default=1.7,
     )
+    parser.add_argument(
+        "--normalize",
+        action="store_true",
+        help="Normalize the density between 0.0 and 1.0",
+    )
     parser.add_argument("-o", "--out", help="output MRC filename")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -176,7 +184,11 @@ if __name__ == "__main__":
 
     coords = get_all_coords(pdblist=args.pdb)
     density, edges = get_density(
-        coords=coords, padding=args.padding, spacing=args.spacing, sigma=args.sigma
+        coords=coords,
+        padding=args.padding,
+        spacing=args.spacing,
+        sigma=args.sigma,
+        normalize=args.normalize,
     )
     print("density.shape:", density.shape)
     origin = [e.min() for e in edges]
