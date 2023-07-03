@@ -1,0 +1,9 @@
+BOOTSTRAP: docker
+FROM: debian:11.5
+
+%post
+apt-get update
+apt-get install -y wget
+cd /opt
+wget https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer_1.1.9_amd64.deb
+apt-get install -y ./apptainer_1.1.9_amd64.deb
