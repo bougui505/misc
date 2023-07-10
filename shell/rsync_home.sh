@@ -47,5 +47,5 @@ MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put 
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 rsync -a --delete --info=progress2 -h \
-    --backup-dir=hobbes:/home/bougui/backups/arcturus_backup \
+    --backup-dir=arcturus_backup \
     "$HOME" hobbes:/home/bougui/backups/arcturus
