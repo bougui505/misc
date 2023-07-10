@@ -27,11 +27,11 @@ def main(pdbs, out=sys.stdout):
     aln.salign()
     try:  # if outfile is a filename
         with open(out) as outfile:
-            aln.write(file=outfile, alignment_format='PAP')
+            aln.write(file=outfile, alignment_format="PAP")
     except TypeError:  # Outfile is already a file object (e.g. sys.stdout)
-        aln.write(file=out, alignment_format='PAP')
+        aln.write(file=out, alignment_format="PIR")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     PDBS = sys.argv[1:]  # list of pdb file names
     main(PDBS)
