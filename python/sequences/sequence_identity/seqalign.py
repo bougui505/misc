@@ -44,8 +44,8 @@ import os
 
 DIRPATH = os.path.realpath(__file__)
 DIRPATH = os.path.dirname(DIRPATH)
-INDEXPATH = f'{DIRPATH}/index.pkl'
-INDEX = pickle.load(open(INDEXPATH, 'rb'))
+INDEXPATH = f"{DIRPATH}/index.pkl"
+INDEX = pickle.load(open(INDEXPATH, "rb"))
 
 
 def log(msg):
@@ -73,10 +73,11 @@ def align(pdb1, pdb2, index=None):
     return alignment, sequence_identity
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -85,22 +86,28 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--index')
-    parser.add_argument('--pdb1', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
-    parser.add_argument('--pdb2', help='Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A')
-    parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument("--index")
+    parser.add_argument(
+        "--pdb1", help="Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A"
+    )
+    parser.add_argument(
+        "--pdb2", help="Give the pdb code and the chain as PDB_CHAIN. E.g. 4ci0_A"
+    )
+    parser.add_argument("--test", help="Test the code", action="store_true")
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(
+            optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+        )
         sys.exit()
 
     if args.index is not None:
-        index = pickle.load(open(args.index, 'rb'))
+        index = pickle.load(open(args.index, "rb"))
     else:
         index = None
     alignment, seq_identity = align(args.pdb1, args.pdb2, index)
     print(format_alignment(*alignment))
-    print(f'seq_identity: {seq_identity:.4f}')
+    print(f"seq_identity: {seq_identity:.4f}")
