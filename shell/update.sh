@@ -49,4 +49,4 @@ trap 'rm -rvf "$MYTMP"' EXIT KILL INT  # Will be removed at the end of the scrip
 sudo apt update \
     && sudo apt dist-upgrade
 
-command -v snap && sudo snap refresh
+# command -v snap && sudo snap refresh
