@@ -46,10 +46,12 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
+HOSTNAME=$(hostname)
+
 if [ "$(pidof rsync)" ]; then
     echo "rsync already running"
 else
     rsync -a --delete --info=progress2 -h \
-    --backup-dir=arcturus_backup \
-    "$HOME" hobbes:/home/bougui/backups/arcturus
+    --backup-dir=${HOSTNAME}_backup \
+    "$HOME" hobbes:/home/bougui/backups/$HOSTNAME
 fi
