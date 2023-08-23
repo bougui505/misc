@@ -1,5 +1,5 @@
 BOOTSTRAP: docker
-FROM: debian:sid
+FROM: debian:12.1
 
 %files
 neovim/py_template_file.py /opt
