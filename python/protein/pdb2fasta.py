@@ -60,7 +60,6 @@ def pdb2fasta(pdb, selection):
     _, selection = coords_loader.get_coords(
         pdb, selection=selection, return_selection=True, obj=obj, verbose=False
     )
-    print(selection)
     seq = cmd.get_fastastr(selection)
     cmd.delete(selection)
     return seq
