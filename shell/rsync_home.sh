@@ -47,11 +47,21 @@ MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put 
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 HOSTNAME=$(hostname)
+if [ -f $HOME/.rsync_home.conf ]; then
+    DESTINATION=$(cat $HOME/.rsync_home.conf)
+else
+    echo "Create the file $HOME/.rsync_home.conf and write the backup destination in there"
+    echo "E.g."
+    echo "hobbes:/home/bougui/backups"
+    exit 1
+fi
+
+echo "Will backup $HOME in $DESTINATION ..."
 
 if [ "$(pidof rsync)" ]; then
     echo "rsync already running"
 else
     rsync -a --delete --info=progress2 -h \
     --backup-dir=${HOSTNAME}_backup \
-    "$HOME" hobbes:/home/bougui/backups/$HOSTNAME
+    "$HOME" $DESTINATION/$HOSTNAME
 fi
