@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("-p", "--pdb")
+    parser.add_argument("-p", "--pdb", nargs="+")
     parser.add_argument("-s", "--selection", default="all")
     parser.add_argument("--test", help="Test the code", action="store_true")
     args = parser.parse_args()
@@ -92,5 +92,6 @@ if __name__ == "__main__":
         sys.exit()
 
     if args.pdb is not None:
-        seq = pdb2fasta(args.pdb, args.selection)
-        print(seq)
+        for pdb in args.pdb:
+            seq = pdb2fasta(pdb, args.selection)
+            print(seq)
