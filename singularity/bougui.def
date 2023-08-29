@@ -40,8 +40,8 @@ cd /opt
 git clone https://github.com/bougui505/misc.git
 cd /usr/local/lib/python3.11/dist-packages
 ln -s /opt/misc/python misc
-cd /usr/local/bin
-ln -s /opt/misc/python/Grid3/pdb_to_density.py density
+cd /usr/local/bin && ln -s /opt/misc/python/Grid3/pdb_to_density.py density
+cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 ##########################################################################
 
 ################################# NEOVIM ##################################
