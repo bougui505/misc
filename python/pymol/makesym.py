@@ -70,34 +70,25 @@ if __name__ == "__main__":
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("-p", "--pdb")
-    parser.add_argument("--s1", help="Selection of the mobile chain")
-    parser.add_argument("--s2", help="Selection of the reference chain")
-    parser.add_argument("--s3", help="Selection of the template chain to duplicate")
-    parser.add_argument("-n", "--ncopy", help="number of copy to generate", type=int)
-    parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("-p", "--pdb", help="Input structure file", required=True)
+    parser.add_argument("--s1", help="Selection of the mobile chain", required=True)
+    parser.add_argument("--s2", help="Selection of the reference chain", required=True)
+    parser.add_argument(
+        "--s3", help="Selection of the template chain to duplicate", required=True
+    )
+    parser.add_argument(
+        "-n", "--ncopy", help="number of copy to generate", type=int, required=True
+    )
+    parser.add_argument(
+        "--out",
+        help="Out MMCIF file (must be a cif file. The extension will be changed to '.cif' automatically to match the requirement)",
+        required=True,
+    )
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
         log(f"# {k}: {v}")
-
-    if args.test:
-        if args.func is None:
-            doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-            )
-        else:
-            for f in args.func:
-                print(f"Testing {f}")
-                f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(
-                    f,
-                    globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
-                )
-        sys.exit()
 
     if args.pdb is not None:
         coords, selection = get_coords(pdb=args.pdb, obj="0", return_selection=True)
@@ -126,4 +117,6 @@ if __name__ == "__main__":
         # print(selection_string)
         cmd.create(name="out", selection=selection_string)
         print(cmd.get_chains("out"))
-        cmd.save(filename="out.cif", selection="out")
+        outfilename = os.path.splitext(args.out)[0] + ".cif"
+        cmd.save(filename=outfilename, selection="out")
+        print(f"Symmetrized structure saved in '{outfilename}'")
