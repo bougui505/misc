@@ -24,6 +24,9 @@ git clone --depth 1 https://github.com/schrodinger/pymol-testing.git
 git clone --depth 1 https://github.com/rcsb/mmtf-cpp.git
 cp -R mmtf-cpp/include/mmtf* include/
 python3 setup.py --glut build install
+# PYMOL PLUGINS:
+cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
+git clone https://github.com/bougui505/pymol_isosurface.git
 ##########################################################################
 
 # tmtools
@@ -37,6 +40,8 @@ cd /opt
 git clone https://github.com/bougui505/misc.git
 cd /usr/local/lib/python3.11/dist-packages
 ln -s /opt/misc/python misc
+cd /usr/local/bin
+ln -s /opt/misc/python/Grid3/pdb_to_density.py density
 ##########################################################################
 
 ################################# NEOVIM ##################################
