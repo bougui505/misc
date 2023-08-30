@@ -1037,3 +1037,4 @@ singularity/apptainer.sif
 singularity/rasp/bibliography
 singularity/rasp/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip
 singularity/rasp/rasp_preds_exp_strucs_gnomad_clinvar.csv
+singularity/rasp/rasp.sif
