@@ -1034,3 +1034,4 @@ shell/protein/pocket_align/pymol.sif
 singularity/bougui.sif
 python/protein/graph/train.log
 singularity/apptainer.sif
+singularity/rasp/bibliography
