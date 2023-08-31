@@ -8,10 +8,18 @@ rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip /opt
 %post
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y wget git python3-pip python3-pandas python3-scipy python3-numpy python3-sklearn python3-mpl-scatter-density python3-biopython python3-matplotlib python3-seaborn dssp unzip
+apt-get install -y wget git python3-pip python3-pandas python3-scipy python3-numpy python3-sklearn python3-mpl-scatter-density python3-biopython python3-matplotlib python3-seaborn dssp unzip libopenmm7.5
 apt-get clean
 
 pip3 install pyyaml torch openmm ptitprince vaex
+
+cd /usr/bin \
+  && ln -s python3 python
+
+cd /opt \
+  && git clone https://github.com/openmm/pdbfixer.git \
+  && cd pdbfixer \
+  && python3 setup.py install
 
 cd /opt \
   && git clone https://github.com/KULL-Centre/_2022_ML-ddG-Blaabjerg.git \
