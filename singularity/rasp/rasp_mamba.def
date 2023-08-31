@@ -1,0 +1,9 @@
+BOOTSTRAP: docker
+FROM: condaforge/mambaforge:latest
+
+%post
+apt-get update
+apt-get install -y build-essential
+pip install torch biopython==1.72 matplotlib pdb-tools
+pip install --upgrade pdb-tools
+mamba install  mpl-scatter-density ptitprince pdbfixer=1.8.1 openmm=8.0 pandas=1.4.4 -c omnia -c conda-forge -c anaconda -c defaults --yes
