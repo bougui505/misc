@@ -1039,3 +1039,4 @@ singularity/rasp/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.z
 singularity/rasp/rasp_preds_exp_strucs_gnomad_clinvar.csv
 singularity/rasp/rasp.sif
 singularity/rasp/rasp.sandbox
+singularity/rasp/rasp_mamba.sif
