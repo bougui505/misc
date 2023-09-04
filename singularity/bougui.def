@@ -45,6 +45,13 @@ cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
 ##########################################################################
 
+################################# PDBSUMUP #################################
+cd /opt
+git clone https://github.com/bougui505/pdbsumup.git
+cd /usr/bin/
+ln -s /opt/pdbsumup/pdbsumup.py pdbsumup
+############################################################################
+
 ################################# NEOVIM ##################################
 # install gh (see: https://github.com/cli/cli/blob/trunk/docs/install_linux.md) required for neovim
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
