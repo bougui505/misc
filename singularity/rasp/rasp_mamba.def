@@ -1,9 +1,34 @@
 BOOTSTRAP: docker
 FROM: condaforge/mambaforge:latest
 
+%files
+rasp_preds_exp_strucs_gnomad_clinvar.csv /opt
+rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip /opt
+
 %post
 apt-get update
-apt-get install -y build-essential
+apt-get install -y build-essential unzip
 pip install torch biopython==1.72 matplotlib pdb-tools
 pip install --upgrade pdb-tools
-mamba install  mpl-scatter-density ptitprince pdbfixer=1.8.1 openmm=8.0 pandas=1.4.4 -c omnia -c conda-forge -c anaconda -c defaults --yes
+mamba install vaex pydantic-settings mpl-scatter-density ptitprince pdbfixer=1.8.1 openmm=8.0 pandas=1.4.4 -c omnia -c conda-forge -c anaconda -c defaults --yes
+
+# Fixing vaex error:
+sed -i 's/from pydantic import BaseModel, BaseSettings, Field/from pydantic import BaseModel, Field\nfrom pydantic_settings import BaseSettings/' /opt/conda/lib/python3.10/site-packages/vaex/settings.py
+
+cd /usr/bin \
+  && ln -s python3 python
+
+cd /opt \
+  && git clone https://github.com/KULL-Centre/_2022_ML-ddG-Blaabjerg.git \
+  && cd _2022_ML-ddG-Blaabjerg \
+  && cd src/pdb_parser_scripts \
+  && git clone https://github.com/rlabduke/reduce.git \
+  && cd reduce/ \
+  && make && make install
+
+# Download data:
+cd /opt/_2022_ML-ddG-Blaabjerg/data/test/Human/ \
+  && mv /opt/rasp_preds_exp_strucs_gnomad_clinvar.csv . \
+  && mv /opt/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip . \
+  && unzip rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip \
+  && rm rasp_preds_alphafold_UP000005640_9606_HUMAN_v2_vaex_dataframe.zip
