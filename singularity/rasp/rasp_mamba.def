@@ -10,10 +10,10 @@ apt-get update
 apt-get install -y build-essential unzip
 pip install torch biopython==1.72 matplotlib pdb-tools
 pip install --upgrade pdb-tools
-mamba install vaex pydantic-settings mpl-scatter-density ptitprince pdbfixer=1.8.1 openmm=8.0 pandas=1.4.4 -c omnia -c conda-forge -c anaconda -c defaults --yes
+mamba install vaex=4.5.0 vaex-server mpl-scatter-density ptitprince pdbfixer=1.8.1 openmm=8.0 pandas=1.4.4 -c omnia -c conda-forge -c anaconda -c defaults --yes
 
 # Fixing vaex error:
-sed -i 's/from pydantic import BaseModel, BaseSettings, Field/from pydantic import BaseModel, Field\nfrom pydantic_settings import BaseSettings/' /opt/conda/lib/python3.10/site-packages/vaex/settings.py
+# sed -i 's/from pydantic import BaseModel, BaseSettings, Field/from pydantic import BaseModel, Field\nfrom pydantic_settings import BaseSettings/' /opt/conda/lib/python3.10/site-packages/vaex/settings.py
 
 cd /usr/bin \
   && ln -s python3 python
