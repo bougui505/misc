@@ -45,6 +45,16 @@ cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
 ##########################################################################
 
+################################ MATPLOT - PLOT ################################
+cd /opt
+git clone https://github.com/bougui505/matplot.git
+cd /usr/bin
+ln -s /opt/matplot/matplot.py plot
+cd /usr/local/lib/python3.11/dist-packages
+ln -s /opt/matplot/*.py .
+pip3 install --break-system-packages scikit-learn scipy numexpr numpy pillow matplotlib
+################################################################################
+
 ################################# PDBSUMUP #################################
 cd /opt
 git clone https://github.com/bougui505/pdbsumup.git
@@ -99,5 +109,6 @@ git clone https://github.com/dauparas/ProteinMPNN.git
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
+export MATPLOTLIBRC=$HOME/.config/matplotlib/matplotlibrc
 # for neovim
 export XDG_CONFIG_HOME=/etc/xdg
