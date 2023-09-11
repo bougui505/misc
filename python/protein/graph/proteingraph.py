@@ -39,9 +39,10 @@ import os
 import pymol2
 import numpy as np
 import torch
-from torch_geometric.data import Data
+from torch_geometric.data import Data, Batch
 import scipy.spatial.distance as scidist
 from misc.shelve.tempshelve import Tempshelve
+from misc.mols.graph import mol_to_graph
 import logging
 
 if not os.path.isdir("logs"):
@@ -187,9 +188,9 @@ def prot_to_graph(
     >>> node_features.shape
     torch.Size([784, 58])
     >>> edge_index.shape
-    torch.Size([2, 10030])
+    torch.Size([2, 18610])
     >>> edge_features.shape
-    torch.Size([10030, 1])
+    torch.Size([18610, 1])
 
     The extrafile can be used to select a pocket around a ligand
     Below the pocket is defined as all residues around 6 A of the ligand
@@ -197,9 +198,9 @@ def prot_to_graph(
     >>> node_features.shape
     torch.Size([231, 58])
     >>> edge_index.shape
-    torch.Size([2, 2363])
+    torch.Size([2, 3907])
     >>> edge_features.shape
-    torch.Size([2363, 1])
+    torch.Size([3907, 1])
 
     Masking atoms
     >>> node_features, edge_index, edge_features, masked_features, masked_atom_id = prot_to_graph('data/1t4e.pdb', extrafile='data/lig.pdb', selection='byres(polymer.protein and (extra around 6))', masked_atom=True)
@@ -261,7 +262,14 @@ def prot_to_graph(
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, txtfile, radius=6.0, return_pyg_graph=False, masked_atom=False):
+    def __init__(
+        self,
+        txtfile,
+        radius=6.0,
+        return_pyg_graph=False,
+        masked_atom=False,
+        return_mol_graph=False,
+    ):
         """
         - txtfile: a txtfile containing the list of data. The format is the following:
 
@@ -281,16 +289,16 @@ class Dataset(torch.utils.data.Dataset):
         >>> key
         ('COc4ccc(S(=O)(=O)N(Cc1cccnc1)c2c(C(=O)NO)cnc3c(Br)cccc23)cc4', 'data/DUDE100/mmp13/receptor.pdb', 'data/DUDE100/mmp13/crystal_ligand.sdf')
         >>> node_features.shape
-        torch.Size([242, 58])
+        torch.Size([192, 58])
         >>> edge_index.shape
-        torch.Size([2, 3074])
+        torch.Size([2, 3438])
         >>> edge_features.shape
-        torch.Size([3074, 1])
+        torch.Size([3438, 1])
 
         >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True)
         >>> graph = dataset[3]
         >>> graph
-        Data(x=[242, 58], edge_index=[2, 3074], edge_attr=[3074, 1], y=[3])
+        Data(x=[192, 58], edge_index=[2, 3438], edge_attr=[3438, 1], y=[3])
         >>> print(graph.batch)
         None
 
@@ -300,7 +308,7 @@ class Dataset(torch.utils.data.Dataset):
         >>> for batch in loader:
         ...     break
         >>> batch
-        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], batch=[2534], ptr=[9])
+        DataBatch(x=[1710, 58], edge_index=[2, 28294], edge_attr=[28294, 1], y=[8], batch=[1710], ptr=[9])
         >>> batch.y
         [('Cn3c(=O)c(c1c(Cl)cccc1Cl)cc4cnc(NCCCN2CCOCC2)cc34', 'data/DUDE100/src/receptor.pdb', 'data/DUDE100/src/crystal_ligand.sdf'), ...
 
@@ -311,12 +319,28 @@ class Dataset(torch.utils.data.Dataset):
         Try with masked atoms
         >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True, masked_atom=True)
         >>> dataset[0]
-        Data(x=[351, 58], edge_index=[2, 4331], edge_attr=[4331, 1], y=[3], masked_features=[58], masked_atom_id=...)
+        Data(x=[227, 58], edge_index=[2, 3523], edge_attr=[3523, 1], y=[3], masked_features=[58], masked_atom_id=...)
         >>> loader = DataLoader(dataset, batch_size=8)
         >>> for batch in loader:
         ...     break
         >>> batch
-        DataBatch(x=[2534, 58], edge_index=[2, 31716], edge_attr=[31716, 1], y=[8], masked_features=[464], masked_atom_id=[8], batch=[2534], ptr=[9])
+        DataBatch(x=[1710, 58], edge_index=[2, 28294], edge_attr=[28294, 1], y=[8], masked_features=[464], masked_atom_id=[8], batch=[1710], ptr=[9])
+
+        Try to return the molgraph
+        >>> dataset = Dataset('data/dude_test_100.smi', return_pyg_graph=True, return_mol_graph=True)
+        >>> graph = dataset[3]
+        >>> graph
+        Data(x=[192, 58], edge_index=[2, 3438], edge_attr=[3438, 1], y=[3], molgraph=Data(x=[53, 16], edge_index=[2, 112], edge_attr=[112, 4], pos=[53, 3], edge_type=[112]))
+        >>> loader = DataLoader(dataset, batch_size=8)
+        >>> for batch in loader:
+        ...     break
+        >>> batch
+        DataBatch(x=[1710, 58], edge_index=[2, 28294], edge_attr=[28294, 1], y=[8], molgraph=[8], batch=[1710], ptr=[9])
+
+        Create a batch of molgraph from batch.molgraph
+        >>> Batch.from_data_list(batch.molgraph)
+        DataBatch(x=[438, 16], edge_index=[2, 922], edge_attr=[922, 4], pos=[438, 3], edge_type=[922], batch=[438], ptr=[9])
+
         """
         self.txtfile = txtfile
         self.radius = radius
@@ -325,6 +349,7 @@ class Dataset(torch.utils.data.Dataset):
         self.shelve = Tempshelve()
         self.read_txtfile()
         self.masked_atom = masked_atom
+        self.return_mol_graph = return_mol_graph
 
     def read_txtfile(self):
         with open(self.txtfile, "r") as inp:
@@ -343,6 +368,11 @@ class Dataset(torch.utils.data.Dataset):
         protfilename = value[0]
         ligand = value[1]
         key = (label, protfilename, ligand)
+        if self.return_mol_graph:
+            # label must be a smiles
+            molgraph = mol_to_graph.smiles_to_graph(label)
+        else:
+            molgraph = None
         if len(value) > 1:
             ligfilename = value[1]
             selection = f"byres(polymer.protein and (extra around {self.radius}))"
@@ -371,6 +401,7 @@ class Dataset(torch.utils.data.Dataset):
                 y=key,
                 masked_features=masked_features,
                 masked_atom_id=masked_atom_id,
+                molgraph=molgraph,
             )
 
 
