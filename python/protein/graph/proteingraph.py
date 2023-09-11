@@ -45,13 +45,16 @@ from misc.shelve.tempshelve import Tempshelve
 from misc.mols.graph import mol_to_graph
 import logging
 
-if not os.path.isdir("logs"):
-    os.mkdir("logs")
-logfilename = "logs/" + os.path.splitext(os.path.basename(__file__))[0] + ".log"
-logging.basicConfig(
-    filename=logfilename, level=logging.INFO, format="%(asctime)s: %(message)s"
-)
-logging.info(f"################ Starting {__file__} ################")
+LOG = False
+
+if LOG:
+    if not os.path.isdir("logs"):
+        os.mkdir("logs")
+    logfilename = "logs/" + os.path.splitext(os.path.basename(__file__))[0] + ".log"
+    logging.basicConfig(
+        filename=logfilename, level=logging.INFO, format="%(asctime)s: %(message)s"
+    )
+    logging.info(f"################ Starting {__file__} ################")
 
 AMINO_ACIDS = [
     "ALA",
@@ -125,7 +128,8 @@ def getclasslist(mapping, inplist):
             classlist.append(mapping[e])
         else:
             classlist.append(mapping["XXX"])
-            log(f"unknown key {e}")
+            if LOG:
+                log(f"unknown key {e}")
     return torch.tensor(classlist)
 
 
@@ -215,7 +219,8 @@ def prot_to_graph(
     >>> (node_features[masked_atom_id-1]==0).all()
     tensor(False)
     """
-    log(f"pdbfile: {pdb}")
+    if LOG:
+        log(f"pdbfile: {pdb}")
     if selection is None:
         selection = "polymer.protein"
     with pymol2.PyMOL() as p:
@@ -435,8 +440,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
-    for k, v in args._get_kwargs():
-        log(f"# {k}: {v}")
+    if LOG:
+        for k, v in args._get_kwargs():
+            log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
