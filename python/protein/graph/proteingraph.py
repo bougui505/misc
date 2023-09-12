@@ -359,6 +359,8 @@ class Dataset(torch.utils.data.Dataset):
     def read_txtfile(self):
         with open(self.txtfile, "r") as inp:
             for i, line in enumerate(inp):
+                if line.startswith("#"):
+                    continue
                 data = line.split()
                 self.shelve.add(str(i), data)
                 self.len += 1
