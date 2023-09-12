@@ -100,20 +100,21 @@ class Timer(object):
     def stop(self, message=None, reset=False):
         delta_t = time.time() - self.t0
         delta_t = str(datetime.timedelta(seconds=delta_t))
-        outstr = ''
+        outstr = ""
         if self.message is not None:
             message = self.message
         if message is not None:
-            outstr += f'{message} done: '
+            outstr += f"{message} done: "
         outstr += delta_t
         if self.colors:
-            outstr = colored(outstr, 'red')
+            outstr = colored(outstr, "red")
         if self.verbose:
             print(outstr)
         if reset or self.autoreset:
             self.reset()
         if self.verbose != self.verbose_global:
             self.verbose = self.verbose_global
+        return outstr
 
     def start(self, message=None, verbose=None):
         """
@@ -123,7 +124,7 @@ class Timer(object):
             self.verbose = verbose
         self.message = message
         if self.colors:
-            message = colored(message, 'green')
+            message = colored(message, "green")
         if self.verbose:
             print(message)
         self.t0 = time.time()
@@ -133,10 +134,11 @@ class Timer(object):
         self.t0 = time.time()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -145,12 +147,14 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(
+            optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+        )
         sys.exit()

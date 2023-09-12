@@ -48,6 +48,7 @@ ln -s /opt/misc/python misc
 cd /usr/local/bin && ln -s /opt/misc/python/Grid3/pdb_to_density.py density
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
+pip3 install --break-system-packages termcolor
 ##########################################################################
 
 ################################ MATPLOT - PLOT ################################
