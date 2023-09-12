@@ -37,6 +37,20 @@
 #############################################################################
 import collections
 
+
+def checklengths(data, fields):
+    # check if the number of lines is consistent:
+    lengths = []
+    for field in fields:
+        lengths.append(len(data[field]))
+    maxl = max(lengths)
+    # Extend with "-" if needed
+    for field in fields:
+        if len(data[field]) < maxl:
+            data[field].extend(["-"] * (maxl - len(data[field])))
+    return data
+
+
 if __name__ == "__main__":
     import sys
     import doctest
@@ -106,6 +120,9 @@ print(f"{var=:.4g}")
             key, value = kv
             if key in args.fields:
                 data[key].append(value)
+        else:
+            data = checklengths(data, args.fields)
+    data = checklengths(data, args.fields)
     n = max(len(v) for _, v in data.items())
     header = " ".join(args.fields)
     print(header)
