@@ -100,6 +100,8 @@ print(f"{var=:.4g}")
         if line.startswith("#"):
             continue
         if line != "--":
+            if len(line.split("=")) != 2:
+                continue
             key, value = line.split("=")
             if key in args.fields:
                 data[key].append(value)
