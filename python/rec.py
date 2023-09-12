@@ -100,9 +100,10 @@ print(f"{var=:.4g}")
         if line.startswith("#"):
             continue
         if line != "--":
-            if len(line.split("=")) != 2:
+            kv = line.split("=", maxsplit=1)
+            if len(kv) != 2:
                 continue
-            key, value = line.split("=")
+            key, value = kv
             if key in args.fields:
                 data[key].append(value)
     n = max(len(v) for _, v in data.items())
