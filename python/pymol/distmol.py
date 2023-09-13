@@ -142,7 +142,7 @@ if __name__ == "__main__":
             )
             sel1 = args.s1.format(i)
             sel2 = args.s2.format(i)
-            print(f"Loaded {i} with {cmd.count_atoms(str(i))} atoms")
+            print(f"# Loaded {i} with {cmd.count_atoms(str(i))} atoms")
             distance = get_distance(sel1=sel1, sel2=sel2, aggr=args.aggr)
             if distance is not None:
                 print(f"{i} {pdb} {distance:.4f} Å")
