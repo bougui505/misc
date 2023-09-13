@@ -58,7 +58,10 @@ def get_distance(sel1, sel2, aggr):
     """"""
     coords1 = cmd.get_coords(sel1)
     coords2 = cmd.get_coords(sel2)
-    dmat = scidist.cdist(coords1, coords2)
+    if coords1 is not None and coords2 is not None:
+        dmat = scidist.cdist(coords1, coords2)
+    else:
+        return None
     if aggr == "min":
         return dmat.min()
     if aggr == "mean":
@@ -139,5 +142,7 @@ if __name__ == "__main__":
             )
             sel1 = args.s1.format(i)
             sel2 = args.s2.format(i)
+            print(f"Loaded {i} with {cmd.count_atoms(str(i))} atoms")
             distance = get_distance(sel1=sel1, sel2=sel2, aggr=args.aggr)
-            print(f"{i} {pdb} {distance:.4f} Å")
+            if distance is not None:
+                print(f"{i} {pdb} {distance:.4f} Å")
