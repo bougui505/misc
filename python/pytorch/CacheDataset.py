@@ -38,15 +38,29 @@
 import os
 import torch
 from tqdm import tqdm
+import torch.utils.data
 
 
 def cache(dataset, ptfilename):
     cachedict = {}
     n = len(dataset)
-    for i in tqdm(range(n)):
+    for i in tqdm(range(n), desc="Caching dataset"):
         data = dataset[i]
         cachedict[i] = data
     torch.save(cachedict, ptfilename)
+
+
+class CacheDataset(torch.utils.data.Dataset):
+    def __init__(self, ptfilename):
+        self.cachefile = ptfilename
+        print("# Loading cache from:", self.cachefile)
+        self.cachedict = torch.load(self.cachefile)
+
+    def __len__(self):
+        return len(self.cachedict)
+
+    def __getitem__(self, index):
+        return self.cachedict[index]
 
 
 def log(msg):
