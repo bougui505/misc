@@ -348,6 +348,16 @@ class Dataset(torch.utils.data.Dataset):
         DataBatch(x=[438, 16], edge_index=[2, 922], edge_attr=[922, 4], pos=[438, 3], edge_type=[922], batch=[438], ptr=[9])
 
         """
+        if cache:
+            print(
+                """
+# WARNING: cache option is set to True.
+# WARNING: More memory (RAM) will be used.
+# WARNING: The cache will be populated during the first epoch.
+# WARNING: To make the cache process working, please set 'persistent_workers' option in
+#          'torch.utils.data.DataLoader' to True !
+            """
+            )
         self.txtfile = txtfile
         self.radius = radius
         self.len = 0
