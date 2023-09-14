@@ -274,6 +274,7 @@ class Dataset(torch.utils.data.Dataset):
         return_pyg_graph=False,
         masked_atom=False,
         return_mol_graph=False,
+        cache=False,
     ):
         """
         - txtfile: a txtfile containing the list of data. The format is the following:
@@ -355,6 +356,9 @@ class Dataset(torch.utils.data.Dataset):
         self.read_txtfile()
         self.masked_atom = masked_atom
         self.return_mol_graph = return_mol_graph
+        self.cache = cache
+        if self.cache:
+            self.cachedict = {}
 
     def read_txtfile(self):
         with open(self.txtfile, "r") as inp:
@@ -371,6 +375,9 @@ class Dataset(torch.utils.data.Dataset):
         return self.len
 
     def __getitem__(self, index):
+        if self.cache:
+            if index in self.cachedict:
+                return self.cachedict[index]
         data = self.shelve.get(str(index))
         label = data[0]
         value = data[1:]
@@ -403,7 +410,7 @@ class Dataset(torch.utils.data.Dataset):
         if not self.return_pyg_graph:
             return key, (node_features, edge_index, edge_features)
         else:
-            return Data(
+            out = Data(
                 x=node_features,
                 edge_index=edge_index,
                 edge_attr=edge_features,
@@ -412,6 +419,10 @@ class Dataset(torch.utils.data.Dataset):
                 masked_atom_id=masked_atom_id,
                 molgraph=molgraph,
             )
+            if self.cache:
+                if index not in self.cachedict:
+                    self.cachedict[index] = out
+            return out
 
 
 def log(msg):
