@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 ####
 cd $BMFDIR &&
 /home/bougui/bin/tidyup
+[ -L $FILENAME:t ] && rm -v $FILENAME:t
 ERROR=$(ln -s $FILENAME . 2>&1) &&
 touch -h $FILENAME:t &&
 printf "${LIGHTGREEN}$FILENAME linked in $BMFDIR ${NC}\n" ||
