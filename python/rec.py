@@ -124,7 +124,8 @@ print(f"{var=:.4g}")
             data = checklengths(data, args.fields)
     data = checklengths(data, args.fields)
     n = max(len(v) for _, v in data.items())
-    header = " ".join(args.fields)
+    header = [f"#{e}" for e in args.fields]
+    header = " ".join(header)
     print(header)
     for i in range(n):
         outstr = ""
