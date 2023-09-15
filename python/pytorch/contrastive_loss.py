@@ -38,13 +38,14 @@ class SupConLoss(nn.Module):
     tensor(4.0565)
 
     """
-    def __init__(self, temperature=0.07, contrast_mode='all', base_temperature=0.07):
+
+    def __init__(self, temperature=0.07, contrast_mode="all", base_temperature=0.07):
         super(SupConLoss, self).__init__()
         self.temperature = temperature
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
 
-    def forward(self, features, labels=None, mask=None):
+    def forward(self, features, labels=None, mask=None, device=None):
         """Compute loss for model. If both `labels` and `mask` are None,
         it degenerates to SimCLR unsupervised loss:
         https://arxiv.org/pdf/2002.05709.pdf
@@ -57,39 +58,44 @@ class SupConLoss(nn.Module):
         Returns:
             A loss scalar.
         """
-        device = (torch.device('cuda') if features.is_cuda else torch.device('cpu'))
-
+        if device is None:
+            device = torch.device("cuda") if features.is_cuda else torch.device("cpu")
         if len(features.shape) < 3:
-            raise ValueError('`features` needs to be [bsz, n_views, ...],' 'at least 3 dimensions are required')
+            raise ValueError(
+                "`features` needs to be [bsz, n_views, ...],"
+                "at least 3 dimensions are required"
+            )
         if len(features.shape) > 3:
             features = features.view(features.shape[0], features.shape[1], -1)
 
         batch_size = features.shape[0]
         if labels is not None and mask is not None:
-            raise ValueError('Cannot define both `labels` and `mask`')
+            raise ValueError("Cannot define both `labels` and `mask`")
         elif labels is None and mask is None:
             mask = torch.eye(batch_size, dtype=torch.float32).to(device)
         elif labels is not None:
             labels = labels.contiguous().view(-1, 1)
             if labels.shape[0] != batch_size:
-                raise ValueError('Num of labels does not match num of features')
+                raise ValueError("Num of labels does not match num of features")
             mask = torch.eq(labels, labels.T).float().to(device)
         else:
             mask = mask.float().to(device)
 
         contrast_count = features.shape[1]
         contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
-        if self.contrast_mode == 'one':
+        if self.contrast_mode == "one":
             anchor_feature = features[:, 0]
             anchor_count = 1
-        elif self.contrast_mode == 'all':
+        elif self.contrast_mode == "all":
             anchor_feature = contrast_feature
             anchor_count = contrast_count
         else:
-            raise ValueError('Unknown mode: {}'.format(self.contrast_mode))
+            raise ValueError("Unknown mode: {}".format(self.contrast_mode))
 
         # compute logits
-        anchor_dot_contrast = torch.div(torch.matmul(anchor_feature, contrast_feature.T), self.temperature)
+        anchor_dot_contrast = torch.div(
+            torch.matmul(anchor_feature, contrast_feature.T), self.temperature
+        )
         # for numerical stability
         logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
         logits = anchor_dot_contrast - logits_max.detach()
@@ -97,8 +103,12 @@ class SupConLoss(nn.Module):
         # tile mask
         mask = mask.repeat(anchor_count, contrast_count)
         # mask-out self-contrast cases
-        logits_mask = torch.scatter(torch.ones_like(mask), 1,
-                                    torch.arange(batch_size * anchor_count).view(-1, 1).to(device), 0)
+        logits_mask = torch.scatter(
+            torch.ones_like(mask),
+            1,
+            torch.arange(batch_size * anchor_count).view(-1, 1).to(device),
+            0,
+        )
         mask = mask * logits_mask
 
         # compute log_prob
@@ -115,10 +125,11 @@ class SupConLoss(nn.Module):
         return loss
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -127,12 +138,14 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(
+            optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+        )
         sys.exit()
