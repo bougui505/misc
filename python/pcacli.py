@@ -38,9 +38,10 @@
 import os
 import numpy as np
 from numpy import linalg
+import numpy
 
 
-def compute_pca(X, ncomp=2):
+def compute_pca(X, outfilename=None):
     """
     >>> X = np.random.normal(size=(10, 512))
     >>> proj = compute_pca(X)
@@ -52,6 +53,12 @@ def compute_pca(X, ncomp=2):
     eigenvalues, eigenvectors = linalg.eigh(cov)
     sorter = np.argsort(eigenvalues)[::-1]
     eigenvalues, eigenvectors = eigenvalues[sorter], eigenvectors[:, sorter]
+    if outfilename is not None:
+        np.savez(outfilename, eigenvalues=eigenvalues, eigenvectors=eigenvectors)
+    return eigenvalues, eigenvectors
+
+
+def project(X, eigenvectors, ncomp=2):
     projection = X.dot(eigenvectors[:, :ncomp])
     return projection
 
@@ -95,6 +102,13 @@ if __name__ == "__main__":
         type=int,
         default=2,
     )
+    parser.add_argument(
+        "--save", help="Save the eigenvalues and the eigenvectors in the given npz file"
+    )
+    parser.add_argument(
+        "--load",
+        help="Load the given npz file and project using the loaded eigenvectors",
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -119,6 +133,11 @@ if __name__ == "__main__":
                 )
         sys.exit()
     data = np.genfromtxt(sys.stdin)
-    proj = compute_pca(data, ncomp=args.ncomp)
+    if args.load is None:
+        eigenvalues, eigenvectors = compute_pca(data, outfilename=args.save)
+    else:
+        npzfile = np.load(args.load)
+        eigenvalues, eigenvectors = npzfile["eigenvalues"], npzfile["eigenvectors"]
+    proj = project(data, eigenvectors, args.ncomp)
     for line in proj:
         print(" ".join([f"{e:.4g}" for e in line]))
