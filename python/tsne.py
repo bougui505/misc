@@ -46,6 +46,17 @@ def tsne(data, n_components=2, perplexity=30.0):
     return out
 
 
+def print_result(out, labels=None, text=None):
+    np.savetxt(".tmp", out, fmt="%.4g")
+    out = np.loadtxt(".tmp", dtype=str)
+    if labels is not None:
+        out = np.c_[out, labels]
+    if text is not None:
+        out = np.c_[out, text]
+    np.savetxt(sys.stdout, out, fmt="%s")
+    os.remove(".tmp")
+
+
 if __name__ == "__main__":
     import sys
     import doctest
@@ -71,15 +82,15 @@ if __name__ == "__main__":
         type=float,
     )
     parser.add_argument(
-        "-l",
-        "--labels",
-        help="Read the last column as labels (default: no labels). The labels are outputed in the last column of the output.",
-        action="store_true",
-    )
-    parser.add_argument(
         "-t",
         "--text",
         help="Read the last column as text (default: no text). The text is outputed in the last column of the output.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-l",
+        "--labels",
+        help="Read the last column as labels (default: no labels). The labels are outputed in the last column of the output.",
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
@@ -102,20 +113,18 @@ if __name__ == "__main__":
                 )
         sys.exit()
 
-    data = np.genfromtxt(sys.stdin, dtype=str)
+    DATA = np.genfromtxt(sys.stdin, dtype=str)
     if args.text:
-        text = data[:, -1]
-        data = data[:, :-1]
+        TEXT = DATA[:, -1]
+        DATA = DATA[:, :-1]
+    else:
+        TEXT = None
     if args.labels:
-        labels = data[:, -1]
-        data = data[:, :-1]
-    data = data.astype(float)
-    print(f"# {data.shape=}")
-    out = tsne(data, n_components=args.n_components, perplexity=args.perplexity)
-
-    np.savetxt(".tmp", out, fmt="%.4g")
-    out = np.loadtxt(".tmp", dtype=str)
-    if args.labels:
-        out = np.c_[out, labels]
-    np.savetxt(sys.stdout, out, fmt="%s")
-    os.remove(".tmp")
+        LABELS = DATA[:, -1]
+        DATA = DATA[:, :-1]
+    else:
+        LABELS = None
+    DATA = DATA.astype(float)
+    print(f"# {DATA.shape=}")
+    OUT = tsne(DATA, n_components=args.n_components, perplexity=args.perplexity)
+    print_result(OUT, labels=LABELS, text=TEXT)
