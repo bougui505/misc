@@ -38,12 +38,35 @@
 import os
 from sklearn.manifold import TSNE
 import numpy as np
+from numpy import linalg
 
 
 def tsne(data, n_components=2, perplexity=30.0):
     embedder = TSNE(n_components=n_components, perplexity=perplexity)
     out = embedder.fit_transform(data)
     return out
+
+
+def compute_pca(X, outfilename=None):
+    """
+    >>> X = np.random.normal(size=(10, 512))
+    >>> proj = compute_pca(X)
+    >>> proj.shape
+    (10, 2)
+    """
+    center = X.mean(axis=0)
+    cov = (X - center).T.dot(X - center)
+    eigenvalues, eigenvectors = linalg.eigh(cov)
+    sorter = np.argsort(eigenvalues)[::-1]
+    eigenvalues, eigenvectors = eigenvalues[sorter], eigenvectors[:, sorter]
+    if outfilename is not None:
+        np.savez(outfilename, eigenvalues=eigenvalues, eigenvectors=eigenvectors)
+    return eigenvalues, eigenvectors
+
+
+def project(X, eigenvectors, ncomp=2):
+    projection = X.dot(eigenvectors[:, :ncomp])
+    return projection
 
 
 def print_result(out, labels=None, text=None):
@@ -67,6 +90,12 @@ if __name__ == "__main__":
         description="TSNE from stdin (see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html)"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument(
+        "--method",
+        help="Projection method to use",
+        choices=["pca", "tsne"],
+        default="pca",
+    )
     parser.add_argument(
         "-n",
         "--n_components",
@@ -126,5 +155,9 @@ if __name__ == "__main__":
         LABELS = None
     DATA = DATA.astype(float)
     print(f"# {DATA.shape=}")
-    OUT = tsne(DATA, n_components=args.n_components, perplexity=args.perplexity)
+    if args.method == "pca":
+        eigenvalues, eigenvectors = compute_pca(DATA)
+        OUT = project(DATA, eigenvectors, ncomp=args.n_components)
+    if args.method == "tsne":
+        OUT = tsne(DATA, n_components=args.n_components, perplexity=args.perplexity)
     print_result(OUT, labels=LABELS, text=TEXT)
