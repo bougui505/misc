@@ -14,3 +14,7 @@ precmd() {
 test_tsne () {
     paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) | ./tsne.py
 }
+
+test_tsne_labels () {
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./tsne.py -l 3
+}
