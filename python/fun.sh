@@ -18,3 +18,8 @@ test_tsne () {
 test_tsne_labels () {
     paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./tsne.py -l
 }
+
+test_tsne_labels_text () {
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) \
+        | awk '{if (NR<50){print $0,"a"}else{print $0,"b"}}' |./tsne.py -l -t
+}
