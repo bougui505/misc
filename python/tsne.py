@@ -69,6 +69,12 @@ if __name__ == "__main__":
         default=30.0,
         type=float,
     )
+    parser.add_argument(
+        "-l",
+        "--labels",
+        type=int,
+        help="Give the index (0-based) of the column corresponding to the column (default: no labels). The labels are outputed in the last column of the output.",
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -90,5 +96,11 @@ if __name__ == "__main__":
         sys.exit()
 
     data = np.genfromtxt(sys.stdin, dtype=float)
+    if args.labels is not None:
+        labels = data[:, args.labels]
+        data = np.delete(data, args.labels, axis=1)
+    print(f"# {data.shape=}")
     out = tsne(data, n_components=args.n_components, perplexity=args.perplexity)
+    if args.labels is not None:
+        out = np.c_[out, labels]
     np.savetxt(sys.stdout, out, fmt="%.4g")
