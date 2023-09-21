@@ -35,6 +35,7 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
+import os
 from sklearn.manifold import TSNE
 import numpy as np
 
@@ -72,8 +73,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l",
         "--labels",
-        type=int,
-        help="Give the index (0-based) of the column corresponding to the column (default: no labels). The labels are outputed in the last column of the output.",
+        help="Read the last column as labels (default: no labels). The labels are outputed in the last column of the output.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-t",
+        "--text",
+        help="Read the last column as text (default: no text). The text is outputed in the last column of the output.",
+        action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -95,12 +102,20 @@ if __name__ == "__main__":
                 )
         sys.exit()
 
-    data = np.genfromtxt(sys.stdin, dtype=float)
-    if args.labels is not None:
-        labels = data[:, args.labels]
-        data = np.delete(data, args.labels, axis=1)
+    data = np.genfromtxt(sys.stdin, dtype=str)
+    if args.text:
+        text = data[:, -1]
+        data = data[:, :-1]
+    if args.labels:
+        labels = data[:, -1]
+        data = data[:, :-1]
+    data = data.astype(float)
     print(f"# {data.shape=}")
     out = tsne(data, n_components=args.n_components, perplexity=args.perplexity)
-    if args.labels is not None:
+
+    np.savetxt(".tmp", out, fmt="%.4g")
+    out = np.loadtxt(".tmp", dtype=str)
+    if args.labels:
         out = np.c_[out, labels]
-    np.savetxt(sys.stdout, out, fmt="%.4g")
+    np.savetxt(sys.stdout, out, fmt="%s")
+    os.remove(".tmp")
