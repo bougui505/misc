@@ -16,5 +16,5 @@ test_tsne () {
 }
 
 test_tsne_labels () {
-    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./tsne.py -l 3
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./tsne.py -l
 }
