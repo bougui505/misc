@@ -87,12 +87,12 @@ if __name__ == "__main__":
 
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(
-        description="TSNE from stdin (see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html)"
+        description="Use various projection methods (see: --method) to project the data in stdin to a low-dimensional space."
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument(
         "--method",
-        help="Projection method to use",
+        help="Projection method to use. For TSNE, see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html",
         choices=["pca", "tsne"],
         default="pca",
     )
