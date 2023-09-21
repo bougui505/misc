@@ -12,14 +12,18 @@ precmd() {
 }
 
 test_tsne () {
-    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) | ./tsne.py
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) | ./project.py --method tsne
+}
+
+test_pca () {
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) | ./project.py --method pca
 }
 
 test_tsne_labels () {
-    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./tsne.py -l
+    paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) | ./project.py --method tsne -l
 }
 
 test_tsne_labels_text () {
     paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) \
-        | awk '{if (NR<50){print $0,"a"}else{print $0,"b"}}' |./tsne.py -l -t
+        | awk '{if (NR<50){print $0,"a"}else{print $0,"b"}}' |./project.py --method tsne -l -t
 }
