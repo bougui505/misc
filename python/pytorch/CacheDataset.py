@@ -43,10 +43,18 @@ import torch.utils.data
 
 def cache(dataset, ptfilename):
     cachedict = {}
-    n = len(dataset)
-    for i in tqdm(range(n), desc="Caching dataset"):
-        data = dataset[i]
+    ncpu = os.cpu_count()
+    if ncpu is not None:
+        num_workers = ncpu
+    else:
+        num_workers = 1
+    dataloader = torch.utils.data.DataLoader(
+        dataset, num_workers=num_workers, batch_size=None, batch_sampler=None
+    )
+    i = 0
+    for data in tqdm(dataloader, desc="Caching dataset"):
         cachedict[i] = data
+        i += 1
     torch.save(cachedict, ptfilename)
 
 
