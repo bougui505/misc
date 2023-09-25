@@ -65,23 +65,21 @@ def identifier_to_selection(identifier, obj):
     'obj and resn DIZ and resi 112 and chain A'
     """
     selections = []
-    resn, resi, chain = identifier.split(':')
-    selection = f'{obj} and resn {resn} and resi {resi} and chain {chain}'
+    resn, resi, chain = identifier.split(":")
+    selection = f"{obj} and resn {resn} and resi {resi} and chain {chain}"
     return selection
 
 
 def lig_to_mol(selection, outmolfilename=None):
-    """
-    """
+    """ """
     if outmolfilename is None:
-        outmolfilename = f'/dev/shm/{randomgen.randomstring()}.mol'
+        outmolfilename = f"/dev/shm/{randomgen.randomstring()}.mol"
     cmd.save(filename=outmolfilename, selection=selection)
     return outmolfilename
 
 
 def selection_to_smi(selection, sanitize=True):
-    """
-    """
+    """ """
     molfilename = lig_to_mol(selection)
     mol = Chem.MolFromMolFile(molfilename, sanitize=sanitize)
     os.remove(molfilename)
@@ -92,24 +90,26 @@ def selection_to_smi(selection, sanitize=True):
     try:
         smi = Chem.MolToSmiles(mol)
     except:
-        sys.stderr.write(f'Cannot convert to SMILES for selection {selection}\n')
+        sys.stderr.write(f"Cannot convert to SMILES for selection {selection}\n")
         return None
     return smi
 
 
 def clean_system():
-    to_clean = ['polymer.nucleic', 'inorganic', 'solvent']  #, 'metals'
-    sel = '|'.join(to_clean)
+    to_clean = ["polymer.nucleic", "inorganic", "solvent"]  # , 'metals'
+    sel = "|".join(to_clean)
     cmd.remove(sel)
     # Remove alternate locations (see: https://pymol.org/dokuwiki/doku.php?id=concept:alt):
     cmd.remove("not alt ''+A")
     cmd.alter("all", "alt=''")
 
 
-HEADER = '#SMILES #PDB #resname #chain #resid'
+HEADER = "#SMILES #PDB #resname #chain #resid"
 
 
-def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True, sanitize=True):
+def get_ligands(
+    pdb, delete=True, outsmifilename=None, check_if_protein=True, sanitize=True
+):
     """
     >>> pdb = '1t4e'
     >>> obj, identifiers = get_ligands(pdb, outsmifilename=f'{pdb}.smi')
@@ -119,31 +119,35 @@ def get_ligands(pdb, delete=True, outsmifilename=None, check_if_protein=True, sa
     obj = load_pdb(pdb)
     clean_system()
     if check_if_protein:
-        nres = cmd.select('polymer.protein')
+        nres = cmd.select("polymer.protein")
         if nres == 0:
             return None, None
-    myspace = {'identifiers': []}
-    cmd.iterate(f'{obj} and not polymer.protein', 'identifiers.append(f"{resn}:{resi}:{chain}")', space=myspace)
-    identifiers = np.unique(myspace['identifiers'])
+    myspace = {"identifiers": []}
+    cmd.iterate(
+        f"{obj} and not polymer.protein",
+        'identifiers.append(f"{resn}:{resi}:{chain}")',
+        space=myspace,
+    )
+    identifiers = np.unique(myspace["identifiers"])
     if outsmifilename is not None:
         if not os.path.exists(outsmifilename):
             write_header = True
         else:
             write_header = False
-        outsmifile = open(outsmifilename, 'a')
+        outsmifile = open(outsmifilename, "a")
         if write_header:
-            outsmifile.write(HEADER + '\n')
+            outsmifile.write(HEADER + "\n")
     else:
         outsmifile = None
     for identifier in identifiers:
-        resn, resi, chain = identifier.split(':')
+        resn, resi, chain = identifier.split(":")
         selection = identifier_to_selection(identifier, obj)
         smi = selection_to_smi(selection, sanitize=sanitize)
-        outstr = f'{smi} {pdb} {resn} {chain} {resi}'
+        outstr = f"{smi} {pdb} {resn} {chain} {resi}"
         if outsmifile is None:
             print(outstr)
         else:
-            outsmifile.write(outstr + '\n')
+            outsmifile.write(outstr + "\n")
     if delete:
         cmd.delete(obj)
     return obj, identifiers
@@ -162,10 +166,11 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -176,37 +181,51 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--pdb', help='PDB file(s) or ID(s) to extract the ligand from', nargs='+')
-    parser.add_argument('--pdblist', help='Text file with a list of pdbs')
-    parser.add_argument('--smi', help='Output SMILES file to write the results out. If not given write to stdout')
-    parser.add_argument('--no_sanitize', help='Do not sanitize the molecule', dest='sanitize', action='store_false')
-    parser.add_argument('--test', help='Test the code', action='store_true')
-    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+    parser.add_argument(
+        "--pdb", help="PDB file(s) or ID(s) to extract the ligand from", nargs="+"
+    )
+    parser.add_argument("--pdblist", help="Text file with a list of pdbs")
+    parser.add_argument(
+        "--smi",
+        help="Output SMILES file to write the results out. If not given write to stdout",
+    )
+    parser.add_argument(
+        "--no_sanitize",
+        help="Do not sanitize the molecule",
+        dest="sanitize",
+        action="store_false",
+    )
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
-        log(f'# {k}: {v}')
+        log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f,
-                                               globals(),
-                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
         sys.exit()
 
     pdblist = []
     if args.pdb is not None:
         pdblist.extend(args.pdb)
     if args.pdblist is not None:
-        with open(args.pdblist, 'r') as pdblistfile:
+        with open(args.pdblist, "r") as pdblistfile:
             pdblist.extend([e.strip() for e in pdblistfile.readlines()])
     if args.smi is None:
         print(HEADER)
@@ -215,6 +234,9 @@ if __name__ == '__main__':
     for pdb in pdblist:
         if not args.sanitize:
             print("# not-sanitized molecules")
-        get_ligands(pdb, outsmifilename=args.smi, sanitize=args.sanitize)
+        try:
+            get_ligands(pdb, outsmifilename=args.smi, sanitize=args.sanitize)
+        except:
+            print(f"#ERROR: {pdb=}")
         if args.smi is not None:
             pbar.update(1)
