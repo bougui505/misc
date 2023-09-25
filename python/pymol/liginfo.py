@@ -218,7 +218,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pdb", help="PDB file(s) or ID(s) to extract the ligand from", nargs="+"
     )
-    parser.add_argument("--pdblist", help="Text file with a list of pdbs")
+    parser.add_argument(
+        "--pdblist",
+        help="Text file with a list of pdbs. If a smi is given in the second column, compute the Tanimoto similarity with the reference smiles",
+    )
     parser.add_argument(
         "--smi",
         help="Output SMILES file to write the results out. If not given write to stdout",
@@ -254,20 +257,40 @@ if __name__ == "__main__":
         sys.exit()
 
     pdblist = []
+    smireflist = []
     if args.pdb is not None:
         pdblist.extend(args.pdb)
     if args.pdblist is not None:
         with open(args.pdblist, "r") as pdblistfile:
-            pdblist.extend([e.strip() for e in pdblistfile.readlines()])
+            for line in pdblistfile.readlines():
+                line = line.strip().split()
+                pdblist.append(line[0])
+                if len(line) == 2:
+                    smireflist.append(line[1])
+        if len(smireflist) > 0:
+            assert len(pdblist) == len(smireflist)
     if args.smi is None:
         print(HEADER)
     else:
         pbar = tqdm(total=len(pdblist))
-    for pdb in pdblist:
+    if len(smireflist) > 0:
+        toiter = zip(pdblist, smireflist)
+        is_ref = True
+    else:
+        toiter = pdblist
+        is_ref = False
+    for elem in toiter:
+        if is_ref:
+            pdb, smi_ref = elem
+        else:
+            pdb = elem
+            smi_ref = None
         if not args.sanitize:
             print("# not-sanitized molecules")
         try:
-            get_ligands(pdb, outsmifilename=args.smi, sanitize=args.sanitize)
+            get_ligands(
+                pdb, outsmifilename=args.smi, sanitize=args.sanitize, smi_ref=smi_ref
+            )
         except:
             print(f"#ERROR: {pdb=}")
         if args.smi is not None:
