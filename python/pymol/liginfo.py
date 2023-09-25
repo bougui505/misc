@@ -41,6 +41,8 @@ import numpy as np
 from misc.protein import coords_loader
 from misc import randomgen
 from rdkit import Chem
+from rdkit.Chem.Fingerprints import FingerprintMols
+from rdkit import DataStructs
 from tqdm import tqdm
 
 
@@ -107,14 +109,39 @@ def clean_system():
 HEADER = "#SMILES #PDB #resname #chain #resid"
 
 
+def compute_tanimoto(smi1, smi2):
+    """
+    >>> smi1 = "NC(CCC(=O)NC(CS)C(=O)NCC(=O)O)C(=O)O"
+    >>> smi2 = "N=C(N)c1ccc(CC(O)C(=O)O)cc1"
+    >>> compute_tanimoto(smi1, smi2)
+    0.32151898734177214
+    """
+    mol1 = Chem.MolFromSmiles(smi1)
+    mol2 = Chem.MolFromSmiles(smi2)
+    fp1 = FingerprintMols.FingerprintMol(mol1)
+    fp2 = FingerprintMols.FingerprintMol(mol2)
+    s = DataStructs.TanimotoSimilarity(fp1, fp2)
+    return s
+
+
 def get_ligands(
-    pdb, delete=True, outsmifilename=None, check_if_protein=True, sanitize=True
+    pdb,
+    delete=True,
+    outsmifilename=None,
+    check_if_protein=True,
+    sanitize=True,
+    smi_ref=None,
 ):
     """
     >>> pdb = '1t4e'
     >>> obj, identifiers = get_ligands(pdb, outsmifilename=f'{pdb}.smi')
     >>> identifiers  # fmt: resname:resi:chain
     array(['DIZ:112:A', 'DIZ:112:B'], dtype='<U9')
+
+    # If smi_ref is not None compute the Tanimoto similarity with the reference and returns it in last column
+    >>> obj, identifiers = get_ligands(pdb, smi_ref="N=C(N)c1ccc(CC(O)C(=O)O)cc1")
+    O=C(O)[C@H](c1ccc(Cl)cc1)N1C(=O)c2cc(I)ccc2NC(=O)[C@@H]1c1ccc(Cl)cc1 1t4e DIZ A 112 0.4542
+    O=C(O)[C@H](c1ccc(Cl)cc1)N1C(=O)c2cc(I)ccc2NC(=O)[C@@H]1c1ccc(Cl)cc1 1t4e DIZ B 112 0.4542
     """
     obj = load_pdb(pdb)
     clean_system()
@@ -144,6 +171,9 @@ def get_ligands(
         selection = identifier_to_selection(identifier, obj)
         smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
+        if smi_ref is not None:
+            tanimoto = compute_tanimoto(smi, smi_ref)
+            outstr += f" {tanimoto:.4g}"
         if smi is None:
             outstr = "# " + outstr
         if outsmifile is None:
