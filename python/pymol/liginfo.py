@@ -144,6 +144,8 @@ def get_ligands(
         selection = identifier_to_selection(identifier, obj)
         smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
+        if smi is None:
+            outstr = "# " + outstr
         if outsmifile is None:
             print(outstr)
         else:
