@@ -1,10 +1,11 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
+# shellcheck shell=bash
 # -*- coding: UTF8 -*-
 
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
-# Copyright (c) 2021 Institut Pasteur                                       #
+# Copyright (c) 2023 Institut Pasteur                                       #
 #                 				                            #
 #                                                                           #
 #  Redistribution and use in source and binary forms, with or without       #
@@ -37,6 +38,7 @@
 #############################################################################
 
 set -e  # exit on error
+set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
@@ -44,21 +46,25 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-
-MODEL=$1
-NATIVE=$2
-OUT=$3
-pdbselect -p "$MODEL" -s "polymer.protein" -o $MYTMP/model.mmcif > /dev/null
-pdbselect -p "$NATIVE" -s "polymer.protein" -o $MYTMP/native.mmcif > /dev/null
-TMSCOREOUT=$(TMscore $MYTMP/model.mmcif $MYTMP/native.mmcif)
-SCORE=$(echo $TMSCOREOUT | awk '/TM-score    =/{print $3}')
-RMSD=$(echo $TMSCOREOUT | awk '/RMSD of  the common residues=/{print $6}')
-(test -z $SCORE) && SCORE=0.0
-(test -z $RMSD) && RMSD=999.99
-flock $OUT cat << EOF >> $OUT
-model=$MODEL
-native=$NATIVE
-tmscore=$SCORE
-rmsd=$RMSD
---
+function usage () {
+    cat << EOF
+Compute TMscore with a readable output from different formats
+    -h, --help print this help message and exit
+    -m, --model
+    -n, --native
 EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        -m|--model) MODEL="$2"; shift ;;
+        -n|--native) NATIVE="$2"; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage; exit 1 ;;
+    esac
+    shift
+done
+
+touch "$MYTMP/out.txt"
+"$DIRSCRIPT"/tmscore_format.sh "$MODEL" "$NATIVE" "$MYTMP/out.txt"
+cat "$MYTMP/out.txt"
