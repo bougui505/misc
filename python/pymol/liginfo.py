@@ -163,7 +163,10 @@ def get_ligands(
             write_header = False
         outsmifile = open(outsmifilename, "a")
         if write_header:
-            outsmifile.write(HEADER + "\n")
+            if smi_ref is None:
+                outsmifile.write(HEADER + "\n")
+            else:
+                outsmifile.write(HEADER + " #tanimoto" + "\n")
     else:
         outsmifile = None
     for identifier in identifiers:
