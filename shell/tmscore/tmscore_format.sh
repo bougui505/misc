@@ -52,9 +52,9 @@ RMSD=$(echo $TMSCOREOUT | awk '/RMSD of  the common residues=/{print $6}')
 (test -z $SCORE) && SCORE=0.0
 (test -z $RMSD) && RMSD=999.99
 flock $OUT cat << EOF >> $OUT
-model: $MODEL
-native: $NATIVE
-tmscore: $SCORE
-rmsd: $RMSD
-
+model=$MODEL
+native=$NATIVE
+tmscore=$SCORE
+rmsd=$RMSD
+--
 EOF
