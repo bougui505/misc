@@ -187,7 +187,7 @@ def get_ligands(
         else:
             outsmifile.write(outstr + "\n")
     if delete:
-        cmd.delete(obj)
+        cmd.delete("all")
     return obj, identifiers
 
 
