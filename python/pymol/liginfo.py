@@ -46,7 +46,7 @@ from rdkit import DataStructs
 from tqdm import tqdm
 
 
-def load_pdb(pdb):
+def load_pdb(pdb, fetch_path=os.path.expanduser("~/pdb")):
     """
     >>> pdb = '1t4e'
     >>> obj = load_pdb(pdb)
@@ -54,7 +54,9 @@ def load_pdb(pdb):
     '...'
     >>> cmd.delete(obj)
     """
-    coords, sel = coords_loader.get_coords(pdb, return_selection=True, verbose=False)
+    coords, sel = coords_loader.get_coords(
+        pdb, return_selection=True, verbose=False, fetch_path=fetch_path
+    )
     obj = sel.split()[0]
     return obj
 
@@ -131,6 +133,7 @@ def get_ligands(
     check_if_protein=True,
     sanitize=True,
     smi_ref=None,
+    fetch_path=os.path.expanduser("~/pdb"),
 ):
     """
     >>> pdb = '1t4e'
@@ -143,7 +146,7 @@ def get_ligands(
     O=C(O)[C@H](c1ccc(Cl)cc1)N1C(=O)c2cc(I)ccc2NC(=O)[C@@H]1c1ccc(Cl)cc1 1t4e DIZ A 112 0.4542
     O=C(O)[C@H](c1ccc(Cl)cc1)N1C(=O)c2cc(I)ccc2NC(=O)[C@@H]1c1ccc(Cl)cc1 1t4e DIZ B 112 0.4542
     """
-    obj = load_pdb(pdb)
+    obj = load_pdb(pdb, fetch_path=fetch_path)
     clean_system()
     if check_if_protein:
         nres = cmd.select("polymer.protein")
@@ -235,6 +238,11 @@ if __name__ == "__main__":
         dest="sanitize",
         action="store_false",
     )
+    parser.add_argument(
+        "--fetch_path",
+        help="Directory where to store the pdb files (default: ~/pdb)",
+        default=os.path.expanduser("~/pdb"),
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -292,7 +300,11 @@ if __name__ == "__main__":
             print("# not-sanitized molecules")
         try:
             get_ligands(
-                pdb, outsmifilename=args.smi, sanitize=args.sanitize, smi_ref=smi_ref
+                pdb,
+                outsmifilename=args.smi,
+                sanitize=args.sanitize,
+                smi_ref=smi_ref,
+                fetch_path=args.fetch_path,
             )
         except:
             print(f"#ERROR: {pdb=}")
