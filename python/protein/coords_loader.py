@@ -42,7 +42,7 @@ from misc.randomgen import randomstring
 import numpy as np
 from misc.protein.rotate import rotate
 
-cmd.feedback(action='disable', module='all', mask='everything')
+cmd.feedback(action="disable", module="all", mask="everything")
 
 
 def get_chain_ids(selection):
@@ -57,7 +57,7 @@ def get_chain_ids(selection):
     >>> chains
     ['A', 'A', 'A', 'A', 'A',...
     """
-    chains = get_atom_property(selection, prop='chain')
+    chains = get_atom_property(selection, prop="chain")
     return chains
 
 
@@ -75,9 +75,9 @@ def get_atom_property(selection, prop):
     >>> len(resids)
     228
     """
-    myspace = {'prop': []}
-    cmd.iterate(selection, f'prop.append({prop})', space=myspace)
-    return myspace['prop']
+    myspace = {"prop": []}
+    cmd.iterate(selection, f"prop.append({prop})", space=myspace)
+    return myspace["prop"]
 
 
 def load_pymol_view(view):
@@ -85,9 +85,9 @@ def load_pymol_view(view):
     Args:
         file (str): Path to file
     """
-    view = view.replace('(', '')
-    view = view.replace(')', '')
-    fields = view.split(',')
+    view = view.replace("(", "")
+    view = view.replace(")", "")
+    fields = view.split(",")
     view_matrix = np.asarray(fields, dtype=float)[:16]
     return view_matrix
 
@@ -99,19 +99,22 @@ def get_random_angles(verbose=False):
     angles = (angle_x, angle_y, angle_z)
     if verbose:
         print(
-            f'random rotation of coordinates with angles ({np.rad2deg(angle_x):.2f}, {np.rad2deg(angle_y):.2f}, {np.rad2deg(angle_z):.2f})'
+            f"random rotation of coordinates with angles ({np.rad2deg(angle_x):.2f}, {np.rad2deg(angle_y):.2f}, {np.rad2deg(angle_z):.2f})"
         )
     return angles
 
 
-def get_coords(pdb,
-               selection='all',
-               split_by_chains=False,
-               return_selection=False,
-               view=None,
-               verbose=True,
-               obj=None,
-               random_rotation=False):
+def get_coords(
+    pdb,
+    selection="all",
+    split_by_chains=False,
+    return_selection=False,
+    view=None,
+    verbose=True,
+    obj=None,
+    random_rotation=False,
+    fetch_path=os.path.expanduser("~/pdb"),
+):
     """
     >>> cmd.reinitialize()
     >>> coords = get_coords('1ycr')
@@ -155,19 +158,19 @@ def get_coords(pdb,
     if random_rotation:
         angles = get_random_angles(verbose=verbose)
         angle_x, angle_y, angle_z = angles
-    cmd.set('fetch_path', os.path.expanduser('~/pdb'))
-    cmd.set('fetch_type_default', 'mmtf')
+    cmd.set("fetch_path", fetch_path)
+    cmd.set("fetch_type_default", "mmtf")
     if obj is None:
         obj = randomstring()
     if os.path.exists(pdb):
         if verbose:
-            print(f'Loading from local file {pdb}')
+            print(f"Loading from local file {pdb}")
         cmd.load(pdb, object=obj)
     else:
         if verbose:
-            print(f'Fetching {pdb} from the PDB')
+            print(f"Fetching {pdb} from the PDB")
         cmd.fetch(pdb, name=obj)
-    selection = f'{obj} and {selection} and present'
+    selection = f"{obj} and {selection} and present"
     if view is not None:
         viewmat = load_pymol_view(view)
         cmd.transform_selection(selection, viewmat)
@@ -179,9 +182,11 @@ def get_coords(pdb,
         chain_list = cmd.get_chains(selection=selection)
         coords = []
         for chain in chain_list:
-            coords_chain = cmd.get_coords(selection=f'{selection} and chain {chain}')
+            coords_chain = cmd.get_coords(selection=f"{selection} and chain {chain}")
             if random_rotation:
-                coords_chain = rotate(coords_chain, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z)
+                coords_chain = rotate(
+                    coords_chain, angle_x=angle_x, angle_y=angle_y, angle_z=angle_z
+                )
             coords.append(coords_chain)
     if not return_selection:
         # delete the pymol object
@@ -204,10 +209,11 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -216,12 +222,14 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-a', '--arg1')
-    parser.add_argument('--test', help='Test the code', action='store_true')
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(
+            optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+        )
         sys.exit()
