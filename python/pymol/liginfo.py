@@ -228,6 +228,7 @@ if __name__ == "__main__":
         "--pdblist",
         help="Text file with a list of pdbs. If a smi is given in the second column, compute the Tanimoto similarity with the reference smiles",
     )
+    parser.add_argument("--ref", help="Reference SMILES to compute Tanimoto with")
     parser.add_argument(
         "--smi",
         help="Output SMILES file to write the results out. If not given write to stdout",
@@ -271,6 +272,8 @@ if __name__ == "__main__":
     smireflist = []
     if args.pdb is not None:
         pdblist.extend(args.pdb)
+    if args.ref is not None:
+        smireflist.append(args.ref)
     if args.pdblist is not None:
         with open(args.pdblist, "r") as pdblistfile:
             for line in pdblistfile.readlines():
