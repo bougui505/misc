@@ -50,9 +50,9 @@ NATIVE=$2
 OUT=$3
 pdbselect -p "$MODEL" -s "polymer.protein" -o $MYTMP/model.mmcif > /dev/null
 pdbselect -p "$NATIVE" -s "polymer.protein" -o $MYTMP/native.mmcif > /dev/null
-TMSCOREOUT=$(TMscore $MYTMP/model.mmcif $MYTMP/native.mmcif)
-SCORE=$(echo $TMSCOREOUT | awk '/TM-score    =/{print $3}')
-RMSD=$(echo $TMSCOREOUT | awk '/RMSD of  the common residues=/{print $6}')
+TMSCOREOUT=$(TMalign $MYTMP/model.mmcif $MYTMP/native.mmcif)
+SCORE=$(echo $TMSCOREOUT | awk '/TM-score=/{print $2}' | tail -1)
+RMSD=$(echo $TMSCOREOUT | awk '/RMSD=/{print $5}' | tr -d ",")
 (test -z $SCORE) && SCORE=0.0
 (test -z $RMSD) && RMSD=999.99
 flock $OUT cat << EOF >> $OUT
