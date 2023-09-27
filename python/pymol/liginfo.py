@@ -301,15 +301,12 @@ if __name__ == "__main__":
             smi_ref = None
         if not args.sanitize:
             print("# not-sanitized molecules")
-        try:
-            get_ligands(
-                pdb,
-                outsmifilename=args.smi,
-                sanitize=args.sanitize,
-                smi_ref=smi_ref,
-                fetch_path=args.fetch_path,
-            )
-        except:
-            print(f"#ERROR: {pdb=}")
+        get_ligands(
+            pdb,
+            outsmifilename=args.smi,
+            sanitize=args.sanitize,
+            smi_ref=smi_ref,
+            fetch_path=args.fetch_path,
+        )
         if args.smi is not None:
             pbar.update(1)
