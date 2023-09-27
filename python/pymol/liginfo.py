@@ -181,7 +181,7 @@ def get_ligands(
             tanimoto = compute_tanimoto(smi, smi_ref)
             outstr += f" {tanimoto:.4g}"
         if smi is None:
-            outstr = "# " + outstr
+            outstr = "#" + outstr
         if outsmifile is None:
             print(outstr)
         else:
