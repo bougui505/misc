@@ -89,8 +89,8 @@ def selection_to_smi(selection, sanitize=True):
     os.remove(molfilename)
     if mol is None:
         return None
-    if mol.GetNumHeavyAtoms() < 5:
-        return None
+    # if mol.GetNumHeavyAtoms() < 5:
+    #     return None
     try:
         smi = Chem.MolToSmiles(mol)
     except:
