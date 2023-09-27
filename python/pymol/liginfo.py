@@ -88,14 +88,16 @@ def selection_to_smi(selection, sanitize=True):
     mol = Chem.MolFromMolFile(molfilename, sanitize=sanitize)
     os.remove(molfilename)
     if mol is None:
-        return None
+        return "error_MolFromMolFile"
     # if mol.GetNumHeavyAtoms() < 5:
     #     return None
     try:
         smi = Chem.MolToSmiles(mol)
     except:
         sys.stderr.write(f"Cannot convert to SMILES for selection {selection}\n")
-        return None
+        return "error_MolToSmiles"
+    if len(smi) == 0:
+        return "empty_smi"
     return smi
 
 
@@ -177,11 +179,17 @@ def get_ligands(
         selection = identifier_to_selection(identifier, obj)
         smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
-        if smi_ref is not None:
-            tanimoto = compute_tanimoto(smi, smi_ref)
-            outstr += f" {tanimoto:.4g}"
-        if smi is None:
+        if (
+            smi is None
+            or smi == "error_MolFromMolFile"
+            or smi == "error_MolToSmiles"
+            or smi == "empty_smi"
+        ):
             outstr = "#" + outstr
+        else:
+            if smi_ref is not None:
+                tanimoto = compute_tanimoto(smi, smi_ref)
+                outstr += f" {tanimoto:.4g}"
         if outsmifile is None:
             print(outstr)
         else:
