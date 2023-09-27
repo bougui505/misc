@@ -51,7 +51,7 @@ OUT=$3
 pdbselect -p "$MODEL" -s "polymer.protein" -o $MYTMP/model.mmcif > /dev/null
 pdbselect -p "$NATIVE" -s "polymer.protein" -o $MYTMP/native.mmcif > /dev/null
 TMSCOREOUT=$(TMalign $MYTMP/model.mmcif $MYTMP/native.mmcif)
-SCORE=$(echo $TMSCOREOUT | awk '/TM-score=/{print $2}' | tail -1)
+SCORE=$(echo $TMSCOREOUT | awk '/TM-score=/{print $2}' | awk 'BEGIN{M=-9999.99}{if ($1>M){M=$1}}END{print M}')
 RMSD=$(echo $TMSCOREOUT | awk '/RMSD=/{print $5}' | tr -d ",")
 (test -z $SCORE) && SCORE=0.0
 (test -z $RMSD) && RMSD=999.99
