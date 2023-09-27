@@ -44,7 +44,7 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 
-TOMOUNT="-B $(pwd) -B /c7/home -B /c7/scratch2"
+TOMOUNT="-B $(pwd) -B /c7/home -B /c7/scratch2 -B /var/lib/dcv-gl/lib64"
 [ -d /ld18-1006 ] && TOMOUNT="$TOMOUNT -B /ld18-1006"
 
 singularity run $(echo $TOMOUNT) --nv $DIRSCRIPT/bougui.sif zsh \
