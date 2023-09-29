@@ -62,6 +62,8 @@ RMSD=$(echo $TMSCOREOUT | awk '/RMSD=/{print $5}' | tr -d ",")
 flock $OUT cat << EOF >> $OUT
 model=$MODEL
 native=$NATIVE
+selm=$SELM
+seln=$SELN
 tmscore=$SCORE
 rmsd=$RMSD
 --
