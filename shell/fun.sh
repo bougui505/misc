@@ -50,19 +50,26 @@ function usage () {
     cat << EOF
 Create a fun.sh file to write functions to be sourced in the current working directory
     -h, --help print this help message and exit
+    -l, --list list functions in the current fun.sh file
 EOF
+}
+
+
+list_fun () {
+    bash -c '. fun.sh; typeset -F'
+    exit 0
 }
 
 EDIT=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -h|--help) usage; exit 0 ;;
+        -l|--list) list_fun ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
     shift
 done
-
 
 create_file () {
     if [ ! -f fun.sh ]; then
