@@ -14,6 +14,8 @@ apt-get install -y wget git bzip2 build-essential python3-pip
 apt-get install -y bash zsh curl lua-nvim unzip fzf xz-utils npm ripgrep default-jre
 apt-get install -y meld
 apt-get install -y sqlite3 coreutils
+apt-get install -y htop
+apt-get install -y parallel
 apt-get clean
 ###############################################################################
 
