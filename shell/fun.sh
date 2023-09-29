@@ -56,7 +56,9 @@ EOF
 
 
 list_fun () {
-    bash -c '. fun.sh; typeset -F'
+    # bash -c '. fun.sh; typeset -F'
+    echo $FUNFILES \
+        | awk -F":" '{for (i=1;i<=NF;i++){print $i}}' | xargs -I {}  bash -c '. {}; typeset -F'
     exit 0
 }
 
@@ -79,12 +81,14 @@ cat << EOF
 
 \$(date): sourcing \$0
 EOF
+echo \$FUNFILES
 
 MYTMP=\$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap '/bin/rm -rf "\$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
+[ -z \$FUNFILES ] && export FUNFILES=""
 precmd() {
-    [ -f fun.sh ] && source fun.sh
+    [ -f fun.sh ] && source fun.sh && FUNFILES+="\$(realpath fun.sh)" && FUNFILES=\$(echo \$FUNFILES | awk -F":" '{for (i=1;i<=NF;i++){print \$i}}' | sort -u | awk '{printf \$1":"}')
 }
 
 func1 () {
