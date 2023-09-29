@@ -52,13 +52,19 @@ Compute TMscore with a readable output from different formats
     -h, --help print this help message and exit
     -m, --model
     -n, --native
+    --selm, selection for model (default: polymer.protein)
+    --seln, selection for native (default: polymer.protein)
 EOF
 }
 
+SELM="polymer.protein"
+SELN="polymer.protein"
 while [ "$#" -gt 0 ]; do
     case $1 in
         -m|--model) MODEL="$2"; shift ;;
         -n|--native) NATIVE="$2"; shift ;;
+        --selm) SELM="$2"; shift ;;
+        --seln) SELN="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -66,5 +72,5 @@ while [ "$#" -gt 0 ]; do
 done
 
 touch "$MYTMP/out.txt"
-"$DIRSCRIPT"/tmscore_format.sh "$MODEL" "$NATIVE" "$MYTMP/out.txt"
+"$DIRSCRIPT"/tmscore_format.sh "$MODEL" "$NATIVE" "$MYTMP/out.txt" "$SELM" "$SELN"
 cat "$MYTMP/out.txt"

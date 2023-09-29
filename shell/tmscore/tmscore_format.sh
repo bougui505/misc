@@ -48,8 +48,12 @@ trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 MODEL=$1
 NATIVE=$2
 OUT=$3
-pdbselect -p "$MODEL" -s "polymer.protein" -o $MYTMP/model.mmcif > /dev/null
-pdbselect -p "$NATIVE" -s "polymer.protein" -o $MYTMP/native.mmcif > /dev/null
+SELM=$4
+SELN=$5
+[ -z $SELM ] && SELM="polymer.protein"
+[ -z $SELN ] && SELN="polymer.protein"
+pdbselect -p "$MODEL" -s $SELM -o $MYTMP/model.mmcif > /dev/null
+pdbselect -p "$NATIVE" -s $SELN -o $MYTMP/native.mmcif > /dev/null
 TMSCOREOUT=$(TMalign $MYTMP/model.mmcif $MYTMP/native.mmcif)
 SCORE=$(echo $TMSCOREOUT | awk '/TM-score=/{print $2}' | awk 'BEGIN{M=-9999.99}{if ($1>M){M=$1}}END{print M}')
 RMSD=$(echo $TMSCOREOUT | awk '/RMSD=/{print $5}' | tr -d ",")
