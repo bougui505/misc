@@ -55,10 +55,11 @@ EOF
 }
 
 
+
 list_fun () {
     # bash -c '. fun.sh; typeset -F'
     echo $FUNFILES \
-        | awk -F":" '{for (i=1;i<=NF;i++){print $i}}' | xargs -I {}  bash -c '. {}; typeset -F'
+        | awk -F":" '{for (i=1;i<=NF;i++){print $i}}' | xargs $DIRSCRIPT/list_fun.sh | sort -u
     exit 0
 }
 

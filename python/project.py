@@ -97,6 +97,9 @@ if __name__ == "__main__":
         default="pca",
     )
     parser.add_argument(
+        "--dot", help="compute pairwise dot product between data", action="store_true"
+    )
+    parser.add_argument(
         "-n",
         "--n_components",
         help="(default: 2) Dimension of the embedded space.",
@@ -160,4 +163,6 @@ if __name__ == "__main__":
         OUT = project(DATA, eigenvectors, ncomp=args.n_components)
     if args.method == "tsne":
         OUT = tsne(DATA, n_components=args.n_components, perplexity=args.perplexity)
+    if args.dot:
+        OUT = DATA.dot(DATA.T)
     print_result(OUT, labels=LABELS, text=TEXT)
