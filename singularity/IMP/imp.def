@@ -2,8 +2,9 @@ BOOTSTRAP: docker
 FROM: ubuntu:22.04
 
 %post
+export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y wget python3-fastcluster
+apt-get install -y wget python3-fastcluster python3-sklearn
 
 
 
