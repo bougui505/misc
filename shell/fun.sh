@@ -77,11 +77,15 @@ create_file () {
     if [ ! -f fun.sh ]; then
         cat << EOFF > fun.sh
 #!/usr/bin/env bash
-cat << EOF
 
+Cyan='\033[0;36m'
+NC='\033[0m' # No Color
+
+echo -e "\$Cyan"
+cat << EOF
 \$(date): sourcing \$0
 EOF
-echo \$FUNFILES
+echo -e \$FUNFILES\$NC
 
 MYTMP=\$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap '/bin/rm -rf "\$MYTMP"' EXIT INT  # Will be removed at the end of the script
