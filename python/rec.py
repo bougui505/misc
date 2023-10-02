@@ -52,7 +52,7 @@ def checklengths(data, fields):
 
 
 def print_data(recsel=None, print_records=False):
-    if recsel is not None:
+    if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
     data = collections.defaultdict(list)
