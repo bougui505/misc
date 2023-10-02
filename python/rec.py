@@ -51,13 +51,15 @@ def checklengths(data, fields):
     return data
 
 
-def print_data(sel=None):
+def print_data(sel=None, print_records=False):
     data = collections.defaultdict(list)
+    current_record = ""
     for line in sys.stdin:
         line = line.strip()
         if line.startswith("#"):
             continue
         if line != "--":
+            current_record += line + "\n"
             kv = line.split("=", maxsplit=1)
             if len(kv) != 2:
                 continue
@@ -72,6 +74,9 @@ def print_data(sel=None):
                     data[key].append(value)
         else:
             data = checklengths(data, args.fields)
+            if print_records and store:
+                print(current_record + "--")
+            current_record = ""
     data = checklengths(data, args.fields)
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in args.fields]
@@ -101,6 +106,12 @@ if __name__ == "__main__":
         "-s",
         "--sel",
         help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
+    )
+    parser.add_argument(
+        "-r",
+        "--print_records",
+        action="store_true",
+        help="Print the selected records instead of the data",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -146,4 +157,4 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    print_data(sel=args.sel)
+    print_data(sel=args.sel, print_records=args.print_records)
