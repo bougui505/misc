@@ -81,12 +81,13 @@ def print_data(sel=None, print_records=False):
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in args.fields]
     header = " ".join(header)
-    print(header)
-    for i in range(n):
-        outstr = ""
-        for key in args.fields:
-            outstr += data[key][i] + " "
-        print(outstr)
+    if not print_records:
+        print(header)
+        for i in range(n):
+            outstr = ""
+            for key in args.fields:
+                outstr += data[key][i] + " "
+            print(outstr)
 
 
 if __name__ == "__main__":
