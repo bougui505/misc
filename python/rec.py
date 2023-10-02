@@ -57,6 +57,7 @@ def print_data(recsel=None, print_records=False):
         print("--")
     data = collections.defaultdict(list)
     current_record = ""
+    store = True
     for line in sys.stdin:
         line = line.strip()
         if line.startswith("#"):
