@@ -51,7 +51,10 @@ def checklengths(data, fields):
     return data
 
 
-def print_data(sel=None, print_records=False):
+def print_data(recsel=None, print_records=False):
+    if recsel is not None:
+        print(f"{recsel=}")
+        print("--")
     data = collections.defaultdict(list)
     current_record = ""
     for line in sys.stdin:
@@ -65,9 +68,9 @@ def print_data(sel=None, print_records=False):
                 continue
             key, value = kv
             if key in args.fields:
-                if sel is not None:
+                if recsel is not None:
                     exec(f"{key}={value}")
-                    store = eval(sel)
+                    store = eval(recsel)
                 else:
                     store = True
                 if store:
@@ -158,4 +161,4 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    print_data(sel=args.sel, print_records=args.print_records)
+    print_data(recsel=args.sel, print_records=args.print_records)
