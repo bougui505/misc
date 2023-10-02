@@ -51,6 +51,33 @@ def checklengths(data, fields):
     return data
 
 
+def print_data():
+    data = collections.defaultdict(list)
+    for line in sys.stdin:
+        line = line.strip()
+        if line.startswith("#"):
+            continue
+        if line != "--":
+            kv = line.split("=", maxsplit=1)
+            if len(kv) != 2:
+                continue
+            key, value = kv
+            if key in args.fields:
+                data[key].append(value)
+        else:
+            data = checklengths(data, args.fields)
+    data = checklengths(data, args.fields)
+    n = max(len(v) for _, v in data.items())
+    header = [f"#{e}" for e in args.fields]
+    header = " ".join(header)
+    print(header)
+    for i in range(n):
+        outstr = ""
+        for key in args.fields:
+            outstr += data[key][i] + " "
+        print(outstr)
+
+
 if __name__ == "__main__":
     import sys
     import doctest
@@ -108,27 +135,4 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    data = collections.defaultdict(list)
-    for line in sys.stdin:
-        line = line.strip()
-        if line.startswith("#"):
-            continue
-        if line != "--":
-            kv = line.split("=", maxsplit=1)
-            if len(kv) != 2:
-                continue
-            key, value = kv
-            if key in args.fields:
-                data[key].append(value)
-        else:
-            data = checklengths(data, args.fields)
-    data = checklengths(data, args.fields)
-    n = max(len(v) for _, v in data.items())
-    header = [f"#{e}" for e in args.fields]
-    header = " ".join(header)
-    print(header)
-    for i in range(n):
-        outstr = ""
-        for key in args.fields:
-            outstr += data[key][i] + " "
-        print(outstr)
+    print_data()
