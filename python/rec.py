@@ -51,7 +51,7 @@ def checklengths(data, fields):
     return data
 
 
-def print_data():
+def print_data(sel=None):
     data = collections.defaultdict(list)
     for line in sys.stdin:
         line = line.strip()
@@ -63,7 +63,13 @@ def print_data():
                 continue
             key, value = kv
             if key in args.fields:
-                data[key].append(value)
+                if sel is not None:
+                    exec(f"{key}={value}")
+                    store = eval(sel)
+                else:
+                    store = True
+                if store:
+                    data[key].append(value)
         else:
             data = checklengths(data, args.fields)
     data = checklengths(data, args.fields)
@@ -90,6 +96,11 @@ if __name__ == "__main__":
     parser.add_argument("--info", help="Print long help message.", action="store_true")
     parser.add_argument(
         "-f", "--fields", help="Fields to extract", nargs="+", default=[]
+    )
+    parser.add_argument(
+        "-s",
+        "--sel",
+        help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -135,4 +146,4 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    print_data()
+    print_data(sel=args.sel)
