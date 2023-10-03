@@ -51,7 +51,9 @@ def checklengths(data, fields):
     return data
 
 
-def read_file(fields=None, recsel=None, print_records=False):
+def read_file(file=None, fields=None, recsel=None, print_records=False):
+    if isinstance(file, str):
+        file = open(file, "r")
     if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
@@ -66,7 +68,7 @@ def read_file(fields=None, recsel=None, print_records=False):
     data = collections.defaultdict(list)
     current_record = ""
     store = True
-    for line in sys.stdin:
+    for line in file:
         line = line.strip()
         if line.startswith("#"):
             continue
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Read a python like recfile from stdin (pipe)"
+        description="Read a python like recfile from stdin (pipe) except if --file is given"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("--info", help="Print long help message.", action="store_true")
@@ -132,6 +134,10 @@ if __name__ == "__main__":
         "--print_records",
         action="store_true",
         help="Print the selected records instead of the data",
+    )
+    parser.add_argument(
+        "--file",
+        help="By default, read from stdin. If a file is given read from the given file",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -177,6 +183,11 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
+    if args.file is None:
+        args.file = sys.stdin
     DATA = read_file(
-        fields=args.fields, recsel=args.sel, print_records=args.print_records
+        file=args.file,
+        fields=args.fields,
+        recsel=args.sel,
+        print_records=args.print_records,
     )

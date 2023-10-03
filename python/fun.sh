@@ -49,5 +49,6 @@ test_rec () {
     mk_test.rec
     set -x
     cat data/test.rec | rec -f x x2
+    rec -f x x2 --file data/test.rec
     cat data/test.rec | rec
 }
