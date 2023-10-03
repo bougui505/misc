@@ -31,7 +31,11 @@ test_tsne_labels_text () {
 mk_test.rec () {
     OUTFILE="data/test.rec"
     for i in $(seq 10); do
-        echo "index=$i"
+        echo "x=$i"
+        if [ $i -eq 6 ]; then
+            echo "--"
+            continue
+        fi
         sq=$(calc -t "$i**2")
         echo "square=$sq"
         echo "--"
@@ -40,6 +44,7 @@ mk_test.rec () {
 }
 
 test_rec () {
+    mk_test.rec
     set -x
-    cat data/test.rec | rec -f index square
+    cat data/test.rec | rec -f x square
 }
