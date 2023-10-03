@@ -136,6 +136,7 @@ def get_ligands(
     sanitize=True,
     smi_ref=None,
     fetch_path=os.path.expanduser("~/pdb"),
+    user_selection="all",
 ):
     """
     >>> pdb = '1t4e'
@@ -177,6 +178,9 @@ def get_ligands(
     for identifier in identifiers:
         resn, resi, chain = identifier.split(":")
         selection = identifier_to_selection(identifier, obj)
+        selection = f"{selection} and {user_selection}"
+        if cmd.select(selection) == 0:  # empty selection
+            continue
         smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
         if (
@@ -236,6 +240,7 @@ if __name__ == "__main__":
         "--pdblist",
         help="Text file with a list of pdbs. If a smi is given in the second column, compute the Tanimoto similarity with the reference smiles",
     )
+    parser.add_argument("--sel", help="selection")
     parser.add_argument("--ref", help="Reference SMILES to compute Tanimoto with")
     parser.add_argument(
         "--smi",
@@ -315,6 +320,7 @@ if __name__ == "__main__":
             sanitize=args.sanitize,
             smi_ref=smi_ref,
             fetch_path=args.fetch_path,
+            user_selection=args.sel,
         )
         if args.smi is not None:
             pbar.update(1)
