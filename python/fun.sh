@@ -27,3 +27,19 @@ test_tsne_labels_text () {
     paste =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100 | shuf) =(seq 100) \
         | awk '{if (NR<50){print $0,"a"}else{print $0,"b"}}' |./project.py --method tsne -l -t
 }
+
+mk_test.rec () {
+    OUTFILE="data/test.rec"
+    for i in $(seq 10); do
+        echo "index=$i"
+        sq=$(calc -t "$i**2")
+        echo "square=$sq"
+        echo "--"
+    done >! $OUTFILE
+    echo "$OUTFILE created"
+}
+
+test_rec () {
+    set -x
+    cat data/test.rec | rec -f index square
+}

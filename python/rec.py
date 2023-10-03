@@ -51,7 +51,7 @@ def checklengths(data, fields):
     return data
 
 
-def print_data(recsel=None, print_records=False):
+def read_file(recsel=None, print_records=False):
     if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
@@ -92,6 +92,7 @@ def print_data(recsel=None, print_records=False):
             for key in args.fields:
                 outstr += data[key][i] + " "
             print(outstr)
+    return data
 
 
 if __name__ == "__main__":
@@ -162,4 +163,4 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    print_data(recsel=args.sel, print_records=args.print_records)
+    data = read_file(recsel=args.sel, print_records=args.print_records)
