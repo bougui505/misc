@@ -66,18 +66,22 @@ def tmalign(model, native, selmodel=None, selnative=None):
     """
     selmodel = selmodel if selmodel is not None else "polymer.protein"
     selnative = selnative if selnative is not None else "polymer.protein"
-    model_filename = tempfile.mktemp(".pdb")
-    native_filename = tempfile.mktemp(".pdb")
-    with pymol2.PyMOL() as p:
-        p.cmd.load(filename=model, object="mymodel")
-        p.cmd.load(filename=native, object="mynative")
-        p.cmd.save(filename=model_filename, selection=f"mymodel and {selmodel}")
-        p.cmd.save(filename=native_filename, selection=f"mynative and {selnative}")
-    scriptdir = GetScriptDir()
-    cmd = f"{scriptdir}/TMalign {model_filename} {native_filename}".split(" ")
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-    lines = process.stdout.readlines()
-    # print(lines)
+    # model_filename = tempfile.mktemp(suffix=".pdb", dir="/dev/shm")
+    # native_filename = tempfile.mktemp(suffix=".pdb", dir="/dev/shm")
+    with tempfile.NamedTemporaryFile(
+        suffix=".pdb", dir="/dev/shm"
+    ) as model_file, tempfile.NamedTemporaryFile(
+        suffix=".pdb", dir="/dev/shm"
+    ) as native_file:
+        with pymol2.PyMOL() as p:
+            p.cmd.load(filename=model, object="mymodel")
+            p.cmd.load(filename=native, object="mynative")
+            p.cmd.save(filename=model_file.name, selection=f"mymodel and {selmodel}")
+            p.cmd.save(filename=native_file.name, selection=f"mynative and {selnative}")
+        scriptdir = GetScriptDir()
+        cmd = f"{scriptdir}/TMalign {model_file.name} {native_file.name}".split(" ")
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+        lines = process.stdout.readlines()
     tmscores = []
     for line in lines:
         if line.startswith("TM-score="):
