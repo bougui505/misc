@@ -51,7 +51,7 @@ def checklengths(data, fields):
     return data
 
 
-def read_file(recsel=None, print_records=False):
+def read_file(fields=None, recsel=None, print_records=False):
     if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
@@ -68,7 +68,7 @@ def read_file(recsel=None, print_records=False):
             if len(kv) != 2:
                 continue
             key, value = kv
-            if key in args.fields:
+            if key in fields:
                 if recsel is not None:
                     exec(f"{key}={value}")
                     store = eval(recsel)
@@ -77,19 +77,19 @@ def read_file(recsel=None, print_records=False):
                 if store:
                     data[key].append(value)
         else:
-            data = checklengths(data, args.fields)
+            data = checklengths(data, fields)
             if print_records and store:
                 print(current_record + "--")
             current_record = ""
-    data = checklengths(data, args.fields)
+    data = checklengths(data, fields)
     n = max(len(v) for _, v in data.items())
-    header = [f"#{e}" for e in args.fields]
+    header = [f"#{e}" for e in fields]
     header = " ".join(header)
     if not print_records:
         print(header)
         for i in range(n):
             outstr = ""
-            for key in args.fields:
+            for key in fields:
                 outstr += data[key][i] + " "
             print(outstr)
     return data
@@ -163,4 +163,6 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
-    data = read_file(recsel=args.sel, print_records=args.print_records)
+    DATA = read_file(
+        fields=args.fields, recsel=args.sel, print_records=args.print_records
+    )
