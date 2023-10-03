@@ -54,8 +54,16 @@ def checklengths(data, fields):
 
 
 def read_file(
-    file=None, fields=None, recsel=None, print_records=False, print_columns=True
+    file=None,
+    fields=None,
+    recsel=None,
+    print_records=False,
+    print_columns=True,
+    delimiter=" ",
 ):
+    """
+    delimiter: delimiter between columns for printing output
+    """
     if isinstance(file, str):
         file = open(file, "r")
     if recsel is not None and print_records:
@@ -106,7 +114,7 @@ def read_file(
         for i in range(n):
             outstr = ""
             for key in fields:
-                outstr += data[key][i] + " "
+                outstr += data[key][i] + delimiter
             print(outstr)
     return data
 
@@ -170,6 +178,12 @@ if __name__ == "__main__":
         help="Fields to extract. If no fields are given extract all fields.",
         nargs="+",
         default=[],
+    )
+    parser.add_argument(
+        "-d",
+        "--delimiter",
+        help="Delimiter between columns to print output (default: ' ')",
+        default=" ",
     )
     parser.add_argument(
         "-s",
@@ -260,4 +274,5 @@ print(f"{var=:.4g}")
         fields=args.fields,
         recsel=args.sel,
         print_records=args.print_records,
+        delimiter=args.delimiter,
     )
