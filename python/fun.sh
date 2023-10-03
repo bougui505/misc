@@ -43,12 +43,25 @@ mk_test.rec () {
         echo "--"
     done >! $OUTFILE
     echo "$OUTFILE created"
+
+    OUTFILE="data/test2.rec"
+    for x in $(seq 3 8 | shuf); do
+        echo "x=$x"
+        x3=$(calc -t "$x**3")
+        echo "x3=$x3"
+        x4=$(calc -t "$x**4")
+        echo "x4=$x4"
+        echo "--"
+    done >! $OUTFILE
+    echo "$OUTFILE created"
 }
 
 test_rec () {
-    mk_test.rec
+    # mk_test.rec
     set -x
     cat data/test.rec | rec -f x x2
     rec -f x x2 --file data/test.rec
     cat data/test.rec | rec
+    rec --merge data/test.rec data/test2.rec
+
 }

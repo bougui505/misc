@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 import collections
+import numpy as np
+import scipy.spatial.distance as scidist
 
 
 def checklengths(data, fields):
@@ -51,7 +53,9 @@ def checklengths(data, fields):
     return data
 
 
-def read_file(file=None, fields=None, recsel=None, print_records=False):
+def read_file(
+    file=None, fields=None, recsel=None, print_records=False, print_columns=True
+):
     if isinstance(file, str):
         file = open(file, "r")
     if recsel is not None and print_records:
@@ -97,7 +101,7 @@ def read_file(file=None, fields=None, recsel=None, print_records=False):
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in fields]
     header = " ".join(header)
-    if not print_records:
+    if not print_records and print_columns:
         print(header)
         for i in range(n):
             outstr = ""
@@ -105,6 +109,49 @@ def read_file(file=None, fields=None, recsel=None, print_records=False):
                 outstr += data[key][i] + " "
             print(outstr)
     return data
+
+
+def merge_dictionnaries(d1, d2):
+    """"""
+    values1 = []
+    values2 = []
+    keys1 = list(d1.keys())
+    keys2 = list(d2.keys())
+    common_keys = set(keys1) & set(keys2)
+    for k in common_keys:
+        values1.append(d1[k])
+        values2.append(d2[k])
+    values1 = np.asarray(values1).T
+    values2 = np.asarray(values2).T
+    # Compute pairwise equality peq
+    peq = scidist.cdist(values1, values2, metric=lambda x, y: (x == y).all())
+    peq = peq.astype(bool)
+    inds = np.where(peq)
+    out = collections.defaultdict(list)
+    for i1, i2 in zip(*inds):
+        for k in common_keys:
+            v1 = d1[k][i1]
+            v2 = d2[k][i2]
+            assert v1 == v2
+            out[k].append(v1)
+        for k in set(keys1) - common_keys:
+            out[k].append(d1[k][i1])
+        for k in set(keys2) - common_keys:
+            out[k].append(d2[k][i2])
+    return out
+
+
+def dict_to_rec(d):
+    """
+    Print a dictionnary as a rec file
+    """
+    keys = list(d.keys())
+    nval = len(d[keys[0]])
+    for i in range(nval):
+        for k in keys:
+            v = d[k][i]
+            print(f"{k}={v}")
+        print("--")
 
 
 if __name__ == "__main__":
@@ -138,6 +185,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file",
         help="By default, read from stdin. If a file is given read from the given file",
+    )
+    parser.add_argument(
+        "--merge",
+        help="Merge the two given files, based on the common fields",
+        nargs=2,
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
@@ -183,6 +235,24 @@ print(f"{var=:.4g}")
                 )
         sys.exit()
 
+    if args.merge is not None:
+        DATA1 = read_file(
+            file=args.merge[0],
+            fields=None,
+            recsel=args.sel,
+            print_records=False,
+            print_columns=False,
+        )
+        DATA2 = read_file(
+            file=args.merge[1],
+            fields=None,
+            recsel=args.sel,
+            print_records=False,
+            print_columns=False,
+        )
+        MERGED = merge_dictionnaries(DATA1, DATA2)
+        dict_to_rec(MERGED)
+        sys.exit(0)
     if args.file is None:
         args.file = sys.stdin
     DATA = read_file(
