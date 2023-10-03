@@ -116,7 +116,11 @@ if __name__ == "__main__":
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("--info", help="Print long help message.", action="store_true")
     parser.add_argument(
-        "-f", "--fields", help="Fields to extract", nargs="+", default=[]
+        "-f",
+        "--fields",
+        help="Fields to extract. If no fields are given extract all fields.",
+        nargs="+",
+        default=[],
     )
     parser.add_argument(
         "-s",
