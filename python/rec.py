@@ -55,6 +55,14 @@ def read_file(fields=None, recsel=None, print_records=False):
     if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
+    if fields is None or len(fields) == 0:
+        fields = []
+        return_all_fields = True
+    else:
+        return_all_fields = False
+    # Use a dictionnary eith key to None to have an ordered set for fields
+    # see: https://stackoverflow.com/a/53657523/1679629
+    fields = dict(zip(fields, [None] * len(fields)))
     data = collections.defaultdict(list)
     current_record = ""
     store = True
@@ -68,7 +76,9 @@ def read_file(fields=None, recsel=None, print_records=False):
             if len(kv) != 2:
                 continue
             key, value = kv
-            if key in fields:
+            if key in fields or return_all_fields:
+                if return_all_fields and key not in fields:
+                    fields[key] = None
                 if recsel is not None:
                     exec(f"{key}={value}")
                     store = eval(recsel)

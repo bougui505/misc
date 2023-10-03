@@ -30,14 +30,16 @@ test_tsne_labels_text () {
 
 mk_test.rec () {
     OUTFILE="data/test.rec"
-    for i in $(seq 10); do
-        echo "x=$i"
-        if [ $i -eq 6 ]; then
+    for x in $(seq 10); do
+        echo "x=$x"
+        if [ $x -eq 6 ]; then
             echo "--"
             continue
         fi
-        sq=$(calc -t "$i**2")
-        echo "square=$sq"
+        x2=$(calc -t "$x**2")
+        echo "x2=$x2"
+        x3=$(calc -t "$x**3")
+        echo "x3=$x3"
         echo "--"
     done >! $OUTFILE
     echo "$OUTFILE created"
@@ -46,5 +48,6 @@ mk_test.rec () {
 test_rec () {
     mk_test.rec
     set -x
-    cat data/test.rec | rec -f x square
+    cat data/test.rec | rec -f x x2
+    cat data/test.rec | rec
 }
