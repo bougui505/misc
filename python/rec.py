@@ -322,7 +322,10 @@ print(f"{var=:.4g}")
             else:
                 findexpr += f"{field}.find('{substr}')==-1"
             if i < nfind - 1:
-                findexpr += " or "
+                if NEGATION:
+                    findexpr += " and "
+                else:
+                    findexpr += " or "
         findexpr += ")"
         if args.sel is None:
             args.sel = findexpr
