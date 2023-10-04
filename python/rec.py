@@ -239,7 +239,9 @@ if __name__ == "__main__":
         help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
     )
     parser.add_argument(
-        "--find", help="Find a substring in a string. The syntax is 'substr in field'"
+        "--find",
+        help="Find a substring in a string. The syntax is 'substr in field', Multiple find expression can be given",
+        nargs="+",
     )
     parser.add_argument(
         "-r",
@@ -302,20 +304,26 @@ print(f"{var=:.4g}")
 
     if args.find is not None:
         # remove extra spaces:
-        args.find = re.sub(" +", " ", args.find)
-        argssplit = args.find.split(" not in ")
-        NEGATION = True
-        if len(argssplit) == 1:
-            argssplit = args.find.split(" in ")
-            NEGATION = False
-        assertstr = f"Cannot interpret find expression: {args.find}"
-        assert len(argssplit) == 2, assertstr
-        substr = argssplit[0].strip()
-        field = argssplit[1].strip()
-        if not NEGATION:
-            findexpr = f"{field}.find('{substr}')!=-1"
-        else:
-            findexpr = f"{field}.find('{substr}')==-1"
+        findexpr = "("
+        nfind = len(args.find)
+        for i, find in enumerate(args.find):
+            find = re.sub(" +", " ", find)
+            argssplit = find.split(" not in ")
+            NEGATION = True
+            if len(argssplit) == 1:
+                argssplit = find.split(" in ")
+                NEGATION = False
+            assertstr = f"Cannot interpret find expression: {find}"
+            assert len(argssplit) == 2, assertstr
+            substr = argssplit[0].strip()
+            field = argssplit[1].strip()
+            if not NEGATION:
+                findexpr += f"{field}.find('{substr}')!=-1"
+            else:
+                findexpr += f"{field}.find('{substr}')==-1"
+            if i < nfind - 1:
+                findexpr += " or "
+        findexpr += ")"
         if args.sel is None:
             args.sel = findexpr
         else:
