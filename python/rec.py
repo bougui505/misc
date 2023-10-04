@@ -38,6 +38,7 @@
 import collections
 import numpy as np
 import scipy.spatial.distance as scidist
+import re
 
 
 def checklengths(data, fields):
@@ -300,10 +301,21 @@ print(f"{var=:.4g}")
         sys.exit()
 
     if args.find is not None:
-        argssplit = args.find.split(" in ")
+        # remove extra spaces:
+        args.find = re.sub(" +", " ", args.find)
+        argssplit = args.find.split(" not in ")
+        NEGATION = True
+        if len(argssplit) == 1:
+            argssplit = args.find.split(" in ")
+            NEGATION = False
+        assertstr = f"Cannot interpret find expression: {args.find}"
+        assert len(argssplit) == 2, assertstr
         substr = argssplit[0].strip()
         field = argssplit[1].strip()
-        args.sel = f"{field}.find('{substr}')!=-1"
+        if not NEGATION:
+            args.sel = f"{field}.find('{substr}')!=-1"
+        else:
+            args.sel = f"{field}.find('{substr}')==-1"
 
     if args.merge is not None:
         DATA1 = read_file(
