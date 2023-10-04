@@ -79,7 +79,6 @@ def read_file(
     fields = dict(zip(fields, [None] * len(fields)))
     data = collections.defaultdict(list)
     current_record = ""
-    store = True
     for line in file:
         line = line.strip()
         if line.startswith("#"):
@@ -87,25 +86,24 @@ def read_file(
         if line != "--":
             current_record += line + "\n"
             kv = line.split("=", maxsplit=1)
-            if len(kv) != 2:
+            if kv == [""]:
                 continue
+            assertstr = f"key, value couple needed -- {kv=}"
+            assert len(kv) == 2, assertstr
             key, value = kv
             if key in fields or return_all_fields:
                 if return_all_fields and key not in fields:
                     fields[key] = None
-                if recsel is not None:
-                    exec(f"{key}={value}")
-                    store = eval(recsel)
-                else:
-                    store = True
-                if store:
-                    data[key].append(value)
+                data[key].append(value)
         else:
             data = checklengths(data, fields)
-            if print_records and store:
+            if print_records:
                 print(current_record + "--")
             current_record = ""
     data = checklengths(data, fields)
+    data = listdict_to_arrdict(data)
+    if recsel is not None:
+        data = data_selection(data, recsel)
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in fields]
     header = " ".join(header)
@@ -114,9 +112,61 @@ def read_file(
         for i in range(n):
             outstr = ""
             for key in fields:
-                outstr += data[key][i] + delimiter
+                outstr += str(data[key][i]) + delimiter
             print(outstr)
     return data
+
+
+def is_float(element) -> bool:
+    # If you expect None to be passed:
+    if element is None:
+        return False
+    try:
+        float(element)
+        return True
+    except ValueError:
+        return False
+
+
+def convert_to_array(l: list) -> np.ndarray:
+    """
+    >>> l = [1, 2, 3, '4', '-', 5, 6]
+    >>> convert_to_array(l)
+    array([ 1.,  2.,  3.,  4., nan,  5.,  6.])
+    >>> l = ['a', 'b', 'c']
+    >>> convert_to_array(l)
+    array(['a', 'b', 'c'], dtype='<U1')
+    """
+    l1 = [float(e) if is_float(e) else np.nan for e in l]
+    arr = np.asarray(l1, dtype=float)
+    if np.isnan(arr).all():
+        return np.asarray(l)
+    else:
+        return arr
+
+
+def listdict_to_arrdict(d: dict) -> dict:
+    for k in d.keys():
+        d[k] = convert_to_array(d[k])
+    return d
+
+
+def data_selection(data: dict, recsel: str) -> dict:
+    """"""
+    keys = list(data.keys())
+    lengths = np.asarray([len(data[k]) for k in keys])
+    assert (lengths[0] == lengths).all()
+    n = lengths[0]
+    out = collections.defaultdict(list)
+    for i in range(n):
+        for key in data:
+            vars()[key] = data[key][i]
+            # exec(f"{key}={data[key][i]}")
+        keep = eval(recsel)
+        if keep:
+            for key in data:
+                out[key].append(data[key][i])
+    return out
 
 
 def merge_dictionnaries(d1, d2):
