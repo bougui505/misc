@@ -78,13 +78,11 @@ def read_file(
     # see: https://stackoverflow.com/a/53657523/1679629
     fields = dict(zip(fields, [None] * len(fields)))
     data = collections.defaultdict(list)
-    current_record = ""
     for line in file:
         line = line.strip()
         if line.startswith("#"):
             continue
         if line != "--":
-            current_record += line + "\n"
             kv = line.split("=", maxsplit=1)
             if kv == [""]:
                 continue
@@ -97,9 +95,6 @@ def read_file(
                 data[key].append(value)
         else:
             data = checklengths(data, fields)
-            if print_records:
-                print(current_record + "--")
-            current_record = ""
     data = checklengths(data, fields)
     data = listdict_to_arrdict(data)
     if recsel is not None:
@@ -114,6 +109,8 @@ def read_file(
             for key in fields:
                 outstr += str(data[key][i]) + delimiter
             print(outstr)
+    else:
+        dict_to_rec(data)
     return data
 
 
