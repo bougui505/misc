@@ -238,6 +238,9 @@ if __name__ == "__main__":
         help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
     )
     parser.add_argument(
+        "--find", help="Find a substring in a string. The syntax is 'substr in field'"
+    )
+    parser.add_argument(
         "-r",
         "--print_records",
         action="store_true",
@@ -295,6 +298,12 @@ print(f"{var=:.4g}")
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
+
+    if args.find is not None:
+        argssplit = args.find.split(" in ")
+        substr = argssplit[0].strip()
+        field = argssplit[1].strip()
+        args.sel = f"{field}.find('{substr}')!=-1"
 
     if args.merge is not None:
         DATA1 = read_file(
