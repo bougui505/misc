@@ -313,9 +313,13 @@ print(f"{var=:.4g}")
         substr = argssplit[0].strip()
         field = argssplit[1].strip()
         if not NEGATION:
-            args.sel = f"{field}.find('{substr}')!=-1"
+            findexpr = f"{field}.find('{substr}')!=-1"
         else:
-            args.sel = f"{field}.find('{substr}')==-1"
+            findexpr = f"{field}.find('{substr}')==-1"
+        if args.sel is None:
+            args.sel = findexpr
+        else:
+            args.sel = f"{args.sel} and {findexpr}"
 
     if args.merge is not None:
         DATA1 = read_file(
