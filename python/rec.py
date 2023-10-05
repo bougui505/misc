@@ -117,7 +117,7 @@ def read_file(
         nrecords = len(data[stat_keys[0]])
         print(f"{nrecords=}")
         sys.exit(0)
-    if recsel is not None:
+    if recsel is not None and len(data) > 0:
         data = data_selection(data, recsel)
     if len(data) == 0:
         return data
