@@ -88,16 +88,14 @@ def selection_to_smi(selection, sanitize=True):
     mol = Chem.MolFromMolFile(molfilename, sanitize=sanitize)
     os.remove(molfilename)
     if mol is None:
-        return "error_MolFromMolFile"
-    # if mol.GetNumHeavyAtoms() < 5:
-    #     return None
+        return "-"
     try:
         smi = Chem.MolToSmiles(mol)
     except:
         sys.stderr.write(f"Cannot convert to SMILES for selection {selection}\n")
-        return "error_MolToSmiles"
+        return "-"
     if len(smi) == 0:
-        return "empty_smi"
+        return "-"
     return smi
 
 
