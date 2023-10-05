@@ -119,6 +119,8 @@ def read_file(
         sys.exit(0)
     if recsel is not None:
         data = data_selection(data, recsel)
+    if len(data) == 0:
+        return data
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in fields]
     header = " ".join(header)
