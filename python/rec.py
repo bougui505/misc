@@ -79,7 +79,8 @@ def read_file(
     # see: https://stackoverflow.com/a/53657523/1679629
     fields = dict(zip(fields, [None] * len(fields)))
     data = collections.defaultdict(list)
-    for line in file:
+    for linenbr, line in enumerate(file):
+        linenbr += 1
         line = line.strip()
         if line.startswith("#"):
             continue
@@ -87,7 +88,7 @@ def read_file(
             kv = line.split("=", maxsplit=1)
             if kv == [""]:
                 continue
-            assertstr = f"key, value couple needed -- {kv=}"
+            assertstr = f"key, value couple needed in line {linenbr} -- {kv=}"
             assert len(kv) == 2, assertstr
             key, value = kv
             if key in fields or return_all_fields:
