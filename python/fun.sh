@@ -64,5 +64,6 @@ test_rec () {
     cat data/test.rec | rec
     rec --merge data/test.rec data/test2.rec
     cat data/test.rec | rec --sel "x2==64 or x==2" -r
+    cat data/test.rec | rec --stat
 
 }

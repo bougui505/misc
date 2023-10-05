@@ -61,6 +61,7 @@ def read_file(
     print_records=False,
     print_columns=True,
     delimiter=" ",
+    get_stats=False,
 ):
     """
     delimiter: delimiter between columns for printing output
@@ -98,6 +99,12 @@ def read_file(
         else:
             data = checklengths(data, fields)
     data = checklengths(data, fields)
+    if get_stats:
+        stat_keys = list(data.keys())
+        print(f"keys={stat_keys}")
+        nrecords = len(data[stat_keys[0]])
+        print(f"{nrecords=}")
+        sys.exit(0)
     data = listdict_to_arrdict(data)
     if recsel is not None:
         data = data_selection(data, recsel)
@@ -259,6 +266,9 @@ if __name__ == "__main__":
         help="Merge the two given files, based on the common fields",
         nargs=2,
     )
+    parser.add_argument(
+        "--stat", help="print statistics about the records file", action="store_true"
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -359,4 +369,5 @@ print(f"{var=:.4g}")
         recsel=args.sel,
         print_records=args.print_records,
         delimiter=args.delimiter,
+        get_stats=args.stat,
     )
