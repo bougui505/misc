@@ -41,45 +41,25 @@ import scipy.spatial.distance as scidist
 import re
 
 
-def checklengths(data, fields):
-    # check if the number of lines is consistent:
-    lengths = []
-    for field in fields:
-        lengths.append(len(data[field]))
-    maxl = max(lengths)
-    # Extend with "-" if needed
-    for field in fields:
-        if len(data[field]) < maxl:
-            data[field].extend(["-"] * (maxl - len(data[field])))
-    return data
+def format_data(data: dict, fields: list) -> dict:
+    """"""
+    out = collections.defaultdict(list)
+    for recid in data:
+        subdict = data[recid]
+        for key in fields:
+            if key not in subdict:
+                out[key].append("-")
+            else:
+                out[key].append(subdict[key])
+    return out
 
 
-def read_file(
-    file=None,
-    fields=None,
-    recsel=None,
-    print_records=False,
-    print_columns=True,
-    delimiter=" ",
-    get_stats=False,
-):
-    """
-    delimiter: delimiter between columns for printing output
-    """
+def get_data(file, selected_fields):
     if isinstance(file, str):
         file = open(file, "r")
-    if recsel is not None and print_records:
-        print(f"{recsel=}")
-        print("--")
-    if fields is None or len(fields) == 0:
-        fields = []
-        return_all_fields = True
-    else:
-        return_all_fields = False
-    # Use a dictionnary eith key to None to have an ordered set for fields
-    # see: https://stackoverflow.com/a/53657523/1679629
-    fields = dict(zip(fields, [None] * len(fields)))
-    data = collections.defaultdict(list)
+    data = dict()
+    recid = 0  # record id
+    fields = set()
     for linenbr, line in enumerate(file):
         linenbr += 1
         line = line.strip()
@@ -92,20 +72,47 @@ def read_file(
             assertstr = f"key, value couple needed in line {linenbr} -- {kv=}"
             assert len(kv) == 2, assertstr
             key, value = kv
-            if key in fields or return_all_fields:
-                if return_all_fields and key not in fields:
-                    fields[key] = None
-                data[key].append(value)
+            if selected_fields is not None:
+                if key in selected_fields:
+                    fields.add(key)
+                    if recid not in data:
+                        data[recid] = dict()
+                    data[recid][key] = value
+            else:
+                fields.add(key)
+                if recid not in data:
+                    data[recid] = dict()
+                data[recid][key] = value
         else:
-            data = checklengths(data, fields)
-    data = checklengths(data, fields)
+            recid += 1
+    fields = list(fields)
+    data = format_data(data, fields)
+    data = listdict_to_arrdict(data)
+    return data, fields
+
+
+def read_file(
+    file=None,
+    selected_fields=None,
+    recsel=None,
+    print_records=False,
+    print_columns=True,
+    delimiter=" ",
+    get_stats=False,
+):
+    """
+    delimiter: delimiter between columns for printing output
+    """
+    if recsel is not None and print_records:
+        print(f"{recsel=}")
+        print("--")
+    data, fields = get_data(file, selected_fields)
     if get_stats:
         stat_keys = list(data.keys())
         print(f"keys={stat_keys}")
         nrecords = len(data[stat_keys[0]])
         print(f"{nrecords=}")
         sys.exit(0)
-    data = listdict_to_arrdict(data)
     if recsel is not None:
         data = data_selection(data, recsel)
     n = max(len(v) for _, v in data.items())
@@ -118,7 +125,7 @@ def read_file(
             for key in fields:
                 outstr += str(data[key][i]) + delimiter
             print(outstr)
-    else:
+    if print_records:
         dict_to_rec(data)
     return data
 
@@ -233,7 +240,7 @@ if __name__ == "__main__":
         "--fields",
         help="Fields to extract. If no fields are given extract all fields.",
         nargs="+",
-        default=[],
+        default=None,
     )
     parser.add_argument(
         "-d",
@@ -346,14 +353,14 @@ print(f"{var=:.4g}")
     if args.merge is not None:
         DATA1 = read_file(
             file=args.merge[0],
-            fields=None,
+            selected_fields=None,
             recsel=args.sel,
             print_records=False,
             print_columns=False,
         )
         DATA2 = read_file(
             file=args.merge[1],
-            fields=None,
+            selected_fields=None,
             recsel=args.sel,
             print_records=False,
             print_columns=False,
@@ -365,7 +372,7 @@ print(f"{var=:.4g}")
         args.file = sys.stdin
     DATA = read_file(
         file=args.file,
-        fields=args.fields,
+        selected_fields=args.fields,
         recsel=args.sel,
         print_records=args.print_records,
         delimiter=args.delimiter,
