@@ -155,6 +155,8 @@ def get_ligands(
         nres = cmd.select("polymer.protein")
         if nres == 0:
             return None, None
+    cmd.remove("polymer.protein")
+    cmd.remove(f"not ({user_selection})")
     myspace = {"identifiers": []}
     cmd.iterate(
         f"{obj} and not polymer.protein",
@@ -240,7 +242,7 @@ if __name__ == "__main__":
         "--pdblist",
         help="Text file with a list of pdbs. If a smi is given in the second column, compute the Tanimoto similarity with the reference smiles",
     )
-    parser.add_argument("--sel", help="selection")
+    parser.add_argument("--sel", help="selection", default="all")
     parser.add_argument("--ref", help="Reference SMILES to compute Tanimoto with")
     parser.add_argument(
         "--smi",
