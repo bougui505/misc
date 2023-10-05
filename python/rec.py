@@ -86,7 +86,10 @@ def get_data(file, selected_fields):
         else:
             recid += 1
     fields = list(fields)
-    fields.sort()
+    if selected_fields is None:
+        fields.sort()
+    else:
+        fields = selected_fields
     data = format_data(data, fields)
     data = listdict_to_arrdict(data)
     return data, fields
