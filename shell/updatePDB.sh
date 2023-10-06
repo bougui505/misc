@@ -47,6 +47,10 @@ echo "Updating structure files: /media/bougui/scratch/pdb"
 [ -d /media/bougui/scratch/pdb ] \
     && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/mmCIF/ /media/bougui/scratch/pdb
 
+echo "Updating ligand structure files: /media/bougui/scratch/pdbechem_v2"
+[ -d /media/bougui/scratch ] \
+    && rsync -a --update --info=progress2 -h rsync.ebi.ac.uk::pub/databases/msd/pdbechem_v2 /media/bougui/scratch
+
 
 echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
 [ -f /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta ] \
