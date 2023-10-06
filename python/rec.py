@@ -54,6 +54,27 @@ def format_data(data: dict, fields: list) -> dict:
     return out
 
 
+def columnsfile_to_data(file, delimiter=" ") -> dict:
+    """
+    The first line must be the header:
+    #field1 #field2 ...
+    """
+    if isinstance(file, str):
+        file = open(file, "r")
+    data = collections.defaultdict(list)
+    for linenbr, line in enumerate(file):
+        # remove repeated spaces
+        line = re.sub(" +", " ", line)
+        line = line.strip()
+        line = line.split(sep=delimiter)
+        if linenbr == 0:
+            fields = [e[1:].strip() for e in line]
+        else:
+            for key, value in zip(fields, line):
+                data[key].append(value)
+    return data
+
+
 def get_data(file, selected_fields):
     if isinstance(file, str):
         file = open(file, "r")
@@ -282,6 +303,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--stat", help="print statistics about the records file", action="store_true"
     )
+    parser.add_argument(
+        "--torec",
+        help="Convert a column file with given delimiter (see --delimiter) to a rec file. The first line must be the header with the name of the fields like '#field1 #field2 ...'",
+        action="store_true",
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -325,6 +351,13 @@ print(f"{var=:.4g}")
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
+
+    if args.torec:
+        if args.file is None:
+            args.file = sys.stdin
+        DATA = columnsfile_to_data(file=args.file, delimiter=args.delimiter)
+        dict_to_rec(DATA)
+        sys.exit(0)
 
     if args.find is not None:
         # remove extra spaces:
