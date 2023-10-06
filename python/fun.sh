@@ -54,6 +54,16 @@ mk_test.rec () {
         echo "--"
     done >! $OUTFILE
     echo "$OUTFILE created"
+
+    OUTFILE="data/test.columns"
+    (echo "#x1 #x2" \
+        && paste -d " " =(seq 10|shuf) =(seq 10|shuf) \
+    ) >! $OUTFILE
+
+    OUTFILE="data/test2.columns"
+    (echo "#x1,#x2" \
+        && paste -d "," =(seq 10|shuf) =(seq 10|shuf) \
+    ) >! $OUTFILE
 }
 
 test_rec () {
@@ -65,5 +75,7 @@ test_rec () {
         && (rec --merge data/test.rec data/test2.rec) \
         && (cat data/test.rec | rec --sel "x2==64 or x==2" -r) \
         && (cat data/test.rec | rec --stat) \
+        && (cat data/test.columns | rec --torec) \
+        && (cat data/test2.columns | rec --torec --del ',')
 
 }
