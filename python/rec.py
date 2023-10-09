@@ -36,6 +36,8 @@
 #                                                                           #
 #############################################################################
 import collections
+import os
+import gzip
 import numpy as np
 import scipy.spatial.distance as scidist
 import re
@@ -77,7 +79,11 @@ def columnsfile_to_data(file, delimiter=" ") -> dict:
 
 def get_data(file, selected_fields):
     if isinstance(file, str):
-        file = open(file, "r")
+        ext = os.path.splitext(file)[-1]
+        if ext == ".gz":
+            file = gzip.open(file, "rt")
+        else:
+            file = open(file, "r")
     data = dict()
     recid = 0  # record id
     fields = set()
@@ -293,7 +299,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--file",
-        help="By default, read from stdin. If a file is given read from the given file",
+        help="By default, read from stdin. If a file is given read from the given file. Can be a gz archive",
     )
     parser.add_argument(
         "--merge",
