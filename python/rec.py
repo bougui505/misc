@@ -77,7 +77,7 @@ def columnsfile_to_data(file, delimiter=" ") -> dict:
     return data
 
 
-def get_data(file, selected_fields):
+def get_data(file, selected_fields=None):
     if isinstance(file, str):
         ext = os.path.splitext(file)[-1]
         if ext == ".gz":
