@@ -197,12 +197,16 @@ def listdict_to_arrdict(d: dict) -> dict:
     return d
 
 
-def data_selection(data: dict, recsel: str) -> dict:
-    """"""
+def check_data_lengths(data):
     keys = list(data.keys())
     lengths = np.asarray([len(data[k]) for k in keys])
-    assert (lengths[0] == lengths).all()
-    n = lengths[0]
+    assert (lengths[0] == lengths).all(), lengths
+    return lengths[0]
+
+
+def data_selection(data: dict, recsel: str) -> dict:
+    """"""
+    n = check_data_lengths(data)
     out = collections.defaultdict(list)
     for i in range(n):
         for key in data:
