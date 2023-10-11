@@ -42,6 +42,26 @@ import numpy as np
 import scipy.spatial.distance as scidist
 import re
 
+try:
+    from rdkit import Chem
+except ImportError:
+    pass
+
+
+# SOME USEFUL PROPERTY CALCULATOR
+def num_atoms(smiles):
+    """
+    Get the number of atoms from a smiles
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is not None:
+        return mol.GetNumAtoms()
+    else:
+        return "-"
+
+
+#################################
+
 
 def format_data(data: dict, fields: list) -> dict:
     """"""
@@ -360,6 +380,16 @@ The easiest way to create such a file format is to use:
 
 print(f"{var=:.4g}")
 
+
+Properties
+----------
+Properties can be computed from the rec file and added to the output.
+See --calc from the help.
+Useful properties are implemented:
+- num_atoms: compute the number of atoms from a smiles.
+             rec --file f.rec --calc 'natoms=num_atoms(smiles)'
+             where smiles is a field with a SMILES
+
         """
         )
         sys.exit()
@@ -443,7 +473,7 @@ print(f"{var=:.4g}")
             selected_fields=args.fields,
         )
         calc = re.sub(" +", " ", args.calc)
-        name, property = calc.strip().split("=")
+        name, property = calc.strip().split("=", maxsplit=1)
         DATA = add_property(data=DATA, property=property, name=name)
         dict_to_rec(DATA)
         sys.exit(0)
