@@ -43,6 +43,7 @@ import numpy as np
 import scipy.spatial.distance as scidist
 import re
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 try:
     from rdkit import Chem
@@ -267,7 +268,10 @@ def run(data: dict, cmd: str, fields: list, name: str) -> dict:
             args_i.append(str(data[key][i]))
         cmd_i.extend(args_i)
         cmds.append(cmd_i)
-    out = Parallel(n_jobs=n_jobs)(delayed(subprocess.check_output)(inp) for inp in cmds)
+    out = Parallel(n_jobs=n_jobs)(
+        delayed(subprocess.check_output)(inp) for inp in tqdm(cmds)
+    )
+    out = [e.strip().decode() for e in out]
     data[name] = out
     return data
 
