@@ -38,9 +38,11 @@
 import collections
 import os
 import gzip
+import subprocess
 import numpy as np
 import scipy.spatial.distance as scidist
 import re
+from joblib import Parallel, delayed
 
 try:
     from rdkit import Chem
@@ -253,6 +255,23 @@ def add_property(data: dict, property: str, name: str) -> dict:
     return data
 
 
+def run(data: dict, cmd: str, fields: list, name: str) -> dict:
+    n = check_data_lengths(data)
+    keys = list(data.keys())
+    n_jobs = os.cpu_count()
+    cmds = []
+    for i in range(n):
+        args_i = []
+        cmd_i = [cmd]
+        for key in fields:
+            args_i.append(str(data[key][i]))
+        cmd_i.extend(args_i)
+        cmds.append(cmd_i)
+    out = Parallel(n_jobs=n_jobs)(delayed(subprocess.check_output)(inp) for inp in cmds)
+    data[name] = out
+    return data
+
+
 def merge_dictionnaries(d1, d2):
     """"""
     values1 = []
@@ -327,6 +346,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--calc",
         help="Property to compute from the given field and the name to store the result in. E.g. 'y=x*10': add the field y and store the result of field x*10",
+    )
+    parser.add_argument(
+        "--run",
+        help="run the given command from the given field (--fields). The syntax is field=cmd. This will store the result of command 'cmd' in the field 'field'. The arguments arge given by the --fields option.",
     )
     parser.add_argument(
         "--find",
@@ -467,7 +490,7 @@ Useful properties are implemented:
         sys.exit(0)
     if args.file is None:
         args.file = sys.stdin
-    if args.calc:
+    if args.calc is not None:
         DATA, _ = get_data(
             file=args.file,
             selected_fields=args.fields,
@@ -475,6 +498,15 @@ Useful properties are implemented:
         calc = re.sub(" +", " ", args.calc)
         name, property = calc.strip().split("=", maxsplit=1)
         DATA = add_property(data=DATA, property=property, name=name)
+        dict_to_rec(DATA)
+        sys.exit(0)
+    if args.run is not None:
+        DATA, _ = get_data(
+            file=args.file,
+        )
+        cmd = re.sub(" +", " ", args.run)
+        name, cmd = cmd.strip().split("=", maxsplit=1)
+        run(data=DATA, cmd=cmd, fields=args.fields, name=name)
         dict_to_rec(DATA)
         sys.exit(0)
     DATA = read_file(
