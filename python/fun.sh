@@ -76,6 +76,6 @@ test_rec () {
         && (cat data/test.rec | rec --sel "x2==64 or x==2" -r) \
         && (cat data/test.rec | rec --stat) \
         && (cat data/test.columns | rec --torec) \
-        && (cat data/test2.columns | rec --torec --del ',')
-
+        && (cat data/test2.columns | rec --torec --del ',') \
+        && (cat data/test.rec | rec --calc 'y=x*10' -r )
 }
