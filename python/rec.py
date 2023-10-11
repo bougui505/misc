@@ -219,6 +219,20 @@ def data_selection(data: dict, recsel: str) -> dict:
     return out
 
 
+def add_property(data: dict, property: str, name: str) -> dict:
+    """
+    Compute the property by interpreting 'property' and add it to data under the name
+    """
+    n = check_data_lengths(data)
+    keys = list(data.keys())
+    for i in range(n):
+        for key in keys:
+            vars()[key] = data[key][i]
+        result = eval(property)
+        data[name].append(result)
+    return data
+
+
 def merge_dictionnaries(d1, d2):
     """"""
     values1 = []
@@ -289,6 +303,10 @@ if __name__ == "__main__":
         "-s",
         "--sel",
         help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
+    )
+    parser.add_argument(
+        "--calc",
+        help="Property to compute from the given field and the name to store the result in. E.g. 'y=x*10': add the field y and store the result of field x*10",
     )
     parser.add_argument(
         "--find",
@@ -419,6 +437,16 @@ print(f"{var=:.4g}")
         sys.exit(0)
     if args.file is None:
         args.file = sys.stdin
+    if args.calc:
+        DATA, _ = get_data(
+            file=args.file,
+            selected_fields=args.fields,
+        )
+        calc = re.sub(" +", " ", args.calc)
+        name, property = calc.strip().split("=")
+        DATA = add_property(data=DATA, property=property, name=name)
+        dict_to_rec(DATA)
+        sys.exit(0)
     DATA = read_file(
         file=args.file,
         selected_fields=args.fields,
