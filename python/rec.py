@@ -208,7 +208,7 @@ def convert_to_array(l: list) -> np.ndarray:
     """
     l1 = [float(e) if is_float(e) else np.nan for e in l]
     arr = np.asarray(l1, dtype=float)
-    if np.isnan(arr).all():
+    if np.isnan(arr).any():
         return np.asarray(l)
     else:
         return arr
