@@ -42,10 +42,12 @@ import tqdm
 
 
 def get_uniprot(query):
-    url = 'https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=list&query='
+    url = (
+        "https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=list&query="
+    )
     url_query = url + query
     out = requests.get(url_query).text.strip()
-    out = out.split('\n')
+    out = out.split("\n")
     return out
 
 
@@ -62,10 +64,11 @@ def GetScriptDir():
     return scriptdir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
     import doctest
     import argparse
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -76,33 +79,37 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('-q',
-                        '--query',
-                        nargs='+',
-                        help='Query to retrieve. Multiple queries can be given. \
+    parser.add_argument(
+        "-q",
+        "--query",
+        nargs="+",
+        help="Query to retrieve. Multiple queries can be given. \
         See the query syntax here: https://www.uniprot.org/help/text-search \
-        If a file is given read one query per line.')
-    parser.add_argument('--test', help='Test the code', action='store_true')
-    parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
+        If a file is given read one query per line.",
+    )
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
     for k, v in args._get_kwargs():
-        log(f'# {k}: {v}')
+        log(f"# {k}: {v}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
 
-    print('#query #uniprot')
+    print("#query #uniprot")
     if len(args.query) == 1 and os.path.exists(args.query[0]):
         querylist = np.genfromtxt(args.query[0], dtype=str)
     else:
@@ -112,6 +119,8 @@ if __name__ == '__main__':
         printpbar = True
     else:
         printpbar = False
+    if len(querylist) <= 3:
+        printpbar = False
     if printpbar:
         pbar = tqdm.tqdm(total=len(querylist))
     for query in querylist:
@@ -120,7 +129,7 @@ if __name__ == '__main__':
             pbar.update(1)
         uniprotlist = get_uniprot(query)
         # print(f"{query.replace(' ', '_')} {' '.join(uniprotlist)}")
-        querystr = query.replace(' ', '_')
+        querystr = query.replace(" ", "_")
         for uniprot in uniprotlist:
             print(f"{querystr} {uniprot}")
     if printpbar:
