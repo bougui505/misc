@@ -258,7 +258,6 @@ def add_property(data: dict, property: str, name: str) -> dict:
 
 def run(data: dict, cmd: str, fields: list, name: str) -> dict:
     n = check_data_lengths(data)
-    keys = list(data.keys())
     n_jobs = os.cpu_count()
     cmds = []
     for i in range(n):
