@@ -38,6 +38,7 @@
 import collections
 import os
 import gzip
+from os.path import isfile
 import subprocess
 import numpy as np
 import scipy.spatial.distance as scidist
@@ -346,7 +347,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s",
         "--sel",
-        help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key",
+        help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key. Can also be a path to the file containing the selection string.",
     )
     parser.add_argument(
         "--calc",
@@ -437,6 +438,11 @@ Useful properties are implemented:
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
+
+    if args.sel is not None:
+        if os.path.isfile(args.sel):
+            with open(args.sel) as f:
+                args.sel = f.read()
 
     if args.torec:
         if args.file is None:
