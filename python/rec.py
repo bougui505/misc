@@ -233,7 +233,7 @@ def data_selection(data: dict, recsel: str) -> dict:
     """"""
     n = check_data_lengths(data)
     out = collections.defaultdict(list)
-    for i in range(n):
+    for i in tqdm(range(n)):
         for key in data:
             vars()[key] = data[key][i]
             # exec(f"{key}={data[key][i]}")
