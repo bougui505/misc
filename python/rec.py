@@ -510,7 +510,12 @@ Useful properties are implemented:
             file=args.file,
         )
         cmd = re.sub(" +", " ", args.run)
-        name, cmd = cmd.strip().split("=", maxsplit=1)
+        try:
+            name, cmd = cmd.strip().split("=", maxsplit=1)
+        except ValueError:
+            sys.exit(
+                "check --run argument. The syntax must be 'field==command'. Maybe you forgot to give the output field name ?"
+            )
         run(data=DATA, cmd=cmd, fields=args.fields, name=name)
         dict_to_rec(DATA)
         sys.exit(0)
