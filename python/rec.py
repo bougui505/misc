@@ -177,7 +177,7 @@ def read_file(
         return data
     n = max(len(v) for _, v in data.items())
     header = [f"#{e}" for e in fields]
-    header = " ".join(header)
+    header = delimiter.join(header)
     if not print_records and print_columns:
         print(header)
         for i in range(n):
