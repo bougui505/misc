@@ -101,7 +101,7 @@ def columnsfile_to_data(file, delimiter=" ") -> dict:
     return data
 
 
-def get_data(file, selected_fields=None):
+def get_data(file, selected_fields=None, rmquote=False):
     if isinstance(file, str):
         ext = os.path.splitext(file)[-1]
         if ext == ".gz":
@@ -123,6 +123,8 @@ def get_data(file, selected_fields=None):
             assertstr = f"key, value couple needed in line {linenbr} -- {kv=}"
             assert len(kv) == 2, assertstr
             key, value = kv
+            if rmquote:
+                value = value.replace("'", "")
             if selected_fields is not None:
                 if key in selected_fields:
                     fields.add(key)
@@ -154,6 +156,7 @@ def read_file(
     print_columns=True,
     delimiter=" ",
     get_stats=False,
+    rmquote=False,
 ):
     """
     delimiter: delimiter between columns for printing output
@@ -161,7 +164,7 @@ def read_file(
     if recsel is not None and print_records:
         print(f"{recsel=}")
         print("--")
-    data, fields = get_data(file, selected_fields)
+    data, fields = get_data(file, selected_fields, rmquote=rmquote)
     if get_stats:
         stat_keys = list(data.keys())
         print(f"keys={stat_keys}")
@@ -350,6 +353,11 @@ if __name__ == "__main__":
         help="Selection string for the extracted field (see: --fields). E.g. 'a>2.0', where 'a' is a field key. Can also be a path to the file containing the selection string.",
     )
     parser.add_argument(
+        "--rmquote",
+        help="Remove the simple quotes ' for the values. This simplify the selection string. fields='abc' becomes fields=abc",
+        action="store_true",
+    )
+    parser.add_argument(
         "--calc",
         help="Property to compute from the given field and the name to store the result in. E.g. 'y=x*10': add the field y and store the result of field x*10",
     )
@@ -442,7 +450,7 @@ Useful properties are implemented:
     if args.sel is not None:
         if os.path.isfile(args.sel):
             with open(args.sel) as f:
-                args.sel = f.read()
+                args.sel = f.read().strip()
 
     if args.torec:
         if args.file is None:
@@ -488,6 +496,7 @@ Useful properties are implemented:
             recsel=args.sel,
             print_records=False,
             print_columns=False,
+            rmquote=args.rmquote,
         )
         DATA2 = read_file(
             file=args.merge[1],
@@ -495,6 +504,7 @@ Useful properties are implemented:
             recsel=args.sel,
             print_records=False,
             print_columns=False,
+            rmquote=args.rmquote,
         )
         MERGED = merge_dictionnaries(DATA1, DATA2)
         dict_to_rec(MERGED)
@@ -532,4 +542,5 @@ Useful properties are implemented:
         print_records=args.print_records,
         delimiter=args.delimiter,
         get_stats=args.stat,
+        rmquote=args.rmquote,
     )
