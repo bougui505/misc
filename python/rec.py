@@ -38,7 +38,6 @@
 import collections
 import os
 import gzip
-from os.path import isfile
 import subprocess
 import numpy as np
 import scipy.spatial.distance as scidist
