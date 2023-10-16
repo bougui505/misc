@@ -148,6 +148,14 @@ def get_data(file, selected_fields=None, rmquote=False):
     return data, fields
 
 
+def sort(data: dict, field: str) -> dict:
+    """"""
+    sorter = data[field].argsort()
+    for key in data.keys():
+        data[key] = data[key][sorter]
+    return data
+
+
 def read_file(
     file=None,
     selected_fields=None,
@@ -346,6 +354,7 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
     )
+    parser.add_argument("--sort", help="Sort the rec file according to the given field")
     parser.add_argument(
         "-d",
         "--delimiter",
@@ -538,6 +547,13 @@ Useful properties are implemented:
                 "check --run argument. The syntax must be 'field==command'. Maybe you forgot to give the output field name ?"
             )
         run(data=DATA, cmd=cmd, fields=args.fields, name=name)
+        dict_to_rec(DATA)
+        sys.exit(0)
+    if args.sort is not None:
+        DATA, _ = get_data(
+            file=args.file, selected_fields=args.fields, rmquote=args.rmquote
+        )
+        DATA = sort(data=DATA, field=args.sort)
         dict_to_rec(DATA)
         sys.exit(0)
     DATA = read_file(
