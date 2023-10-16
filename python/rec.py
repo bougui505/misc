@@ -274,22 +274,31 @@ def add_property(data: dict, property: str, name: str) -> dict:
     return data
 
 
-def run(data: dict, cmd: str, fields: list, name: str) -> dict:
+def run(data: dict, cmd: str, fields: list, names: list) -> dict:
     n = check_data_lengths(data)
     n_jobs = os.cpu_count()
-    cmds = []
+    cmd_list = []
     for i in range(n):
         args_i = []
         cmd_i = [cmd]
         for key in fields:
             args_i.append(str(data[key][i]))
         cmd_i.extend(args_i)
-        cmds.append(cmd_i)
+        cmd_list.append(cmd_i)
     out = Parallel(n_jobs=n_jobs)(
-        delayed(subprocess.check_output)(inp) for inp in tqdm(cmds)
+        delayed(subprocess.check_output)(inp) for inp in tqdm(cmd_list)
     )
     out = [e.strip().decode() for e in out]
-    data[name] = out
+    if len(names) == 1:
+        name = names[0]
+        data[name] = out
+    else:
+        nout = len(names)
+        assert len(out[0].split(" ")) == nout
+        out = [e.split(" ") for e in out]
+        for i in range(nout):
+            name = names[i]
+            data[name] = [e[i] for e in out]
     return data
 
 
@@ -376,7 +385,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--run",
-        help="run the given command from the given field (--fields). The syntax is field=cmd. This will store the result of command 'cmd' in the field 'field'. The arguments arge given by the --fields option.",
+        help="run the given command from the given field (--fields). The syntax is field=cmd. This will store the result of command 'cmd' in the field 'field'. The arguments are given by the --fields option. The running programm can return 2 values, space separated. In this case 2 field names can be given to store the output (e.g. field1,field2=cmd)",
     )
     parser.add_argument(
         "--find",
@@ -540,12 +549,13 @@ Useful properties are implemented:
         )
         cmd = re.sub(" +", " ", args.run)
         try:
-            name, cmd = cmd.strip().split("=", maxsplit=1)
+            names, cmd = cmd.strip().split("=", maxsplit=1)
+            names = names.split(",")
         except ValueError:
             sys.exit(
-                "check --run argument. The syntax must be 'field==command'. Maybe you forgot to give the output field name ?"
+                "check --run argument. The syntax must be 'field==command'. Maybe you forgot to give the output field names ?"
             )
-        run(data=DATA, cmd=cmd, fields=args.fields, name=name)
+        run(data=DATA, cmd=cmd, fields=args.fields, names=names)
         dict_to_rec(DATA)
         sys.exit(0)
     if args.sort is not None:

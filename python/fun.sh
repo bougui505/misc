@@ -57,13 +57,13 @@ mk_test.rec () {
 
     OUTFILE="data/test.columns"
     (echo "#x1 #x2" \
-        && paste -d " " =(seq 10|shuf) =(seq 10|shuf) \
-    ) >! $OUTFILE
+            && paste -d " " =(seq 10|shuf) =(seq 10|shuf) \
+        ) >! $OUTFILE
 
     OUTFILE="data/test2.columns"
     (echo "#x1,#x2" \
-        && paste -d "," =(seq 10|shuf) =(seq 10|shuf) \
-    ) >! $OUTFILE
+            && paste -d "," =(seq 10|shuf) =(seq 10|shuf) \
+        ) >! $OUTFILE
 }
 
 test_rec () {
@@ -77,5 +77,7 @@ test_rec () {
         && (cat data/test.rec | rec --stat) \
         && (cat data/test.columns | rec --torec) \
         && (cat data/test2.columns | rec --torec --del ',') \
-        && (cat data/test.rec | rec --calc 'y=x*10' -r )
+        && (cat data/test.rec | rec --calc 'y=x*10' -r ) \
+        && (cat data/test.rec | rec --run z=./data/test_rec_run.py --fields x) \
+        && (cat data/test.rec | rec --run z1,z2=./data/test_rec_run_2.py --fields x)
 }
