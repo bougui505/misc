@@ -267,7 +267,7 @@ def add_property(data: dict, property: str, name: str) -> dict:
     """
     n = check_data_lengths(data)
     keys = list(data.keys())
-    for i in range(n):
+    for i in tqdm(range(n)):
         for key in keys:
             vars()[key] = data[key][i]
         result = eval(property)
