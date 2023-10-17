@@ -36,14 +36,15 @@
 #                                                                           #
 #############################################################################
 import os
-from pymol import cmd
+
 import numpy as np
 from misc.protein import coords_loader
-from misc import randomgen
-from rdkit import Chem
+from pymol import cmd
+from rdkit import Chem, DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
-from rdkit import DataStructs
 from tqdm import tqdm
+
+from misc import randomgen
 
 
 def load_pdb(pdb, fetch_path=os.path.expanduser("~/pdb")):
@@ -92,7 +93,8 @@ def selection_to_smi(selection, sanitize=True):
     try:
         smi = Chem.MolToSmiles(mol)
     except:
-        sys.stderr.write(f"Cannot convert to SMILES for selection {selection}\n")
+        sys.stderr.write(
+            f"Cannot convert to SMILES for selection {selection}\n")
         return "-"
     if len(smi) == 0:
         return "-"
@@ -135,8 +137,10 @@ def get_ligands(
     smi_ref=None,
     fetch_path=os.path.expanduser("~/pdb"),
     user_selection="all",
+    no_smi=False
 ):
     """
+    - if no_smi is True, do not compute smiles
     >>> pdb = '1t4e'
     >>> obj, identifiers = get_ligands(pdb, outsmifilename=f'{pdb}.smi')
     >>> identifiers  # fmt: resname:resi:chain
@@ -181,7 +185,10 @@ def get_ligands(
         selection = f"{selection} and {user_selection}"
         if cmd.select(selection) == 0:  # empty selection
             continue
-        smi = selection_to_smi(selection, sanitize=sanitize)
+        if no_smi:
+            smi = "-"
+        else:
+            smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
         if (
             smi is None
@@ -217,9 +224,9 @@ def GetScriptDir():
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # ### UNCOMMENT FOR LOGGING ####
     # import os
@@ -241,7 +248,8 @@ if __name__ == "__main__":
         help="Text file with a list of pdbs. If a smi is given in the second column, compute the Tanimoto similarity with the reference smiles",
     )
     parser.add_argument("--sel", help="selection", default="all")
-    parser.add_argument("--ref", help="Reference SMILES to compute Tanimoto with")
+    parser.add_argument(
+        "--ref", help="Reference SMILES to compute Tanimoto with")
     parser.add_argument(
         "--smi",
         help="Output SMILES file to write the results out. If not given write to stdout",
@@ -253,12 +261,15 @@ if __name__ == "__main__":
         action="store_false",
     )
     parser.add_argument(
+        "--no_smi", help="Do not compute SMILES", action="store_true")
+    parser.add_argument(
         "--fetch_path",
         help="Directory where to store the pdb files (default: ~/pdb)",
         default=os.path.expanduser("~/pdb"),
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument(
+        "--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
@@ -321,6 +332,7 @@ if __name__ == "__main__":
             smi_ref=smi_ref,
             fetch_path=args.fetch_path,
             user_selection=args.sel,
+            no_smi=args.no_smi
         )
         if args.smi is not None:
             pbar.update(1)
