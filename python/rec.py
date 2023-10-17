@@ -36,12 +36,13 @@
 #                                                                           #
 #############################################################################
 import collections
-import os
 import gzip
+import os
+import re
 import subprocess
+
 import numpy as np
 import scipy.spatial.distance as scidist
-import re
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
@@ -346,15 +347,16 @@ def dict_to_rec(d):
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     parser = argparse.ArgumentParser(
         description="Read a python like recfile from stdin (pipe) except if --file is given"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("--info", help="Print long help message.", action="store_true")
+    parser.add_argument(
+        "--info", help="Print long help message.", action="store_true")
     parser.add_argument(
         "-f",
         "--fields",
@@ -362,7 +364,8 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
     )
-    parser.add_argument("--sort", help="Sort the rec file according to the given field")
+    parser.add_argument(
+        "--sort", help="Sort the rec file according to the given field")
     parser.add_argument(
         "-d",
         "--delimiter",
@@ -416,7 +419,8 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument(
+        "--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     if args.info:
