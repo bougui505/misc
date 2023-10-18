@@ -9,7 +9,7 @@
 #                                                                           #
 #  Redistribution and use in source and binary forms, with or without       #
 #  modification, are permitted provided that the following conditions       #
-#  are met:                                                                 #    
+#  are met:                                                                 #
 #                                                                           #
 #  1. Redistributions of source code must retain the above copyright        #
 #  notice, this list of conditions and the following disclaimer.            #
@@ -43,23 +43,24 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-echo "Updating structure files: /media/bougui/scratch/pdb"
-[ -d /media/bougui/scratch/pdb ] \
-    && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/mmCIF/ /media/bougui/scratch/pdb
+DBPATH="/opt/bougui/DB"
+echo "Updating structure files: $DBPATH/pdb"
+[ -d $DBPATH/pdb ] \
+    && rsync -rlpt -z --delete --port=33444 --info=progress2 rsync.rcsb.org::ftp_data/structures/divided/mmCIF/ $DBPATH/pdb
 
-echo "Updating ligand structure files: /media/bougui/scratch/pdbechem_v2"
-[ -d /media/bougui/scratch ] \
-    && rsync -a --update --info=progress2 -h rsync.ebi.ac.uk::pub/databases/msd/pdbechem_v2 /media/bougui/scratch
+echo "Updating ligand structure files: $DBPATH/pdbechem_v2"
+[ -d $DBPATH ] \
+    && rsync -a --update --info=progress2 -h rsync.ebi.ac.uk::pub/databases/msd/pdbechem_v2 $DBPATH
 
 
-echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
-[ -f /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta ] \
-    && rm /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
-[ -d /media/bougui/scratch/pdb_seqres ] \
-    && wget -O - https://ftp.wwpdb.org/pub/pdb/derived_data/pdb_seqres.txt.gz | gunzip > /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
-
-echo "Building blastdb for sequences"
-[ -d /media/bougui/scratch/pdb_seqres ] \
-    && cd /media/bougui/scratch/pdb_seqres/ \
-    && makeblastdb -in pdb_seqres.fasta -dbtype prot \
-    && cd -
+# echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
+# [ -f /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta ] \
+    #     && rm /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
+# [ -d /media/bougui/scratch/pdb_seqres ] \
+    #     && wget -O - https://ftp.wwpdb.org/pub/pdb/derived_data/pdb_seqres.txt.gz | gunzip > /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
+#
+# echo "Building blastdb for sequences"
+# [ -d /media/bougui/scratch/pdb_seqres ] \
+    #     && cd /media/bougui/scratch/pdb_seqres/ \
+    #     && makeblastdb -in pdb_seqres.fasta -dbtype prot \
+    #     && cd -
