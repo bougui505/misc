@@ -74,6 +74,7 @@ def tmalign(model, native, selmodel=None, selnative=None):
         suffix=".pdb", dir="/dev/shm"
     ) as native_file:
         with pymol2.PyMOL() as p:
+            p.cmd.feedback(action='disable', module='all', mask='everything')
             p.cmd.load(filename=model, object="mymodel")
             p.cmd.load(filename=native, object="mynative")
             p.cmd.save(filename=model_file.name, selection=f"mymodel and {selmodel}")
