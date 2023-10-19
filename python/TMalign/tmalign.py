@@ -38,6 +38,7 @@
 import os
 import subprocess
 import tempfile
+
 import pymol2
 
 
@@ -77,11 +78,19 @@ def tmalign(model, native, selmodel=None, selnative=None):
             p.cmd.feedback(action='disable', module='all', mask='everything')
             p.cmd.load(filename=model, object="mymodel")
             p.cmd.load(filename=native, object="mynative")
-            p.cmd.save(filename=model_file.name, selection=f"mymodel and {selmodel}")
-            p.cmd.save(filename=native_file.name, selection=f"mynative and {selnative}")
+            # Remove alternate locations
+            p.cmd.remove("not alt ''+A")
+            p.cmd.alter("all", "alt=''")
+            ############################
+            p.cmd.save(filename=model_file.name,
+                       selection=f"mymodel and {selmodel}", state=-1)
+            p.cmd.save(filename=native_file.name,
+                       selection=f"mynative and {selnative}", state=-1)
         scriptdir = GetScriptDir()
-        cmd = f"{scriptdir}/TMalign {model_file.name} {native_file.name}".split(" ")
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+        cmd = f"{scriptdir}/TMalign {model_file.name} {native_file.name}".split(
+            " ")
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, universal_newlines=True)
         lines = process.stdout.readlines()
     tmscores = []
     for line in lines:
@@ -95,9 +104,9 @@ def tmalign(model, native, selmodel=None, selnative=None):
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # ### UNCOMMENT FOR LOGGING ####
     # import os
@@ -113,7 +122,8 @@ if __name__ == "__main__":
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("-a", "--arg1")
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument(
+        "--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
