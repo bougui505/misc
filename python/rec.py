@@ -46,26 +46,6 @@ import scipy.spatial.distance as scidist
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-try:
-    from rdkit import Chem
-except ImportError:
-    pass
-
-
-# SOME USEFUL PROPERTY CALCULATOR
-def num_atoms(smiles):
-    """
-    Get the number of atoms from a smiles
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is not None:
-        return mol.GetNumAtoms()
-    else:
-        return "-"
-
-
-#################################
-
 
 def format_data(data: dict, fields: list) -> dict:
     """"""
