@@ -530,6 +530,7 @@ Useful properties are implemented:
     if args.run is not None:
         DATA, _ = get_data(
             file=args.file,
+            rmquote=args.rmquote
         )
         cmd = re.sub(" +", " ", args.run)
         try:
