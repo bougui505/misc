@@ -61,7 +61,7 @@ def clean_chains(p, sel, nres_per_chain_min=3):
         nres = p.cmd.select(
             f"{sel} and polymer.protein and chain {chain} and name CA and present")
         if nres <= nres_per_chain_min:
-            p.cmd.remove(f"chain {chain}")
+            p.cmd.remove(f"chain {chain} and polymer.protein")
 
 
 def tmalign(model, native, selmodel=None, selnative=None):
