@@ -55,6 +55,15 @@ def GetScriptDir():
     return scriptdir
 
 
+def clean_chains(p, sel, nres_per_chain_min=3):
+    chains = p.cmd.get_chains(sel)
+    for chain in chains:
+        nres = p.cmd.select(
+            f"{sel} and polymer.protein and chain {chain} and name CA")
+        if nres < nres_per_chain_min:
+            p.cmd.remove(f"chain {chain}")
+
+
 def tmalign(model, native, selmodel=None, selnative=None):
     """
     >>> model = "data/1ycr.pdb"
@@ -64,6 +73,17 @@ def tmalign(model, native, selmodel=None, selnative=None):
 
     >>> tmalign(model, native, selmodel='resi 1-30', selnative='resi 1-30')
     0.67607
+
+    Test when less than 3 residues per a chain
+    Sequence is too short <3! TMalign error
+    >>> model = "data/lt3/5ruv.cif.gz"
+    >>> native = "data/lt3/reclig.pdb"
+    >>> selmodel = "byres((resn W6J and chain B and resi 201) around 10.0 and polymer.protein)"
+    >>> selnative = "byres((resn LIG and chain L and resi 1) around 10.0 and polymer.protein)"
+    >>> tmalign(model, native, selmodel=selmodel, selnative=selnative)
+    0.1689
+    >>> tmalign(native, model, selnative=selmodel, selmodel=selnative)
+    0.1689
     """
     selmodel = selmodel if selmodel is not None else "polymer.protein"
     selnative = selnative if selnative is not None else "polymer.protein"
@@ -78,6 +98,8 @@ def tmalign(model, native, selmodel=None, selnative=None):
             p.cmd.feedback(action='disable', module='all', mask='everything')
             p.cmd.load(filename=model, object="mymodel")
             p.cmd.load(filename=native, object="mynative")
+            clean_chains(p, f"mymodel and ({selmodel})")
+            clean_chains(p, f"mynative and ({selnative})")
             # Remove alternate locations
             p.cmd.remove("not alt ''+A")
             p.cmd.alter("all", "alt=''")
