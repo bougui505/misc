@@ -59,8 +59,8 @@ def clean_chains(p, sel, nres_per_chain_min=3):
     chains = p.cmd.get_chains(sel)
     for chain in chains:
         nres = p.cmd.select(
-            f"{sel} and polymer.protein and chain {chain} and name CA")
-        if nres < nres_per_chain_min:
+            f"{sel} and polymer.protein and chain {chain} and name CA and present")
+        if nres <= nres_per_chain_min:
             p.cmd.remove(f"chain {chain}")
 
 
