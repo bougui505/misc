@@ -12,7 +12,7 @@ apt-get update
 apt-get install -y python3.11-venv  # required to install formatter in neovim -- AstroNvim
 apt-get install -y wget git bzip2 build-essential python3-pip
 apt-get install -y bash zsh curl lua-nvim unzip fzf xz-utils npm ripgrep default-jre
-apt-get install -y meld
+apt-get install -y meld trash-cli
 apt-get install -y sqlite3 coreutils
 apt-get install -y htop
 apt-get install -y parallel
@@ -52,6 +52,7 @@ cd /usr/local/bin && ln -s /opt/misc/python/Grid3/pdb_to_density.py density
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/liginfo.py liginfo
+cd /usr/local/bin && ln -s /opt/misc/python/rec.py rec
 pip3 install --break-system-packages termcolor
 ##########################################################################
 
@@ -116,11 +117,6 @@ pip3 install --break-system-packages torch_geometric
 ################################# RDKIT #################################
 pip3 install --break-system-packages rdkit
 #########################################################################
-
-############################### ProteinMPNN ###############################
-cd /opt
-git clone https://github.com/dauparas/ProteinMPNN.git
-###########################################################################
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
