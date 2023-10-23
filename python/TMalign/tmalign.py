@@ -142,7 +142,10 @@ if __name__ == "__main__":
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("-a", "--arg1")
+    parser.add_argument("-m", "--model")
+    parser.add_argument("-n", "--native")
+    parser.add_argument("--selmodel")
+    parser.add_argument("--selnative")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument(
         "--func", help="Test only the given function(s)", nargs="+")
@@ -167,3 +170,7 @@ if __name__ == "__main__":
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
+    if args.model is not None and args.native is not None:
+        tmscore = tmalign(model=args.model, native=args.native,
+                          selmodel=args.selmodel, selnative=args.selnative)
+        print(f"{tmscore=}")
