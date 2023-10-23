@@ -83,9 +83,9 @@ def tmalign(model, native, selmodel=None, selnative=None):
             p.cmd.alter("all", "alt=''")
             ############################
             p.cmd.save(filename=model_file.name,
-                       selection=f"mymodel and {selmodel}", state=-1)
+                       selection=f"mymodel and ({selmodel})", state=-1)
             p.cmd.save(filename=native_file.name,
-                       selection=f"mynative and {selnative}", state=-1)
+                       selection=f"mynative and ({selnative})", state=-1)
         scriptdir = GetScriptDir()
         cmd = f"{scriptdir}/TMalign {model_file.name} {native_file.name}".split(
             " ")
