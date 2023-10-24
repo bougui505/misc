@@ -55,13 +55,25 @@ def GetScriptDir():
     return scriptdir
 
 
-def clean_chains(p, sel, nres_per_chain_min=3):
+def clean_states(p):
+    objlist_ori = set(p.cmd.get_object_list())
+    for obj in objlist_ori:
+        p.cmd.split_states(obj)
+        p.cmd.delete(obj)
+        p.cmd.set_name(f'{obj}_0001', obj)
+    objlist = p.cmd.get_object_list()
+    for obj in objlist:
+        if obj not in objlist_ori:
+            p.cmd.delete(obj)
+
+
+def clean_chains(p, sel, obj, nres_per_chain_min=3):
     chains = p.cmd.get_chains(sel)
     for chain in chains:
         nres = p.cmd.select(
-            f"{sel} and polymer.protein and chain {chain} and name CA and present")
+            f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}")
         if nres <= nres_per_chain_min:
-            p.cmd.remove(f"chain {chain} and polymer.protein")
+            p.cmd.remove(f"chain {chain} and polymer.protein and {obj}")
 
 
 def tmalign(model, native, selmodel=None, selnative=None):
@@ -98,12 +110,13 @@ def tmalign(model, native, selmodel=None, selnative=None):
             p.cmd.feedback(action='disable', module='all', mask='everything')
             p.cmd.load(filename=model, object="mymodel")
             p.cmd.load(filename=native, object="mynative")
-            clean_chains(p, f"mymodel and ({selmodel})")
-            clean_chains(p, f"mynative and ({selnative})")
             # Remove alternate locations
             p.cmd.remove("not alt ''+A")
             p.cmd.alter("all", "alt=''")
             ############################
+            clean_states(p)
+            clean_chains(p, f"mymodel and ({selmodel})", obj="mymodel")
+            clean_chains(p, f"mynative and ({selnative})", obj="mynative")
             p.cmd.save(filename=model_file.name,
                        selection=f"mymodel and ({selmodel})", state=-1)
             p.cmd.save(filename=native_file.name,
