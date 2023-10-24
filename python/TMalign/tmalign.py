@@ -68,7 +68,7 @@ def clean_states(p):
 
 
 def clean_chains(p, sel, obj, nres_per_chain_min=3):
-    chains = p.cmd.get_chains(sel)
+    chains = p.cmd.get_chains(f"{sel} and {obj}")
     for chain in chains:
         nres = p.cmd.select(
             f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}")
