@@ -36,7 +36,6 @@
 #                                                                           #
 #############################################################################
 
-import gzip
 import itertools
 import os
 import subprocess
@@ -149,14 +148,14 @@ def tmalign_wrapper(model, native, selmodel, selnative):
                           selmodel=selmodel, selnative=selnative)
     except:
         tmscore = -1.0
-    if tmscore == -1.0:
-        with gzip.open("tmalign.err.gz", "at") as err:
-            # print(model, native, tmscore, file=sys.stderr)
-            err.write(f"{model=}\n")
-            err.write(f"{native=}\n")
-            err.write(f"{selmodel=}\n")
-            err.write(f"{selnative=}\n")
-            err.write("--\n")
+    # if tmscore == -1.0:
+    #     with gzip.open("tmalign.err.gz", "at") as err:
+    #         # print(model, native, tmscore, file=sys.stderr)
+    #         err.write(f"{model=}\n")
+    #         err.write(f"{native=}\n")
+    #         err.write(f"{selmodel=}\n")
+    #         err.write(f"{selnative=}\n")
+    #         err.write("--\n")
     return tmscore
 
 
