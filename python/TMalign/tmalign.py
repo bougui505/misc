@@ -196,8 +196,8 @@ def read_csv(csvfilename):
     with open(csvfilename, "r") as csvfile:
         for line in csvfile:
             splitted = line.strip().split(",")
-            if len(splitted) == 2:
-                path, sel = splitted
+            if len(splitted) >= 2:
+                path, sel = splitted[:2]
             else:
                 path = splitted[0]
                 sel = None
