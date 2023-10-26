@@ -159,7 +159,7 @@ def tmalign_wrapper(model, native, selmodel, selnative):
     return tmscore
 
 
-def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=None):
+def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=None, verbose=False):
     """
     Align pairwisely the model_list and the native_list
     """
@@ -185,15 +185,15 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
                                                               selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives))
     iterproduct = zip(itertools.product(zip(model_list, selmodel_list),
                                         zip(native_list, selnative_list)), tmscores)
-    for (((model, selmodel), (native, selnative)), tmscore) in iterproduct:
-        print(f"{model=}")
-        print(f"{selmodel=}")
-        print(f"{native=}")
-        print(f"{selnative=}")
-        print(f"{tmscore=}")
-        print("--")
-        # tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel, selnative=selnative)
-        #                                  for in list(zip(related_pdbs, sameligs)))
+    if verbose:
+        for (((model, selmodel), (native, selnative)), tmscore) in iterproduct:
+            print(f"{model=}")
+            print(f"{selmodel=}")
+            print(f"{native=}")
+            print(f"{selnative=}")
+            print(f"{tmscore=}")
+            print("--")
+    return tmscores
 
 
 def read_csv(csvfilename):
@@ -269,4 +269,4 @@ if __name__ == "__main__":
         model_list, selmodel_list = read_csv(args.model_list)
         native_list, selnative_list = read_csv(args.native_list)
         tmalign_multi(model_list=model_list, native_list=native_list,
-                      selmodel_list=selmodel_list, selnative_list=selnative_list)
+                      selmodel_list=selmodel_list, selnative_list=selnative_list, verbose=True)
