@@ -146,16 +146,10 @@ def tmalign_wrapper(model, native, selmodel, selnative):
     try:
         tmscore = tmalign(model=model, native=native,
                           selmodel=selmodel, selnative=selnative)
-    except:
+    except Exception as e:
+        print("ERROR for", model, native, selmodel, selnative)
+        print(f"ERROR: {e}")
         tmscore = -1.0
-    # if tmscore == -1.0:
-    #     with gzip.open("tmalign.err.gz", "at") as err:
-    #         # print(model, native, tmscore, file=sys.stderr)
-    #         err.write(f"{model=}\n")
-    #         err.write(f"{native=}\n")
-    #         err.write(f"{selmodel=}\n")
-    #         err.write(f"{selnative=}\n")
-    #         err.write("--\n")
     return tmscore
 
 
