@@ -35,11 +35,16 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
+
+import gzip
+import itertools
 import os
 import subprocess
 import tempfile
 
 import pymol2
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 
 def log(msg):
@@ -138,6 +143,76 @@ def tmalign(model, native, selmodel=None, selnative=None):
     return tmscore
 
 
+def tmalign_wrapper(model, native, selmodel, selnative):
+    try:
+        tmscore = tmalign(model=model, native=native,
+                          selmodel=selmodel, selnative=selnative)
+    except:
+        tmscore = -1.0
+    if tmscore == -1.0:
+        with gzip.open("tmalign.err.gz", "at") as err:
+            # print(model, native, tmscore, file=sys.stderr)
+            err.write(f"{model=}\n")
+            err.write(f"{native=}\n")
+            err.write(f"{selmodel=}\n")
+            err.write(f"{selnative=}\n")
+            err.write("--\n")
+    return tmscore
+
+
+def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=None):
+    """
+    Align pairwisely the model_list and the native_list
+    """
+    if os.path.exists("tmalign.err.gz"):
+        os.remove("tmalign.err.gz")
+    if selmodel_list is None:
+        selmodel_list = [None]*len(model_list)
+    assert len(model_list) == len(selmodel_list)
+
+    if selnative_list is None:
+        selnative_list = [None]*len(native_list)
+    assert len(native_list) == len(selnative_list)
+
+    n_models = len(model_list)
+    n_natives = len(native_list)
+
+    ncpu = os.cpu_count()
+    iterproduct = itertools.product(zip(model_list, selmodel_list),
+                                    zip(native_list, selnative_list))
+    # for ((model, selmodel), (native, selnative)) in iterproduct:
+    #     print(model, selmodel, native, selnative)
+    tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel,
+                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives))
+    iterproduct = zip(itertools.product(zip(model_list, selmodel_list),
+                                        zip(native_list, selnative_list)), tmscores)
+    for (((model, selmodel), (native, selnative)), tmscore) in iterproduct:
+        print(f"{model=}")
+        print(f"{selmodel=}")
+        print(f"{native=}")
+        print(f"{selnative=}")
+        print(f"{tmscore=}")
+        print("--")
+        # tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel, selnative=selnative)
+        #                                  for in list(zip(related_pdbs, sameligs)))
+
+
+def read_csv(csvfilename):
+    pathlist = []
+    sellist = []
+    with open(csvfilename, "r") as csvfile:
+        for line in csvfile:
+            splitted = line.strip().split(",")
+            if len(splitted) == 2:
+                path, sel = splitted
+            else:
+                path = splitted[0]
+                sel = None
+            pathlist.append(path)
+            sellist.append(sel)
+    return pathlist, sellist
+
+
 if __name__ == "__main__":
     import argparse
     import doctest
@@ -159,6 +234,10 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--native")
     parser.add_argument("--selmodel")
     parser.add_argument("--selnative")
+    parser.add_argument(
+        "--model_list", help="CSV file with list of models. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+    parser.add_argument(
+        "--native_list", help="CSV file with list of natives. Col1: path to structure files; Col2 (optionnal): selection for the given file")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument(
         "--func", help="Test only the given function(s)", nargs="+")
@@ -187,3 +266,8 @@ if __name__ == "__main__":
         tmscore = tmalign(model=args.model, native=args.native,
                           selmodel=args.selmodel, selnative=args.selnative)
         print(f"{tmscore=}")
+    if args.model_list is not None and args.native_list is not None:
+        model_list, selmodel_list = read_csv(args.model_list)
+        native_list, selnative_list = read_csv(args.native_list)
+        tmalign_multi(model_list=model_list, native_list=native_list,
+                      selmodel_list=selmodel_list, selnative_list=selnative_list)
