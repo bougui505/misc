@@ -176,7 +176,7 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
     # for ((model, selmodel), (native, selnative)) in iterproduct:
     #     print(model, selmodel, native, selnative)
     tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel,
-                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives))
+                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives, ncols=64))
     iterproduct = zip(itertools.product(zip(model_list, selmodel_list),
                                         zip(native_list, selnative_list)), tmscores)
     if verbose:
