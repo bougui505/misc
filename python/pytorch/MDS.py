@@ -42,6 +42,8 @@ import os
 
 import torch
 
+from misc import rec
+
 
 class Mover(torch.nn.Module):
     """
@@ -118,6 +120,40 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
     return y.detach().cpu().numpy()
 
 
+def rec_to_mat(recfile, field):
+    data, fields = rec.get_data(
+        recfile, selected_fields=None, rmquote=False)
+    assert field in fields
+    assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
+    assert 'j' in fields, "'j' must be defined in the fields of the recfile to store the row index"
+    n = int(max(data['i']))
+    p = int(max(data['j']))
+    maxn = max(n, p) + 1
+    dmat = -torch.ones(maxn, maxn)
+    print(f"{dmat.shape=}")
+    for index, distance in enumerate(data[field]):
+        i = int(data['i'][index])
+        j = int(data['j'][index])
+        dmat[i, j] = distance
+    return dmat
+
+
+def write_rec(recfile, outrecfile, mdsout):
+    data, fields = rec.get_data(
+        recfile, selected_fields=None, rmquote=False)
+    assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
+    assert 'j' in fields, "'j' must be defined in the fields of the recfile to store the row index"
+    with gzip.open(outrecfile, 'wt') as gz:
+        for index, i in enumerate(data["i"]):
+            i = int(i)
+            j = int(data["j"][index])
+            for field in fields:
+                gz.write(f"{field}={data[field][index]}\n")
+            gz.write(f"mds_i={list(mdsout[i])}\n")
+            gz.write(f"mds_j={list(mdsout[j])}\n")
+            gz.write("--\n")
+
+
 if __name__ == '__main__':
     import argparse
     import doctest
@@ -143,6 +179,8 @@ if __name__ == '__main__':
         '--niter', help='Number of fitting iterations', type=int, default=10000)
     parser.add_argument(
         '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
+    parser.add_argument(
+        '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--test_fit', help='Test fitting random data', action='store_true')
@@ -178,3 +216,9 @@ if __name__ == '__main__':
                 for l in out:
                     gz.write(' '.join([str(e) for e in l]) + "\n")
         sys.exit(0)
+    if args.rec is not None:
+        recfile, field = args.rec
+        dmat = rec_to_mat(recfile, field)
+        out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                  niter=args.niter, device=DEVICE)
+        write_rec(recfile=recfile, outrecfile='data/mds.rec.gz', mdsout=out)
