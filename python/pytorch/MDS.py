@@ -104,7 +104,7 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
     x = torch.randn((npts, ndims)).to(device)
     dmat = dmat.to(device)
     mover = Mover(npts=npts, ndims=ndims).to(device)
-    optimizer = torch.optim.Adam(mover.parameters(), amsgrad=True, lr=0.01)
+    optimizer = torch.optim.Adam(mover.parameters(), amsgrad=False, lr=0.01)
     y = None
     for i in range(niter):
         optimizer.zero_grad()
