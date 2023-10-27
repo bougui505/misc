@@ -37,8 +37,10 @@
 #############################################################################
 
 
+import gzip
+import os
+
 import torch
-from tqdm import tqdm
 
 
 class Mover(torch.nn.Module):
@@ -101,6 +103,7 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
     dmat = dmat.to(device)
     mover = Mover(npts=npts, ndims=ndims).to(device)
     optimizer = torch.optim.Adam(mover.parameters(), amsgrad=True, lr=0.01)
+    y = None
     for i in range(niter):
         optimizer.zero_grad()
         y = mover(x)
@@ -112,6 +115,7 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
         print(f'{progress=:.2%}')
         print(f'{loss=:.5g}')
         print('--')
+    return y.detach().cpu().numpy()
 
 
 if __name__ == '__main__':
@@ -137,6 +141,8 @@ if __name__ == '__main__':
         '-d', '--dim', help='Dimension of the projection space', type=int, default=2)
     parser.add_argument(
         '--niter', help='Number of fitting iterations', type=int, default=10000)
+    parser.add_argument(
+        '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--test_fit', help='Test fitting random data', action='store_true')
@@ -159,9 +165,16 @@ if __name__ == '__main__':
                                                globals(),
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit(0)
+    if os.path.exists(args.outfile):
+        sys.exit(
+            f'{args.outfile} exists, remove it or specify a new out filename using --outfile option')
     if args.test_fit:
         y = torch.randn(size=(100, 8))
         dmat = torch.cdist(y, y)
-        fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-            niter=args.niter, device=DEVICE)
+        out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                  niter=args.niter, device=DEVICE)
+        with gzip.open(args.outfile, 'wt') as gz:
+            if out is not None:
+                for l in out:
+                    gz.write(' '.join([str(e) for e in l]) + "\n")
         sys.exit(0)
