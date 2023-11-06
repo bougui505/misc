@@ -21,6 +21,10 @@ test_MDS () {
     sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000
 }
 
+test_MDS_batch () {
+    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000 -bs 50 --nepochs 30
+}
+
 plot_MDS () {
-    rec --file data/mds.rec.gz --fields mds_i class_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | tr -d "," | plot2 --scatter --fields x y z
+    rec --file data/mds.rec.gz --fields mds_i class_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | tr -d "," | plot2 --scatter --fields x y z --colorbar
 }

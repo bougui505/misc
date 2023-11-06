@@ -40,6 +40,7 @@
 import gzip
 import os
 
+import numpy as np
 import torch
 
 from misc import rec
@@ -75,14 +76,14 @@ def lossfunc(x, dmat, repulsion=0.0):
     Try with a mask
     >>> dmat[0, 1] = -1.0
     >>> dmat[10, 5] = -1.0
-    >>> loss2 = lossfunc(x, dmat) 
+    >>> loss2 = lossfunc(x, dmat)
     >>> loss2
     tensor(...)
     >>> loss2 < loss1
     tensor(True)
 
     Try with repulsion
-    >>> loss3 = lossfunc(x, dmat, repulsion=0.01) 
+    >>> loss3 = lossfunc(x, dmat, repulsion=0.01)
     >>> loss3
     tensor(...)
     >>> loss3 > loss2
@@ -99,9 +100,10 @@ def lossfunc(x, dmat, repulsion=0.0):
         return loss_dmat
 
 
-def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6):
+def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=None, return_np=True):
     npts = dmat.shape[0]
-    x = torch.randn((npts, ndims)).to(device)
+    if x is None:
+        x = torch.randn((npts, ndims)).to(device)
     dmat = dmat.to(device)
     mover = Mover(npts=npts, ndims=ndims).to(device)
     optimizer = torch.optim.Adam(mover.parameters(), amsgrad=False, lr=0.01)
@@ -123,12 +125,60 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6):
         print('--')
         if delta_loss <= min_delta:
             break
-    return y.detach().cpu().numpy()
+    if return_np:
+        return y.detach().cpu().numpy()
+    else:
+        return y.detach()
 
 
-def rec_to_mat(recfile, field):
-    data, fields = rec.get_data(
-        recfile, selected_fields=None, rmquote=False)
+def fit_batched(recfile, batch_size, field, nepochs, repulsion=0, ndims=2, niter=10000, device='cpu', min_delta=1e-6):
+    data, fields = rec.get_data(recfile, selected_fields=None, rmquote=False)
+    n = int(max(data['i']))
+    p = int(max(data['j']))
+    npts = max(n, p) + 1
+    print(f"{npts=}")
+    x = torch.randn((npts, ndims)).to(device)
+    ilist = np.unique(data['i'])
+    jlist = np.unique(data['j'])
+    for _ in range(nepochs):
+        batch, batch_inds = subsample(data, batch_size, ilist, jlist)
+        dmat = rec_to_mat(field=field, data=batch, fields=fields)
+        y = fit(dmat, repulsion=repulsion, ndims=ndims,
+                niter=niter, device=device, min_delta=min_delta, x=x[batch_inds], return_np=False)
+        x[batch_inds] = torch.clone(y)
+    return x.detach().cpu().numpy()
+
+
+def subsample(data, batch_size, ilist, jlist):
+    def reindex(ilist):
+        mapping = dict()
+        ind = 0
+        for i in ilist:
+            if i not in mapping:
+                mapping[i] = ind
+                ind += 1
+        return mapping
+    indset = list(set(ilist) | set(jlist))
+    batch_index = np.random.choice(a=indset, size=batch_size, replace=False)
+    new_index = reindex(batch_index)
+    I = data['i']
+    J = data['j']
+    sel = np.logical_and(np.isin(I, batch_index), np.isin(J, batch_index))
+    out = dict()
+    for field in data:
+        out[field] = data[field][sel]
+    out['i'] = np.asarray([new_index[i] for i in out['i']])
+    out['j'] = np.asarray([new_index[j] for j in out['j']])
+    return out, batch_index
+
+
+def rec_to_mat(recfile='', field='', data=[], fields=[]):
+    if recfile != '':
+        assert len(data) == 0, 'recfile xor data should be given, not both'
+        data, fields = rec.get_data(
+            recfile, selected_fields=None, rmquote=False)
+    if len(data) > 0:
+        assert len(fields) > 0, 'If data is given, fields must be given'
     assert field in fields
     assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
     assert 'j' in fields, "'j' must be defined in the fields of the recfile to store the row index"
@@ -189,6 +239,10 @@ if __name__ == '__main__':
         '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
     parser.add_argument(
         '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
+    parser.add_argument('-bs', '--batch_size',
+                        help='Batch size. Default is no batch, fit all at once.', type=int)
+    parser.add_argument(
+        '--nepochs', help='Number of epochs. Used only if bs is given. Default=10', default=10, type=int)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--test_fit', help='Test fitting random data', action='store_true')
@@ -226,7 +280,11 @@ if __name__ == '__main__':
         sys.exit(0)
     if args.rec is not None:
         recfile, field = args.rec
-        dmat = rec_to_mat(recfile, field)
-        out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                  niter=args.niter, device=DEVICE, min_delta=args.min_delta)
+        if args.batch_size is None:
+            dmat = rec_to_mat(recfile=recfile, field=field)
+            out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                      niter=args.niter, device=DEVICE, min_delta=args.min_delta)
+        else:
+            out = fit_batched(recfile=recfile, batch_size=args.batch_size, field=field, nepochs=args.nepochs, repulsion=args.repulsion,
+                              ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta)
         write_rec(recfile=recfile, outrecfile='data/mds.rec.gz', mdsout=out)
