@@ -99,13 +99,14 @@ def lossfunc(x, dmat, repulsion=0.0):
         return loss_dmat
 
 
-def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
+def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6):
     npts = dmat.shape[0]
     x = torch.randn((npts, ndims)).to(device)
     dmat = dmat.to(device)
     mover = Mover(npts=npts, ndims=ndims).to(device)
     optimizer = torch.optim.Adam(mover.parameters(), amsgrad=False, lr=0.01)
     y = None
+    loss_prev = torch.inf
     for i in range(niter):
         optimizer.zero_grad()
         y = mover(x)
@@ -113,10 +114,15 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu'):
         loss.backward()
         optimizer.step()
         progress = (i+1)/niter
+        delta_loss = torch.abs(loss - loss_prev)
+        loss_prev = loss
         print(f'{i=}')
         print(f'{progress=:.2%}')
         print(f'{loss=:.5g}')
+        print(f'{delta_loss=:.5g}')
         print('--')
+        if delta_loss <= min_delta:
+            break
     return y.detach().cpu().numpy()
 
 
@@ -178,6 +184,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--niter', help='Number of fitting iterations', type=int, default=10000)
     parser.add_argument(
+        '--min_delta', help="Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).", type=float, default=1e-6)
+    parser.add_argument(
         '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
     parser.add_argument(
         '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
@@ -220,5 +228,5 @@ if __name__ == '__main__':
         recfile, field = args.rec
         dmat = rec_to_mat(recfile, field)
         out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                  niter=args.niter, device=DEVICE)
+                  niter=args.niter, device=DEVICE, min_delta=args.min_delta)
         write_rec(recfile=recfile, outrecfile='data/mds.rec.gz', mdsout=out)
