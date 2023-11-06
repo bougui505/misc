@@ -17,6 +17,10 @@ precmd() {
     [ -f fun.sh ] && source fun.sh && FUNFILES+="$(realpath fun.sh)" && FUNFILES=$(echo $FUNFILES | awk -F":" '{for (i=1;i<=NF;i++){print $i}}' | sort -u | awk '{printf $1":"}')
 }
 
+test_MDS () {
+    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000
+}
+
 plot_MDS () {
     rec --file data/mds.rec.gz --fields mds_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | plot2 --del , --scatter --fields x y
 }
