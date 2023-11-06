@@ -22,5 +22,5 @@ test_MDS () {
 }
 
 plot_MDS () {
-    rec --file data/mds.rec.gz --fields mds_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | plot2 --del , --scatter --fields x y
+    rec --file data/mds.rec.gz --fields mds_i class_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | tr -d "," | plot2 --scatter --fields x y z
 }
