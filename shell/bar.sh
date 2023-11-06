@@ -39,7 +39,7 @@ cat /dev/stdin \
     for (i=1;i<=LENGTH;i++){
         printf "#"
     }
-    if (LENGTH > MAXLEN){
+    if (LENGTH >= MAXLEN){
         printf "..."
     }
     printf "\n"
