@@ -26,3 +26,11 @@ with gzip.open('data/mds_inp.rec.gz', 'wt') as gz:
             distance = dmat[i, j]
             gz.write(f'{distance=}\n')
             gz.write('--\n')
+
+with gzip.open('data/mds_pts.rec.gz', 'wt') as gz:
+    for i in range(npts):
+        class_i = classes[i]
+        gz.write(f'{class_i=}\n')
+        pt = list(x[i])
+        gz.write(f'{pt=}\n')
+        gz.write('--\n')
