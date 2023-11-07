@@ -56,8 +56,11 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
     print(f"{npts=}")
     x = torch.randn((npts, ndims)).to(device)
     loss_prev = torch.inf
+    visited = set()
     for epoch in range(nepochs):
         batch, inds = subsample(data, batchsize, npts)
+        visited.update(set(inds))
+        visited_ratio = len(visited) / npts
         dmat = torch.from_numpy(distance_function(batch))
         y, loss = fit(dmat, repulsion, ndims=ndims, niter=niter, device=device,
                       min_delta=min_delta, x=x[inds], return_np=False, verbose=False)
@@ -68,6 +71,7 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
         print(f"{progress=:.2%}")
         print(f"{loss=:.5g}")
         print(f'{delta_loss_epoch=:.5g}')
+        print(f'{visited_ratio=:.2%}')
         print("--")
         x[inds] = torch.clone(y)
         if delta_loss_epoch <= min_delta_epoch:
