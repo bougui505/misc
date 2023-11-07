@@ -22,7 +22,7 @@ test_MDS () {
 }
 
 test_MDS_batch () {
-    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000 -bs 50 --nepochs 100
+    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000 -bs 50 --nepochs 100 --min_delta_epoch 0.1
 }
 
 plot_MDS () {
