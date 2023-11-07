@@ -100,7 +100,7 @@ def lossfunc(x, dmat, repulsion=0.0):
         return loss_dmat
 
 
-def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=None, return_np=True):
+def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=None, return_np=True, verbose=True):
     npts = dmat.shape[0]
     if x is None:
         x = torch.randn((npts, ndims)).to(device)
@@ -118,17 +118,18 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=N
         progress = (i+1)/niter
         delta_loss = torch.abs(loss - loss_prev)
         loss_prev = loss
-        print(f'{i=}')
-        print(f'{progress=:.2%}')
-        print(f'{loss=:.5g}')
-        print(f'{delta_loss=:.5g}')
-        print('--')
+        if verbose:
+            print(f'{i=}')
+            print(f'{progress=:.2%}')
+            print(f'{loss=:.5g}')
+            print(f'{delta_loss=:.5g}')
+            print('--')
         if delta_loss <= min_delta:
             break
     if return_np:
-        return y.detach().cpu().numpy()
+        return y.detach().cpu().numpy(), loss
     else:
-        return y.detach()
+        return y.detach(), loss
 
 
 def fit_batched(recfile, batch_size, field, nepochs, repulsion=0, ndims=2, niter=10000, device='cpu', min_delta=1e-6):
@@ -140,12 +141,23 @@ def fit_batched(recfile, batch_size, field, nepochs, repulsion=0, ndims=2, niter
     x = torch.randn((npts, ndims)).to(device)
     ilist = np.unique(data['i'])
     jlist = np.unique(data['j'])
-    for _ in range(nepochs):
+    loss_prev = torch.inf
+    for epoch in range(nepochs):
         batch, batch_inds = subsample(data, batch_size, ilist, jlist)
         dmat = rec_to_mat(field=field, data=batch, fields=fields)
-        y = fit(dmat, repulsion=repulsion, ndims=ndims,
-                niter=niter, device=device, min_delta=min_delta, x=x[batch_inds], return_np=False)
+        y, loss = fit(dmat, repulsion=repulsion, ndims=ndims,
+                      niter=niter, device=device, min_delta=min_delta, x=x[batch_inds], return_np=False, verbose=False)
+        progress = (epoch+1)/nepochs
+        delta_loss = torch.abs(loss - loss_prev)
+        loss_prev = loss
+        print(f"{epoch=}")
+        print(f"{progress=:.2%}")
+        print(f"{loss=:.5g}")
+        print(f'{delta_loss=:.5g}')
+        print("--")
         x[batch_inds] = torch.clone(y)
+        if delta_loss <= min_delta:
+            break
     return x.detach().cpu().numpy()
 
 
@@ -186,7 +198,7 @@ def rec_to_mat(recfile='', field='', data=[], fields=[]):
     p = int(max(data['j']))
     maxn = max(n, p) + 1
     dmat = -torch.ones(maxn, maxn)
-    print(f"{dmat.shape=}")
+    # print(f"{dmat.shape=}")
     for index, distance in enumerate(data[field]):
         i = int(data['i'][index])
         j = int(data['j'][index])
@@ -271,8 +283,8 @@ if __name__ == '__main__':
     if args.test_fit:
         y = torch.randn(size=(100, 8))
         dmat = torch.cdist(y, y)
-        out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                  niter=args.niter, device=DEVICE)
+        out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                     niter=args.niter, device=DEVICE)
         with gzip.open(args.outfile, 'wt') as gz:
             if out is not None:
                 for l in out:
@@ -282,8 +294,8 @@ if __name__ == '__main__':
         recfile, field = args.rec
         if args.batch_size is None:
             dmat = rec_to_mat(recfile=recfile, field=field)
-            out = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                      niter=args.niter, device=DEVICE, min_delta=args.min_delta)
+            out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                         niter=args.niter, device=DEVICE, min_delta=args.min_delta)
         else:
             out = fit_batched(recfile=recfile, batch_size=args.batch_size, field=field, nepochs=args.nepochs, repulsion=args.repulsion,
                               ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta)
