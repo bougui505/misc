@@ -1044,3 +1044,4 @@ python/pytorch/data/mds.rec.gz
 python/pytorch/data/mds_inp.rec.gz
 python/pytorch/fit.log
 python/pytorch/data/mds_pts.rec.gz
+python/pytorch/data/mds_pts_out.rec.gz
