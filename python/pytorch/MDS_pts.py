@@ -64,6 +64,37 @@ class ExploredRatio(object):
         return ratio
 
 
+def subsample(data, batchsize, npts):
+    inds = np.random.choice(a=npts, size=batchsize, replace=False)
+    out = dict()
+    for field in data:
+        out[field] = data[field][inds]
+    return out, inds
+
+
+class Sampler(object):
+    def __init__(self, npts, batchsize, data) -> None:
+        self.npts = npts
+        self.pool = np.arange(self.npts)
+        self.batchsize = batchsize
+        self.data = data
+
+    def get(self):
+        if self.batchsize > len(self.pool):
+            n = len(self.pool)
+        else:
+            n = self.batchsize
+        inds = np.random.choice(
+            a=self.pool, size=n, replace=False)
+        self.pool = np.asarray(list(set(self.pool) - set(inds)))
+        if len(self.pool) == 0:
+            self.pool = np.arange(self.npts)
+        out = dict()
+        for field in self.data:
+            out[field] = self.data[field][inds]
+        return out, inds
+
+
 def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min_delta, min_delta_epoch):
     data, fields = rec.get_data(
         recfile, selected_fields=None, rmquote=False)
@@ -74,8 +105,9 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
     loss_prev = torch.inf
     explored = ExploredRatio(npts)
     ckfn = 'mds_ckpt.pt'
+    sampler = Sampler(npts=npts, batchsize=batchsize, data=data)
     for epoch in range(nepochs):
-        batch, inds = subsample(data, batchsize, npts)
+        batch, inds = sampler.get()
         dmat = torch.from_numpy(distance_function(batch))
         y, loss = fit(dmat, repulsion, ndims=ndims, niter=niter, device=device,
                       min_delta=min_delta, x=x[inds], return_np=False, verbose=False)
@@ -108,14 +140,6 @@ def write_rec(recfile, outrecfile, mdsout):
                 gz.write(f"{field}={data[field][i]}\n")
             gz.write(f"mds={list(mdsout[i])}\n")
             gz.write("--\n")
-
-
-def subsample(data, batchsize, npts):
-    inds = np.random.choice(a=npts, size=batchsize, replace=False)
-    out = dict()
-    for field in data:
-        out[field] = data[field][inds]
-    return out, inds
 
 
 def log(msg):
