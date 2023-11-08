@@ -104,29 +104,32 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
     x = torch.randn((npts, ndims)).to(device)
     loss_prev = torch.inf
     explored = ExploredRatio(npts)
-    ckfn = 'mds_ckpt.pt'
+    checkpoint_file = 'mds_ckpt.pt'
     sampler = Sampler(npts=npts, batchsize=batchsize, data=data)
-    for epoch in range(nepochs):
+    epoch = 0
+    while epoch < nepochs:
         batch, inds = sampler.get()
         dmat = torch.from_numpy(distance_function(batch))
         y, loss = fit(dmat, repulsion, ndims=ndims, niter=niter, device=device,
                       min_delta=min_delta, x=x[inds], return_np=False, verbose=False)
-        progress = (epoch+1)/nepochs
         delta_loss_epoch = torch.abs(loss - loss_prev)
         loss_prev = loss
         explored_ratio = explored.update(inds)
+        epoch = int(explored_ratio)
+        progress = (epoch+1)/nepochs
         print(f"{epoch=}")
         print(f"{progress=:.2%}")
         print(f"{loss=:.5g}")
         print(f'{delta_loss_epoch=:.5g}')
         print(f'{explored_ratio=:.2%}')
-        print("--")
         x[inds] = torch.clone(y)
-        if epoch % 10 == 0:
-            torch.save(x, ckfn)
+        if explored_ratio % 1 == 0:
+            print(f"{checkpoint_file=}")
+            torch.save(x, checkpoint_file)
+        print("--")
         if delta_loss_epoch <= min_delta_epoch:
             break
-    torch.save(x, ckfn)
+    torch.save(x, checkpoint_file)
     return x.detach().cpu().numpy()
 
 
