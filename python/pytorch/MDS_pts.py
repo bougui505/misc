@@ -48,6 +48,22 @@ from MDS import fit
 from misc import rec
 
 
+class ExploredRatio(object):
+    def __init__(self, npts):
+        self.visited = set()
+        self.npts = npts
+        self.ratio_prev = 0.0
+
+    def update(self, inds):
+        self.visited.update(set(inds))
+        ratio = self.ratio_prev + len(self.visited) / self.npts
+        # print(ratio, self.ratio_prev)
+        if ratio % 1 == 0.0:
+            self.ratio_prev += 1.0
+            self.visited = set()
+        return ratio
+
+
 def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min_delta, min_delta_epoch):
     data, fields = rec.get_data(
         recfile, selected_fields=None, rmquote=False)
@@ -56,26 +72,29 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
     print(f"{npts=}")
     x = torch.randn((npts, ndims)).to(device)
     loss_prev = torch.inf
-    visited = set()
+    explored = ExploredRatio(npts)
+    ckfn = 'mds_ckpt.pt'
     for epoch in range(nepochs):
         batch, inds = subsample(data, batchsize, npts)
-        visited.update(set(inds))
-        visited_ratio = len(visited) / npts
         dmat = torch.from_numpy(distance_function(batch))
         y, loss = fit(dmat, repulsion, ndims=ndims, niter=niter, device=device,
                       min_delta=min_delta, x=x[inds], return_np=False, verbose=False)
         progress = (epoch+1)/nepochs
         delta_loss_epoch = torch.abs(loss - loss_prev)
         loss_prev = loss
+        explored_ratio = explored.update(inds)
         print(f"{epoch=}")
         print(f"{progress=:.2%}")
         print(f"{loss=:.5g}")
         print(f'{delta_loss_epoch=:.5g}')
-        print(f'{visited_ratio=:.2%}')
+        print(f'{explored_ratio=:.2%}')
         print("--")
         x[inds] = torch.clone(y)
+        if epoch % 10 == 0:
+            torch.save(x, ckfn)
         if delta_loss_epoch <= min_delta_epoch:
             break
+    torch.save(x, ckfn)
     return x.detach().cpu().numpy()
 
 
