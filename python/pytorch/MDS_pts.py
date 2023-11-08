@@ -43,7 +43,7 @@ import os
 
 import numpy as np
 import torch
-from MDS import fit
+from misc.pytorch.MDS import fit
 
 from misc import rec
 
@@ -62,14 +62,6 @@ class ExploredRatio(object):
             self.ratio_prev += 1.0
             self.visited = set()
         return ratio
-
-
-def subsample(data, batchsize, npts):
-    inds = np.random.choice(a=npts, size=batchsize, replace=False)
-    out = dict()
-    for field in data:
-        out[field] = data[field][inds]
-    return out, inds
 
 
 class Sampler(object):
