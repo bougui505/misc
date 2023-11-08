@@ -26,7 +26,7 @@ test_MDS_batch () {
 }
 
 test_MDS_pts () {
-    sing ./MDS_pts.py --rec data/mds_pts.rec.gz --distance distance.py getdist --niter 50000 -bs 50 --nepochs 10  --min_delta_epoch 0.1
+    sing ./MDS_pts.py --rec data/mds_pts.rec.gz --distance distance.py getdist --niter 50000 -bs 50 --nepochs 10  --min_delta_epoch 0.1 --outbasename data/mds_pts_out
 }
 
 plot_MDS () {

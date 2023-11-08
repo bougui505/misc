@@ -95,7 +95,7 @@ class Sampler(object):
         return out, inds
 
 
-def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min_delta, min_delta_epoch):
+def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min_delta, min_delta_epoch, checkpoint_file):
     data, fields = rec.get_data(
         recfile, selected_fields=None, rmquote=False)
     print(f"{fields=}")
@@ -104,7 +104,6 @@ def fit_points(recfile, batchsize, nepochs, repulsion, ndims, niter, device, min
     x = torch.randn((npts, ndims)).to(device)
     loss_prev = torch.inf
     explored = ExploredRatio(npts)
-    checkpoint_file = 'mds_ckpt.pt'
     sampler = Sampler(npts=npts, batchsize=batchsize, data=data)
     epoch = 0
     while epoch < nepochs:
@@ -193,6 +192,7 @@ if __name__ == '__main__':
         '--min_delta', help="Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).", type=float, default=1e-6)
     parser.add_argument(
         '--min_delta_epoch', help="Stop criteria based on min_delta. Same as --min_delta except that the delta is calculated at the end of each epoch. Only used if --batch_size is defined (default=1e-6).", type=float, default=1e-6)
+    parser.add_argument('--outbasename', help='Basename for the output files')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--func', help='Test only the given function(s)', nargs='+')
@@ -216,6 +216,8 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
     if args.rec is not None:
+        if args.outbasename is None:
+            sys.exit('Please provide --outbasename')
         if args.distance is not None:
             modulename = os.path.splitext(args.distance[0])[0]
             func = args.distance[1]
@@ -224,6 +226,6 @@ if __name__ == '__main__':
             distance_function = getattr(module, func)
             print(f"{distance_function=}")
         out = fit_points(recfile=args.rec, batchsize=args.batch_size, nepochs=args.nepochs,
-                         repulsion=args.repulsion, ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch)
+                         repulsion=args.repulsion, ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch, checkpoint_file=args.outbasename+".pt")
         write_rec(recfile=args.rec,
-                  outrecfile='data/mds_pts_out.rec.gz', mdsout=out)
+                  outrecfile=args.outbasename+".rec.gz", mdsout=out)
