@@ -191,11 +191,29 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
 
 
 def tmalign_pairwise(pdb_list, sel_list=None):
+    n = len(pdb_list)
     if sel_list is None:
-        sel_list = [None,] * len(pdb_list)
-    for i, (ref, sel_ref) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
-        tmalign_multi(pdb_list[i:], [ref],
-                      selmodel_list=sel_list[i:], selnative_list=[sel_ref], verbose=True)
+        sel_list = [None,] * n
+    for i, (prot1, prot1_sel) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
+        tmscores = tmalign_multi(pdb_list[i:], [prot1],
+                                 selmodel_list=sel_list[i:], selnative_list=[prot1_sel], verbose=False)
+        assert len(tmscores) == len(pdb_list[i:])
+        assert len(tmscores) == len(sel_list[i:])
+        for j, (tmscore, prot2, prot2_sel) in enumerate(zip(tmscores, pdb_list[i:], sel_list[i:])):
+            j = j + i
+            if tmscore >= 0.0:
+                distance = 1.0 - tmscore
+            else:
+                distance = -1.0
+            print(f"{prot1=}")
+            print(f"{prot1_sel=}")
+            print(f"{i=}")
+            print(f"{prot2=}")
+            print(f"{prot2_sel=}")
+            print(f"{j=}")
+            print(f"{tmscore=}")
+            print(f"{distance=}")
+            print("--")
 
 
 def read_csv(csvfilename):
