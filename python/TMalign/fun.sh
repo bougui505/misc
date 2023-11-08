@@ -20,3 +20,6 @@ precmd() {
 test_tmalign_multi () {
     tmalign --model_list data/model.list --native_list data/native.list
 }
+test_tmalign_pairwise () {
+    tmalign --pairwise data/model.list
+}

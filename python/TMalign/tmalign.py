@@ -147,8 +147,8 @@ def tmalign_wrapper(model, native, selmodel, selnative):
         tmscore = tmalign(model=model, native=native,
                           selmodel=selmodel, selnative=selnative)
     except Exception as e:
-        print("ERROR for", model, native, selmodel, selnative)
-        print(f"ERROR: {e}")
+        print("ERROR for", model, native, selmodel, selnative, file=sys.stderr)
+        print(f"ERROR: {e}", file=sys.stderr)
         tmscore = -1.0
     return tmscore
 
@@ -176,7 +176,7 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
     # for ((model, selmodel), (native, selnative)) in iterproduct:
     #     print(model, selmodel, native, selnative)
     tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel,
-                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives, ncols=64))
+                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives, ncols=64, position=1, leave=False))
     iterproduct = zip(itertools.product(zip(model_list, selmodel_list),
                                         zip(native_list, selnative_list)), tmscores)
     if verbose:
@@ -188,6 +188,14 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
             print(f"{tmscore=}")
             print("--")
     return tmscores
+
+
+def tmalign_pairwise(pdb_list, sel_list=None):
+    if sel_list is None:
+        sel_list = [None,] * len(pdb_list)
+    for i, (ref, sel_ref) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
+        tmalign_multi(pdb_list[i:], [ref],
+                      selmodel_list=sel_list[i:], selnative_list=[sel_ref], verbose=True)
 
 
 def read_csv(csvfilename):
@@ -231,6 +239,8 @@ if __name__ == "__main__":
         "--model_list", help="CSV file with list of models. Col1: path to structure files; Col2 (optionnal): selection for the given file")
     parser.add_argument(
         "--native_list", help="CSV file with list of natives. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+    parser.add_argument(
+        "--pairwise", help="Pairwise alignment for the given CSV file. Col1: path to structure files; Col2 (optionnal): selection for the given file")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument(
         "--func", help="Test only the given function(s)", nargs="+")
@@ -264,3 +274,6 @@ if __name__ == "__main__":
         native_list, selnative_list = read_csv(args.native_list)
         tmalign_multi(model_list=model_list, native_list=native_list,
                       selmodel_list=selmodel_list, selnative_list=selnative_list, verbose=True)
+    if args.pairwise is not None:
+        pdb_list, sel_list = read_csv(args.pairwise)
+        tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list)
