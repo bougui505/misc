@@ -43,6 +43,7 @@ import tempfile
 
 import pymol2
 from joblib import Parallel, delayed
+from pymol.creating import gzip
 from tqdm import tqdm
 
 
@@ -190,30 +191,31 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
     return tmscores
 
 
-def tmalign_pairwise(pdb_list, sel_list=None):
+def tmalign_pairwise(pdb_list, sel_list, outfilename):
     n = len(pdb_list)
     if sel_list is None:
         sel_list = [None,] * n
-    for i, (prot1, prot1_sel) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
-        tmscores = tmalign_multi(pdb_list[i:], [prot1],
-                                 selmodel_list=sel_list[i:], selnative_list=[prot1_sel], verbose=False)
-        assert len(tmscores) == len(pdb_list[i:])
-        assert len(tmscores) == len(sel_list[i:])
-        for j, (tmscore, prot2, prot2_sel) in enumerate(zip(tmscores, pdb_list[i:], sel_list[i:])):
-            j = j + i
-            if tmscore >= 0.0:
-                distance = 1.0 - tmscore
-            else:
-                distance = -1.0
-            print(f"{prot1=}")
-            print(f"{prot1_sel=}")
-            print(f"{i=}")
-            print(f"{prot2=}")
-            print(f"{prot2_sel=}")
-            print(f"{j=}")
-            print(f"{tmscore=}")
-            print(f"{distance=}")
-            print("--")
+    with gzip.open(outfilename, 'wt') as gz:
+        for i, (prot1, prot1_sel) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
+            tmscores = tmalign_multi(pdb_list[i:], [prot1],
+                                     selmodel_list=sel_list[i:], selnative_list=[prot1_sel], verbose=False)
+            assert len(tmscores) == len(pdb_list[i:])
+            assert len(tmscores) == len(sel_list[i:])
+            for j, (tmscore, prot2, prot2_sel) in enumerate(zip(tmscores, pdb_list[i:], sel_list[i:])):
+                j = j + i
+                if tmscore >= 0.0:
+                    distance = 1.0 - tmscore
+                else:
+                    distance = -1.0
+                gz.write(f"{prot1=}\n")
+                gz.write(f"{prot1_sel=}\n")
+                gz.write(f"{i=}\n")
+                gz.write(f"{prot2=}\n")
+                gz.write(f"{prot2_sel=}\n")
+                gz.write(f"{j=}\n")
+                gz.write(f"{tmscore=}\n")
+                gz.write(f"{distance=}\n")
+                gz.write("--\n")
 
 
 def read_csv(csvfilename):
@@ -294,4 +296,9 @@ if __name__ == "__main__":
                       selmodel_list=selmodel_list, selnative_list=selnative_list, verbose=True)
     if args.pairwise is not None:
         pdb_list, sel_list = read_csv(args.pairwise)
-        tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list)
+        outfilename = os.path.splitext(args.pairwise)[
+            0] + "_pairwise_tmscore.rec.gz"
+        if os.path.exists(outfilename):
+            sys.exit(f"{outfilename} already exists")
+        tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list,
+                         outfilename=outfilename)
