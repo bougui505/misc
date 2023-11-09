@@ -111,27 +111,19 @@ def tmalign(model, native, selmodel=None, selnative=None):
     ) as model_file, tempfile.NamedTemporaryFile(
         suffix=".pdb", dir="/dev/shm"
     ) as native_file:
-        with pymol2.PyMOL() as p:
-            p.cmd.feedback(action='disable', module='all', mask='everything')
-            p.cmd.load(filename=model, object="mymodel")
-            p.cmd.load(filename=native, object="mynative")
-            # Remove alternate locations
-            p.cmd.remove("not alt ''+A")
-            p.cmd.alter("all", "alt=''")
-            ############################
-            clean_states(p)
-            clean_chains(p, f"mymodel and ({selmodel})", obj="mymodel")
-            clean_chains(p, f"mynative and ({selnative})", obj="mynative")
-            p.cmd.save(filename=model_file.name,
-                       selection=f"mymodel and ({selmodel})", state=-1)
-            p.cmd.save(filename=native_file.name,
-                       selection=f"mynative and ({selnative})", state=-1)
-        scriptdir = GetScriptDir()
-        cmd = f"{scriptdir}/TMalign {model_file.name} {native_file.name}".split(
-            " ")
-        process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, universal_newlines=True)
-        lines = process.stdout.readlines()
+        pymolsave(model, native, selmodel, selnative,
+                  model_file.name, native_file.name)
+        tmscore = get_tmscore(model_file.name, native_file.name)
+    return tmscore
+
+
+def get_tmscore(modelfile, nativefile):
+    scriptdir = GetScriptDir()
+    cmd = f"{scriptdir}/TMalign {modelfile} {nativefile}".split(
+        " ")
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, universal_newlines=True)
+    lines = process.stdout.readlines()
     tmscores = []
     for line in lines:
         if line.startswith("TM-score="):
@@ -141,6 +133,24 @@ def tmalign(model, native, selmodel=None, selnative=None):
             break
     tmscore = max(tmscores)
     return tmscore
+
+
+def pymolsave(modelfile, nativefile, selmodel, selnative, outmodelfile, outnativefile):
+    with pymol2.PyMOL() as p:
+        p.cmd.feedback(action='disable', module='all', mask='everything')
+        p.cmd.load(filename=modelfile, object="mymodel")
+        p.cmd.load(filename=nativefile, object="mynative")
+        # Remove alternate locations
+        p.cmd.remove("not alt ''+A")
+        p.cmd.alter("all", "alt=''")
+        ############################
+        clean_states(p)
+        clean_chains(p, f"mymodel and ({selmodel})", obj="mymodel")
+        clean_chains(p, f"mynative and ({selnative})", obj="mynative")
+        p.cmd.save(filename=outmodelfile,
+                   selection=f"mymodel and ({selmodel})", state=-1)
+        p.cmd.save(filename=outnativefile,
+                   selection=f"mynative and ({selnative})", state=-1)
 
 
 def tmalign_wrapper(model, native, selmodel, selnative):
