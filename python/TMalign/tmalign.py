@@ -46,6 +46,8 @@ from joblib import Parallel, delayed
 from pymol.creating import gzip
 from tqdm import tqdm
 
+from misc import rec
+
 
 def log(msg):
     try:
@@ -228,6 +230,33 @@ def tmalign_pairwise(pdb_list, sel_list, outfilename):
                 gz.write("--\n")
 
 
+def tmalign_rec(recfile):
+    data, fields = rec.get_data(file=recfile, rmquote=True)
+    assert 'pdb1' in fields
+    assert 'pdb2' in fields
+    pdb1list = data["pdb1"]
+    pdb2list = data["pdb2"]
+    n = len(pdb1list)
+    if "sel1" in fields:
+        sel1list = data["sel1"]
+    else:
+        sel1list = [None,] * n
+    if "sel2" in fields:
+        sel2list = data["sel2"]
+    else:
+        sel2list = [None,] * n
+    ncpu = os.cpu_count()
+    tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=pdb1, native=pdb2, selmodel=sel1, selnative=sel2) for (
+        pdb1, pdb2, sel1, sel2) in tqdm(zip(pdb1list, pdb2list, sel1list, sel2list), total=n, ncols=64, position=1, leave=False))
+    assert len(tmscores) == n
+    for i in range(n):
+        for field in fields:
+            print(f"{field}={data[field][i]}")
+        print(f"tmscore={tmscores[i]}")
+        print(f"distance={1.0 - tmscores[i]}")
+        print("--")
+
+
 def read_csv(csvfilename):
     pathlist = []
     sellist = []
@@ -271,6 +300,8 @@ if __name__ == "__main__":
         "--native_list", help="CSV file with list of natives. Col1: path to structure files; Col2 (optionnal): selection for the given file")
     parser.add_argument(
         "--pairwise", help="Pairwise alignment for the given CSV file. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+    parser.add_argument(
+        "--rec", help="Compute TMscores from the given rec file. The fields must be: pdb1, sel1 (optionnal), pdb2, sel2 (optionnal). All other fields are also kept in the output")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument(
         "--func", help="Test only the given function(s)", nargs="+")
@@ -312,3 +343,5 @@ if __name__ == "__main__":
             sys.exit(f"{outfilename} already exists")
         tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list,
                          outfilename=outfilename)
+    if args.rec is not None:
+        tmalign_rec(args.rec)
