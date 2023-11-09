@@ -53,13 +53,13 @@ def GetScriptDir():
     return scriptdir
 
 
-def pt2txt(ptfile):
+def pt2txt(ptfile, delimiter=" "):
     data = torch.load(ptfile, map_location=torch.device('cpu'))
     data = data.numpy()
     n = data.shape[0]
     for i in range(n):
         line = data[i]
-        string = ' '.join([str(e) for e in line])
+        string = delimiter.join([str(e) for e in line])
         print(string)
 
 
@@ -83,6 +83,8 @@ if __name__ == '__main__':
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument(
         'inp', help="Input PyTorch file (.pt) to convert in txt")
+    parser.add_argument(
+        '-d', '--delimiter', help='Column delimiter to use (default 1-space)', default=" ")
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--func', help='Test only the given function(s)', nargs='+')
@@ -106,4 +108,4 @@ if __name__ == '__main__':
         sys.exit()
 
     if args.inp is not None:
-        pt2txt(args.inp)
+        pt2txt(args.inp, args.delimiter)
