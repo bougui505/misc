@@ -23,3 +23,6 @@ test_tmalign_multi () {
 test_tmalign_pairwise () {
     tmalign --pairwise data/model.list
 }
+test_tmalign_rec () {
+    tmalign --rec data/tmalign_inp.rec.gz
+}
