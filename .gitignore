@@ -1048,3 +1048,4 @@ python/pytorch/data/mds_pts_out.rec.gz
 python/pytorch/mds_ckpt.pt
 python/pytorch/data/mds_pts_out.pt
 python/TMalign/data/model_pairwise_tmscore.rec.gz
+python/TMalign/data/tmalign_inp_tmscore.rec.gz
