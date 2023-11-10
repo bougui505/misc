@@ -231,6 +231,9 @@ def tmalign_pairwise(pdb_list, sel_list, outfilename):
 
 
 def tmalign_rec(recfile):
+    outfile = recfile.split(".")[0] + '_tmscore.rec.gz'
+    assert not os.path.exists(
+        outfile), f"{outfile} already exists, please remove it"
     data, fields = rec.get_data(file=recfile, rmquote=True)
     assert 'pdb1' in fields
     assert 'pdb2' in fields
@@ -249,12 +252,13 @@ def tmalign_rec(recfile):
     tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=pdb1, native=pdb2, selmodel=sel1, selnative=sel2) for (
         pdb1, pdb2, sel1, sel2) in tqdm(zip(pdb1list, pdb2list, sel1list, sel2list), total=n, ncols=64, position=1, leave=False))
     assert len(tmscores) == n
-    for i in range(n):
-        for field in fields:
-            print(f"{field}={data[field][i]}")
-        print(f"tmscore={tmscores[i]}")
-        print(f"distance={1.0 - tmscores[i]}")
-        print("--")
+    with gzip.open(outfile, 'wt') as gz:
+        for i in range(n):
+            for field in fields:
+                gz.write(f"{field}={data[field][i]}\n")
+            gz.write(f"tmscore={tmscores[i]}\n")
+            gz.write(f"distance={1.0 - tmscores[i]}\n")
+            gz.write("--\n")
 
 
 def read_csv(csvfilename):
