@@ -91,7 +91,7 @@ def get_data(file, selected_fields=None, rmquote=False):
     data = dict()
     recid = 0  # record id
     fields = set()
-    for linenbr, line in enumerate(file):
+    for linenbr, line in tqdm(enumerate(file), desc='reading file...'):
         linenbr += 1
         line = line.strip()
         if line.startswith("#"):
