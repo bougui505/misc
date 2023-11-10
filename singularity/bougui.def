@@ -5,6 +5,7 @@ FROM: debian:12.1
 neovim/py_template_file.py /opt
 neovim/sh_template_file.sh /opt
 neovim/vimrc.vim /opt
+collada2gltf-2.1.4-h6bb024c_0.tar.bz2 /opt
 
 %post
 ################################# APT INSTALL #################################
@@ -24,7 +25,8 @@ apt-get --no-install-recommends install -y catch2 libfreetype6-dev libglew-dev l
 cd /opt
 git clone https://github.com/schrodinger/pymol-open-source.git
 cd pymol-open-source
-wget -nv https://anaconda.org/schrodinger/collada2gltf/2.1.4/download/linux-64/collada2gltf-2.1.4-h6bb024c_0.tar.bz2
+# wget -nv https://anaconda.org/schrodinger/collada2gltf/2.1.4/download/linux-64/collada2gltf-2.1.4-h6bb024c_0.tar.bz2
+mv /opt/collada2gltf-2.1.4-h6bb024c_0.tar.bz2 .
 tar xf collada2gltf-*.tar.bz2 -C / bin/collada2gltf
 git clone --depth 1 https://github.com/schrodinger/pymol-testing.git
 git clone --depth 1 https://github.com/rcsb/mmtf-cpp.git
@@ -53,6 +55,7 @@ cd /usr/local/bin && ln -s /opt/misc/python/pymol/symmetrize.py symmetrize
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/liginfo.py liginfo
 cd /usr/local/bin && ln -s /opt/misc/python/rec.py rec
+cd /usr/local/bin && ln -s /opt/misc/python/TMalign/tmalign.py tmalign
 pip3 install --break-system-packages termcolor
 ##########################################################################
 
