@@ -121,7 +121,7 @@ def tmalign(model, native, selmodel=None, selnative=None):
 
 def get_tmscore(modelfile, nativefile):
     scriptdir = GetScriptDir()
-    cmd = f"{scriptdir}/TMalign {modelfile} {nativefile}".split(
+    cmd = f"{scriptdir}/USalign {modelfile} {nativefile}".split(
         " ")
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, universal_newlines=True)
