@@ -41,4 +41,19 @@ for i in "$@"; do
 done
 FILENAME=$1
 
-awk -v N=$N -v DELIM=$DELIM '{i+=1; data[i]=$0} END{for (j=1; j<=N; j++){print data[j]}; if (DELIM==1){print "[...]"}; for (k=i-N+1;k<=i;k++){print data[k]}}' $FILENAME
+awk -v N=$N -v DELIM=$DELIM '{
+data[NR]=$0
+} 
+END{
+	for (j=1; j<=N; j++){
+		if (j<=NR){
+			print data[j]
+		}
+	}
+	if (DELIM==1 && j<NR){print "[...]"}
+	for (k=NR-N+1;k<=NR;k++){
+		if (k>0 && k>j){
+			print data[k]
+		}
+	}
+}' $FILENAME
