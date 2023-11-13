@@ -113,8 +113,8 @@ def tmalign(model, native, selmodel=None, selnative=None):
     ) as model_file, tempfile.NamedTemporaryFile(
         suffix=".pdb", dir="/dev/shm"
     ) as native_file:
-        pymolsave(model, native, selmodel, selnative,
-                  model_file.name, native_file.name)
+        pymolsave(model, selmodel, model_file.name)
+        pymolsave(native, selnative, native_file.name)
         tmscore = get_tmscore(model_file.name, native_file.name)
     return tmscore
 
@@ -137,22 +137,18 @@ def get_tmscore(modelfile, nativefile):
     return tmscore
 
 
-def pymolsave(modelfile, nativefile, selmodel, selnative, outmodelfile, outnativefile):
+def pymolsave(infile, sel, outfile):
     with pymol2.PyMOL() as p:
         p.cmd.feedback(action='disable', module='all', mask='everything')
-        p.cmd.load(filename=modelfile, object="mymodel")
-        p.cmd.load(filename=nativefile, object="mynative")
+        p.cmd.load(filename=infile, object="mymodel")
         # Remove alternate locations
         p.cmd.remove("not alt ''+A")
         p.cmd.alter("all", "alt=''")
         ############################
         clean_states(p)
-        clean_chains(p, f"mymodel and ({selmodel})", obj="mymodel")
-        clean_chains(p, f"mynative and ({selnative})", obj="mynative")
-        p.cmd.save(filename=outmodelfile,
-                   selection=f"mymodel and ({selmodel})", state=-1)
-        p.cmd.save(filename=outnativefile,
-                   selection=f"mynative and ({selnative})", state=-1)
+        clean_chains(p, f"mymodel and ({sel})", obj="mymodel")
+        p.cmd.save(filename=outfile,
+                   selection=f"mymodel and ({sel})", state=-1)
 
 
 def tmalign_wrapper(model, native, selmodel, selnative):
