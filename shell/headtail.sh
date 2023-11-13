@@ -50,7 +50,7 @@ END{
 			print data[j]
 		}
 	}
-	if (DELIM==1 && j<=NR){print "[...]"}
+	if (DELIM==1 && j<=NR && 2*N<NR){print "[...]"}
 	for (k=NR-N+1;k<=NR;k++){
 		if (k>0 && k>=j){
 			print data[k]
