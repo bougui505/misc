@@ -37,6 +37,7 @@
 #############################################################################
 import os
 
+import numpy as np
 import torch
 
 
@@ -53,13 +54,22 @@ def GetScriptDir():
     return scriptdir
 
 
-def pt2txt(ptfile, delimiter=" "):
-    data = torch.load(ptfile, map_location=torch.device('cpu'))
-    data = data.numpy()
+def py2txt(pyfile, delimiter=" "):
+    ext = os.path.splitext(pyfile)[-1]
+    if ext == ".pt":
+        data = torch.load(pyfile, map_location=torch.device('cpu'))
+        data = data.numpy()
+    elif ext == ".npy":
+        data = np.load(pyfile)
+    else:
+        sys.exit("Only .pt or .npy extensions are known")
     n = data.shape[0]
     for i in range(n):
         line = data[i]
-        string = delimiter.join([str(e) for e in line])
+        if hasattr(line, '__iter__'):
+            string = delimiter.join([str(e) for e in line])
+        else:
+            string = line
         print(string)
 
 
@@ -79,10 +89,10 @@ if __name__ == '__main__':
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(
-        description='Read a PyTorch file (.pt) and print it as text on the stdout.')
+        description='Read a PyTorch or numpy file (.pt or .npy) and print it as text on the stdout.')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument(
-        'inp', help="Input PyTorch file (.pt) to convert in txt")
+        'inp', help="Input PyTorch file (.pt) or numpy file (.npy) to convert in txt")
     parser.add_argument(
         '-d', '--delimiter', help='Column delimiter to use (default 1-space)', default=" ")
     parser.add_argument('--test', help='Test the code', action='store_true')
@@ -108,4 +118,4 @@ if __name__ == '__main__':
         sys.exit()
 
     if args.inp is not None:
-        pt2txt(args.inp, args.delimiter)
+        py2txt(args.inp, args.delimiter)
