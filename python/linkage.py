@@ -98,7 +98,10 @@ if __name__ == '__main__':
                                                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
 
-    LINKAGENPY = os.path.splitext(args.npy)[0] + "_linkage.npy"
+    basename = os.path.basename(args.npy)
+    if not os.path.exists('linkage'):
+        os.mkdir('linkage')
+    LINKAGENPY = 'linkage/' + os.path.splitext(basename)[0] + "_linkage.npy"
     if os.path.exists(LINKAGENPY):
         print(f"Loading linkage matrix from {LINKAGENPY}")
         Z = np.load(LINKAGENPY)
@@ -109,7 +112,8 @@ if __name__ == '__main__':
         print(f"{Z=}")
         np.save(LINKAGENPY, Z)
     if args.nclusters is not None:
-        CLUSTERREC = os.path.splitext(args.npy)[0] + "_clusters.rec.gz"
+        CLUSTERREC = 'linkage/' + \
+            os.path.splitext(basename)[0] + "_clusters.rec.gz"
         assert not os.path.exists(
             CLUSTERREC), f"{CLUSTERREC} file already exists"
         clusters = hierarchy.fcluster(
