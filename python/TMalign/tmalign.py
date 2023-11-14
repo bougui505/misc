@@ -146,6 +146,9 @@ def pymolsave(infile, sel, outfile, verbose=False):
         p.cmd.load(filename=infile, object="mymodel")
         if verbose:
             timer.stop(f"{infile} loading...")
+        p.cmd.remove(f"not (mymodel and ({sel}))")
+        if verbose:
+            timer.stop(f"keeping only: {sel}")
         # Remove alternate locations
         p.cmd.remove("not alt ''+A")
         p.cmd.alter("all", "alt=''")
@@ -155,11 +158,11 @@ def pymolsave(infile, sel, outfile, verbose=False):
         clean_states(p)
         if verbose:
             timer.stop(f"Cleaning states...")
-        clean_chains(p, f"mymodel and ({sel})", obj="mymodel")
+        clean_chains(p, "all", obj="mymodel")
         if verbose:
             timer.stop(f"Cleaning chains...")
         p.cmd.save(filename=outfile,
-                   selection=f"mymodel and ({sel})", state=-1)
+                   selection="mymodel", state=-1)
 
 
 def tmalign_wrapper(model, native, selmodel, selnative):
