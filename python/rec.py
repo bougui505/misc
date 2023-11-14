@@ -226,18 +226,20 @@ def data_selection(data: dict, recsel: str) -> dict:
     n = check_data_lengths(data)
     out = collections.defaultdict(list)
     n_found = 0
-    for i in (pbar := tqdm(range(n))):
+    for rec_internal_index in (pbar := tqdm(range(n))):
         for key in data:
-            vars()[key] = data[key][i]
+            vars()[key] = data[key][rec_internal_index]
             # exec(f"{key}={data[key][i]}")
         keep = eval(recsel)
         if keep:
             n_found += 1
-            pbar.set_description(f"nbr of match: {n_found}/{i+1}")
+            pbar.set_description(
+                f"nbr of match: {n_found}/{rec_internal_index+1}")
             for key in data:
-                out[key].append(data[key][i])
-        if i == n - 1:
-            pbar.set_description(f"nbr of match: {n_found}/{i+1}")
+                out[key].append(data[key][rec_internal_index])
+        if rec_internal_index == n - 1:
+            pbar.set_description(
+                f"nbr of match: {n_found}/{rec_internal_index+1}")
     return out
 
 
