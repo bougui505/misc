@@ -100,14 +100,31 @@ def lossfunc(x, dmat, repulsion=0.0):
         return loss_dmat
 
 
+def pca(dmat, ndims=2):
+    """
+    >>> x = torch.randn(10, 10)
+    >>> dmat = torch.cdist(x, x)
+    >>> x = pca(dmat)
+    >>> x.shape
+    torch.Size([10, 2])
+    """
+    eigenvalues, eigenvectors = torch.linalg.eigh(dmat - dmat.mean(dim=0))
+    eigenvalues = torch.flip(eigenvalues, [0])
+    eigenvectors = torch.flip(eigenvectors, [1])
+    x = torch.mm(dmat, eigenvectors[:, :ndims])
+    return x
+
+
 def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=None, return_np=True, verbose=True):
     npts = dmat.shape[0]
-    if x is None:
-        x = torch.randn((npts, ndims)).to(device)
     dmat = dmat.to(device)
+    if x is None:
+        # x = torch.randn((npts, ndims)).to(device)
+        x = pca(dmat, ndims=ndims)
     mover = Mover(npts=npts, ndims=ndims).to(device)
     optimizer = torch.optim.Adam(mover.parameters(), amsgrad=False, lr=0.01)
-    y = None
+    y = x
+    loss = torch.inf
     loss_prev = torch.inf
     for i in range(niter):
         optimizer.zero_grad()
@@ -219,6 +236,8 @@ def write_rec(recfile, outrecfile, mdsout):
                 gz.write(f"{field}={data[field][index]}\n")
             gz.write(f"mds_i={list(mdsout[i])}\n")
             gz.write(f"mds_j={list(mdsout[j])}\n")
+            mds_dist = np.sqrt(((mdsout[j] - mdsout[i])**2).sum())
+            gz.write(f"mds_dist={mds_dist}\n")
             gz.write("--\n")
 
 
@@ -301,4 +320,5 @@ if __name__ == '__main__':
         else:
             out = fit_batched(recfile=recfile, batch_size=args.batch_size, field=field, nepochs=args.nepochs, repulsion=args.repulsion,
                               ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch)
-        write_rec(recfile=recfile, outrecfile='data/mds.rec.gz', mdsout=out)
+        outrecfile = recfile.split(".")[0] + "_mds.rec.gz"
+        write_rec(recfile=recfile, outrecfile=outrecfile, mdsout=out)

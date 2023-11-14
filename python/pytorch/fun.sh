@@ -18,7 +18,7 @@ precmd() {
 }
 
 test_MDS () {
-    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000
+    sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 100000
 }
 
 test_MDS_batch () {
@@ -30,7 +30,7 @@ test_MDS_pts () {
 }
 
 plot_MDS () {
-    rec --file data/mds.rec.gz --fields mds_i class_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | tr -d "," | plot2 --scatter --fields x y z --colorbar
+    rec --file data/mds_inp_mds.rec.gz --fields mds_i class_i | grep -v "^#" | uniq | tr -d '[' | tr -d ']' | tr -d "," | plot2 --scatter --fields x y z --colorbar
 }
 
 plot_MDS_pts () {
