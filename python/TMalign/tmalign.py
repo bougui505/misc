@@ -43,6 +43,7 @@ import tempfile
 
 import pymol2
 from joblib import Parallel, delayed
+from misc.Timer import Timer
 from pymol.creating import gzip
 from tqdm import tqdm
 
@@ -83,7 +84,7 @@ def clean_chains(p, sel, obj, nres_per_chain_min=3):
             p.cmd.remove(f"chain {chain} and polymer.protein and {obj}")
 
 
-def tmalign(model, native, selmodel=None, selnative=None):
+def tmalign(model, native, selmodel=None, selnative=None, verbose=False):
     """
     >>> model = "data/1ycr.pdb"
     >>> native = "data/1t4e.pdb"
@@ -113,8 +114,8 @@ def tmalign(model, native, selmodel=None, selnative=None):
     ) as model_file, tempfile.NamedTemporaryFile(
         suffix=".pdb", dir="/dev/shm"
     ) as native_file:
-        pymolsave(model, selmodel, model_file.name)
-        pymolsave(native, selnative, native_file.name)
+        pymolsave(model, selmodel, model_file.name, verbose=verbose)
+        pymolsave(native, selnative, native_file.name, verbose=verbose)
         tmscore = get_tmscore(model_file.name, native_file.name)
     return tmscore
 
@@ -137,16 +138,26 @@ def get_tmscore(modelfile, nativefile):
     return tmscore
 
 
-def pymolsave(infile, sel, outfile):
+def pymolsave(infile, sel, outfile, verbose=False):
+    if verbose:
+        timer = Timer(autoreset=True)
     with pymol2.PyMOL() as p:
         p.cmd.feedback(action='disable', module='all', mask='everything')
         p.cmd.load(filename=infile, object="mymodel")
+        if verbose:
+            timer.stop(f"{infile} loading...")
         # Remove alternate locations
         p.cmd.remove("not alt ''+A")
         p.cmd.alter("all", "alt=''")
+        if verbose:
+            timer.stop(f"Removing alternate locations...")
         ############################
         clean_states(p)
+        if verbose:
+            timer.stop(f"Cleaning states...")
         clean_chains(p, f"mymodel and ({sel})", obj="mymodel")
+        if verbose:
+            timer.stop(f"Cleaning chains...")
         p.cmd.save(filename=outfile,
                    selection=f"mymodel and ({sel})", state=-1)
 
@@ -302,6 +313,7 @@ if __name__ == "__main__":
         "--pairwise", help="Pairwise alignment for the given CSV file. Col1: path to structure files; Col2 (optionnal): selection for the given file")
     parser.add_argument(
         "--rec", help="Compute TMscores from the given rec file. The fields must be: pdb1, sel1 (optionnal), pdb2, sel2 (optionnal). All other fields are also kept in the output")
+    parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument(
         "--func", help="Test only the given function(s)", nargs="+")
@@ -328,7 +340,7 @@ if __name__ == "__main__":
         sys.exit()
     if args.model is not None and args.native is not None:
         tmscore = tmalign(model=args.model, native=args.native,
-                          selmodel=args.selmodel, selnative=args.selnative)
+                          selmodel=args.selmodel, selnative=args.selnative, verbose=args.verbose)
         print(f"{tmscore=}")
     if args.model_list is not None and args.native_list is not None:
         model_list, selmodel_list = read_csv(args.model_list)
