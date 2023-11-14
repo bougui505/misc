@@ -98,6 +98,8 @@ def tmalign(model, native, selmodel=None, selnative=None, verbose=False):
     Sequence is too short <3! TMalign error
     >>> model = "data/lt3/5ruv.cif.gz"
     >>> native = "data/lt3/reclig.pdb"
+    >>> tmalign(model, native)
+    0.32335
     >>> selmodel = "byres((resn W6J and chain B and resi 201) around 10.0 and polymer.protein)"
     >>> selnative = "byres((resn LIG and chain L and resi 1) around 10.0 and polymer.protein)"
     >>> tmalign(model, native, selmodel=selmodel, selnative=selnative)
