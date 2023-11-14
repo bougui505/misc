@@ -223,7 +223,7 @@ def rec_to_mat(recfile='', field='', data=[], fields=[]):
     return dmat
 
 
-def write_rec(recfile, outrecfile, mdsout):
+def write_rec_pairwise(recfile, outrecfile, mdsout):
     data, fields = rec.get_data(
         recfile, selected_fields=None, rmquote=False)
     assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
@@ -238,6 +238,15 @@ def write_rec(recfile, outrecfile, mdsout):
             gz.write(f"mds_j={list(mdsout[j])}\n")
             mds_dist = np.sqrt(((mdsout[j] - mdsout[i])**2).sum())
             gz.write(f"mds_dist={mds_dist}\n")
+            gz.write("--\n")
+
+
+def write_rec_simple(outrecfile, mdsout):
+    with gzip.open(outrecfile, 'wt') as gz:
+        for i, mds in enumerate(mdsout):
+            mds = list(mds)
+            gz.write(f"{i=}\n")
+            gz.write(f"{mds=}\n")
             gz.write("--\n")
 
 
@@ -313,6 +322,16 @@ if __name__ == '__main__':
         sys.exit(0)
     if args.rec is not None:
         recfile, field = args.rec
+        basename = os.path.basename(recfile)
+        outrecfile_pairwise = "MDS/" + \
+            basename.split(".")[0] + "_mds_pairwise.rec.gz"
+        outrecfile_simple = "MDS/" + basename.split(".")[0] + "_mds.rec.gz"
+        if not os.path.exists("MDS"):
+            os.mkdir("MDS")
+        assert not os.path.exists(
+            outrecfile_pairwise), f"{outrecfile_pairwise} already exists"
+        assert not os.path.exists(
+            outrecfile_simple), f"{outrecfile_simple} already exists"
         if args.batch_size is None:
             dmat = rec_to_mat(recfile=recfile, field=field)
             out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
@@ -320,5 +339,6 @@ if __name__ == '__main__':
         else:
             out = fit_batched(recfile=recfile, batch_size=args.batch_size, field=field, nepochs=args.nepochs, repulsion=args.repulsion,
                               ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch)
-        outrecfile = recfile.split(".")[0] + "_mds.rec.gz"
-        write_rec(recfile=recfile, outrecfile=outrecfile, mdsout=out)
+        write_rec_pairwise(
+            recfile=recfile, outrecfile=outrecfile_pairwise, mdsout=out)
+        write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
