@@ -10,15 +10,16 @@ usage ()
 	echo "Usage"
 	echo "headtail filename"
 	echo "Print the first and the last 10 lines of the file"
+	echo "    -h print this help message and exit"
 	echo "    -n NUM    print the first and the last NUM lines"
 	echo "    -d        Do not print the delimiter '[...]' between the head
 			    and the tail of the file"
 }
 
-if [ $# -lt 1 ]; then
-	usage
-	exit
-fi
+# if [ $# -lt 1 ]; then
+# 	usage
+# 	exit
+# fi
 
 N=10
 DELIM=1
