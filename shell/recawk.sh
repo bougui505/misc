@@ -79,8 +79,6 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-echo $CMD
-
 awk -F"=" '{
 if ($0=="--"){
     '"$CMD"'
