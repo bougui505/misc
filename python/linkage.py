@@ -76,6 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('npy', help="Input npy file containing a condensed distance matrix. For each i and j (where i<j<m), where m is the number of original observations. The metric d_(ij) is stored in entry m * i + j - ((i + 2) * (i + 1)) // 2")
     parser.add_argument(
         '--nclusters', help="Number of clusters to define", type=int)
+    parser.add_argument(
+        '--distance', help="Distance based clusters", type=float)
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument(
         '--func', help='Test only the given function(s)', nargs='+')
@@ -111,13 +113,26 @@ if __name__ == '__main__':
         Z = hierarchy.linkage(y, method="average")
         print(f"{Z=}")
         np.save(LINKAGENPY, Z)
+    clusters = None
     if args.nclusters is not None:
         CLUSTERREC = 'linkage/' + \
-            os.path.splitext(basename)[0] + "_clusters.rec.gz"
+            os.path.splitext(basename)[0] + \
+            f"_{args.nclusters}_clusters.rec.gz"
         assert not os.path.exists(
             CLUSTERREC), f"{CLUSTERREC} file already exists"
         clusters = hierarchy.fcluster(
             Z=Z, t=args.nclusters, criterion='maxclust')
+    if args.distance is not None:
+        CLUSTERREC = 'linkage/' + \
+            os.path.splitext(basename)[0] + \
+            f"_{args.distance}_clusters.rec.gz"
+        assert not os.path.exists(
+            CLUSTERREC), f"{CLUSTERREC} file already exists"
+        clusters = hierarchy.fcluster(
+            Z=Z, t=args.distance, criterion='distance')
+    if clusters is not None:
+        nclusters = len(np.unique(clusters))
+        print(f"{nclusters=}")
         with gzip.open(CLUSTERREC, 'wt') as gz:
             for i, cluster in enumerate(clusters):
                 gz.write(f"{i=}\n")
