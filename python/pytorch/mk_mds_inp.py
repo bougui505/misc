@@ -14,6 +14,8 @@ dmat = scidist.squareform(scidist.pdist(x))
 print(f"{dmat.shape=}")
 npts = x.shape[0]
 
+np.save('data/mds_inp.npy', scidist.squareform(dmat))
+
 with gzip.open('data/mds_inp.rec.gz', 'wt') as gz:
     for i in range(npts):
         for j in range(i, npts):

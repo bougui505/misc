@@ -21,6 +21,10 @@ test_MDS () {
     sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 100000
 }
 
+test_MDS_npy () {
+    sing ./MDS.py --npy data/mds_inp.npy --niter 100000
+}
+
 test_MDS_batch () {
     sing ./MDS.py --rec data/mds_inp.rec.gz distance --niter 50000 -bs 50 --nepochs 100 --min_delta_epoch 0.1
 }

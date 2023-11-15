@@ -41,6 +41,7 @@ import gzip
 import os
 
 import numpy as np
+import scipy.spatial.distance as scidist
 import torch
 
 from misc import rec
@@ -281,6 +282,8 @@ if __name__ == '__main__':
         '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
     parser.add_argument(
         '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
+    parser.add_argument(
+        '--npy', help='Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)')
     parser.add_argument('-bs', '--batch_size',
                         help='Batch size. Default is no batch, fit all at once.', type=int)
     parser.add_argument(
@@ -341,4 +344,13 @@ if __name__ == '__main__':
                               ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch)
         write_rec_pairwise(
             recfile=recfile, outrecfile=outrecfile_pairwise, mdsout=out)
+        write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
+    if args.npy is not None:
+        if not os.path.isdir("MDS"):
+            os.mkdir("MDS")
+        basename = os.path.basename(args.npy)
+        outrecfile_simple = "MDS/" + basename.split(".")[0] + "_mds.rec.gz"
+        dmat = torch.from_numpy(scidist.squareform(np.load(args.npy)))
+        out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
+                     niter=args.niter, device=DEVICE, min_delta=args.min_delta)
         write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
