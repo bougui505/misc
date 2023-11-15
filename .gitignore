@@ -1052,3 +1052,5 @@ python/TMalign/data/tmalign_inp_tmscore.rec.gz
 python/TMalign/data/tmalign_inp_tmscore.rec.gz_ref
 python/TMalign/data/1.rec.gz
 python/pytorch/data/mds_inp_mds.rec.gz
+python/pytorch/MDS/mds_inp_mds.rec.gz
+python/pytorch/data/mds_inp.npy
