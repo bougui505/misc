@@ -284,6 +284,7 @@ if __name__ == '__main__':
         '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
     parser.add_argument(
         '--npy', help='Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)')
+    parser.add_argument('--device')
     parser.add_argument('-bs', '--batch_size',
                         help='Batch size. Default is no batch, fit all at once.', type=int)
     parser.add_argument(
@@ -295,7 +296,10 @@ if __name__ == '__main__':
         '--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
 
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if args.device is None:
+        DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        DEVICE = args.device
     print(f"{DEVICE=}")
 
     if args.test:
