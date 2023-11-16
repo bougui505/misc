@@ -44,6 +44,9 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
+bold=$(tput bold)
+normal=$(tput sgr0)
+
 function usage () {
     cat << EOF
 
@@ -53,6 +56,7 @@ function usage () {
 
 Read a rec file formatted as:
 
+${bold} 
 key1=val1
 key2=val2
 --
@@ -60,31 +64,45 @@ key1=val12
 key2=val22
 --
 [...]
+${normal} 
 
 using awk.
 
-The key, value couples are stored in 'rec' awk array.
+An example rec file can be found in ${bold}$DIRSCRIPT/recawk_test/data/file.rec.gz${normal}
 
+The key, value couples are stored in ${bold}rec${normal} awk array.
 To access key1, use:
 
-rec["key1"] -> val1 (if in first records)
+    ${bold}rec["key1"]${normal} -> val1 (if in first records)
 
-The full rec is not stored in rec. Just the current record is stored
+    ${bold}zcat data/file.rec.gz | recawk '{print rec["i"]}'${normal}
+
+The full rec file is not stored in ${bold}rec${normal}. Just the current record is stored.
 
 To enumerate fields just use:
 
-for (field in rec){
-    print field
-}
+    ${bold} 
+    for (field in rec){
+        print field
+    }
+    ${normal} 
 
-A function printrec() can be used to print the current record. The record separator "--" is not printed by printrec() to allow the user to add an item to the record:
+A function ${bold}printrec()${normal} can be used to print the current record. The record separator "--" is not printed by ${bold}printrec()${normal} to allow the user to add an item to the record:
 
-    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
+    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'${normal}
+
+Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of input records awk has processed since the beginning of the program’s execution. Not to be confused with ${bold}NR${normal}, which is the builtin awk variable, which store the number of lines awk has processed since the beginning of the program’s execution.
+
+    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'${normal}
 
 Examples:
     
+${bold} 
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
+    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}
+    zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
+${normal} 
 
 EOF
 }
@@ -106,8 +124,12 @@ function printrec(){
         print field"="rec[field]
     }
 }
+BEGIN{
+nr=0
+}
 {
 if ($0=="--"){
+    nr+=1
     '"$CMD"'
     delete rec
 }

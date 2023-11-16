@@ -28,3 +28,7 @@ test2 () {
 test3 () {
     zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
 }
+
+test4 () {
+    zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
+}
