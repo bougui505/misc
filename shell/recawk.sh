@@ -71,9 +71,20 @@ rec["key1"] -> val1 (if in first records)
 
 The full rec is not stored in rec. Just the current record is stored
 
+To enumerate fields just use:
+
+for (field in rec){
+    print field
+}
+
+A function printrec() can be used to print the current record. The record separator "--" is not printed by printrec() to allow the user to add an item to the record:
+
+    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
+
 Examples:
     
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
+    zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
 
 EOF
 }
@@ -89,10 +100,18 @@ fi
 CMD=$1
 FILENAMES="${@:2}"
 
-awk -F"=" '{
+awk -F"=" '
+function printrec(){
+    for (field in rec){
+        print field"="rec[field]
+    }
+}
+{
 if ($0=="--"){
     '"$CMD"'
     delete rec
 }
-rec[$1]=substr($0,length($1)+2)
+else{
+    rec[$1]=substr($0,length($1)+2)
+}
 }' $FILENAMES
