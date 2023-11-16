@@ -52,7 +52,7 @@ function usage () {
 
     -h, --help print this help message and exit
 
-------------------------------------------------
+----------------${bold}RECAWK${normal}----------------
 
 Read a rec file formatted as:
 
