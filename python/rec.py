@@ -302,7 +302,7 @@ def merge_dictionnaries(d1, d2):
     peq = peq.astype(bool)
     inds = np.where(peq)
     out = collections.defaultdict(list)
-    for i1, i2 in zip(*inds):
+    for i1, i2 in tqdm(zip(*inds), total=len(inds), desc='merging'):
         for k in common_keys:
             v1 = d1[k][i1]
             v2 = d2[k][i2]
