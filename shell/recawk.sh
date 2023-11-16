@@ -92,9 +92,7 @@ FILENAMES="${@:2}"
 awk -F"=" '{
 if ($0=="--"){
     '"$CMD"'
-    for (k in rec){
-        delete rec[k]
-    }
+    delete rec
 }
-rec[$1]=$2
+rec[$1]=substr($0,length($1)+2)
 }' $FILENAMES
