@@ -1,4 +1,5 @@
 set mouse=
+set wrap
 autocmd BufNewFile *.sh 0r /etc/xdg/nvim/sh_template_file.sh
 autocmd BufNewFile *.py 0r /etc/xdg/nvim/py_template_file.py
 
