@@ -18,6 +18,7 @@ apt-get install -y sqlite3 coreutils
 apt-get install -y htop
 apt-get install -y parallel
 apt-get install -y python3-pandas
+apt-get install -y pv
 apt-get clean
 ###############################################################################
 
