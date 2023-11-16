@@ -18,5 +18,13 @@ precmd() {
 }
 
 test1 () {
+    zcat data/file.rec.gz | recawk '{print rec["i"]}'
+}
 
+test2 () {
+    zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
+}
+
+test2 () {
+    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
 }
