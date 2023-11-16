@@ -95,6 +95,10 @@ Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of inpu
 
     ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'${normal}
 
+An ${bold}END${normal} can be given as in standard awk to run a command when awk has parsed the full file(s).
+
+    ${bold}zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'${normal}
+
 Examples:
     
 ${bold} 
@@ -102,6 +106,7 @@ ${bold}
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
     zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}
     zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
+    zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'
 ${normal} 
 
 EOF
@@ -115,7 +120,8 @@ if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$1
+CMD=$(echo $1 | awk -F"END" '{print $1}')
+ENDCMD=$(echo $1 | awk -F"END" '{print $2}')
 FILENAMES="${@:2}"
 
 awk -F"=" '
@@ -136,4 +142,8 @@ if ($0=="--"){
 else{
     rec[$1]=substr($0,length($1)+2)
 }
-}' $FILENAMES
+}
+END{
+    '"$ENDCMD"'
+}
+' $FILENAMES

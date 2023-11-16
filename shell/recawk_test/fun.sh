@@ -32,3 +32,13 @@ test3 () {
 test4 () {
     zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
 }
+
+test5 () {
+    zcat data/file.rec.gz | recawk '{
+        a[nr]=rec["i"]
+    }
+    END{
+    for (i in a){
+        print i, a[i]
+    }}'
+}
