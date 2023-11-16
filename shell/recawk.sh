@@ -46,6 +46,11 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
+
+    -h, --help print this help message and exit
+
+------------------------------------------------
+
 Read a rec file formatted as:
 
 key1=val1
@@ -66,18 +71,23 @@ rec["key1"] -> val1 (if in first records)
 
 The full rec is not stored in rec. Just the current record is stored
 
-    -h, --help print this help message and exit
-    -c, --cmd run this awk command in recawk
+Examples:
+    
+    zcat data/file.rec.gz | recawk '{print rec["i"]}'
+
 EOF
 }
 
-while [ "$#" -gt 0 ]; do
-    case $1 in
-        -c|--cmd) CMD="$2"; shift ;;
-        -h|--help) usage; exit 0 ;;
-    esac
-    shift
-done
+case $1 in
+    -h|--help) usage; exit 0 ;;
+esac
+
+if [ "$#" -eq 0 ]; then
+    usage; exit 0
+fi
+
+CMD=$1
+FILENAMES="${@:2}"
 
 awk -F"=" '{
 if ($0=="--"){
@@ -87,4 +97,4 @@ if ($0=="--"){
     }
 }
 rec[$1]=$2
-}'
+}' $FILENAMES
