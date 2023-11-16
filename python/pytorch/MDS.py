@@ -91,11 +91,11 @@ def lossfunc(x, dmat, repulsion=0.0):
     tensor(True)
     """
     xmat = torch.cdist(x, x)
-    mask = (dmat == -1.0)
-    loss_dmat = torch.mean((xmat[~mask] - dmat[~mask])**2)
+    mask = dmat == -1.0
+    loss_dmat = torch.mean((xmat[~mask] - dmat[~mask]) ** 2)
     if repulsion > 0.0:
-        repulsive_mask = (xmat < repulsion)
-        loss_rep = torch.mean((xmat[repulsive_mask] - repulsion)**2)
+        repulsive_mask = xmat < repulsion
+        loss_rep = torch.mean((xmat[repulsive_mask] - repulsion) ** 2)
         return loss_dmat + loss_rep
     else:
         return loss_dmat
@@ -116,12 +116,27 @@ def pca(dmat, ndims=2):
     return x
 
 
-def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=None, return_np=True, verbose=True):
+def fit(
+    dmat,
+    repulsion,
+    ndims=2,
+    niter=10000,
+    device="cpu",
+    min_delta=1e-6,
+    x=None,
+    return_np=True,
+    verbose=True,
+    random_init=False,
+):
     npts = dmat.shape[0]
     dmat = dmat.to(device)
     if x is None:
-        # x = torch.randn((npts, ndims)).to(device)
-        x = pca(dmat, ndims=ndims)
+        if random_init:
+            print("Random initialization")
+            x = torch.randn((npts, ndims)).to(device)
+        else:
+            print("PCA initialization")
+            x = pca(dmat, ndims=ndims)
     mover = Mover(npts=npts, ndims=ndims).to(device)
     optimizer = torch.optim.Adam(mover.parameters(), amsgrad=False, lr=0.01)
     y = x
@@ -133,15 +148,15 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=N
         loss = lossfunc(y, dmat, repulsion=repulsion)
         loss.backward()
         optimizer.step()
-        progress = (i+1)/niter
+        progress = (i + 1) / niter
         delta_loss = torch.abs(loss - loss_prev)
         loss_prev = loss
         if verbose:
-            print(f'{i=}')
-            print(f'{progress=:.2%}')
-            print(f'{loss=:.5g}')
-            print(f'{delta_loss=:.5g}')
-            print('--')
+            print(f"{i=}")
+            print(f"{progress=:.2%}")
+            print(f"{loss=:.5g}")
+            print(f"{delta_loss=:.5g}")
+            print("--")
         if delta_loss <= min_delta:
             break
     if return_np:
@@ -150,28 +165,48 @@ def fit(dmat, repulsion, ndims=2, niter=10000, device='cpu', min_delta=1e-6, x=N
         return y.detach(), loss
 
 
-def fit_batched(recfile, batch_size, field, nepochs, repulsion=0, ndims=2, niter=10000, device='cpu', min_delta=1e-6, min_delta_epoch=1e-6):
+def fit_batched(
+    recfile,
+    batch_size,
+    field,
+    nepochs,
+    repulsion=0,
+    ndims=2,
+    niter=10000,
+    device="cpu",
+    min_delta=1e-6,
+    min_delta_epoch=1e-6,
+):
     data, fields = rec.get_data(recfile, selected_fields=None, rmquote=False)
-    n = int(max(data['i']))
-    p = int(max(data['j']))
+    n = int(max(data["i"]))
+    p = int(max(data["j"]))
     npts = max(n, p) + 1
     print(f"{npts=}")
     x = torch.randn((npts, ndims)).to(device)
-    ilist = np.unique(data['i'])
-    jlist = np.unique(data['j'])
+    ilist = np.unique(data["i"])
+    jlist = np.unique(data["j"])
     loss_prev = torch.inf
     for epoch in range(nepochs):
         batch, batch_inds = subsample(data, batch_size, ilist, jlist)
         dmat = rec_to_mat(field=field, data=batch, fields=fields)
-        y, loss = fit(dmat, repulsion=repulsion, ndims=ndims,
-                      niter=niter, device=device, min_delta=min_delta, x=x[batch_inds], return_np=False, verbose=False)
-        progress = (epoch+1)/nepochs
+        y, loss = fit(
+            dmat,
+            repulsion=repulsion,
+            ndims=ndims,
+            niter=niter,
+            device=device,
+            min_delta=min_delta,
+            x=x[batch_inds],
+            return_np=False,
+            verbose=False,
+        )
+        progress = (epoch + 1) / nepochs
         delta_loss_epoch = torch.abs(loss - loss_prev)
         loss_prev = loss
         print(f"{epoch=}")
         print(f"{progress=:.2%}")
         print(f"{loss=:.5g}")
-        print(f'{delta_loss_epoch=:.5g}')
+        print(f"{delta_loss_epoch=:.5g}")
         print("--")
         x[batch_inds] = torch.clone(y)
         if delta_loss_epoch <= min_delta_epoch:
@@ -188,48 +223,55 @@ def subsample(data, batch_size, ilist, jlist):
                 mapping[i] = ind
                 ind += 1
         return mapping
+
     indset = list(set(ilist) | set(jlist))
     batch_index = np.random.choice(a=indset, size=batch_size, replace=False)
     new_index = reindex(batch_index)
-    I = data['i']
-    J = data['j']
+    I = data["i"]
+    J = data["j"]
     sel = np.logical_and(np.isin(I, batch_index), np.isin(J, batch_index))
     out = dict()
     for field in data:
         out[field] = data[field][sel]
-    out['i'] = np.asarray([new_index[i] for i in out['i']])
-    out['j'] = np.asarray([new_index[j] for j in out['j']])
+    out["i"] = np.asarray([new_index[i] for i in out["i"]])
+    out["j"] = np.asarray([new_index[j] for j in out["j"]])
     return out, batch_index
 
 
-def rec_to_mat(recfile='', field='', data=[], fields=[]):
-    if recfile != '':
-        assert len(data) == 0, 'recfile xor data should be given, not both'
-        data, fields = rec.get_data(
-            recfile, selected_fields=None, rmquote=False)
+def rec_to_mat(recfile="", field="", data=[], fields=[]):
+    if recfile != "":
+        assert len(data) == 0, "recfile xor data should be given, not both"
+        data, fields = rec.get_data(recfile, selected_fields=None, rmquote=False)
     if len(data) > 0:
-        assert len(fields) > 0, 'If data is given, fields must be given'
+        assert len(fields) > 0, "If data is given, fields must be given"
     assert field in fields
-    assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
-    assert 'j' in fields, "'j' must be defined in the fields of the recfile to store the row index"
-    n = int(max(data['i']))
-    p = int(max(data['j']))
+    assert (
+        "i" in fields
+    ), "'i' must be defined in the fields of the recfile to store the row index"
+    assert (
+        "j" in fields
+    ), "'j' must be defined in the fields of the recfile to store the row index"
+    n = int(max(data["i"]))
+    p = int(max(data["j"]))
     maxn = max(n, p) + 1
     dmat = -torch.ones(maxn, maxn)
     # print(f"{dmat.shape=}")
     for index, distance in enumerate(data[field]):
-        i = int(data['i'][index])
-        j = int(data['j'][index])
+        i = int(data["i"][index])
+        j = int(data["j"][index])
         dmat[i, j] = distance
     return dmat
 
 
 def write_rec_pairwise(recfile, outrecfile, mdsout):
-    data, fields = rec.get_data(
-        recfile, selected_fields=None, rmquote=False)
-    assert 'i' in fields, "'i' must be defined in the fields of the recfile to store the row index"
-    assert 'j' in fields, "'j' must be defined in the fields of the recfile to store the row index"
-    with gzip.open(outrecfile, 'wt') as gz:
+    data, fields = rec.get_data(recfile, selected_fields=None, rmquote=False)
+    assert (
+        "i" in fields
+    ), "'i' must be defined in the fields of the recfile to store the row index"
+    assert (
+        "j" in fields
+    ), "'j' must be defined in the fields of the recfile to store the row index"
+    with gzip.open(outrecfile, "wt") as gz:
         for index, i in enumerate(data["i"]):
             i = int(i)
             j = int(data["j"][index])
@@ -237,13 +279,13 @@ def write_rec_pairwise(recfile, outrecfile, mdsout):
                 gz.write(f"{field}={data[field][index]}\n")
             gz.write(f"mds_i={list(mdsout[i])}\n")
             gz.write(f"mds_j={list(mdsout[j])}\n")
-            mds_dist = np.sqrt(((mdsout[j] - mdsout[i])**2).sum())
+            mds_dist = np.sqrt(((mdsout[j] - mdsout[i]) ** 2).sum())
             gz.write(f"mds_dist={mds_dist}\n")
             gz.write("--\n")
 
 
 def write_rec_simple(outrecfile, mdsout):
-    with gzip.open(outrecfile, 'wt') as gz:
+    with gzip.open(outrecfile, "wt") as gz:
         for i, mds in enumerate(mdsout):
             mds = list(mds)
             gz.write(f"{i=}\n")
@@ -251,7 +293,7 @@ def write_rec_simple(outrecfile, mdsout):
             gz.write("--\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     import doctest
     import sys
@@ -266,88 +308,151 @@ if __name__ == '__main__':
     # logging.info(f"################ Starting {__file__} ################")
     # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument(
-        '-r', '--repulsion', help='Repulsion distance (excluded volume)', type=float, default=0.0)
+        "-r",
+        "--repulsion",
+        help="Repulsion distance (excluded volume)",
+        type=float,
+        default=0.0,
+    )
     parser.add_argument(
-        '-d', '--dim', help='Dimension of the projection space', type=int, default=2)
+        "-d", "--dim", help="Dimension of the projection space", type=int, default=2
+    )
     parser.add_argument(
-        '--niter', help='Number of fitting iterations', type=int, default=10000)
+        "--niter", help="Number of fitting iterations", type=int, default=10000
+    )
     parser.add_argument(
-        '--min_delta', help="Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).", type=float, default=1e-6)
+        "--min_delta",
+        help="Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).",
+        type=float,
+        default=1e-6,
+    )
     parser.add_argument(
-        '--min_delta_epoch', help="Stop criteria based on min_delta. Same as --min_delta except that the delta is calculated at the end of each epoch. Only used if --batch_size is defined (default=1e-6).", type=float, default=1e-6)
+        "--min_delta_epoch",
+        help="Stop criteria based on min_delta. Same as --min_delta except that the delta is calculated at the end of each epoch. Only used if --batch_size is defined (default=1e-6).",
+        type=float,
+        default=1e-6,
+    )
     parser.add_argument(
-        '--outfile', help='out filename that stores the output coordinates (gzip format)', default='mds.gz')
+        "--outfile",
+        help="out filename that stores the output coordinates (gzip format)",
+        default="mds.gz",
+    )
     parser.add_argument(
-        '--rec', help='Read the distances from the given rec file and the given field name', nargs=2)
+        "--rec",
+        help="Read the distances from the given rec file and the given field name",
+        nargs=2,
+    )
     parser.add_argument(
-        '--npy', help='Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)')
-    parser.add_argument('--device')
-    parser.add_argument('-bs', '--batch_size',
-                        help='Batch size. Default is no batch, fit all at once.', type=int)
+        "--npy",
+        help="Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)",
+    )
     parser.add_argument(
-        '--nepochs', help='Number of epochs. Used only if bs is given. Default=10', default=10, type=int)
-    parser.add_argument('--test', help='Test the code', action='store_true')
+        "--random_init",
+        help="Random initialization instead of PCA",
+        action="store_true",
+    )
+    parser.add_argument("--device")
     parser.add_argument(
-        '--test_fit', help='Test fitting random data', action='store_true')
+        "-bs",
+        "--batch_size",
+        help="Batch size. Default is no batch, fit all at once.",
+        type=int,
+    )
     parser.add_argument(
-        '--func', help='Test only the given function(s)', nargs='+')
+        "--nepochs",
+        help="Number of epochs. Used only if bs is given. Default=10",
+        default=10,
+        type=int,
+    )
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument(
+        "--test_fit", help="Test fitting random data", action="store_true"
+    )
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     if args.device is None:
-        DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     else:
         DEVICE = args.device
     print(f"{DEVICE=}")
 
     if args.test:
         if args.func is None:
-            doctest.testmod(optionflags=doctest.ELLIPSIS |
-                            doctest.REPORT_ONLY_FIRST_FAILURE)
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
         else:
             for f in args.func:
-                print(f'Testing {f}')
+                print(f"Testing {f}")
                 f = getattr(sys.modules[__name__], f)
-                doctest.run_docstring_examples(f,
-                                               globals(),
-                                               optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
         sys.exit(0)
     if os.path.exists(args.outfile):
         sys.exit(
-            f'{args.outfile} exists, remove it or specify a new out filename using --outfile option')
+            f"{args.outfile} exists, remove it or specify a new out filename using --outfile option"
+        )
     if args.test_fit:
         y = torch.randn(size=(100, 8))
         dmat = torch.cdist(y, y)
-        out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                     niter=args.niter, device=DEVICE)
-        with gzip.open(args.outfile, 'wt') as gz:
+        out, _ = fit(
+            dmat,
+            repulsion=args.repulsion,
+            ndims=args.dim,
+            niter=args.niter,
+            device=DEVICE,
+            random_init=args.random_init,
+        )
+        with gzip.open(args.outfile, "wt") as gz:
             if out is not None:
                 for l in out:
-                    gz.write(' '.join([str(e) for e in l]) + "\n")
+                    gz.write(" ".join([str(e) for e in l]) + "\n")
         sys.exit(0)
     if args.rec is not None:
         recfile, field = args.rec
         basename = os.path.basename(recfile)
-        outrecfile_pairwise = "MDS/" + \
-            basename.split(".")[0] + "_mds_pairwise.rec.gz"
+        outrecfile_pairwise = "MDS/" + basename.split(".")[0] + "_mds_pairwise.rec.gz"
         outrecfile_simple = "MDS/" + basename.split(".")[0] + "_mds.rec.gz"
         if not os.path.exists("MDS"):
             os.mkdir("MDS")
         assert not os.path.exists(
-            outrecfile_pairwise), f"{outrecfile_pairwise} already exists"
+            outrecfile_pairwise
+        ), f"{outrecfile_pairwise} already exists"
         assert not os.path.exists(
-            outrecfile_simple), f"{outrecfile_simple} already exists"
+            outrecfile_simple
+        ), f"{outrecfile_simple} already exists"
         if args.batch_size is None:
             dmat = rec_to_mat(recfile=recfile, field=field)
-            out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                         niter=args.niter, device=DEVICE, min_delta=args.min_delta)
+            out, _ = fit(
+                dmat,
+                repulsion=args.repulsion,
+                ndims=args.dim,
+                niter=args.niter,
+                device=DEVICE,
+                min_delta=args.min_delta,
+                random_init=args.random_init,
+            )
         else:
-            out = fit_batched(recfile=recfile, batch_size=args.batch_size, field=field, nepochs=args.nepochs, repulsion=args.repulsion,
-                              ndims=args.dim, niter=args.niter, device=DEVICE, min_delta=args.min_delta, min_delta_epoch=args.min_delta_epoch)
-        write_rec_pairwise(
-            recfile=recfile, outrecfile=outrecfile_pairwise, mdsout=out)
+            out = fit_batched(
+                recfile=recfile,
+                batch_size=args.batch_size,
+                field=field,
+                nepochs=args.nepochs,
+                repulsion=args.repulsion,
+                ndims=args.dim,
+                niter=args.niter,
+                device=DEVICE,
+                min_delta=args.min_delta,
+                min_delta_epoch=args.min_delta_epoch,
+            )
+        write_rec_pairwise(recfile=recfile, outrecfile=outrecfile_pairwise, mdsout=out)
         write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
     if args.npy is not None:
         if not os.path.isdir("MDS"):
@@ -355,6 +460,13 @@ if __name__ == '__main__':
         basename = os.path.basename(args.npy)
         outrecfile_simple = "MDS/" + basename.split(".")[0] + "_mds.rec.gz"
         dmat = torch.from_numpy(scidist.squareform(np.load(args.npy)))
-        out, _ = fit(dmat, repulsion=args.repulsion, ndims=args.dim,
-                     niter=args.niter, device=DEVICE, min_delta=args.min_delta)
+        out, _ = fit(
+            dmat,
+            repulsion=args.repulsion,
+            ndims=args.dim,
+            niter=args.niter,
+            device=DEVICE,
+            min_delta=args.min_delta,
+            random_init=args.random_init,
+        )
         write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
