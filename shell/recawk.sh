@@ -91,7 +91,7 @@ A function ${bold}printrec()${normal} can be used to print the current record. T
 
     ${bold}zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'${normal}
 
-Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of input records awk has processed since the beginning of the program’s execution. Not to be confused with ${bold}NR${normal}, which is the builtin awk variable, which store the number of lines awk has processed since the beginning of the program’s execution.
+Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of input records awk has processed since the beginning of the program’s execution. Not to be confused with ${bold}NR${normal}, which is the builtin awk variable, which store the number of rows/lines awk has processed since the beginning of the program’s execution.
 
     ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'${normal}
 
