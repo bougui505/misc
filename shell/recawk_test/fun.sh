@@ -25,6 +25,6 @@ test2 () {
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
 }
 
-test2 () {
+test3 () {
     zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
 }
