@@ -39,7 +39,7 @@ import os
 
 import numpy as np
 from numpy import linalg
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, Isomap
 
 
 def tsne(data, n_components=2, perplexity=30.0, metric="euclidean", init="pca"):
@@ -48,6 +48,12 @@ def tsne(data, n_components=2, perplexity=30.0, metric="euclidean", init="pca"):
     embedder = TSNE(
         n_components=n_components, perplexity=perplexity, metric=metric, init=init
     )
+    out = embedder.fit_transform(data)
+    return out
+
+
+def isomap(data, n_components=2, metric="euclidean"):
+    embedder = Isomap(n_components=n_components, metric=metric)
     out = embedder.fit_transform(data)
     return out
 
@@ -98,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--method",
         help="Projection method to use. For TSNE, see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html",
-        choices=["pca", "tsne"],
+        choices=["pca", "tsne", "isomap"],
         default="pca",
     )
     parser.add_argument(
@@ -177,6 +183,12 @@ if __name__ == "__main__":
             DATA,
             n_components=args.n_components,
             perplexity=args.perplexity,
+            metric=args.metric,
+        )
+    if args.method == "isomap":
+        OUT = isomap(
+            DATA,
+            n_components=args.n_components,
             metric=args.metric,
         )
     if args.dot:
