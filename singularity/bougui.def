@@ -58,6 +58,8 @@ cd /usr/local/bin && ln -s /opt/misc/python/pymol/distmol.py distmol
 cd /usr/local/bin && ln -s /opt/misc/python/pymol/liginfo.py liginfo
 cd /usr/local/bin && ln -s /opt/misc/python/rec.py rec
 cd /usr/local/bin && ln -s /opt/misc/python/TMalign/tmalign.py tmalign
+cd /usr/local/bin && ln -s /opt/misc/python/pytorch/MDS.py mds
+cd /usr/local/bin && ln -s /opt/misc/python/linkage.py linkage
 pip3 install --break-system-packages termcolor
 ##########################################################################
 
@@ -66,6 +68,7 @@ cd /opt
 git clone https://github.com/bougui505/matplot.git
 cd /usr/bin
 ln -s /opt/matplot/matplot.py plot
+ln -s /opt/matplot/matplot2.py plot2
 cd /usr/local/lib/python3.11/dist-packages
 ln -s /opt/matplot/*.py .
 pip3 install --break-system-packages scikit-learn scipy numexpr numpy pillow matplotlib
