@@ -60,6 +60,7 @@ cd /usr/local/bin && ln -s /opt/misc/python/rec.py rec
 cd /usr/local/bin && ln -s /opt/misc/python/TMalign/tmalign.py tmalign
 cd /usr/local/bin && ln -s /opt/misc/python/pytorch/MDS.py mds
 cd /usr/local/bin && ln -s /opt/misc/python/linkage.py linkage
+cd /usr/local/bin && ln -s /opt/misc/shell/recawk.sh recawk
 pip3 install --break-system-packages termcolor
 ##########################################################################
 
