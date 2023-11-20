@@ -5,35 +5,6 @@
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
 # Copyright (c) 2023 Institut Pasteur                                       #
-#                               				                            #
-#                                                                           #
-#  Redistribution and use in source and binary forms, with or without       #
-#  modification, are permitted provided that the following conditions       #
-#  are met:                                                                 #
-#                                                                           #
-#  1. Redistributions of source code must retain the above copyright        #
-#  notice, this list of conditions and the following disclaimer.            #
-#  2. Redistributions in binary form must reproduce the above copyright     #
-#  notice, this list of conditions and the following disclaimer in the      #
-#  documentation and/or other materials provided with the distribution.     #
-#  3. Neither the name of the copyright holder nor the names of its         #
-#  contributors may be used to endorse or promote products derived from     #
-#  this software without specific prior written permission.                 #
-#                                                                           #
-#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS      #
-#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT        #
-#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR    #
-#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT     #
-#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,   #
-#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT         #
-#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,    #
-#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY    #
-#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT      #
-#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE    #
-#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.     #
-#                                                                           #
-#  This program is free software: you can redistribute it and/or modify     #
-#                                                                           #
 #############################################################################
 
 import itertools
@@ -41,6 +12,7 @@ import os
 import subprocess
 import tempfile
 
+import numpy as np
 import pymol2
 from joblib import Parallel, delayed
 from misc.Timer import Timer
@@ -68,7 +40,7 @@ def clean_states(p):
     for obj in objlist_ori:
         p.cmd.split_states(obj)
         p.cmd.delete(obj)
-        p.cmd.set_name(f'{obj}_0001', obj)
+        p.cmd.set_name(f"{obj}_0001", obj)
     objlist = p.cmd.get_object_list()
     for obj in objlist:
         if obj not in objlist_ori:
@@ -79,7 +51,8 @@ def clean_chains(p, sel, obj, nres_per_chain_min=3):
     chains = p.cmd.get_chains(f"{sel} and {obj}")
     for chain in chains:
         nres = p.cmd.select(
-            f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}")
+            f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}"
+        )
         if nres <= nres_per_chain_min:
             p.cmd.remove(f"chain {chain} and polymer.protein and {obj}")
 
@@ -124,10 +97,8 @@ def tmalign(model, native, selmodel=None, selnative=None, verbose=False):
 
 def get_tmscore(modelfile, nativefile):
     scriptdir = GetScriptDir()
-    cmd = f"{scriptdir}/USalign {modelfile} {nativefile}".split(
-        " ")
-    process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, universal_newlines=True)
+    cmd = f"{scriptdir}/USalign {modelfile} {nativefile}".split(" ")
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
     lines = process.stdout.readlines()
     tmscores = []
     for line in lines:
@@ -144,7 +115,7 @@ def pymolsave(infile, sel, outfile, verbose=False):
     if verbose:
         timer = Timer(autoreset=True)
     with pymol2.PyMOL() as p:
-        p.cmd.feedback(action='disable', module='all', mask='everything')
+        p.cmd.feedback(action="disable", module="all", mask="everything")
         p.cmd.load(filename=infile, object="mymodel")
         if verbose:
             timer.stop(f"{infile} loading...")
@@ -163,14 +134,14 @@ def pymolsave(infile, sel, outfile, verbose=False):
         clean_chains(p, "all", obj="mymodel")
         if verbose:
             timer.stop(f"Cleaning chains...")
-        p.cmd.save(filename=outfile,
-                   selection="mymodel", state=-1)
+        p.cmd.save(filename=outfile, selection="mymodel", state=-1)
 
 
 def tmalign_wrapper(model, native, selmodel, selnative):
     try:
-        tmscore = tmalign(model=model, native=native,
-                          selmodel=selmodel, selnative=selnative)
+        tmscore = tmalign(
+            model=model, native=native, selmodel=selmodel, selnative=selnative
+        )
     except Exception as e:
         print("ERROR for", model, native, selmodel, selnative, file=sys.stderr)
         print(f"ERROR: {e}", file=sys.stderr)
@@ -178,34 +149,47 @@ def tmalign_wrapper(model, native, selmodel, selnative):
     return tmscore
 
 
-def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=None, verbose=False):
+def tmalign_multi(
+    model_list, native_list, selmodel_list=None, selnative_list=None, verbose=False
+):
     """
     Align pairwisely the model_list and the native_list
     """
     if os.path.exists("tmalign.err.gz"):
         os.remove("tmalign.err.gz")
     if selmodel_list is None:
-        selmodel_list = [None]*len(model_list)
+        selmodel_list = [None] * len(model_list)
     assert len(model_list) == len(selmodel_list)
 
     if selnative_list is None:
-        selnative_list = [None]*len(native_list)
+        selnative_list = [None] * len(native_list)
     assert len(native_list) == len(selnative_list)
 
     n_models = len(model_list)
     n_natives = len(native_list)
 
     ncpu = os.cpu_count()
-    iterproduct = itertools.product(zip(model_list, selmodel_list),
-                                    zip(native_list, selnative_list))
+    iterproduct = itertools.product(
+        zip(model_list, selmodel_list), zip(native_list, selnative_list)
+    )
     # for ((model, selmodel), (native, selnative)) in iterproduct:
     #     print(model, selmodel, native, selnative)
-    tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=model, native=native, selmodel=selmodel,
-                                                              selnative=selnative) for ((model, selmodel), (native, selnative)) in tqdm(iterproduct, total=n_models*n_natives, ncols=64, position=1, leave=False))
-    iterproduct = zip(itertools.product(zip(model_list, selmodel_list),
-                                        zip(native_list, selnative_list)), tmscores)
+    tmscores = Parallel(n_jobs=ncpu)(
+        delayed(tmalign_wrapper)(
+            model=model, native=native, selmodel=selmodel, selnative=selnative
+        )
+        for ((model, selmodel), (native, selnative)) in tqdm(
+            iterproduct, total=n_models * n_natives, ncols=64, position=1, leave=False
+        )
+    )
+    iterproduct = zip(
+        itertools.product(
+            zip(model_list, selmodel_list), zip(native_list, selnative_list)
+        ),
+        tmscores,
+    )
     if verbose:
-        for (((model, selmodel), (native, selnative)), tmscore) in iterproduct:
+        for ((model, selmodel), (native, selnative)), tmscore in iterproduct:
             print(f"{model=}")
             print(f"{selmodel=}")
             print(f"{native=}")
@@ -218,14 +202,28 @@ def tmalign_multi(model_list, native_list, selmodel_list=None, selnative_list=No
 def tmalign_pairwise(pdb_list, sel_list, outfilename):
     n = len(pdb_list)
     if sel_list is None:
-        sel_list = [None,] * n
-    with gzip.open(outfilename, 'wt') as gz:
-        for i, (prot1, prot1_sel) in tqdm(enumerate(zip(pdb_list, sel_list)), total=len(pdb_list), ncols=64, position=0):
-            tmscores = tmalign_multi(pdb_list[i:], [prot1],
-                                     selmodel_list=sel_list[i:], selnative_list=[prot1_sel], verbose=False)
+        sel_list = [
+            None,
+        ] * n
+    with gzip.open(outfilename, "wt") as gz:
+        for i, (prot1, prot1_sel) in tqdm(
+            enumerate(zip(pdb_list, sel_list)),
+            total=len(pdb_list),
+            ncols=64,
+            position=0,
+        ):
+            tmscores = tmalign_multi(
+                pdb_list[i:],
+                [prot1],
+                selmodel_list=sel_list[i:],
+                selnative_list=[prot1_sel],
+                verbose=False,
+            )
             assert len(tmscores) == len(pdb_list[i:])
             assert len(tmscores) == len(sel_list[i:])
-            for j, (tmscore, prot2, prot2_sel) in enumerate(zip(tmscores, pdb_list[i:], sel_list[i:])):
+            for j, (tmscore, prot2, prot2_sel) in enumerate(
+                zip(tmscores, pdb_list[i:], sel_list[i:])
+            ):
                 j = j + i
                 if tmscore >= 0.0:
                     distance = 1.0 - tmscore
@@ -243,34 +241,49 @@ def tmalign_pairwise(pdb_list, sel_list, outfilename):
 
 
 def tmalign_rec(recfile):
-    outfile = recfile.split(".")[0] + '_tmscore.rec.gz'
+    outfile_rec = recfile.split(".")[0] + "_tmscore.rec.gz"
+    outfile_npy = recfile.split(".")[0] + "_tmdistance.npy"
     assert not os.path.exists(
-        outfile), f"{outfile} already exists, please remove it"
+        outfile_rec
+    ), f"{outfile_rec} already exists, please remove it"
     data, fields = rec.get_data(file=recfile, rmquote=True)
-    assert 'pdb1' in fields
-    assert 'pdb2' in fields
+    assert "pdb1" in fields
+    assert "pdb2" in fields
     pdb1list = data["pdb1"]
     pdb2list = data["pdb2"]
     n = len(pdb1list)
     if "sel1" in fields:
         sel1list = data["sel1"]
     else:
-        sel1list = [None,] * n
+        sel1list = [
+            None,
+        ] * n
     if "sel2" in fields:
         sel2list = data["sel2"]
     else:
-        sel2list = [None,] * n
+        sel2list = [
+            None,
+        ] * n
     ncpu = os.cpu_count()
-    tmscores = Parallel(n_jobs=ncpu)(delayed(tmalign_wrapper)(model=pdb1, native=pdb2, selmodel=sel1, selnative=sel2) for (
-        pdb1, pdb2, sel1, sel2) in tqdm(zip(pdb1list, pdb2list, sel1list, sel2list), total=n, ncols=64, position=1, leave=False))
+    tmscores = Parallel(n_jobs=ncpu)(
+        delayed(tmalign_wrapper)(model=pdb1, native=pdb2, selmodel=sel1, selnative=sel2)
+        for (pdb1, pdb2, sel1, sel2) in tqdm(
+            zip(pdb1list, pdb2list, sel1list, sel2list),
+            total=n,
+            ncols=64,
+            position=1,
+            leave=False,
+        )
+    )
     assert len(tmscores) == n
-    with gzip.open(outfile, 'wt') as gz:
+    with gzip.open(outfile_rec, "wt") as gz:
         for i in range(n):
             for field in fields:
                 gz.write(f"{field}={data[field][i]}\n")
             gz.write(f"tmscore={tmscores[i]}\n")
             gz.write(f"distance={1.0 - tmscores[i]}\n")
             gz.write("--\n")
+    np.save(outfile_npy, 1.0 - np.asarray(tmscores))
 
 
 def read_csv(csvfilename):
@@ -311,17 +324,24 @@ if __name__ == "__main__":
     parser.add_argument("--selmodel")
     parser.add_argument("--selnative")
     parser.add_argument(
-        "--model_list", help="CSV file with list of models. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+        "--model_list",
+        help="CSV file with list of models. Col1: path to structure files; Col2 (optionnal): selection for the given file",
+    )
     parser.add_argument(
-        "--native_list", help="CSV file with list of natives. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+        "--native_list",
+        help="CSV file with list of natives. Col1: path to structure files; Col2 (optionnal): selection for the given file",
+    )
     parser.add_argument(
-        "--pairwise", help="Pairwise alignment for the given CSV file. Col1: path to structure files; Col2 (optionnal): selection for the given file")
+        "--pairwise",
+        help="Pairwise alignment for the given CSV file. Col1: path to structure files; Col2 (optionnal): selection for the given file",
+    )
     parser.add_argument(
-        "--rec", help="Compute TMscores from the given rec file. The fields must be: pdb1, sel1 (optionnal), pdb2, sel2 (optionnal). All other fields are also kept in the output")
+        "--rec",
+        help="Compute TMscores from the given rec file. The fields must be: pdb1, sel1 (optionnal), pdb2, sel2 (optionnal). All other fields are also kept in the output",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument(
-        "--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
@@ -344,21 +364,29 @@ if __name__ == "__main__":
                 )
         sys.exit()
     if args.model is not None and args.native is not None:
-        tmscore = tmalign(model=args.model, native=args.native,
-                          selmodel=args.selmodel, selnative=args.selnative, verbose=args.verbose)
+        tmscore = tmalign(
+            model=args.model,
+            native=args.native,
+            selmodel=args.selmodel,
+            selnative=args.selnative,
+            verbose=args.verbose,
+        )
         print(f"{tmscore=}")
     if args.model_list is not None and args.native_list is not None:
         model_list, selmodel_list = read_csv(args.model_list)
         native_list, selnative_list = read_csv(args.native_list)
-        tmalign_multi(model_list=model_list, native_list=native_list,
-                      selmodel_list=selmodel_list, selnative_list=selnative_list, verbose=True)
+        tmalign_multi(
+            model_list=model_list,
+            native_list=native_list,
+            selmodel_list=selmodel_list,
+            selnative_list=selnative_list,
+            verbose=True,
+        )
     if args.pairwise is not None:
         pdb_list, sel_list = read_csv(args.pairwise)
-        outfilename = os.path.splitext(args.pairwise)[
-            0] + "_pairwise_tmscore.rec.gz"
+        outfilename = os.path.splitext(args.pairwise)[0] + "_pairwise_tmscore.rec.gz"
         if os.path.exists(outfilename):
             sys.exit(f"{outfilename} already exists")
-        tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list,
-                         outfilename=outfilename)
+        tmalign_pairwise(pdb_list=pdb_list, sel_list=sel_list, outfilename=outfilename)
     if args.rec is not None:
         tmalign_rec(args.rec)
