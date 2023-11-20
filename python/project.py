@@ -36,13 +36,14 @@
 #                                                                           #
 #############################################################################
 import os
-from sklearn.manifold import TSNE
+
 import numpy as np
 from numpy import linalg
+from sklearn.manifold import TSNE
 
 
-def tsne(data, n_components=2, perplexity=30.0):
-    embedder = TSNE(n_components=n_components, perplexity=perplexity)
+def tsne(data, n_components=2, perplexity=30.0, metric="euclidean"):
+    embedder = TSNE(n_components=n_components, perplexity=perplexity, metric=metric)
     out = embedder.fit_transform(data)
     return out
 
@@ -81,9 +82,9 @@ def print_result(out, labels=None, text=None):
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(
