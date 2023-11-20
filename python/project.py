@@ -42,8 +42,12 @@ from numpy import linalg
 from sklearn.manifold import TSNE
 
 
-def tsne(data, n_components=2, perplexity=30.0, metric="euclidean"):
-    embedder = TSNE(n_components=n_components, perplexity=perplexity, metric=metric)
+def tsne(data, n_components=2, perplexity=30.0, metric="euclidean", init="pca"):
+    if metric == "precomputed":
+        init = "random"
+    embedder = TSNE(
+        n_components=n_components, perplexity=perplexity, metric=metric, init=init
+    )
     out = embedder.fit_transform(data)
     return out
 
@@ -96,6 +100,12 @@ if __name__ == "__main__":
         help="Projection method to use. For TSNE, see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html",
         choices=["pca", "tsne"],
         default="pca",
+    )
+    parser.add_argument(
+        "--metric",
+        help="metric to use for the TSNE (see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html)",
+        type=str,
+        default="euclidean",
     )
     parser.add_argument(
         "--dot", help="compute pairwise dot product between data", action="store_true"
@@ -163,7 +173,12 @@ if __name__ == "__main__":
         eigenvalues, eigenvectors = compute_pca(DATA)
         OUT = project(DATA, eigenvectors, ncomp=args.n_components)
     if args.method == "tsne":
-        OUT = tsne(DATA, n_components=args.n_components, perplexity=args.perplexity)
+        OUT = tsne(
+            DATA,
+            n_components=args.n_components,
+            perplexity=args.perplexity,
+            metric=args.metric,
+        )
     if args.dot:
         OUT = DATA.dot(DATA.T)
     print_result(OUT, labels=LABELS, text=TEXT)
