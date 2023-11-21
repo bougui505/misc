@@ -101,7 +101,6 @@ CMD=$(echo $1 | awk -F"END" '{print $1}')
 ENDCMD=$(echo $1 | awk -F"END" '{print $2}')
 FILENAMES="${@:2}"
 
-echo $V
 awk -v $V -F"=" '
 function printrec(){
     for (field in rec){
