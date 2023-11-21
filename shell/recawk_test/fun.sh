@@ -42,3 +42,7 @@ test5 () {
         print i, a[i]
     }}'
 }
+
+test6 () {
+    zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
+}
