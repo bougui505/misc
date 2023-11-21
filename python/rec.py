@@ -91,7 +91,7 @@ def get_data(file, selected_fields=None, rmquote=False):
     data = dict()
     recid = 0  # record id
     fields = set()
-    for linenbr, line in tqdm(enumerate(file), desc='reading file...'):
+    for linenbr, line in tqdm(enumerate(file), desc="reading file..."):
         linenbr += 1
         line = line.strip()
         if line.startswith("#"):
@@ -193,19 +193,28 @@ def convert_to_array(l: list) -> np.ndarray:
     """
     >>> l = [1, 2, 3, '4', '-', 5, 6]
     >>> convert_to_array(l)
-    array([ 1.,  2.,  3.,  4., nan,  5.,  6.])
+    array(['1', '2', '3', '4', '-', '5', '6'], dtype='<U21')
     >>> l = ['a', 'b', 'c']
     >>> convert_to_array(l)
     array(['a', 'b', 'c'], dtype='<U1')
+    >>> l = [1,2,3,4,5,6]
+    >>> convert_to_array(l)
+    array([1, 2, 3, 4, 5, 6])
+    >>> l = [1,2,3,4.2,5,6]
+    >>> convert_to_array(l)
+    array([1. , 2. , 3. , 4.2, 5. , 6. ])
     """
     l1 = [float(e) if is_float(e) else np.nan for e in l]
     arr = np.asarray(l1, dtype=float)
     n_nan = np.isnan(arr).sum()
     r_nan = n_nan / len(arr)
-    if r_nan > 0.5:
+    if r_nan > 0:
         return np.asarray(l)
     else:
-        return arr
+        if (np.int_(arr) == arr).all():
+            return np.int_(arr)
+        else:
+            return arr
 
 
 def listdict_to_arrdict(d: dict) -> dict:
@@ -233,13 +242,11 @@ def data_selection(data: dict, recsel: str) -> dict:
         keep = eval(recsel)
         if keep:
             n_found += 1
-            pbar.set_description(
-                f"nbr of match: {n_found}/{rec_internal_index+1}")
+            pbar.set_description(f"nbr of match: {n_found}/{rec_internal_index+1}")
             for key in data:
                 out[key].append(data[key][rec_internal_index])
         if rec_internal_index == n - 1:
-            pbar.set_description(
-                f"nbr of match: {n_found}/{rec_internal_index+1}")
+            pbar.set_description(f"nbr of match: {n_found}/{rec_internal_index+1}")
     return out
 
 
@@ -302,7 +309,7 @@ def merge_dictionnaries(d1, d2):
     peq = peq.astype(bool)
     inds = np.where(peq)
     out = collections.defaultdict(list)
-    for i1, i2 in tqdm(zip(*inds), total=len(inds), desc='merging'):
+    for i1, i2 in tqdm(zip(*inds), total=len(inds), desc="merging"):
         for k in common_keys:
             v1 = d1[k][i1]
             v2 = d2[k][i2]
@@ -337,8 +344,7 @@ if __name__ == "__main__":
         description="Read a python like recfile from stdin (pipe) except if --file is given"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument(
-        "--info", help="Print long help message.", action="store_true")
+    parser.add_argument("--info", help="Print long help message.", action="store_true")
     parser.add_argument(
         "-f",
         "--fields",
@@ -346,8 +352,7 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
     )
-    parser.add_argument(
-        "--sort", help="Sort the rec file according to the given field")
+    parser.add_argument("--sort", help="Sort the rec file according to the given field")
     parser.add_argument(
         "-d",
         "--delimiter",
@@ -401,8 +406,7 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument(
-        "--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     if args.info:
@@ -530,10 +534,7 @@ Useful properties are implemented:
         dict_to_rec(DATA)
         sys.exit(0)
     if args.run is not None:
-        DATA, _ = get_data(
-            file=args.file,
-            rmquote=args.rmquote
-        )
+        DATA, _ = get_data(file=args.file, rmquote=args.rmquote)
         cmd = re.sub(" +", " ", args.run)
         try:
             names, cmd = cmd.strip().split("=", maxsplit=1)
