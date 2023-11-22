@@ -73,6 +73,8 @@ ${bold}-v${normal} can be given as in standard awk command. E.g. ${bold}recawk -
 
     ${bold}zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'${normal}
 
+The semicolon ";" terminates the statement. It is highly recommanded to put the semicolon ";" at the end of the statements, even in a script on multiple lines, to avoid bugs.
+
 Examples:
     
 ${bold} 
