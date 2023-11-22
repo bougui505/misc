@@ -214,11 +214,13 @@ def data_selection(data: dict, recsel: str) -> dict:
         keep = eval(recsel)
         if keep:
             n_found += 1
-            pbar.set_description(f"nbr of match: {n_found}/{rec_internal_index+1}")
+            pbar.set_description(
+                f"nbr of match: {n_found}/{rec_internal_index+1}")
             for key in data:
                 out[key].append(data[key][rec_internal_index])
         if rec_internal_index == n - 1:
-            pbar.set_description(f"nbr of match: {n_found}/{rec_internal_index+1}")
+            pbar.set_description(
+                f"nbr of match: {n_found}/{rec_internal_index+1}")
     return out
 
 
@@ -294,17 +296,27 @@ def merge_dictionnaries(d1, d2):
     return out
 
 
-def dict_to_rec(d):
+def dict_to_rec(d, outgz=None):
     """
     Print a dictionnary as a rec file
     """
     keys = list(d.keys())
     nval = len(d[keys[0]])
+    if outgz is not None:
+        gz = gzip.open(outgz, "wt")
     for i in range(nval):
         for k in keys:
             v = d[k][i]
-            print(f"{k}={v}")
-        print("--")
+            if outgz is None:
+                print(f"{k}={v}")
+            else:
+                gz.write(f"{k}={v}\n")
+        if outgz is None:
+            print("--")
+        else:
+            gz.write("--\n")
+    if outgz is not None:
+        gz.close()
 
 
 if __name__ == "__main__":
@@ -316,7 +328,8 @@ if __name__ == "__main__":
         description="Read a python like recfile from stdin (pipe) except if --file is given"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("--info", help="Print long help message.", action="store_true")
+    parser.add_argument(
+        "--info", help="Print long help message.", action="store_true")
     parser.add_argument(
         "-f",
         "--fields",
@@ -324,7 +337,8 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
     )
-    parser.add_argument("--sort", help="Sort the rec file according to the given field")
+    parser.add_argument(
+        "--sort", help="Sort the rec file according to the given field")
     parser.add_argument(
         "-d",
         "--delimiter",
@@ -378,7 +392,8 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument(
+        "--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
     if args.info:
