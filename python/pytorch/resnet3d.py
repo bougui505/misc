@@ -36,13 +36,15 @@
 #                                                                           #
 #############################################################################
 import os
-import torchvision.models.video.resnet as resnet
 from functools import partial
+from typing import Callable, List, Sequence, Type, Union
+
+import torch
 import torch.nn as nn
-from typing import Type, Union, Sequence, List, Callable
-from torchvision.utils import _log_api_usage_once
+import torchvision.models.video.resnet as resnet
 from torch import Tensor
 from torch.utils.checkpoint import checkpoint
+from torchvision.utils import _log_api_usage_once
 
 # model = resnet.r3d_18(num_classes=400)
 # model = resnet._video_resnet(block=resnet.BasicBlock,
@@ -58,7 +60,12 @@ class BasicStem(nn.Sequential):
 
     def __init__(self, in_channels=3) -> None:
         super().__init__(
-            nn.Conv3d(in_channels, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2), padding=(1, 3, 3), bias=False),
+            nn.Conv3d(in_channels,
+                      64,
+                      kernel_size=(3, 7, 7),
+                      stride=(1, 2, 2),
+                      padding=(1, 3, 3),
+                      bias=False),
             nn.BatchNorm3d(64),
             nn.ReLU(inplace=True),
         )
@@ -66,171 +73,13 @@ class BasicStem(nn.Sequential):
 
 def resnet3d(in_channels=3, out_channels=400):
     """
-    >>> from torchsummary import summary
-    >>> model = resnet3d()
-    >>> summary(model, (3, 64, 64, 64))
-    ----------------------------------------------------------------
-            Layer (type)               Output Shape         Param #
-    ================================================================
-                Conv3d-1       [-1, 64, 64, 32, 32]          28,224
-           BatchNorm3d-2       [-1, 64, 64, 32, 32]             128
-                  ReLU-3       [-1, 64, 64, 32, 32]               0
-          Conv3DSimple-4       [-1, 64, 64, 32, 32]         110,592
-           BatchNorm3d-5       [-1, 64, 64, 32, 32]             128
-                  ReLU-6       [-1, 64, 64, 32, 32]               0
-          Conv3DSimple-7       [-1, 64, 64, 32, 32]         110,592
-           BatchNorm3d-8       [-1, 64, 64, 32, 32]             128
-                  ReLU-9       [-1, 64, 64, 32, 32]               0
-           BasicBlock-10       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-11       [-1, 64, 64, 32, 32]         110,592
-          BatchNorm3d-12       [-1, 64, 64, 32, 32]             128
-                 ReLU-13       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-14       [-1, 64, 64, 32, 32]         110,592
-          BatchNorm3d-15       [-1, 64, 64, 32, 32]             128
-                 ReLU-16       [-1, 64, 64, 32, 32]               0
-           BasicBlock-17       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-18      [-1, 128, 32, 16, 16]         221,184
-          BatchNorm3d-19      [-1, 128, 32, 16, 16]             256
-                 ReLU-20      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-21      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-22      [-1, 128, 32, 16, 16]             256
-               Conv3d-23      [-1, 128, 32, 16, 16]           8,192
-          BatchNorm3d-24      [-1, 128, 32, 16, 16]             256
-                 ReLU-25      [-1, 128, 32, 16, 16]               0
-           BasicBlock-26      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-27      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-28      [-1, 128, 32, 16, 16]             256
-                 ReLU-29      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-30      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-31      [-1, 128, 32, 16, 16]             256
-                 ReLU-32      [-1, 128, 32, 16, 16]               0
-           BasicBlock-33      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-34        [-1, 256, 16, 8, 8]         884,736
-          BatchNorm3d-35        [-1, 256, 16, 8, 8]             512
-                 ReLU-36        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-37        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-38        [-1, 256, 16, 8, 8]             512
-               Conv3d-39        [-1, 256, 16, 8, 8]          32,768
-          BatchNorm3d-40        [-1, 256, 16, 8, 8]             512
-                 ReLU-41        [-1, 256, 16, 8, 8]               0
-           BasicBlock-42        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-43        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-44        [-1, 256, 16, 8, 8]             512
-                 ReLU-45        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-46        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-47        [-1, 256, 16, 8, 8]             512
-                 ReLU-48        [-1, 256, 16, 8, 8]               0
-           BasicBlock-49        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-50         [-1, 512, 8, 4, 4]       3,538,944
-          BatchNorm3d-51         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-52         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-53         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-54         [-1, 512, 8, 4, 4]           1,024
-               Conv3d-55         [-1, 512, 8, 4, 4]         131,072
-          BatchNorm3d-56         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-57         [-1, 512, 8, 4, 4]               0
-           BasicBlock-58         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-59         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-60         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-61         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-62         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-63         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-64         [-1, 512, 8, 4, 4]               0
-           BasicBlock-65         [-1, 512, 8, 4, 4]               0
-    AdaptiveAvgPool3d-66         [-1, 512, 1, 1, 1]               0
-               Linear-67                  [-1, 400]         205,200
-    ================================================================
-    Total params: 33,371,472
-    Trainable params: 33,371,472
-    Non-trainable params: 0
-    ----------------------------------------------------------------
-    Input size (MB): 3.00
-    Forward/backward pass size (MB): 712.01
-    Params size (MB): 127.30
-    Estimated Total Size (MB): 842.31
-    ----------------------------------------------------------------
-    >>> model = resnet3d(in_channels=1, out_channels=256)
-    >>> summary(model, (1, 64, 64, 64))
-    ----------------------------------------------------------------
-            Layer (type)               Output Shape         Param #
-    ================================================================
-                Conv3d-1       [-1, 64, 64, 32, 32]           9,408
-           BatchNorm3d-2       [-1, 64, 64, 32, 32]             128
-                  ReLU-3       [-1, 64, 64, 32, 32]               0
-          Conv3DSimple-4       [-1, 64, 64, 32, 32]         110,592
-           BatchNorm3d-5       [-1, 64, 64, 32, 32]             128
-                  ReLU-6       [-1, 64, 64, 32, 32]               0
-          Conv3DSimple-7       [-1, 64, 64, 32, 32]         110,592
-           BatchNorm3d-8       [-1, 64, 64, 32, 32]             128
-                  ReLU-9       [-1, 64, 64, 32, 32]               0
-           BasicBlock-10       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-11       [-1, 64, 64, 32, 32]         110,592
-          BatchNorm3d-12       [-1, 64, 64, 32, 32]             128
-                 ReLU-13       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-14       [-1, 64, 64, 32, 32]         110,592
-          BatchNorm3d-15       [-1, 64, 64, 32, 32]             128
-                 ReLU-16       [-1, 64, 64, 32, 32]               0
-           BasicBlock-17       [-1, 64, 64, 32, 32]               0
-         Conv3DSimple-18      [-1, 128, 32, 16, 16]         221,184
-          BatchNorm3d-19      [-1, 128, 32, 16, 16]             256
-                 ReLU-20      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-21      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-22      [-1, 128, 32, 16, 16]             256
-               Conv3d-23      [-1, 128, 32, 16, 16]           8,192
-          BatchNorm3d-24      [-1, 128, 32, 16, 16]             256
-                 ReLU-25      [-1, 128, 32, 16, 16]               0
-           BasicBlock-26      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-27      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-28      [-1, 128, 32, 16, 16]             256
-                 ReLU-29      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-30      [-1, 128, 32, 16, 16]         442,368
-          BatchNorm3d-31      [-1, 128, 32, 16, 16]             256
-                 ReLU-32      [-1, 128, 32, 16, 16]               0
-           BasicBlock-33      [-1, 128, 32, 16, 16]               0
-         Conv3DSimple-34        [-1, 256, 16, 8, 8]         884,736
-          BatchNorm3d-35        [-1, 256, 16, 8, 8]             512
-                 ReLU-36        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-37        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-38        [-1, 256, 16, 8, 8]             512
-               Conv3d-39        [-1, 256, 16, 8, 8]          32,768
-          BatchNorm3d-40        [-1, 256, 16, 8, 8]             512
-                 ReLU-41        [-1, 256, 16, 8, 8]               0
-           BasicBlock-42        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-43        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-44        [-1, 256, 16, 8, 8]             512
-                 ReLU-45        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-46        [-1, 256, 16, 8, 8]       1,769,472
-          BatchNorm3d-47        [-1, 256, 16, 8, 8]             512
-                 ReLU-48        [-1, 256, 16, 8, 8]               0
-           BasicBlock-49        [-1, 256, 16, 8, 8]               0
-         Conv3DSimple-50         [-1, 512, 8, 4, 4]       3,538,944
-          BatchNorm3d-51         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-52         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-53         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-54         [-1, 512, 8, 4, 4]           1,024
-               Conv3d-55         [-1, 512, 8, 4, 4]         131,072
-          BatchNorm3d-56         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-57         [-1, 512, 8, 4, 4]               0
-           BasicBlock-58         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-59         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-60         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-61         [-1, 512, 8, 4, 4]               0
-         Conv3DSimple-62         [-1, 512, 8, 4, 4]       7,077,888
-          BatchNorm3d-63         [-1, 512, 8, 4, 4]           1,024
-                 ReLU-64         [-1, 512, 8, 4, 4]               0
-           BasicBlock-65         [-1, 512, 8, 4, 4]               0
-    AdaptiveAvgPool3d-66         [-1, 512, 1, 1, 1]               0
-               Linear-67                  [-1, 256]         131,328
-    ================================================================
-    Total params: 33,278,784
-    Trainable params: 33,278,784
-    Non-trainable params: 0
-    ----------------------------------------------------------------
-    Input size (MB): 1.00
-    Forward/backward pass size (MB): 712.01
-    Params size (MB): 126.95
-    Estimated Total Size (MB): 839.95
-    ----------------------------------------------------------------
+    >>> n_channel = 1
+    >>> bs = 3
+    >>> model = resnet3d(in_channels=n_channel, out_channels=512)
+    >>> data = torch.randn(bs ,n_channel, 10, 11, 12)
+    >>> out = model(data)
+    >>> out.shape
+    torch.Size([3, 512])
     """
     stem = partial(BasicStem, in_channels=in_channels)
     conv_makers = [resnet.Conv3DSimple] * 4
@@ -247,7 +96,9 @@ class VideoResNet(nn.Module):
     def __init__(
         self,
         block: Type[Union[resnet.BasicBlock, resnet.Bottleneck]],
-        conv_makers: Sequence[Type[Union[resnet.Conv3DSimple, resnet.Conv3DNoTemporal, resnet.Conv2Plus1D]]],
+        conv_makers: Sequence[Type[Union[resnet.Conv3DSimple,
+                                         resnet.Conv3DNoTemporal,
+                                         resnet.Conv2Plus1D]]],
         layers: List[int],
         stem: Callable[..., nn.Module],
         num_classes: int = 400,
@@ -270,10 +121,26 @@ class VideoResNet(nn.Module):
 
         self.stem = stem()
 
-        self.layer1 = self._make_layer(block, conv_makers[0], 64, layers[0], stride=1)
-        self.layer2 = self._make_layer(block, conv_makers[1], 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, conv_makers[2], 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, conv_makers[3], 512, layers[3], stride=2)
+        self.layer1 = self._make_layer(block,
+                                       conv_makers[0],
+                                       64,
+                                       layers[0],
+                                       stride=1)
+        self.layer2 = self._make_layer(block,
+                                       conv_makers[1],
+                                       128,
+                                       layers[1],
+                                       stride=2)
+        self.layer3 = self._make_layer(block,
+                                       conv_makers[2],
+                                       256,
+                                       layers[2],
+                                       stride=2)
+        self.layer4 = self._make_layer(block,
+                                       conv_makers[3],
+                                       512,
+                                       layers[3],
+                                       stride=2)
 
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
@@ -281,7 +148,9 @@ class VideoResNet(nn.Module):
         # init weights
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.kaiming_normal_(m.weight,
+                                        mode="fan_out",
+                                        nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm3d):
@@ -294,7 +163,8 @@ class VideoResNet(nn.Module):
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, resnet.Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+                    nn.init.constant_(m.bn3.weight,
+                                      0)  # type: ignore[union-attr, arg-type]
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.stem(x)
@@ -323,7 +193,8 @@ class VideoResNet(nn.Module):
     def _make_layer(
         self,
         block: Type[Union[resnet.BasicBlock, resnet.Bottleneck]],
-        conv_builder: Type[Union[resnet.Conv3DSimple, resnet.Conv3DNoTemporal, resnet.Conv2Plus1D]],
+        conv_builder: Type[Union[resnet.Conv3DSimple, resnet.Conv3DNoTemporal,
+                                 resnet.Conv2Plus1D]],
         planes: int,
         blocks: int,
         stride: int = 1,
@@ -333,11 +204,16 @@ class VideoResNet(nn.Module):
         if stride != 1 or self.inplanes != planes * block.expansion:
             ds_stride = conv_builder.get_downsample_stride(stride)
             downsample = nn.Sequential(
-                nn.Conv3d(self.inplanes, planes * block.expansion, kernel_size=1, stride=ds_stride, bias=False),
+                nn.Conv3d(self.inplanes,
+                          planes * block.expansion,
+                          kernel_size=1,
+                          stride=ds_stride,
+                          bias=False),
                 nn.BatchNorm3d(planes * block.expansion),
             )
         layers = []
-        layers.append(block(self.inplanes, planes, conv_builder, stride, downsample))
+        layers.append(
+            block(self.inplanes, planes, conv_builder, stride, downsample))
 
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
@@ -360,9 +236,10 @@ def GetScriptDir():
 
 
 if __name__ == '__main__':
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -378,5 +255,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.test:
-        doctest.testmod(optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE)
+        doctest.testmod(optionflags=doctest.ELLIPSIS
+                        | doctest.REPORT_ONLY_FIRST_FAILURE)
         sys.exit()
