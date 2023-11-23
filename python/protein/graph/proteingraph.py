@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
+import logging
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
@@ -36,24 +37,25 @@
 #                                                                           #
 #############################################################################
 import os
-import pymol2
+
 import numpy as np
-import torch
-from torch_geometric.data import Data, Batch
+import pymol2
 import scipy.spatial.distance as scidist
-from misc.shelve.tempshelve import Tempshelve
+import torch
 from misc.mols.graph import mol_to_graph
-import logging
+from misc.shelve.tempshelve import Tempshelve
+from torch_geometric.data import Batch, Data
 
 LOG = False
 
 if LOG:
     if not os.path.isdir("logs"):
         os.mkdir("logs")
-    logfilename = "logs/" + os.path.splitext(os.path.basename(__file__))[0] + ".log"
-    logging.basicConfig(
-        filename=logfilename, level=logging.INFO, format="%(asctime)s: %(message)s"
-    )
+    logfilename = "logs/" + \
+        os.path.splitext(os.path.basename(__file__))[0] + ".log"
+    logging.basicConfig(filename=logfilename,
+                        level=logging.INFO,
+                        format="%(asctime)s: %(message)s")
     logging.info(f"################ Starting {__file__} ################")
 
 AMINO_ACIDS = [
@@ -148,7 +150,8 @@ def seq_to_1hot(seqlist):
     """
     mapping = dict(zip(AMINO_ACIDS, range(len(AMINO_ACIDS))))
     classlist = getclasslist(mapping, seqlist)
-    onehot = torch.nn.functional.one_hot(classlist, num_classes=len(AMINO_ACIDS))
+    onehot = torch.nn.functional.one_hot(classlist,
+                                         num_classes=len(AMINO_ACIDS))
     return onehot
 
 
@@ -181,9 +184,11 @@ def mask_atom(node_features):
     return node_features, masked_features, masked_atom_id
 
 
-def prot_to_graph(
-    pdb, extrafile=None, selection=None, masked_atom=False, d_threshold=5.0
-):
+def prot_to_graph(pdb,
+                  extrafile=None,
+                  selection=None,
+                  masked_atom=False,
+                  d_threshold=5.0):
     """
     - pdb: main pdb file to load. The pymol object name is myprot
     - extrafile: extra pdb file to load. The pymol object name is extra
@@ -244,12 +249,14 @@ def prot_to_graph(
     node_features = torch.cat((resnames_onehot, atomnames_onehot), dim=1)
     #      58   =                 21          +      37
     if masked_atom:
-        node_features, masked_features, masked_atom_id = mask_atom(node_features)
+        node_features, masked_features, masked_atom_id = mask_atom(
+            node_features)
     dmat = scidist.squareform(scidist.pdist(coords))
     edge_index = torch.tensor(
-        np.asarray(np.where(dmat < d_threshold))
-    )  # edge_index has shape [2, E] with E the number of edges
-    edge_features = 1.0 - torch.tensor(dmat[tuple(edge_index)])[:, None] / d_threshold
+        np.asarray(np.where(dmat < d_threshold)
+                   ))  # edge_index has shape [2, E] with E the number of edges
+    edge_features = 1.0 - \
+        torch.tensor(dmat[tuple(edge_index)])[:, None] / d_threshold
     if not masked_atom:
         return (
             node_features.to(torch.float32),
@@ -267,6 +274,7 @@ def prot_to_graph(
 
 
 class Dataset(torch.utils.data.Dataset):
+
     def __init__(
         self,
         txtfile,
@@ -351,7 +359,7 @@ class Dataset(torch.utils.data.Dataset):
         self.radius = radius
         self.len = 0
         self.return_pyg_graph = return_pyg_graph
-        self.shelve = Tempshelve()
+        self.shelve = dict()
         self.read_txtfile()
         self.masked_atom = masked_atom
         self.return_mol_graph = return_mol_graph
@@ -363,7 +371,7 @@ class Dataset(torch.utils.data.Dataset):
                 if line.startswith("#"):
                     continue
                 data = line.split()
-                self.shelve.add(str(i), data)
+                self.shelve[i] = data
                 self.len += 1
                 i += 1
 
@@ -371,7 +379,7 @@ class Dataset(torch.utils.data.Dataset):
         return self.len
 
     def __getitem__(self, index):
-        data = self.shelve.get(str(index))
+        data = self.shelve[index]
         label = data[0]
         value = data[1:]
         protfilename = value[0]
@@ -428,9 +436,9 @@ def GetScriptDir():
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # ### UNCOMMENT FOR LOGGING ####
     # import os
@@ -440,7 +448,9 @@ if __name__ == "__main__":
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("-p", "--pdb")
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--func",
+                        help="Test only the given function(s)",
+                        nargs="+")
     args = parser.parse_args()
 
     # If log is present log the arguments to the log file:
@@ -450,9 +460,8 @@ if __name__ == "__main__":
 
     if args.test:
         if args.func is None:
-            doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-            )
+            doctest.testmod(optionflags=doctest.ELLIPSIS
+                            | doctest.REPORT_ONLY_FIRST_FAILURE)
         else:
             for f in args.func:
                 print(f"Testing {f}")
@@ -460,7 +469,8 @@ if __name__ == "__main__":
                 doctest.run_docstring_examples(
                     f,
                     globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                    optionflags=doctest.ELLIPSIS
+                    | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
     if args.pdb is not None:
