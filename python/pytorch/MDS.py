@@ -36,14 +36,12 @@
 #                                                                           #
 #############################################################################
 
-
 import gzip
 import os
 
 import numpy as np
 import scipy.spatial.distance as scidist
 import torch
-
 from misc import rec
 
 
@@ -92,10 +90,13 @@ def lossfunc(x, dmat, repulsion=0.0):
     """
     xmat = torch.cdist(x, x)
     mask = dmat == -1.0
-    loss_dmat = torch.mean((xmat[~mask] - dmat[~mask]) ** 2)
+    if mask.all():
+        loss_dmat = 0.
+    else:
+        loss_dmat = torch.mean((xmat[~mask] - dmat[~mask])**2)
     if repulsion > 0.0:
         repulsive_mask = xmat < repulsion
-        loss_rep = torch.mean((xmat[repulsive_mask] - repulsion) ** 2)
+        loss_rep = torch.mean((xmat[repulsive_mask] - repulsion)**2)
         return loss_dmat + loss_rep
     else:
         return loss_dmat
@@ -215,6 +216,7 @@ def fit_batched(
 
 
 def subsample(data, batch_size, ilist, jlist):
+
     def reindex(ilist):
         mapping = dict()
         ind = 0
@@ -241,7 +243,9 @@ def subsample(data, batch_size, ilist, jlist):
 def rec_to_mat(recfile="", field="", data=[], fields=[]):
     if recfile != "":
         assert len(data) == 0, "recfile xor data should be given, not both"
-        data, fields = rec.get_data(recfile, selected_fields=None, rmquote=False)
+        data, fields = rec.get_data(recfile,
+                                    selected_fields=None,
+                                    rmquote=False)
     if len(data) > 0:
         assert len(fields) > 0, "If data is given, fields must be given"
     assert field in fields
@@ -279,7 +283,7 @@ def write_rec_pairwise(recfile, outrecfile, mdsout):
                 gz.write(f"{field}={data[field][index]}\n")
             gz.write(f"mds_i={list(mdsout[i])}\n")
             gz.write(f"mds_j={list(mdsout[j])}\n")
-            mds_dist = np.sqrt(((mdsout[j] - mdsout[i]) ** 2).sum())
+            mds_dist = np.sqrt(((mdsout[j] - mdsout[i])**2).sum())
             gz.write(f"mds_dist={mds_dist}\n")
             gz.write("--\n")
 
@@ -317,21 +321,26 @@ if __name__ == "__main__":
         type=float,
         default=0.0,
     )
-    parser.add_argument(
-        "-d", "--dim", help="Dimension of the projection space", type=int, default=2
-    )
-    parser.add_argument(
-        "--niter", help="Number of fitting iterations", type=int, default=10000
-    )
+    parser.add_argument("-d",
+                        "--dim",
+                        help="Dimension of the projection space",
+                        type=int,
+                        default=2)
+    parser.add_argument("--niter",
+                        help="Number of fitting iterations",
+                        type=int,
+                        default=10000)
     parser.add_argument(
         "--min_delta",
-        help="Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).",
+        help=
+        "Stop criteria based on min_delta: minimum change in the loss to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement (default=1e-6).",
         type=float,
         default=1e-6,
     )
     parser.add_argument(
         "--min_delta_epoch",
-        help="Stop criteria based on min_delta. Same as --min_delta except that the delta is calculated at the end of each epoch. Only used if --batch_size is defined (default=1e-6).",
+        help=
+        "Stop criteria based on min_delta. Same as --min_delta except that the delta is calculated at the end of each epoch. Only used if --batch_size is defined (default=1e-6).",
         type=float,
         default=1e-6,
     )
@@ -342,12 +351,14 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rec",
-        help="Read the distances from the given rec file and the given field name",
+        help=
+        "Read the distances from the given rec file and the given field name",
         nargs=2,
     )
     parser.add_argument(
         "--npy",
-        help="Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)",
+        help=
+        "Read the distance matrix from the given numpy file (.npy). Must contain a condensed distance matrix as returned bu scipy.spatial.distance.pdist (upper diagonal matrix)",
     )
     parser.add_argument(
         "--random_init",
@@ -368,10 +379,12 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument(
-        "--test_fit", help="Test fitting random data", action="store_true"
-    )
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--test_fit",
+                        help="Test fitting random data",
+                        action="store_true")
+    parser.add_argument("--func",
+                        help="Test only the given function(s)",
+                        nargs="+")
     args = parser.parse_args()
 
     if args.device is None:
@@ -382,9 +395,8 @@ if __name__ == "__main__":
 
     if args.test:
         if args.func is None:
-            doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-            )
+            doctest.testmod(optionflags=doctest.ELLIPSIS
+                            | doctest.REPORT_ONLY_FIRST_FAILURE)
         else:
             for f in args.func:
                 print(f"Testing {f}")
@@ -392,7 +404,8 @@ if __name__ == "__main__":
                 doctest.run_docstring_examples(
                     f,
                     globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                    optionflags=doctest.ELLIPSIS
+                    | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit(0)
     if os.path.exists(args.outfile):
@@ -418,16 +431,15 @@ if __name__ == "__main__":
     if args.rec is not None:
         recfile, field = args.rec
         basename = os.path.basename(recfile)
-        outrecfile_pairwise = "MDS/" + basename.split(".")[0] + "_mds_pairwise.rec.gz"
+        outrecfile_pairwise = "MDS/" + \
+            basename.split(".")[0] + "_mds_pairwise.rec.gz"
         outrecfile_simple = "MDS/" + basename.split(".")[0] + "_mds.rec.gz"
         if not os.path.exists("MDS"):
             os.mkdir("MDS")
         assert not os.path.exists(
-            outrecfile_pairwise
-        ), f"{outrecfile_pairwise} already exists"
+            outrecfile_pairwise), f"{outrecfile_pairwise} already exists"
         assert not os.path.exists(
-            outrecfile_simple
-        ), f"{outrecfile_simple} already exists"
+            outrecfile_simple), f"{outrecfile_simple} already exists"
         if args.batch_size is None:
             dmat = rec_to_mat(recfile=recfile, field=field)
             out, _ = fit(
@@ -452,7 +464,9 @@ if __name__ == "__main__":
                 min_delta=args.min_delta,
                 min_delta_epoch=args.min_delta_epoch,
             )
-        write_rec_pairwise(recfile=recfile, outrecfile=outrecfile_pairwise, mdsout=out)
+        write_rec_pairwise(recfile=recfile,
+                           outrecfile=outrecfile_pairwise,
+                           mdsout=out)
         write_rec_simple(outrecfile=outrecfile_simple, mdsout=out)
     if args.npy is not None:
         if not os.path.isdir("MDS"):
