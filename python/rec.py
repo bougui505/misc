@@ -75,6 +75,8 @@ def get_data(file, selected_fields=None, rmquote=False):
             assertstr = f"key, value couple needed in line {linenbr} -- {kv=}"
             assert len(kv) == 2, assertstr
             key, value = kv
+            if len(value.strip()) == 0:  # replace empty str by "-"
+                value = "-"
             if rmquote:
                 value = value.replace("'", "")
             if selected_fields is not None:
@@ -249,9 +251,8 @@ def run(data: dict, cmd: str, fields: list, names: list) -> dict:
             args_i.append(str(data[key][i]))
         cmd_i.extend(args_i)
         cmd_list.append(cmd_i)
-    out = Parallel(n_jobs=n_jobs)(
-        delayed(subprocess.check_output)(inp) for inp in tqdm(cmd_list)
-    )
+    out = Parallel(n_jobs=n_jobs)(delayed(subprocess.check_output)(inp)
+                                  for inp in tqdm(cmd_list))
     out = [e.strip().decode() for e in out]
     if len(names) == 1:
         name = names[0]
@@ -328,8 +329,9 @@ if __name__ == "__main__":
         description="Read a python like recfile from stdin (pipe) except if --file is given"
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument(
-        "--info", help="Print long help message.", action="store_true")
+    parser.add_argument("--info",
+                        help="Print long help message.",
+                        action="store_true")
     parser.add_argument(
         "-f",
         "--fields",
@@ -337,8 +339,8 @@ if __name__ == "__main__":
         nargs="+",
         default=None,
     )
-    parser.add_argument(
-        "--sort", help="Sort the rec file according to the given field")
+    parser.add_argument("--sort",
+                        help="Sort the rec file according to the given field")
     parser.add_argument(
         "-d",
         "--delimiter",
@@ -383,22 +385,22 @@ if __name__ == "__main__":
         help="Merge the two given files, based on the common fields",
         nargs=2,
     )
-    parser.add_argument(
-        "--stat", help="print statistics about the records file", action="store_true"
-    )
+    parser.add_argument("--stat",
+                        help="print statistics about the records file",
+                        action="store_true")
     parser.add_argument(
         "--torec",
         help="Convert a column file with given delimiter (see --delimiter) to a rec file. The first line must be the header with the name of the fields like '#field1 #field2 ...'",
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument(
-        "--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--func",
+                        help="Test only the given function(s)",
+                        nargs="+")
     args = parser.parse_args()
 
     if args.info:
-        sys.stdout.write(
-            """\
+        sys.stdout.write("""\
 Read a python like recfile. A pyrec file looks like:
 
 # comment1
@@ -426,15 +428,13 @@ Useful properties are implemented:
              rec --file f.rec --calc 'natoms=num_atoms(smiles)'
              where smiles is a field with a SMILES
 
-        """
-        )
+        """)
         sys.exit()
 
     if args.test:
         if args.func is None:
-            doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-            )
+            doctest.testmod(optionflags=doctest.ELLIPSIS
+                            | doctest.REPORT_ONLY_FIRST_FAILURE)
         else:
             for f in args.func:
                 print(f"Testing {f}")
@@ -442,7 +442,8 @@ Useful properties are implemented:
                 doctest.run_docstring_examples(
                     f,
                     globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                    optionflags=doctest.ELLIPSIS
+                    | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
 
@@ -534,9 +535,9 @@ Useful properties are implemented:
         dict_to_rec(DATA)
         sys.exit(0)
     if args.sort is not None:
-        DATA, _ = get_data(
-            file=args.file, selected_fields=args.fields, rmquote=args.rmquote
-        )
+        DATA, _ = get_data(file=args.file,
+                           selected_fields=args.fields,
+                           rmquote=args.rmquote)
         DATA = sort(data=DATA, field=args.sort)
         dict_to_rec(DATA)
         sys.exit(0)
