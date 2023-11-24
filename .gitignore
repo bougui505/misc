@@ -1054,3 +1054,6 @@ python/TMalign/data/1.rec.gz
 python/pytorch/data/mds_inp_mds.rec.gz
 python/pytorch/MDS/mds_inp_mds.rec.gz
 python/pytorch/data/mds_inp.npy
+python/Grid3/data/conf_emin_PLUMED.pdb
+python/Grid3/data/traj-short.xtc
+python/protein/data/conf_emin_PLUMED_density.mrc
