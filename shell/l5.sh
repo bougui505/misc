@@ -21,14 +21,16 @@ function usage () {
     cat << EOF
 List all the files modified the last 5 minutes (using find)
     -h, --help print this help message and exit
-    -d, --delay change the default delay (5 minutes) to the given number of minutes
+    -t, --time change the default delay time (5 minutes) to the given number of minutes
+    -d, --day, put the delay to 1-day: 1440 minutes
 EOF
 }
 
 DELAY=5  # delay in minutes
 while [ "$#" -gt 0 ]; do
     case $1 in
-        -d|--delay) DELAY="$2"; shift ;;
+        -t|--time) DELAY="$2"; shift ;;
+        -d|--day) DELAY=1440 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
