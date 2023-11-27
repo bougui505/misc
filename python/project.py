@@ -42,12 +42,19 @@ from numpy import linalg
 from sklearn.manifold import TSNE, Isomap
 
 
-def tsne(data, n_components=2, perplexity=30.0, metric="euclidean", init="pca"):
+def tsne(data,
+         n_components=2,
+         perplexity=30.0,
+         metric="euclidean",
+         init="pca",
+         verbose=0):
     if metric == "precomputed":
         init = "random"
-    embedder = TSNE(
-        n_components=n_components, perplexity=perplexity, metric=metric, init=init
-    )
+    embedder = TSNE(n_components=n_components,
+                    perplexity=perplexity,
+                    metric=metric,
+                    init=init,
+                    verbose=verbose)
     out = embedder.fit_transform(data)
     return out
 
@@ -71,7 +78,9 @@ def compute_pca(X, outfilename=None):
     sorter = np.argsort(eigenvalues)[::-1]
     eigenvalues, eigenvectors = eigenvalues[sorter], eigenvectors[:, sorter]
     if outfilename is not None:
-        np.savez(outfilename, eigenvalues=eigenvalues, eigenvectors=eigenvectors)
+        np.savez(outfilename,
+                 eigenvalues=eigenvalues,
+                 eigenvectors=eigenvectors)
     return eigenvalues, eigenvectors
 
 
@@ -113,9 +122,9 @@ if __name__ == "__main__":
         type=str,
         default="euclidean",
     )
-    parser.add_argument(
-        "--dot", help="compute pairwise dot product between data", action="store_true"
-    )
+    parser.add_argument("--dot",
+                        help="compute pairwise dot product between data",
+                        action="store_true")
     parser.add_argument(
         "-n",
         "--n_components",
@@ -131,6 +140,11 @@ if __name__ == "__main__":
         type=float,
     )
     parser.add_argument(
+        "--verbose",
+        type=int,
+        default=0,
+        help="Verbose level for tsne (see sklearn documentation)")
+    parser.add_argument(
         "-t",
         "--text",
         help="Read the last column as text (default: no text). The text is outputed in the last column of the output.",
@@ -143,14 +157,15 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    parser.add_argument("--func",
+                        help="Test only the given function(s)",
+                        nargs="+")
     args = parser.parse_args()
 
     if args.test:
         if args.func is None:
-            doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-            )
+            doctest.testmod(optionflags=doctest.ELLIPSIS
+                            | doctest.REPORT_ONLY_FIRST_FAILURE)
         else:
             for f in args.func:
                 print(f"Testing {f}")
@@ -158,7 +173,8 @@ if __name__ == "__main__":
                 doctest.run_docstring_examples(
                     f,
                     globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                    optionflags=doctest.ELLIPSIS
+                    | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
 
@@ -179,12 +195,11 @@ if __name__ == "__main__":
         eigenvalues, eigenvectors = compute_pca(DATA)
         OUT = project(DATA, eigenvectors, ncomp=args.n_components)
     if args.method == "tsne":
-        OUT = tsne(
-            DATA,
-            n_components=args.n_components,
-            perplexity=args.perplexity,
-            metric=args.metric,
-        )
+        OUT = tsne(DATA,
+                   n_components=args.n_components,
+                   perplexity=args.perplexity,
+                   metric=args.metric,
+                   verbose=args.verbose)
     if args.method == "isomap":
         OUT = isomap(
             DATA,
