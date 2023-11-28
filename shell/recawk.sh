@@ -99,8 +99,8 @@ if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$(echo $1 | awk -F"END" '{print $1}')
-ENDCMD=$(echo $1 | awk -F"END" '{print $2}')
+CMD=$(echo "$1" | tr "\n" ";" | awk -F"END" '{print $1}' | tr ";" "\n")
+ENDCMD=$(echo "$1" | tr "\n" ";" | awk -F"END" '{print $2}' | tr ";" "\n")
 FILENAMES="${@:2}"
 
 awk -v $V -F"=" '
