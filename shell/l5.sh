@@ -23,16 +23,17 @@ List all the files modified the last 5 minutes (using find)
     -h, --help print this help message and exit
     -t, --time change the default delay time (5 minutes) to the given number of minutes
     -a, --all also display hidden files
-    -d, --day, put the delay to 1-day: 1440 minutes
+    -d, --day, number of day to put the delay (1 day = 1440 minutes)
 EOF
 }
 
 DELAY=5  # delay in minutes
 ALL=0
+DAYS=1
 while [ "$#" -gt 0 ]; do
     case $1 in
         -t|--time) DELAY="$2"; shift ;;
-        -d|--day) DELAY=1440 ;;
+        -d|--day) DAYS="$2"; DELAY=$(qalc -t "$DAYS * 1440") ; shift ;;
         -a|--all) ALL=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
