@@ -22,15 +22,18 @@ function usage () {
 List all the files modified the last 5 minutes (using find)
     -h, --help print this help message and exit
     -t, --time change the default delay time (5 minutes) to the given number of minutes
+    -a, --all also display hidden files
     -d, --day, put the delay to 1-day: 1440 minutes
 EOF
 }
 
 DELAY=5  # delay in minutes
+ALL=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -t|--time) DELAY="$2"; shift ;;
         -d|--day) DELAY=1440 ;;
+        -a|--all) ALL=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -38,4 +41,10 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-find . -type f -mmin -$DELAY | xargs lt
+FILES=$(find . -type f -mmin -$DELAY | sed 's,./,,') 
+if [ $ALL -eq 0 ]; then
+    FILES=$(echo $FILES | tr " " "\n" | grep -v "^\.")
+fi
+if [[ ! -z $FILES ]]; then
+    echo $FILES | xargs lt
+fi
