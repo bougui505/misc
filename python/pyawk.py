@@ -56,7 +56,7 @@ def format_line(line):
         except ValueError:
             pass
         outline.append(e)
-    outline = np.asarray(outline)
+    # outline = np.asarray(outline)
     return outline
 
 
