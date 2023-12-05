@@ -30,6 +30,7 @@ def GetScriptDir():
     return scriptdir
 
 def print_(indata):
+    indata = np.asarray(indata)
     try:
         indata[indata == None] = '_'
     except (TypeError, ValueError):
