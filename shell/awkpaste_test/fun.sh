@@ -24,3 +24,7 @@ test1 () {
 test2 () {
     ../awkpaste.sh =(seq 13) =(seq 10)
 }
+
+test3 () {
+    ../awkpaste.sh =(seq 13) =(seq 10) =(seq 15)
+}
