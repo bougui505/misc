@@ -28,7 +28,9 @@ esac
 
 awk '
 {
-data[ARGIND][FNR][NF]=$NF
+for (i=1;i<=NF;i++){
+    data[ARGIND][FNR][i]=$i
+}
 nlines[ARGIND] += 1
 if (ARGIND > nfiles){
     nfiles=ARGIND
@@ -41,21 +43,29 @@ if (FNR > nrmax){
 }
 }
 END{
-for (k in data){
-    # print k
-}
-for (nr=1;nr<=nrmax;nr++){
-    for (argind=1;argind<=nfiles;argind++){
-        for (nf=1;nf<=nfmax;nf++){
+i=0
+j=0
+for (argind=1;argind<=nfiles;argind++){
+    for (nf=1;nf<=nfmax;nf++){
+        j++
+        i=0
+        for (nr=1;nr<=nrmax;nr++){
+            i++
             if (data[argind][nr][nf]!=""){
-                printf data[argind][nr][nf]" "
+                out[i][j] = data[argind][nr][nf]
             }
             else{
-            printf "- "
+                out[i][j] = "-"
             }
         }
     }
     printf("\n")
+}
+for (i2=1;i2<=i;i2++){
+    for (j2=1;j2<=j;j2++){
+        printf out[i2][j2]" "
+    }
+    printf "\n"
 }
 }
 ' $@
