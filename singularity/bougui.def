@@ -21,6 +21,7 @@ apt-get install -y python3-pandas
 apt-get install -y pv
 apt-get install -y gawk
 apt-get install -y clustalw
+apt-get install -y qalc
 apt-get clean
 ###############################################################################
 
