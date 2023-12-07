@@ -28,3 +28,9 @@ test2 () {
 test3 () {
     ../awkpaste.sh =(seq 13) =(seq 10) =(seq 15)
 }
+
+test4 () {
+    paste -d" " =(seq 14) =(seq 10) >! /tmp/a
+    paste -d" " =(seq 20 30) =(seq 50 70) >! /tmp/b
+    ../awkpaste.sh /tmp/a /tmp/b
+}
