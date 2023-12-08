@@ -44,7 +44,7 @@ done
 
 FILES=$(find . -type f -mmin -$DELAY | sed 's,./,,') 
 if [ $ALL -eq 0 ]; then
-    FILES=$(echo $FILES | tr " " "\n" | grep -v "^\.")
+    FILES=$(echo $FILES | tr " " "\n" | grep -v -e "^\." -e "/\." -e "__pycache__")
 fi
 if [[ ! -z $FILES ]]; then
     echo $FILES | xargs lt
