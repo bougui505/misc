@@ -15,7 +15,7 @@ BASENAME=$(basename "$INPATH")
 OUTPATH="$ARCHIVE_DIR/$BASENAME.sqsh"
 
 if [ ! -f $OUTPATH ]; then
-    mksquashfs $INPATH $OUTPATH -comp xz && echo "archive $OUTPATH successfully created"
+    mksquashfs $INPATH $OUTPATH && echo "archive $OUTPATH successfully created"
 else
     (>&2 echo "$OUTPATH already exists. Cannot create archive...")
 fi
