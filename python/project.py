@@ -5,36 +5,9 @@
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
 # Copyright (c) 2023 Institut Pasteur                                       #
-#                               				                            #
-#                                                                           #
-#  Redistribution and use in source and binary forms, with or without       #
-#  modification, are permitted provided that the following conditions       #
-#  are met:                                                                 #
-#                                                                           #
-#  1. Redistributions of source code must retain the above copyright        #
-#  notice, this list of conditions and the following disclaimer.            #
-#  2. Redistributions in binary form must reproduce the above copyright     #
-#  notice, this list of conditions and the following disclaimer in the      #
-#  documentation and/or other materials provided with the distribution.     #
-#  3. Neither the name of the copyright holder nor the names of its         #
-#  contributors may be used to endorse or promote products derived from     #
-#  this software without specific prior written permission.                 #
-#                                                                           #
-#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS      #
-#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT        #
-#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR    #
-#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT     #
-#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,   #
-#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT         #
-#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,    #
-#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY    #
-#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT      #
-#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE    #
-#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.     #
-#                                                                           #
-#  This program is free software: you can redistribute it and/or modify     #
-#                                                                           #
 #############################################################################
+
+import gzip
 import os
 
 import numpy as np
@@ -99,6 +72,43 @@ def print_result(out, labels=None, text=None):
     np.savetxt(sys.stdout, out, fmt="%s")
     os.remove(".tmp")
 
+def data_from_rec(recfile, selected_fields):
+    data = list()
+    keys = []
+    with gzip.open(recfile, 'rt') as gz:
+        i = 0
+        for line in gz:
+            line = line.strip()
+            if line != "--":
+                key, val = line.split("=", maxsplit=1)
+                if key in selected_fields:
+                    val = np.float_(val.replace("[", "").replace("]", "").split(","))
+                    data.append(val)
+                    keys.append(key)
+            else:
+                i += 1
+    nkeys = len(selected_fields)
+    DATA = np.stack(data)
+    assert DATA.shape[0] == nkeys * i, f"{DATA.shape[0]=} does not match the number of keys {nkeys}*{i}"
+    return DATA, np.asarray(keys)
+
+def data_to_rec(recfile, selected_fields, out, keys):
+    assert len(out) == len(keys), f"out has not the same shape {out.shape=} as keys {len(keys)=}"
+    keys_unique = np.unique(keys)
+    out = {k:iter(out[keys==k]) for k in keys_unique}
+    with gzip.open(recfile, 'rt') as gz:
+        for line in gz:
+            line = line.strip()
+            if line != "--":
+                print(line)
+                key, _ = line.split("=", maxsplit=1)
+                if key in selected_fields:
+                    print(f"{key}_{args.method}={list(next(out[key]))}")
+            else:
+                print("--")
+
+
+
 
 if __name__ == "__main__":
     import argparse
@@ -110,6 +120,8 @@ if __name__ == "__main__":
         description="Use various projection methods (see: --method) to project the data in stdin to a low-dimensional space."
     )
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument("--rec", help="Read the data from the given rec file. The syntax is --rec recfile field1 [field2] [...]",
+                        nargs="+")
     parser.add_argument(
         "--method",
         help="Projection method to use. For TSNE, see: https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html",
@@ -178,7 +190,12 @@ if __name__ == "__main__":
                 )
         sys.exit()
 
-    DATA = np.genfromtxt(sys.stdin, dtype=str)
+    if args.rec is None:
+        DATA = np.genfromtxt(sys.stdin, dtype=str)
+    else:
+        recfile = args.rec[0]
+        fields = args.rec[1:]
+        DATA, KEYS = data_from_rec(recfile=recfile, selected_fields=fields)
     if args.text:
         TEXT = DATA[:, -1]
         DATA = DATA[:, :-1]
@@ -190,7 +207,7 @@ if __name__ == "__main__":
     else:
         LABELS = None
     DATA = DATA.astype(float)
-    print(f"# {DATA.shape=}")
+    print(f"# {DATA.shape=}", file=sys.stderr)
     if args.method == "pca":
         eigenvalues, eigenvectors = compute_pca(DATA)
         OUT = project(DATA, eigenvectors, ncomp=args.n_components)
@@ -208,4 +225,7 @@ if __name__ == "__main__":
         )
     if args.dot:
         OUT = DATA.dot(DATA.T)
-    print_result(OUT, labels=LABELS, text=TEXT)
+    if args.rec is None:
+        print_result(OUT, labels=LABELS, text=TEXT)
+    else:
+        data_to_rec(recfile=recfile, selected_fields=fields, out=OUT, keys=KEYS)
