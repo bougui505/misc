@@ -101,7 +101,7 @@ func1 () {
 }
 EOFF
     fi
-    nvim fun.sh
+    nvim fun.sh || vim fun.sh
 }
 
 create_file
