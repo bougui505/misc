@@ -20,7 +20,7 @@ apt-get install -y gawk
 apt-get install -y clustalw
 apt-get install -y qalc
 apt-get install -y gztool
-apt-get install -y python3-h5py python3-sklearn
+apt-get install -y python3-h5py python3-sklearn python3-tqdm python3-skimage vim
 apt-get clean
 ###############################################################################
 
@@ -43,6 +43,7 @@ python3 setup.py --glut build install
 # PYMOL PLUGINS:
 cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
 git clone https://github.com/bougui505/pymol_isosurface.git
+ln -s /opt/InDeep/InDeep_PyMol_plugin
 ##########################################################################
 
 ############################## INDEEP ##############################
