@@ -20,7 +20,7 @@ apt-get install -y gawk
 apt-get install -y clustalw
 apt-get install -y qalc
 apt-get install -y gztool
-apt-get install -y python3-h5py
+apt-get install -y python3-h5py python3-sklearn
 apt-get clean
 ###############################################################################
 
