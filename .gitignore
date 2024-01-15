@@ -1057,3 +1057,4 @@ python/pytorch/data/mds_inp.npy
 python/Grid3/data/conf_emin_PLUMED.pdb
 python/Grid3/data/traj-short.xtc
 python/protein/data/conf_emin_PLUMED_density.mrc
+singularity/indeep/indeep.sif
