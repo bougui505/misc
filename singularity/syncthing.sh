@@ -20,6 +20,6 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 CMD="singularity run -B $(pwd)"
 
 [ -e /c7/scratch2 ] &&  CMD+=" -B /c7/scratch2"
-CMD+=" $DIRSCRIPT/bougui.sif syncthing --home ~/syncthing"
+CMD+=" $DIRSCRIPT/bougui.sif syncthing --home $HOME/syncthing"
 echo $CMD
 $CMD
