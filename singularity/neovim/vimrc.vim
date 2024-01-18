@@ -1,3 +1,4 @@
+colorscheme astrodark
 set mouse=
 set wrap
 autocmd BufNewFile *.sh 0r /etc/xdg/nvim/sh_template_file.sh
