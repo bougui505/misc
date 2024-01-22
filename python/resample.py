@@ -36,6 +36,7 @@
 #                                                                           #
 #############################################################################
 import os
+
 import numpy as np
 
 
@@ -57,9 +58,9 @@ def resample(data, ratio):
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="Resample stdin")
@@ -93,7 +94,7 @@ if __name__ == "__main__":
                 )
         sys.exit()
 
-    data = np.genfromtxt(sys.stdin, dtype=str)
+    data = np.genfromtxt(sys.stdin, dtype=float)
     if args.ratio is None:
         sys.exit("Provide the --ratio (-r) argument")
     data = resample(data, args.ratio)
