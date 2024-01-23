@@ -68,6 +68,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-r", "--ratio", type=float, help="Resampling ration between 0.0 and 1.0"
     )
+    parser.add_argument("-m", "--max", help="Maximum number of points to get. Subsample if required", type=int)
     parser.add_argument(
         "-i",
         "--ind",
@@ -95,6 +96,12 @@ if __name__ == "__main__":
         sys.exit()
 
     data = np.genfromtxt(sys.stdin, dtype=float)
+    if args.max is not None:
+        n = data.shape[0]
+        if n > args.max:
+            args.ratio = args.max / n
+        else:
+            args.ratio = 1.0
     if args.ratio is None:
         sys.exit("Provide the --ratio (-r) argument")
     data = resample(data, args.ratio)
