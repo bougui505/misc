@@ -44,4 +44,17 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 
-singularity run -B $(pwd) -B /c7/scratch2 --nv $DIRSCRIPT/bougui.sif $@
+# singularity run -B $(pwd) -B /c7/scratch2 --nv $DIRSCRIPT/bougui.sif $@
+CMD="singularity run -B $(pwd) "
+if [[ -d /c7/scratch2 ]]; then
+  CMD+="-B /c7/scratch2 "
+fi
+if [[ -d /opt/bougui ]]; then
+  CMD+="-B /opt/bougui "
+fi
+if lspci | grep -q -i nvidia; then
+  CMD+="--nv "
+fi
+CMD+="$DIRSCRIPT/bougui.sif $@"
+echo $CMD
+eval $CMD
