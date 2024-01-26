@@ -25,5 +25,5 @@ EOF
 
   *)
 
-qalc -t $(tsp -i $1 | awk -F":" '{if ($1=="Time running"){print $2}}') ;;
+qalc -t $(tsp -i $1 | awk -F":" '{if ($1~"Time run"){print $2}}') ;;
 esac
