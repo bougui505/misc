@@ -15,10 +15,15 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
+case "$1" in
+  -h|--help)
 cat << EOF
 Usage:
   tsp_running_time [id]
-
 EOF
+;;
 
-qalc -t $(tsp -i $1 | awk -F":" '{if ($1=="Time running"){print $2}}')
+  *)
+
+qalc -t $(tsp -i $1 | awk -F":" '{if ($1=="Time running"){print $2}}') ;;
+esac
