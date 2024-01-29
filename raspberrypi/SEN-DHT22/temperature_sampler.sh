@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PERIOD=10  # PERIOD in minutes
+PERIOD=15  # PERIOD in minutes
 PERIOD=$(qalc -t "$PERIOD min to s" | awk '{print $1}')
 OUTDIR="/media/usb0/t-temp_c-humidity"
 OUTFILE="$OUTDIR/data.dat"
@@ -20,10 +20,11 @@ if [[ ! -d $OUTDIR ]]; then
     exit 1
 fi
 
-touch $OUTFILE
-tail -n $NLINES $OUTFILE | sponge $OUTFILE
 while sleep $PERIOD; do
+    touch $OUTFILE
+    tail -n $NLINES $OUTFILE | sponge $OUTFILE
     ./temperature_sample.py >> $OUTFILE
+    ./temperature_plotter.py
     # outputs:
     # seconds since epoch temperature humidity
 done
