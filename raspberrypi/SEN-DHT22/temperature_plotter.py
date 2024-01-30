@@ -28,7 +28,7 @@ def plot_data(data, outfile, ndays=1):
     plt.grid()
 
     ax2 = ax.twinx()
-    color = 'lightgray'
+    color = 'cyan'
     ax2.set_ylabel('humidity (%)', color=color)
     ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color, lw=1)
     ax2.tick_params(axis='y', labelcolor=color)
