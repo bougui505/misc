@@ -25,6 +25,7 @@ def plot_data(data, outfile, ndays=1):
     ax.axhline(y=T_min,linestyle="--",linewidth=1.0, color=color)
     # Choose your xtick format string
     ax.set_ylabel("T (°C)")
+    plt.grid()
 
     ax2 = ax.twinx()
     color = 'lightgray'
