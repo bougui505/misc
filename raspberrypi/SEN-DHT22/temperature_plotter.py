@@ -17,7 +17,7 @@ MAXTIMEFRAME = MAXTIMEFRAME * 60 * 60
 def plot_data(data, outfile):
     fig, ax = plt.subplots()
     color = 'tab:blue'
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color)
+    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3)
     T_max = data[:,1].max()
     T_min = data[:,1].min()
     ax.axhline(y=T_max,linestyle="--",linewidth=1.0, color=color)
@@ -28,7 +28,7 @@ def plot_data(data, outfile):
     ax2 = ax.twinx()
     color = 'lightgray'
     ax2.set_ylabel('humidity (%)', color=color)
-    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color)
+    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color, lw=1)
     ax2.tick_params(axis='y', labelcolor=color)
 
     # Use a DateFormatter to set the data to the correct format.
