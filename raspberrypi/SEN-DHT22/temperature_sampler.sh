@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 
-PERIOD=15  # PERIOD in minutes
-PERIOD=$(qalc -t "$PERIOD min to s" | awk '{print $1}')
 OUTDIR="/media/usb0/t-temp_c-humidity"
 OUTFILE="$OUTDIR/data.dat"
 NLINES=10000  # maximum number of measurement to keep
 
-echo "PERIOD=$PERIOD (s)"
+DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
+
+date
+
+echo "DIRSCRIPT=$DIRSCRIPT"
 echo "OUTFILE=$OUTFILE"
 
 if pgrep pigpiod; then
     echo "pigpiod is running"
 else
-    sudo pigpiod
+    echo "pigpiod is not runningi. Please run:"
+    echo "sudo pigpiod"
+    exit 1
 fi
 
 if [[ ! -d $OUTDIR ]]; then
@@ -20,11 +24,9 @@ if [[ ! -d $OUTDIR ]]; then
     exit 1
 fi
 
-while sleep $PERIOD; do
-    touch $OUTFILE
-    tail -n $NLINES $OUTFILE | sponge $OUTFILE
-    ./temperature_sample.py >> $OUTFILE
-    ./temperature_plotter.py
-    # outputs:
-    # seconds since epoch temperature humidity
-done
+touch $OUTFILE
+tail -n $NLINES $OUTFILE | sponge $OUTFILE
+$DIRSCRIPT/temperature_sample.py >> $OUTFILE
+$DIRSCRIPT/temperature_plotter.py
+# outputs:
+# seconds since epoch temperature humidity
