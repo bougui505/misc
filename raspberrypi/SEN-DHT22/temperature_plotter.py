@@ -10,11 +10,12 @@ from dateutil import tz
 plt.rcParams['figure.constrained_layout.use'] = False
 
 DATAFILE = "/media/usb0/t-temp_c-humidity/data.dat"
-MAXTIMEFRAME = 24  # h
 
-MAXTIMEFRAME = MAXTIMEFRAME * 60 * 60
-
-def plot_data(data, outfile):
+def plot_data(data, outfile, ndays=1):
+    print(f"plotting for {ndays} day(s)")
+    ndays = ndays * 24 * 60 * 60  # s
+    sel = data[:, 0] >= time.time() - ndays
+    data = data[sel]
     fig, ax = plt.subplots()
     color = 'tab:blue'
     ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3)
@@ -49,7 +50,8 @@ def plot_data(data, outfile):
 
 data = np.genfromtxt(DATAFILE)
 
-sel = data[:, 0] >= time.time() - MAXTIMEFRAME
-data = data[sel]
 
-plot_data(data, outfile="/var/www/html/figures/T.png")
+plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
+plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
+plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7)
+plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1)
