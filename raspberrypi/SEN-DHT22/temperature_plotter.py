@@ -16,7 +16,12 @@ MAXTIMEFRAME = MAXTIMEFRAME * 60 * 60
 
 def plot_data(data, outfile):
     fig, ax = plt.subplots()
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-')
+    color = 'tab:blue'
+    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color)
+    T_max = data[:,1].max()
+    T_min = data[:,1].min()
+    ax.axhline(y=T_max,linestyle="--",linewidth=1.0, color=color)
+    ax.axhline(y=T_min,linestyle="--",linewidth=1.0, color=color)
     # Choose your xtick format string
     date_fmt = '%d-%m-%y %H:%M:%S'
     # Use a DateFormatter to set the data to the correct format.
@@ -24,12 +29,19 @@ def plot_data(data, outfile):
     ax.xaxis.set_major_formatter(date_formatter)
     # Sets the tick labels diagonal so they fit easier.
     fig.autofmt_xdate()
-    plt.xlabel("date")
-    plt.ylabel("T (°C)")
+    ax.set_xlabel("date")
+    ax.set_ylabel("T (°C)")
+
+    ax2 = ax.twinx()
+    color = 'lightgray'
+    ax2.set_ylabel('humidity (%)', color=color)
+    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
     last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m-%y %H:%M:%S')
     last_sample_T = data[-1,1]
     plt.title(f"{last_sample_date}:{last_sample_T}°C")
-    plt.grid()
+    # plt.grid()
     plt.savefig(outfile)
 
 data = np.genfromtxt(DATAFILE)
