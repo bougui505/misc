@@ -23,13 +23,6 @@ def plot_data(data, outfile):
     ax.axhline(y=T_max,linestyle="--",linewidth=1.0, color=color)
     ax.axhline(y=T_min,linestyle="--",linewidth=1.0, color=color)
     # Choose your xtick format string
-    date_fmt = '%d-%m-%y %H:%M:%S'
-    # Use a DateFormatter to set the data to the correct format.
-    date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
-    ax.xaxis.set_major_formatter(date_formatter)
-    # Sets the tick labels diagonal so they fit easier.
-    fig.autofmt_xdate()
-    ax.set_xlabel("date")
     ax.set_ylabel("T (°C)")
 
     ax2 = ax.twinx()
@@ -37,6 +30,15 @@ def plot_data(data, outfile):
     ax2.set_ylabel('humidity (%)', color=color)
     ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color)
     ax2.tick_params(axis='y', labelcolor=color)
+
+    # Use a DateFormatter to set the data to the correct format.
+    # date_fmt = '%d-%m-%y %H:%M:%S'
+    date_fmt = '%d-%m %H:%M'
+    date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
+    ax2.xaxis.set_major_formatter(date_formatter)
+    # Sets the tick labels diagonal so they fit easier.
+    fig.autofmt_xdate()
+    ax2.set_xlabel("date")
 
     last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m-%y %H:%M:%S')
     last_sample_T = data[-1,1]
