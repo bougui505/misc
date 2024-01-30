@@ -42,7 +42,8 @@ def plot_data(data, outfile):
 
     last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m-%y %H:%M:%S')
     last_sample_T = data[-1,1]
-    plt.title(f"{last_sample_date}:{last_sample_T}°C")
+    last_sample_H = data[-1,2]
+    plt.title(f"{last_sample_date} T={last_sample_T}°C;H={last_sample_H}%")
     # plt.grid()
     plt.savefig(outfile)
 
