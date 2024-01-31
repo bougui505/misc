@@ -28,6 +28,11 @@ def plot_data(data, outfile, ndays=1):
     ax.axhline(y=T_min,linestyle="-",linewidth=1.0, color=color)
     ax.axhline(y=T_max_out,linestyle="--",linewidth=1.0, color=color)
     ax.axhline(y=T_min_out,linestyle="--",linewidth=1.0, color=color)
+    xcenter = data[:,0].min() + (data[:,0].max()-data[:,0].min())//2
+    ax.text(mdate.epoch2num(xcenter), T_max, f"{T_max}")
+    ax.text(mdate.epoch2num(xcenter), T_min, f"{T_min}")
+    ax.text(mdate.epoch2num(data[:,0].min()), T_max_out, f"{T_max_out}")
+    ax.text(mdate.epoch2num(data[:,0].min()), T_min_out, f"{T_min_out}")
     # Choose your xtick format string
     ax.set_ylabel("T (°C)")
     plt.grid()
@@ -49,10 +54,10 @@ def plot_data(data, outfile, ndays=1):
     fig.autofmt_xdate()
     ax2.set_xlabel("date")
 
-    last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m-%y %H:%M:%S')
+    last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m %H:%M')
     last_sample_T = data[-1,1]
     last_sample_H = data[-1,2]
-    plt.title(f"{last_sample_date} T={last_sample_T}°C;H={last_sample_H}%")
+    plt.title(f"{last_sample_date}    T={last_sample_T}°C  H={last_sample_H}%")
     # plt.grid()
     plt.savefig(outfile)
 
