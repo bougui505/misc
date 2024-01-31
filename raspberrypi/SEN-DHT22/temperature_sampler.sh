@@ -25,8 +25,8 @@ if [[ ! -d $OUTDIR ]]; then
 fi
 
 touch $OUTFILE
-tail -n $NLINES $OUTFILE | sponge $OUTFILE
-$DIRSCRIPT/temperature_sample.py >> $OUTFILE
+tail -n $NLINES $OUTFILE | awk 'NF==3{print}' | sponge $OUTFILE
+$DIRSCRIPT/temperature_sample.py | awk 'NF==3{print}' >> $OUTFILE
 $DIRSCRIPT/temperature_plotter.py
 # outputs:
 # seconds since epoch temperature humidity
