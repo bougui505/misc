@@ -25,8 +25,10 @@ if [[ ! -d $OUTDIR ]]; then
 fi
 
 touch $OUTFILE
-tail -n $NLINES $OUTFILE | awk 'NF==3{print}' | sponge $OUTFILE
-$DIRSCRIPT/temperature_sample.py | awk 'NF==3{print}' >> $OUTFILE
-$DIRSCRIPT/temperature_plotter.py
+tail -n $NLINES $OUTFILE | awk '{if (NF==3){print $0" - -"}else{print}}' | awk 'NF==5{print}' | sponge $OUTFILE
 # outputs:
 # seconds since epoch temperature humidity
+INDATA=$($DIRSCRIPT/temperature_sample.py | awk 'NF==3{print}')
+OUTDATA=$(curl -s wttr.in/75014?format="%t+%h" | tr -d "+°C%")
+echo $INDATA $OUTDATA | awk '{if (NF==3){print $0" - -"};if (NF==5){print}}' >> $OUTFILE
+$DIRSCRIPT/temperature_plotter.py
