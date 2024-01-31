@@ -18,19 +18,26 @@ def plot_data(data, outfile, ndays=1):
     data = data[sel]
     fig, ax = plt.subplots()
     color = 'tab:blue'
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3)
-    T_max = data[:,1].max()
-    T_min = data[:,1].min()
-    ax.axhline(y=T_max,linestyle="--",linewidth=1.0, color=color)
-    ax.axhline(y=T_min,linestyle="--",linewidth=1.0, color=color)
+    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3, label='in')
+    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,3], fmt='--', color=color, lw=2, label='out')
+    T_max = np.nanmax(data[:,1].max())
+    T_min = np.nanmin(data[:,1].min())
+    T_max_out = np.nanmax(data[:,3])
+    T_min_out = np.nanmin(data[:,3])
+    ax.axhline(y=T_max,linestyle="-",linewidth=1.0, color=color)
+    ax.axhline(y=T_min,linestyle="-",linewidth=1.0, color=color)
+    ax.axhline(y=T_max_out,linestyle="--",linewidth=1.0, color=color)
+    ax.axhline(y=T_min_out,linestyle="--",linewidth=1.0, color=color)
     # Choose your xtick format string
     ax.set_ylabel("T (°C)")
     plt.grid()
+    plt.legend()
 
     ax2 = ax.twinx()
-    color = 'cyan'
+    color = 'tab:cyan'
     ax2.set_ylabel('humidity (%)', color=color)
     ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color, lw=1)
+    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,4], fmt='--', color=color, lw=1)
     ax2.tick_params(axis='y', labelcolor=color)
 
     # Use a DateFormatter to set the data to the correct format.
