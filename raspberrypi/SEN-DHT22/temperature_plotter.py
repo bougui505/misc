@@ -19,7 +19,7 @@ def plot_data(data, outfile, ndays=1):
     fig, ax = plt.subplots()
     color = 'tab:blue'
     ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3, label='in')
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,3], fmt='--', color=color, lw=2, label='out')
+    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,3], fmt='.--', color=color, lw=2, label='out')
     T_max = np.nanmax(data[:,1].max())
     T_min = np.nanmin(data[:,1].min())
     T_max_out = np.nanmax(data[:,3])
@@ -42,7 +42,7 @@ def plot_data(data, outfile, ndays=1):
     color = 'tab:cyan'
     ax2.set_ylabel('humidity (%)', color=color)
     ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color, lw=1)
-    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,4], fmt='--', color=color, lw=1)
+    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,4], fmt='.--', color=color, lw=1)
     ax2.tick_params(axis='y', labelcolor=color)
 
     # Use a DateFormatter to set the data to the correct format.
