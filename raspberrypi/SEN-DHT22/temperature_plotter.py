@@ -12,12 +12,30 @@ plt.rcParams['figure.constrained_layout.use'] = False
 
 DATAFILE = "/media/usb0/t-temp_c-humidity/data.dat"
 
+def get_period(timesteps, period=24, unit='hour'):
+    """
+    """
+    if unit == 'hour':
+        period = period * 60 * 60
+    periods = [timesteps[-1]]
+    while periods[-1] >= timesteps[0]:
+        periods.append(periods[-1]-period)
+    periods.pop()
+    periods = list(reversed(periods))
+    periods.pop()
+    periods = np.asarray(periods, dtype=np.datetime64)
+    return periods
+        
+
 def plot_data(data, outfile, ndays=1):
     print(f"plotting for {ndays} day(s)")
     ndays = ndays * 24 * 60 * 60  # s
     sel = data[:, 0] >= time.time() - ndays
     data = data[sel]
     fig, ax = plt.subplots()
+    periods = get_period(data[:, 0], period=24, unit='hour')
+    for t in periods:
+        ax.axvline(x=t, color='k', linewidth=1.5)
     color = 'tab:blue'
     ax.plot_date(data[:,0].astype(np.datetime64), data[:,1], fmt='-', color=color, lw=3, label='in')
     ax.plot_date(data[:,0].astype(np.datetime64), data[:,3], fmt='.--', color=color, lw=2, label='out')
