@@ -23,7 +23,7 @@ def get_period(timesteps, period=24, unit='hour'):
     periods.pop()
     periods = list(reversed(periods))
     periods.pop()
-    periods = np.asarray(periods, dtype=np.datetime64)
+    periods = np.asarray(periods).astype(np.datetime64)
     return periods
         
 
