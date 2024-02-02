@@ -42,25 +42,24 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
     data = data[sel]
     periods = get_period(data[:, 0], period=24, unit='hour')
     if compute_gradient:
+        # fig = plt.figure(figsize=[8,9])
+        # ax = plt.subplot(212)
+        fig, (ax, ax_sub) = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3, 1]}, figsize=[8,8])
         grad = get_gradient(data)
-        print(grad.shape, data.shape)
-        fig, ax = plt.subplots(figsize=[8,4.5])
         for t in periods:
-            ax.axvline(x=t, color='k', linewidth=1.5)
-        ax.plot_date(data[:,0].astype(np.datetime64), grad, fmt='-')
-        bn, ext = os.path.splitext(outfile)
-        outgradfile = f"{bn}_grad{ext}"
+            ax_sub.axvline(x=t, color='k', linewidth=1.5)
+        ax_sub.plot_date(data[:,0].astype(np.datetime64), grad, fmt='-')
         # Use a DateFormatter to set the data to the correct format.
         # date_fmt = '%d-%m-%y %H:%M:%S'
         date_fmt = '%d-%m %H:%M'
         date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
-        ax.xaxis.set_major_formatter(date_formatter)
-        ax.set_ylabel("gradient (°C/h)")
+        ax_sub.xaxis.set_major_formatter(date_formatter)
+        ax_sub.set_ylabel("gradient (°C/h)")
         # Sets the tick labels diagonal so they fit easier.
         fig.autofmt_xdate()
-        plt.grid()
-        plt.savefig(outgradfile)
-    fig, ax = plt.subplots()
+        ax_sub.grid()
+    else:
+        fig, ax = plt.subplots(figsize=[8,4.5])
     for t in periods:
         ax.axvline(x=t, color='k', linewidth=1.5)
     color = 'tab:blue'
@@ -81,8 +80,8 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
     ax.text(data[:,0].min().astype(np.datetime64), T_min_out, f"{T_min_out}")
     # Choose your xtick format string
     ax.set_ylabel("T (°C)")
-    plt.grid()
-    plt.legend()
+    ax.grid()
+    ax.legend()
 
     ax2 = ax.twinx()
     color = 'tab:cyan'
@@ -104,7 +103,6 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
     last_sample_T = data[-1,1]
     last_sample_H = data[-1,2]
     plt.title(f"{last_sample_date}    T={last_sample_T}°C  H={last_sample_H}%")
-    # plt.grid()
     plt.savefig(outfile)
 
 data = np.genfromtxt(DATAFILE)
