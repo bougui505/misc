@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdate
-import time
 import datetime
+import time
+
+import matplotlib.dates as mdate
+import matplotlib.pyplot as plt
+import numpy as np
 from dateutil import tz
 
 plt.rcParams['figure.constrained_layout.use'] = False
@@ -18,8 +19,8 @@ def plot_data(data, outfile, ndays=1):
     data = data[sel]
     fig, ax = plt.subplots()
     color = 'tab:blue'
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,1], fmt='-', color=color, lw=3, label='in')
-    ax.plot_date(mdate.epoch2num(data[:,0]), data[:,3], fmt='.--', color=color, lw=2, label='out')
+    ax.plot_date(data[:,0].astype(np.datetime64), data[:,1], fmt='-', color=color, lw=3, label='in')
+    ax.plot_date(data[:,0].astype(np.datetime64), data[:,3], fmt='.--', color=color, lw=2, label='out')
     T_max = np.nanmax(data[:,1].max())
     T_min = np.nanmin(data[:,1].min())
     T_max_out = np.nanmax(data[:,3])
@@ -29,10 +30,10 @@ def plot_data(data, outfile, ndays=1):
     ax.axhline(y=T_max_out,linestyle="--",linewidth=1.0, color=color)
     ax.axhline(y=T_min_out,linestyle="--",linewidth=1.0, color=color)
     xcenter = data[:,0].min() + (data[:,0].max()-data[:,0].min())//2
-    ax.text(mdate.epoch2num(xcenter), T_max, f"{T_max}")
-    ax.text(mdate.epoch2num(xcenter), T_min, f"{T_min}")
-    ax.text(mdate.epoch2num(data[:,0].min()), T_max_out, f"{T_max_out}")
-    ax.text(mdate.epoch2num(data[:,0].min()), T_min_out, f"{T_min_out}")
+    ax.text(xcenter.astype(np.datetime64), T_max, f"{T_max}")
+    ax.text(xcenter.astype(np.datetime64), T_min, f"{T_min}")
+    ax.text(data[:,0].min().astype(np.datetime64), T_max_out, f"{T_max_out}")
+    ax.text(data[:,0].min().astype(np.datetime64), T_min_out, f"{T_min_out}")
     # Choose your xtick format string
     ax.set_ylabel("T (°C)")
     plt.grid()
@@ -41,8 +42,8 @@ def plot_data(data, outfile, ndays=1):
     ax2 = ax.twinx()
     color = 'tab:cyan'
     ax2.set_ylabel('humidity (%)', color=color)
-    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,2], fmt='-', color=color, lw=1)
-    ax2.plot_date(mdate.epoch2num(data[:,0]), data[:,4], fmt='.--', color=color, lw=1)
+    ax2.plot_date(data[:,0].astype(np.datetime64), data[:,2], fmt='-', color=color, lw=1)
+    ax2.plot_date(data[:,0].astype(np.datetime64), data[:,4], fmt='.--', color=color, lw=1)
     ax2.tick_params(axis='y', labelcolor=color)
 
     # Use a DateFormatter to set the data to the correct format.
