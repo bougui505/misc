@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+import os
 import time
 
 import matplotlib.dates as mdate
@@ -25,15 +26,41 @@ def get_period(timesteps, period=24, unit='hour'):
     periods.pop()
     periods = np.asarray(periods).astype(np.datetime64)
     return periods
+
+def get_gradient(data):
+    grad = data[1:, :2] - data[:-1, :2]
+    # convert from °C/s to °C/h
+    grad = (grad[:, 1] / grad[:, 0]) * 60 * 60
+    grad = np.insert(grad, 0, grad[0])
+    return grad
         
 
-def plot_data(data, outfile, ndays=1):
+def plot_data(data, outfile, ndays=1, compute_gradient=False):
     print(f"plotting for {ndays} day(s)")
     ndays = ndays * 24 * 60 * 60  # s
     sel = data[:, 0] >= time.time() - ndays
     data = data[sel]
-    fig, ax = plt.subplots()
     periods = get_period(data[:, 0], period=24, unit='hour')
+    if compute_gradient:
+        grad = get_gradient(data)
+        print(grad.shape, data.shape)
+        fig, ax = plt.subplots(figsize=[8,4.5])
+        for t in periods:
+            ax.axvline(x=t, color='k', linewidth=1.5)
+        ax.plot_date(data[:,0].astype(np.datetime64), grad, fmt='-')
+        bn, ext = os.path.splitext(outfile)
+        outgradfile = f"{bn}_grad{ext}"
+        # Use a DateFormatter to set the data to the correct format.
+        # date_fmt = '%d-%m-%y %H:%M:%S'
+        date_fmt = '%d-%m %H:%M'
+        date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
+        ax.xaxis.set_major_formatter(date_formatter)
+        ax.set_ylabel("gradient (°C/h)")
+        # Sets the tick labels diagonal so they fit easier.
+        fig.autofmt_xdate()
+        plt.grid()
+        plt.savefig(outgradfile)
+    fig, ax = plt.subplots()
     for t in periods:
         ax.axvline(x=t, color='k', linewidth=1.5)
     color = 'tab:blue'
@@ -85,5 +112,5 @@ data = np.genfromtxt(DATAFILE)
 
 plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
 plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
-plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7)
-plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1)
+plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
+plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=True)
