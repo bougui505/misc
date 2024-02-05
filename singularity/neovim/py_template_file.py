@@ -3,7 +3,7 @@
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
-# Copyright (c) 2023 Institut Pasteur                                       #
+# Copyright (c) 2024 Institut Pasteur                                       #
 #############################################################################
 #
 # creation_date: <DATE>
