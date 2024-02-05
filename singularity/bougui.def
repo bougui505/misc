@@ -59,6 +59,11 @@ pip3 install --break-system-packages tmtools
 pip3 install --break-system-packages ipython
 ###########################################################################
 
+############################## deadcode ###################################
+# See: https://github.com/albertas/deadcode
+pip3 install --break-system-packages deadcode
+###########################################################################
+
 ################################ MISC REPO ###############################
 cd /opt
 git clone https://github.com/bougui505/misc.git
