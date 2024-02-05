@@ -153,6 +153,14 @@ cd /usr/bin
 ln -s /opt/Bard-Shell/bard-shell.py bard-shell
 #########################################################################
 
+############################### LOCAL LLM ##################################
+# See: https://github.com/simonw/llm
+pip3 install --break-system-packages llm
+pip3 install --break-system-packages llm-gpt4all
+# llm models
+# llm -m mistral-7b-instruct-v0 'difference between a pelican and a walrus'
+############################################################################
+
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
