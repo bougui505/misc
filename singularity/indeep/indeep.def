@@ -46,6 +46,13 @@ git clone https://github.com/bougui505/pymol_isosurface.git
 ln -s /opt/InDeep/InDeep_PyMol_plugin
 ##########################################################################
 
+################################# PYMOL PSICO ##################################
+cd /opt
+git clone https://github.com/speleo3/pymol-psico.git
+cd pymol-psico
+pip3 install --break-system-packages .
+################################################################################
+
 ############################## INDEEP ##############################
 cd /opt
 git clone https://gitlab.pasteur.fr/InDeep/InDeep.git
