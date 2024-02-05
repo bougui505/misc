@@ -23,6 +23,7 @@ apt-get install -y gawk
 apt-get install -y clustalw
 apt-get install -y qalc
 apt-get install -y gztool
+apt-get install -y graphviz
 apt-get clean
 ###############################################################################
 
@@ -62,6 +63,11 @@ pip3 install --break-system-packages ipython
 ############################## deadcode ###################################
 # See: https://github.com/albertas/deadcode
 pip3 install --break-system-packages deadcode
+###########################################################################
+
+############################### pydeps ####################################
+# See: https://github.com/thebjorn/pydeps
+pip3 install --break-system-packages pydeps
 ###########################################################################
 
 ################################ MISC REPO ###############################
