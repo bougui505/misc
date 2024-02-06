@@ -64,7 +64,7 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
         ax.axvline(x=t, color='k', linewidth=1.5)
     color = 'tab:blue'
     ax.plot_date(data[:,0].astype(np.datetime64), data[:,1], fmt='-', color=color, lw=3, label='in')
-    ax.plot_date(data[:,0].astype(np.datetime64), data[:,3], fmt='.--', color=color, lw=2, label='out')
+    ax.plot_date(data[:,0].astype(np.datetime64), data[:,3], fmt='.--', color='tab:green', lw=2, label='out')
     T_max = np.nanmax(data[:,1].max())
     T_min = np.nanmin(data[:,1].min())
     T_max_out = np.nanmax(data[:,3])
