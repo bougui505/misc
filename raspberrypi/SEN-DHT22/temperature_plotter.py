@@ -102,7 +102,9 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
     last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m %H:%M')
     last_sample_T = data[-1,1]
     last_sample_H = data[-1,2]
-    plt.title(f"{last_sample_date}    T={last_sample_T}°C  H={last_sample_H}%")
+    last_sample_T_out = data[-1,3]
+    last_sample_H_out = data[-1,4]
+    plt.title(f"{last_sample_date} T={last_sample_T}°C H={last_sample_H}% T_out={last_sample_T_out:.1f}°C H_out={last_sample_H_out}%")
     plt.savefig(outfile)
 
 data = np.genfromtxt(DATAFILE)
