@@ -28,6 +28,8 @@ def rascal(smi1, smi2):
     opts.similarityThreshold = 0.
     results = rdRascalMCES.FindMCES(mol1, mol2, opts)
     n = len(results)
+    if n == 0:
+        return 0.0
     sim = sum(r.similarity for r in results)/n
     return sim
 
@@ -62,4 +64,4 @@ if __name__ == "__main__":
         sys.exit()
     if args.smi1 is not None and args.smi2 is not None:
         sim = rascal(args.smi1, args.smi2)
-        print(f"{sim=:.2g}")
+        print(f"{sim:.2g}")
