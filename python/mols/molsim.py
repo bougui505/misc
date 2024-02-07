@@ -8,14 +8,14 @@
 #
 # creation_date: Wed Feb  7 15:26:27 2024
 
-# RASCAL: RApid Similarity CALculation
 
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 from rdkit.Chem import rdRascalMCES
 
 
 def rascal(smi1, smi2):
     """
+    # RASCAL: RApid Similarity CALculation
     >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
     >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
     >>> sim = rascal(smi1, smi2)
@@ -33,6 +33,22 @@ def rascal(smi1, smi2):
     sim = sum(r.similarity for r in results)/n
     return sim
 
+def fpsim(smi1, smi2):
+    """
+    # FPSim: Fingerprint similarity
+    >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
+    >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
+    >>> sim = fpsim(smi1, smi2)
+    >>> sim
+    0.16223067173637515
+    """
+    mol1 = Chem.MolFromSmiles(smi1)
+    mol2 = Chem.MolFromSmiles(smi2)
+    fs1 = Chem.RDKFingerprint(mol1)
+    fs2 = Chem.RDKFingerprint(mol2)
+    sim = DataStructs.FingerprintSimilarity(fs1, fs2)
+    return sim
+
 import os
 
 if __name__ == "__main__":
@@ -40,9 +56,9 @@ if __name__ == "__main__":
     import doctest
     import sys
 
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--smi1", help='First SMILES string', metavar='Oc1cccc2C(=O)C=CC(=O)c12')
-    parser.add_argument("--smi2", help='Second SMILES string', metavar='O1C(=O)C=Cc2cc(OC)c(O)cc12')
+    parser = argparse.ArgumentParser(description="Compute molecular similarity between the 2 given smiles smi1 and smi2")
+    parser.add_argument("--smi1", help='First SMILES string', metavar="'Oc1cccc2C(=O)C=CC(=O)c12'")
+    parser.add_argument("--smi2", help='Second SMILES string', metavar="'O1C(=O)C=Cc2cc(OC)c(O)cc12'")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -63,5 +79,5 @@ if __name__ == "__main__":
                 )
         sys.exit()
     if args.smi1 is not None and args.smi2 is not None:
-        sim = rascal(args.smi1, args.smi2)
+        sim = fpsim(args.smi1, args.smi2)
         print(f"{sim:.2g}")
