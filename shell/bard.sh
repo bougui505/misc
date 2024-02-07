@@ -15,4 +15,4 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-sing python3 /opt/Bard-Shell/bard-shell.py -p "'$@'"
+singularity run $DIRSCRIPT/../singularity/bougui.sif python3 /opt/Bard-Shell/bard-shell.py -p "'$@'"
