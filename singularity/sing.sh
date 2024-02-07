@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # shellcheck shell=bash
 # -*- coding: UTF8 -*-
 
@@ -56,5 +56,6 @@ if lspci | grep -q -i nvidia; then
   CMD+="--nv "
 fi
 CMD+="$DIRSCRIPT/bougui.sif $@"
-echo $CMD
-eval $CMD
+# see: https://unix.stackexchange.com/a/444949/68794
+CMD=($CMD)
+"${CMD[@]}"
