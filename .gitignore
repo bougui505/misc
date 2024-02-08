@@ -1059,3 +1059,5 @@ python/Grid3/data/traj-short.xtc
 python/protein/data/conf_emin_PLUMED_density.mrc
 singularity/indeep/indeep.sif
 OpenWeatherMap_api.key
+python/mols/test_molsim.txt
+python/mols/test_molsim_sim.txt
