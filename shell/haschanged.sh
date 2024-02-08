@@ -24,6 +24,7 @@ MD5 checksum are stored in $DATABASE
     -h, --help print this help message and exit
     -f, --file file to check
     -c, --clean clean the database. Reset all change checks.
+    -d, --db specify a custom database file instead of using $DATABASE
 EOF
 }
 
@@ -32,6 +33,7 @@ while [ "$#" -gt 0 ]; do
     case $1 in
         -n|--number) N="$2"; shift ;;
         -c|--clean) /bin/rm -v $DATABASE; exit 0 ;;
+        -d|--db) DATABASE="$2"; shift ;;
         -f|--file)  FILE="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
