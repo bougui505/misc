@@ -40,11 +40,15 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [[ "$ADD" != "0" ]]; then
-    (cat $ADD) | bard 'write a git commit message from the given diff'
+    # (cat $ADD) | bard 'write a git commit message from the given diff'
+    echo "Write a git commit message for adding the given content below:"
+    cat $ADD
     exit 0
 fi
 if [[ $CONTEXT -eq 0 ]]; then
-    git diff --unified=0 | bard 'write a git commit message from the given diff'
+    echo "Write a git commit from the given diff:"
+    git diff --unified=0
 else
-    git diff | bard 'write a git commit message from the given diff'
+    echo "Write a git commit from the given diff:"
+    git diff
 fi
