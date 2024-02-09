@@ -63,12 +63,6 @@ def get_stats(data, ndays):
 
 def plot_stats(data, ndays, outfile):
     Tin_min, Tin_max, Tout_min, Tout_max = get_stats(data, ndays=ndays)
-    # bins = np.histogram_bin_edges(list(Tin_min)+list(Tin_max)+list(Tout_min)+list(Tout_max), bins='auto')
-    bins_in = np.histogram_bin_edges(list(Tin_min)+list(Tin_max))
-    bins_out = np.histogram_bin_edges(list(Tout_min)+list(Tout_max))
-    nbins = max(len(bins_in), len(bins_out))
-    # plt.hist(list(Tin_min)+list(Tin_max), bins='auto', density=False, color='tab:blue', alpha=0.5, label='in')
-    # plt.hist(list(Tout_min)+list(Tout_max), bins='auto', density=False, color='tab:green', alpha=0.5, label='out')
     plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in')
     plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x')
     plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out')
