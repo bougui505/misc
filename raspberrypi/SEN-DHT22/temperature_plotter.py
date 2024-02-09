@@ -63,10 +63,10 @@ def get_stats(data, ndays):
 
 def plot_stats(data, ndays, outfile):
     Tin_min, Tin_max, Tout_min, Tout_max = get_stats(data, ndays=ndays)
-    plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in')
-    plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x')
-    plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out')
-    plt.hist(Tout_max, bins='auto', density=False, color='tab:green', alpha=0.5, label='max out', hatch='x')
+    plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in', edgecolor='black')
+    plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x', edgecolor='black')
+    plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out', edgecolor='black')
+    plt.hist(Tout_max, bins='auto', density=False, color='tab:green', alpha=0.5, label='max out', hatch='x', edgecolor='black')
     plt.axvline(x=data[-1, 1], color='tab:blue', ls=(5, (10, 3)))
     plt.axvline(x=data[-1, 3], color='tab:green', ls=(5, (10, 3)))
     plt.legend()
