@@ -41,7 +41,7 @@ done
 
 if [[ "$ADD" != "0" ]]; then
     # (cat $ADD) | bard 'write a git commit message from the given diff'
-    echo "Write a git commit message for adding the given content below:"
+    echo "Write a git commit message for adding the given content below of a file named $ADD:"
     cat $ADD
     exit 0
 fi
