@@ -1061,3 +1061,10 @@ singularity/indeep/indeep.sif
 OpenWeatherMap_api.key
 python/mols/test_molsim.txt
 python/mols/test_molsim_sim.txt
+singularity/indeep/PL_ALL.mrc
+singularity/indeep/pymol_ALL.mrc
+singularity/indeep/pymol_CA.mrc
+singularity/indeep/pymol_COB.mrc
+singularity/indeep/pymol_HAD.mrc
+singularity/indeep/pymol_NEG.mrc
+singularity/indeep/pymol_POS.mrc
