@@ -13,18 +13,21 @@ plt.rcParams['figure.constrained_layout.use'] = False
 
 DATAFILE = "/media/usb0/t-temp_c-humidity/data.dat"
 
-def get_period(timesteps, period=24, unit='hour'):
+def get_period(timesteps, period=24, unit='hour', format=True):
     """
     """
     if unit == 'hour':
         period = period * 60 * 60
+    if unit == 'day':
+        period = period * 24 * 60 * 60
     periods = [timesteps[-1]]
     while periods[-1] >= timesteps[0]:
         periods.append(periods[-1]-period)
     periods.pop()
     periods = list(reversed(periods))
     periods.pop()
-    periods = np.asarray(periods).astype(np.datetime64)
+    if format:
+        periods = np.asarray(periods).astype(np.datetime64)
     return periods
 
 def get_gradient(data):
@@ -33,6 +36,50 @@ def get_gradient(data):
     grad = (grad[:, 1] / grad[:, 0]) * 60 * 60
     grad = np.insert(grad, 0, grad[0])
     return grad
+
+def get_stats(data, ndays):
+    ndays = ndays * 24 * 60 * 60  # s
+    sel = data[:, 0] >= time.time() - ndays
+    data = data[sel]
+    timesteps = data[:,0]
+    T_in = data[:, 1]
+    H_in = data[:, 2]
+    T_out = data[:, 3]
+    H_out = data[:, 4]
+    periods = get_period(timesteps, period=24, unit='hour', format=False)
+    Tin_min, Tin_max, Tout_min, Tout_max = list(), list(), list(), list()
+    def nonan_append(l, v):
+        if not np.isnan(v):
+            l.append(v)
+    for t1, t2 in zip(periods, periods[1:]):
+        sel = np.logical_and(timesteps >= t1, timesteps < t2)
+        win_Tin = T_in[sel]
+        win_Tout = T_out[sel]
+        nonan_append(Tin_min, np.nanmin(win_Tin))
+        nonan_append(Tin_max, np.nanmax(win_Tin))
+        nonan_append(Tout_min, np.nanmin(win_Tout))
+        nonan_append(Tout_max, np.nanmax(win_Tout))
+    return Tin_min, Tin_max, Tout_min, Tout_max
+
+def plot_stats(data, ndays, outfile):
+    Tin_min, Tin_max, Tout_min, Tout_max = get_stats(data, ndays=ndays)
+    # bins = np.histogram_bin_edges(list(Tin_min)+list(Tin_max)+list(Tout_min)+list(Tout_max), bins='auto')
+    bins_in = np.histogram_bin_edges(list(Tin_min)+list(Tin_max))
+    bins_out = np.histogram_bin_edges(list(Tout_min)+list(Tout_max))
+    nbins = max(len(bins_in), len(bins_out))
+    # plt.hist(list(Tin_min)+list(Tin_max), bins='auto', density=False, color='tab:blue', alpha=0.5, label='in')
+    # plt.hist(list(Tout_min)+list(Tout_max), bins='auto', density=False, color='tab:green', alpha=0.5, label='out')
+    plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in')
+    plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x')
+    plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out')
+    plt.hist(Tout_max, bins='auto', density=False, color='tab:green', alpha=0.5, label='max out', hatch='x')
+    plt.axvline(x=data[-1, 1], color='tab:blue', ls=(5, (10, 3)))
+    plt.axvline(x=data[-1, 3], color='tab:green', ls=(5, (10, 3)))
+    plt.legend()
+    plt.xlabel("T (°C)")
+    plt.ylabel("Nbre de jours")
+    plt.title(f"T min et max journalières sur {ndays} jours")
+    plt.savefig(outfile)
         
 
 def plot_data(data, outfile, ndays=1, compute_gradient=False):
@@ -110,7 +157,8 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
 data = np.genfromtxt(DATAFILE)
 
 
-plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
-plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
+# plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
+# plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
+plot_stats(data, ndays=3*30, outfile="/var/www/html/figures/T_stat.png")
 plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
 plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=True)
