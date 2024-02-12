@@ -1068,5 +1068,4 @@ singularity/indeep/pymol_COB.mrc
 singularity/indeep/pymol_HAD.mrc
 singularity/indeep/pymol_NEG.mrc
 singularity/indeep/pymol_POS.mrc
-python/mols/molsim_test.rec.gz
 python/mols/molsim_test.rec_sim.rec.gz
