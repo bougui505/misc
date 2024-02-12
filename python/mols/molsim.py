@@ -12,32 +12,11 @@
 import os
 
 from rdkit import Chem, DataStructs
-from rdkit.Chem import rdRascalMCES
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from misc import rec
 
-
-def rascal(smi1, smi2):
-    """
-    # RASCAL: RApid Similarity CALculation
-    >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
-    >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
-    >>> sim = rascal(smi1, smi2)
-    >>> sim
-    0.36909323116219667
-    """
-    mol1 = Chem.MolFromSmiles(smi1)
-    mol2 = Chem.MolFromSmiles(smi2)
-    opts = rdRascalMCES.RascalOptions()
-    opts.similarityThreshold = 0.
-    results = rdRascalMCES.FindMCES(mol1, mol2, opts)
-    n = len(results)
-    if n == 0:
-        return 0.0
-    sim = sum(r.similarity for r in results)/n
-    return sim
 
 def fpsim(smi1, smi2):
     """
