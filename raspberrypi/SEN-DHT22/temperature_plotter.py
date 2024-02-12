@@ -37,6 +37,17 @@ def get_gradient(data):
     grad = np.insert(grad, 0, grad[0])
     return grad
 
+def get_minmax(Ts: np.ndarray, npts=4):
+    if len(Ts) == 0:
+        return np.nan, np.nan
+    Ts = Ts[~np.isnan(Ts)]
+    if len(Ts) == 0:
+        return np.nan, np.nan
+    sorted = np.sort(Ts)
+    T_min = sorted[:npts].mean()
+    T_max = sorted[-npts:].mean()
+    return T_min, T_max
+
 def get_stats(data, ndays):
     ndays = ndays * 24 * 60 * 60  # s
     sel = data[:, 0] >= time.time() - ndays
@@ -55,10 +66,12 @@ def get_stats(data, ndays):
         sel = np.logical_and(timesteps >= t1, timesteps < t2)
         win_Tin = T_in[sel]
         win_Tout = T_out[sel]
-        nonan_append(Tin_min, np.nanmin(win_Tin))
-        nonan_append(Tin_max, np.nanmax(win_Tin))
-        nonan_append(Tout_min, np.nanmin(win_Tout))
-        nonan_append(Tout_max, np.nanmax(win_Tout))
+        T_min, T_max = get_minmax(win_Tin)
+        nonan_append(Tin_min, T_min)
+        nonan_append(Tin_max, T_max)
+        T_min, T_max = get_minmax(win_Tout)
+        nonan_append(Tout_min, T_min)
+        nonan_append(Tout_max, T_max)
     return Tin_min, Tin_max, Tout_min, Tout_max
 
 def plot_stats(data, ndays, outfile):
