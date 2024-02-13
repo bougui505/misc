@@ -12,11 +12,10 @@
 import gzip
 import os
 
+import indexed_gzip as igzip
 from rdkit import Chem, DataStructs
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-
-from misc import rec
 
 
 def fpsim(smi1, smi2):
@@ -136,9 +135,11 @@ class RecDataset(Dataset):
     def __getitem__(self, i):
         smi1, smi2 = None, None
         record = ""
-        with gzip.open(self.recfilename, 'rt') as recfile:
+        with igzip.IndexedGzipFile(self.recfilename) as recfile:
             recfile.seek(self.index[i])
-            for line in recfile:
+            block = recfile.read(self.index[i+1]-self.index[i]).splitlines()
+            for line in block:
+                line = line.decode()
                 if line.strip()=='--':
                     if isvalid(smi1) and isvalid(smi2):
                         sim = fpsim(smi1, smi2)
@@ -147,7 +148,7 @@ class RecDataset(Dataset):
                     record += f"sim={sim}\n--\n"
                     return sim, record
                 else:
-                    record += line
+                    record += line + '\n'
                     key, val = line.strip().split("=", maxsplit=1)
                     if key == self.key1:
                         smi1 = val.replace("'", "")
