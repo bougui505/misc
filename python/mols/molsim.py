@@ -9,6 +9,7 @@
 # creation_date: Wed Feb  7 15:26:27 2024
 
 
+import gzip
 import os
 
 from rdkit import Chem, DataStructs
@@ -59,7 +60,7 @@ def process_smifile(filename):
     smidataset = SmiDataset(filename)
     smidataloader = DataLoader(smidataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
     with open(outfilename, "w") as outfile:
-        for batch in tqdm(smidataloader):
+        for batch in tqdm(smidataloader, "process_smifile"):
             # print(batch)
             smi1_batch = batch[0]
             smi2_batch =  batch[1]
@@ -81,38 +82,86 @@ def isvalid(smi):
         valid = False
     return valid
 
+def get_rec_index(recfile):
+    """
+    See: https://stackoverflow.com/a/42150352/1679629
+
+    >>> index = get_rec_index(recfile='molsim_test.rec.gz')
+    >>> index[0]
+    0
+    >>> index[1]
+    383
+    """
+    i = 0
+    index = {i: 0}
+    with gzip.open(recfile, mode='rt') as gz:
+        line = gz.readline()
+        while line:
+            if line.strip()=='--':
+                i += 1
+                index[i] = gz.tell()
+            line = gz.readline()
+    return index
+
 class RecDataset(Dataset):
     """
-    >>> recdataset = RecDataset(recfile='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref')
-    >>> recdataset[0]
+    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref')
+    >>> len(recdataset)
+    1000
+
+    >>> sim, record = recdataset[0]
+    >>> sim
     0.33902759526938236
+
+    >>> sim, record = recdataset[1]
+    >>> sim
+    0.3353096179183136
+
+    >>> sim, record = recdataset[100]
+    >>> sim
+    0.042642140468227424
     """
-    def __init__(self, recfile, key1, key2) -> None:
+    def __init__(self, recfilename, key1, key2) -> None:
         super().__init__()
-        self.data, self.fields = rec.get_data(file=recfile)
         self.key1 = key1
         self.key2 = key2
+        self.recfilename = recfilename
+        self.index = get_rec_index(recfilename)
+
     def __len__(self):
-        return len(self.data[self.key1])
-    def __getitem__(self, index):
-        smi1, smi2 = self.data[self.key1][index], self.data[self.key2][index]
-        smi1 = smi1.replace("'", "")
-        smi2 = smi2.replace("'", "")
-        if isvalid(smi1) and isvalid(smi2):
-            sim = fpsim(smi1, smi2)
-        else:
-            sim = -1.
-        return sim
+        return len(self.index) - 1
+
+    def __getitem__(self, i):
+        smi1, smi2 = None, None
+        record = ""
+        with gzip.open(self.recfilename, 'rt') as recfile:
+            recfile.seek(self.index[i])
+            for line in recfile:
+                if line.strip()=='--':
+                    if isvalid(smi1) and isvalid(smi2):
+                        sim = fpsim(smi1, smi2)
+                    else:
+                        sim = -1
+                    record += f"sim={sim}\n--\n"
+                    return sim, record
+                else:
+                    record += line
+                    key, val = line.strip().split("=", maxsplit=1)
+                    if key == self.key1:
+                        smi1 = val.replace("'", "")
+                    if key == self.key2:
+                        smi2 = val.replace("'", "")
 
 def process_recfile(recfile, key1, key2):
-    recdataset = RecDataset(recfile=recfile, key1=key1, key2=key2)
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
     similarities = []
-    for batch in tqdm(recdataloader):
-        similarities.extend(list(batch.numpy()))
-    recdataset.data["sim"] = similarities
-    rec.dict_to_rec(recdataset.data, outgz=outfilename)
+    with gzip.open(outfilename, "wt") as outgz:
+        for batch in tqdm(recdataloader):
+            sims, records = batch
+            for record in records:
+                outgz.write(record)
 
 
 if __name__ == "__main__":
