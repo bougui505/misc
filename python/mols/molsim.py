@@ -12,7 +12,6 @@
 import gzip
 import os
 
-import indexed_gzip as igzip
 from rdkit import Chem, DataStructs
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -81,28 +80,18 @@ def isvalid(smi):
         valid = False
     return valid
 
-def get_rec_index(recfile):
+def get_len(recfilename):
     """
-    See: https://stackoverflow.com/a/42150352/1679629
-
-    >>> index = get_rec_index(recfile='molsim_test.rec.gz')
-    >>> index[0]
-    0
-    >>> index[1]
-    383
+    >>> get_len(recfilename='molsim_test.rec.gz')
+    1000
     """
-    i = 0
-    index = {i: 0}
-    with gzip.open(recfile, mode='rt') as gz:
-        line = gz.readline()
-        pbar = tqdm(desc="building index")
-        while line:
-            if line.strip()=='--':
-                i += 1
-                index[i] = gz.tell()
-            line = gz.readline()
-            pbar.update(1)
-    return index
+    n = 0
+    with gzip.open(recfilename, "rt") as recfile:
+        for line in tqdm(recfile, desc="computing length"):
+            line = line.strip()
+            if line == '--':
+                n += 1 
+    return n
 
 class RecDataset(Dataset):
     """
@@ -117,49 +106,42 @@ class RecDataset(Dataset):
     >>> sim, record = recdataset[1]
     >>> sim
     0.3353096179183136
-
-    >>> sim, record = recdataset[100]
-    >>> sim
-    0.042642140468227424
     """
     def __init__(self, recfilename, key1, key2) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
         self.recfilename = recfilename
-        self.index = get_rec_index(recfilename)
+        self.recfile = gzip.open(self.recfilename, "rt")
+        self.length = get_len(self.recfilename)
 
     def __len__(self):
-        return len(self.index) - 1
+        return self.length
 
     def __getitem__(self, i):
         smi1, smi2 = None, None
         record = ""
-        with igzip.IndexedGzipFile(self.recfilename) as recfile:
-            recfile.seek(self.index[i])
-            block = recfile.read(self.index[i+1]-self.index[i]).splitlines()
-            for line in block:
-                line = line.decode()
-                if line.strip()=='--':
-                    if isvalid(smi1) and isvalid(smi2):
-                        sim = fpsim(smi1, smi2)
-                    else:
-                        sim = -1
-                    record += f"sim={sim}\n--\n"
-                    return sim, record
+        for line in self.recfile:
+            line = line.strip()
+            if line == '--':
+                if isvalid(smi1) and isvalid(smi2):
+                    sim = fpsim(smi1, smi2)
                 else:
-                    record += line + '\n'
-                    key, val = line.strip().split("=", maxsplit=1)
-                    if key == self.key1:
-                        smi1 = val.replace("'", "")
-                    if key == self.key2:
-                        smi2 = val.replace("'", "")
+                    sim = -1
+                record += f"sim={sim}\n--\n"
+                return sim, record
+            else:
+                record += line + '\n'
+                key, val = line.strip().split("=", maxsplit=1)
+                if key == self.key1:
+                    smi1 = val.replace("'", "")
+                if key == self.key2:
+                    smi2 = val.replace("'", "")
 
 def process_recfile(recfile, key1, key2):
     recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
-    recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
-    similarities = []
+    recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1)
     with gzip.open(outfilename, "wt") as outgz:
         for batch in tqdm(recdataloader, desc="computing similarities"):
             sims, records = batch
