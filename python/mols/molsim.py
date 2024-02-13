@@ -96,11 +96,13 @@ def get_rec_index(recfile):
     index = {i: 0}
     with gzip.open(recfile, mode='rt') as gz:
         line = gz.readline()
+        pbar = tqdm(desc="building index")
         while line:
             if line.strip()=='--':
                 i += 1
                 index[i] = gz.tell()
             line = gz.readline()
+            pbar.update(1)
     return index
 
 class RecDataset(Dataset):
@@ -158,7 +160,7 @@ def process_recfile(recfile, key1, key2):
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
     similarities = []
     with gzip.open(outfilename, "wt") as outgz:
-        for batch in tqdm(recdataloader):
+        for batch in tqdm(recdataloader, desc="computing similarities"):
             sims, records = batch
             for record in records:
                 outgz.write(record)
