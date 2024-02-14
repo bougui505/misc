@@ -79,6 +79,7 @@ def get_stats(data, ndays):
 
 def plot_stats(data, ndays, outfile_minmax, outfile_daily):
     Tin_min, Tin_max, Tout_min, Tout_max, T_in_t, T_out_t = get_stats(data, ndays=ndays)
+    plt.clf()
     plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in', edgecolor='black')
     plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x', edgecolor='black')
     plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out', edgecolor='black')
@@ -194,9 +195,6 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
 data = np.genfromtxt(DATAFILE)
 
 
-# plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
-# plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
-plot_stats(data, ndays=3*30, outfile_minmax="/var/www/html/figures/T_stat.png", outfile_daily="/var/www/html/figures/T_stat_daily.png")
-# plot_scatter(data, ndays=3*30, outfile="/var/www/html/figures/T_scatter.png")
-plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
 plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=True)
+plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
+plot_stats(data, ndays=3*30, outfile_minmax="/var/www/html/figures/T_stat.png", outfile_daily="/var/www/html/figures/T_stat_daily.png")
