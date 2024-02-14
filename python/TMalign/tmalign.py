@@ -97,7 +97,13 @@ def tmalign(model, native, selmodel=None, selnative=None, verbose=False):
 
 def get_tmscore(modelfile, nativefile):
     scriptdir = GetScriptDir()
-    cmd = f"{scriptdir}/USalign {modelfile} {nativefile}".split(" ")
+    cmd = f"{scriptdir}/USalign -mm 1 -ter 0 -mol prot {modelfile} {nativefile}".split(" ")
+    # Options of USalign:
+    # -mm  Multimeric alignment option:
+    #      1: alignment of two multi-chain oligomeric structures
+    # -ter Number of chains to align.
+    #      0: align all chains from all models (recommended for aligning
+    #         biological assemblies, i.e. biounits)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
     lines = process.stdout.readlines()
     tmscores = []
