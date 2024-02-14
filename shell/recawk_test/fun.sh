@@ -46,3 +46,8 @@ test5 () {
 test6 () {
     zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
 }
+
+test7 () {
+    echo "Testing fnr. Print: NR,FNR,nr,fnr"
+    recawk '{print NR,FNR,nr,fnr}' =(zcat data/file.rec.gz) =(zcat data/file.rec.gz)
+}

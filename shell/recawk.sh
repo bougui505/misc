@@ -65,6 +65,10 @@ Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of inpu
 
     ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'${normal}
 
+Variable ${bold}fnr${normal} is defined. ${bold}fnr${normal} is the number of input records awk has processed for the current file. Not to be confused with ${bold}FNR${normal}, which is the builtin awk variable, which store the number of rows/lines awk has processed for the current file.
+
+    ${bold}recawk '{print NR,FNR,nr,fnr}' =(zcat data/file.rec.gz) =(zcat data/file.rec.gz)${normal}
+
 An ${bold}END${normal} can be given as in standard awk to run a command when awk has parsed the full file(s).
 
     ${bold}zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'${normal}
@@ -113,8 +117,12 @@ BEGIN{
 nr=0
 }
 {
+if (FNR==1){
+    fnr=0
+}
 if ($0=="--"){
     nr+=1
+    fnr+=1
     '"$CMD"'
     delete rec
 }
