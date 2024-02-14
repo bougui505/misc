@@ -59,6 +59,7 @@ def get_stats(data, ndays):
     H_out = data[:, 4]
     periods = get_period(timesteps, period=24, unit='hour', format=False)
     Tin_min, Tin_max, Tout_min, Tout_max = list(), list(), list(), list()
+    T_in_t, T_out_t = list(), list()  # temperature at the same time for the other days
     def nonan_append(l, v):
         if not np.isnan(v):
             l.append(v)
@@ -66,16 +67,18 @@ def get_stats(data, ndays):
         sel = np.logical_and(timesteps >= t1, timesteps < t2)
         win_Tin = T_in[sel]
         win_Tout = T_out[sel]
+        nonan_append(T_in_t, win_Tin[0])
+        nonan_append(T_out_t, win_Tout[0])
         T_min, T_max = get_minmax(win_Tin)
         nonan_append(Tin_min, T_min)
         nonan_append(Tin_max, T_max)
         T_min, T_max = get_minmax(win_Tout)
         nonan_append(Tout_min, T_min)
         nonan_append(Tout_max, T_max)
-    return Tin_min, Tin_max, Tout_min, Tout_max
+    return Tin_min, Tin_max, Tout_min, Tout_max, T_in_t, T_out_t
 
-def plot_stats(data, ndays, outfile):
-    Tin_min, Tin_max, Tout_min, Tout_max = get_stats(data, ndays=ndays)
+def plot_stats(data, ndays, outfile_minmax, outfile_daily):
+    Tin_min, Tin_max, Tout_min, Tout_max, T_in_t, T_out_t = get_stats(data, ndays=ndays)
     plt.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in', edgecolor='black')
     plt.hist(Tin_max, bins='auto', density=False, color='tab:blue', alpha=0.5, label='max in', hatch='x', edgecolor='black')
     plt.hist(Tout_min, bins='auto', density=False, color='tab:green', alpha=0.5, label='min out', edgecolor='black')
@@ -86,6 +89,33 @@ def plot_stats(data, ndays, outfile):
     plt.xlabel("T (°C)")
     plt.ylabel("Nbre de jours")
     plt.title(f"T min et max journalières sur {ndays} jours")
+    plt.savefig(outfile_minmax)
+    plt.clf()
+    plt.hist(T_in_t, bins='auto', density=False, color='tab:blue', alpha=0.5, label='in', edgecolor='black')
+    plt.axvline(x=data[-1, 1], color='tab:blue', ls=(5, (10, 3)))
+    plt.hist(T_out_t, bins='auto', density=False, color='tab:green', alpha=0.5, label='out', edgecolor='black')
+    plt.axvline(x=data[-1, 3], color='tab:green', ls=(5, (10, 3)))
+    plt.xlabel("T (°C)")
+    plt.ylabel("Nbre de jours")
+    plt.title(f"Distribution des températures à la même heure sur {ndays} jours")
+    plt.legend()
+    plt.savefig(outfile_daily)
+
+def plot_scatter(data, ndays, outfile):
+    ndays = ndays * 24 * 60 * 60  # s
+    sel = data[:, 0] >= time.time() - ndays
+    data = data[sel]
+    T_in = data[:, 1]
+    T_out = data[:, 3]
+    T_min = min(np.nanmin(T_in), np.nanmin(T_out))
+    T_max = max(np.nanmax(T_in), np.nanmax(T_out))
+    plt.clf()
+    plt.plot([T_min, T_max], [T_min, T_max])
+    plt.scatter(T_out, T_in, s=10, alpha=0.5)
+    plt.xlabel("T_out (°C)")
+    plt.ylabel("T_in (°C)")
+    ax = plt.gca()
+    ax.set_aspect('equal', adjustable='box')
     plt.savefig(outfile)
         
 
@@ -166,6 +196,7 @@ data = np.genfromtxt(DATAFILE)
 
 # plot_data(data, outfile="/var/www/html/figures/T_year.png", ndays=365)
 # plot_data(data, outfile="/var/www/html/figures/T_month.png", ndays=31)
-plot_stats(data, ndays=3*30, outfile="/var/www/html/figures/T_stat.png")
+plot_stats(data, ndays=3*30, outfile_minmax="/var/www/html/figures/T_stat.png", outfile_daily="/var/www/html/figures/T_stat_daily.png")
+# plot_scatter(data, ndays=3*30, outfile="/var/www/html/figures/T_scatter.png")
 plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
 plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=True)
