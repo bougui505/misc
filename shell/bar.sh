@@ -12,34 +12,44 @@
 usage () {
     cat << EOF
 Usage:
-    bar [-f FIELD] [-s SCALE]
+    bar [-f FIELD] [-s SCALE] [-n NUM]
+
+        -f field number to consider
+        -s scale of the bar
+        -n maximum number (useful for progress bar)
 EOF
     exit
 }
 
 SCALE=1
-while getopts ':h:f:s:' opt; do
+MAXLEN=100 # Maximum length of the bar
+while getopts ':h:f:s:n:' opt; do
     case $opt in
         (f) FIELD=$OPTARG;;
         (s) SCALE=$OPTARG;;
+        (n) MAXLEN=$OPTARG;;
         (h) usage;;
         (*) usage;;
     esac
 done
 
-MAXLEN=100 # Maximum length of the bar
-
 cat /dev/stdin \
     | awk -v FIELD=$FIELD -v MAXLEN=$MAXLEN -v SCALE=$SCALE '{
     printf $0"\t"
     LENGTH=$FIELD*SCALE
+    MAXLEN=MAXLEN*SCALE
+    for (i=1;i<=MAXLEN+1;i++){
+        if (i<=LENGTH){
+            printf "#"
+        }
+        else if (i<=MAXLEN){
+            printf "."
+        }
+        else{
+            printf "|"
+        }
+    }
     if (LENGTH > MAXLEN){
-        LENGTH=MAXLEN
-    }
-    for (i=1;i<=LENGTH;i++){
-        printf "#"
-    }
-    if (LENGTH >= MAXLEN){
         printf "..."
     }
     printf "\n"
