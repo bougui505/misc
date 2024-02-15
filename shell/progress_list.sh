@@ -14,8 +14,8 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-# MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
-# trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
+MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 function usage () {
     cat << EOF
@@ -61,7 +61,12 @@ if (n>0){
     print("eta="eta)
     print("--")
 }
-}' \
-    | tee /dev/tty \
+}' > $MYTMP/1708003112.rec
+
+BAR=$(cat $MYTMP/1708003112.rec \
     | recawk '{print rec["progress"]}' \
-    | bar -s 0.5 >&2
+    | bar -s 0.5)
+
+cat $MYTMP/1708003112.rec | sed '/^--$/d'
+echo "bar=$BAR"
+echo "--"
