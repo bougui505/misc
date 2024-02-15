@@ -59,6 +59,9 @@ if (n>0){
     eta = (n-NR)/rate
     "qalc -t "eta" s" | getline eta
     print("eta="eta)
+    print("--")
 }
-print("--")
-}'
+}' \
+    | tee /dev/tty \
+    | recawk '{print rec["progress"]}' \
+    | bar -s 0.5 >&2
