@@ -45,5 +45,5 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 rsync -a --update --info=progress2 -h $DIRSCRIPT/bougui.sif desk:/c7/scratch2/bougui/source/misc/singularity/.
-rsync -a --update --info=progress2 -h $DIRSCRIPT/bougui.sif hobbes:source/misc/singularity/.
+# rsync -a --update --info=progress2 -h $DIRSCRIPT/bougui.sif hobbes:source/misc/singularity/.
 rsync -a --update --info=progress2 -h $DIRSCRIPT/bougui.sif horace:source/misc/singularity/.
