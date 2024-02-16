@@ -78,6 +78,7 @@ def get_stats(data, ndays):
     return Tin_min, Tin_max, Tout_min, Tout_max, T_in_t, T_out_t
 
 def plot_stats(data, ndays, outfile):
+    last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m %H:%M')
     Tin_min, Tin_max, Tout_min, Tout_max, T_in_t, T_out_t = get_stats(data, ndays=ndays)
     f, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8,8))
     ax1.hist(Tin_min, bins='auto', density=False, color='tab:blue', alpha=0.5, label='min in', edgecolor='black')
@@ -89,7 +90,7 @@ def plot_stats(data, ndays, outfile):
     ax1.legend()
     # ax1.set_xlabel("T (°C)")
     ax1.set_ylabel("Nbre de jours")
-    ax1.set_title(f"T min et max journalières sur {ndays} jours")
+    ax1.set_title(f"T min et max journalières sur {ndays} jours ({last_sample_date})")
     # plt.savefig(outfile_minmax)
     # plt.clf()
     ax2.hist(T_in_t, bins='auto', density=False, color='tab:blue', alpha=0.5, label='in', edgecolor='black')
@@ -98,7 +99,7 @@ def plot_stats(data, ndays, outfile):
     ax2.axvline(x=data[-1, 3], color='tab:green', ls=(5, (10, 3)))
     ax2.set_xlabel("T (°C)")
     ax2.set_ylabel("Nbre de jours")
-    ax2.set_title(f"Distribution des températures à la même heure sur {ndays} jours")
+    ax2.set_title(f"Températures à cette heure sur {ndays} jours ({last_sample_date})")
     # ax2.legend()
     plt.savefig(outfile)
     # plt.savefig(outfile_daily)
