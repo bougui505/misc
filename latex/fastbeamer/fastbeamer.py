@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
+import glob
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
@@ -36,11 +37,12 @@
 #                                                                           #
 #############################################################################
 import os
-import glob
 import subprocess
-from PyPDF2 import PdfMerger, PdfFileReader
-from misc import hashfile
 import time
+
+from PyPDF2 import PdfFileReader, PdfMerger
+
+from misc import hashfile
 
 
 def log(msg):
@@ -171,7 +173,7 @@ class Fastbeamer(object):
                 self.merge()
                 # see: https://stackoverflow.com/a/43276598/1679629 for p.poll()
                 if os.path.exists('build/fastbeamer.pdf') and p.poll() is not None:
-                    p = subprocess.Popen('okular build/fastbeamer.pdf', shell=True)
+                    p = subprocess.Popen('zathura build/fastbeamer.pdf', shell=True)
                     isopened = True
             time.sleep(1)
 
@@ -205,9 +207,10 @@ class Fastbeamer(object):
 
 
 if __name__ == '__main__':
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
