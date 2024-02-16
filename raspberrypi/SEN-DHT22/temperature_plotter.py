@@ -64,11 +64,11 @@ def get_stats(data, ndays):
         if not np.isnan(v):
             l.append(v)
     for t1, t2 in zip(periods, periods[1:]):
-        sel = np.logical_and(timesteps >= t1, timesteps < t2)
+        sel = np.logical_and(timesteps > t1, timesteps <= t2)
         win_Tin = T_in[sel]
         win_Tout = T_out[sel]
-        nonan_append(T_in_t, win_Tin[0])
-        nonan_append(T_out_t, win_Tout[0])
+        nonan_append(T_in_t, win_Tin[-1])
+        nonan_append(T_out_t, win_Tout[-1])
         T_min, T_max = get_minmax(win_Tin)
         nonan_append(Tin_min, T_min)
         nonan_append(Tin_max, T_max)
