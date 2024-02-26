@@ -10,6 +10,7 @@ collada2gltf-2.1.4-h6bb024c_0.tar.bz2 /opt
 %post
 ################################# APT INSTALL #################################
 apt-get update
+apt-get install -y remind
 apt-get install -y python3.11-venv  # required to install formatter in neovim -- AstroNvim
 apt-get install -y wget git bzip2 build-essential python3-pip
 apt-get install -y bash zsh curl lua-nvim unzip fzf xz-utils npm ripgrep default-jre
@@ -154,6 +155,11 @@ pip3 install --break-system-packages torch_geometric
 ################################# RDKIT #################################
 pip3 install --break-system-packages rdkit
 #########################################################################
+
+################################# Python Remind library #################################
+pip3 install --break-system-packages gcalcli
+pip3 install --break-system-packages remind
+#########################################################################################
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
