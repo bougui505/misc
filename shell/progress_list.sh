@@ -22,7 +22,7 @@ function usage () {
 Read a list of timestamps in seconds since Epoch and compute the progression from it
 For example to compute the timestamps for a list of files use:
     
-    `stat -c %Y file1 file2 ...`
+    stat -c %Y file1 file2 ...
 
     -h, --help print this help message and exit
     -n, --number expected number of elements in the list
