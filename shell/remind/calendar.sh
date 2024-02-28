@@ -41,5 +41,5 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-rem -wt -b1 -m -c+$WEEK $DATE | h $(date -d $DATE +%A) MALO MAUD GUIL
+rem -wt -b1 -m -c+$WEEK $DATE | h $(date -d $DATE +%A) MALO MAUD GUIL VACS
 
