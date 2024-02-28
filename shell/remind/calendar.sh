@@ -28,7 +28,7 @@ rem -b1 -m -c+ \$DATE
 EOF
 }
 
-DATE=""  # Default value
+DATE=$(date +%F | tr - /)  # Default value
 WEEK=1
 while [ "$#" -gt 0 ]; do
     case $1 in
@@ -41,5 +41,5 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-rem -wt -b1 -m -c+$WEEK $DATE | h $(date +%A) MALO
+rem -wt -b1 -m -c+$WEEK $DATE | h $(date -d $DATE +%A) MALO
 
