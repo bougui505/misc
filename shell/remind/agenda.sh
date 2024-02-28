@@ -12,6 +12,8 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
+source $HOME/source/hhighlighter/h.sh
+
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
@@ -44,7 +46,7 @@ function agenda () {
     else
         DATE=$1  # Optionnal start date (YYYY/MM/DD)
     fi
-    rem -b1 -n $DATE | sort -r | grep --color "$DATE\|$"
+    rem -b1 -n $DATE | sort -r | h $DATE MALO
 }
 
 echo $DATE
