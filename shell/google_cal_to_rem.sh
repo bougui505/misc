@@ -16,7 +16,7 @@ set -o pipefail  # exit when a process in the pipe fails
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 URL=$(cat $DIRSCRIPT/gcal_ical_url.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../singularity/bougui.sif ics2rem > $HOME/gcal_bougui.rem
+curl "$URL" | singularity run $DIRSCRIPT/../singularity/bougui.sif ics2rem -l GUIL > $HOME/gcal_bougui.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_malo.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../singularity/bougui.sif ics2rem -l MALO > $HOME/gcal_malo.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_maud.txt)
