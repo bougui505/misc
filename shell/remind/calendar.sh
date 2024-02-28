@@ -12,6 +12,8 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
+source $HOME/source/hhighlighter/h.sh
+
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
@@ -39,5 +41,5 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-rem -b1 -m -c+$WEEK $DATE
+rem -wt -b1 -m -c+$WEEK $DATE | h $(date +%A) MALO
 
