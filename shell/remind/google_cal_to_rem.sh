@@ -23,3 +23,5 @@ URL=$(cat $DIRSCRIPT/gcal_ical_url_maud.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l MAUD > $HOME/gcal_maud.rem
 URL=$(cat $DIRSCRIPT/ical_vacances_zone_C.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l VACS > $HOME/gcal_vacs.rem
+URL=$(cat $DIRSCRIPT/ical_off.txt)
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l OFF_ > $HOME/gcal_off.rem
