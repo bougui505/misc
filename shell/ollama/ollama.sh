@@ -15,9 +15,11 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-PROMPT=$(echo -e "$1: $(cat -)")
+PROMPT="$1"
+if [ ! -t 0 ]; then
+  PROMPT+="\n$(</dev/stdin)"
+fi
 
-echo $PROMPT
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
 $DIRSCRIPT/ollama run mistral "$PROMPT"
 # $DIRSCRIPT/ollama run orca-mini "$PROMPT"
