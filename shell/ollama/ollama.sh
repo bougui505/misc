@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
@@ -18,4 +18,6 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 PROMPT=$(echo -e "$1: $(cat -)")
 
 echo $PROMPT
-$DIRSCRIPT/ollama run llama2 "$PROMPT"
+# $DIRSCRIPT/ollama run llama2 "$PROMPT"
+$DIRSCRIPT/ollama run mistral "$PROMPT"
+# $DIRSCRIPT/ollama run orca-mini "$PROMPT"
