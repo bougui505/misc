@@ -5,8 +5,9 @@
 # https://research.pasteur.fr/en/member/guillaume-bouvier/
 # 2020-06-05 15:23:59 (UTC+0200)
 
-import sys
 import argparse
+import sys
+
 import numpy as np
 import pandas as pd
 import scipy.spatial.distance as distance
@@ -28,7 +29,8 @@ parser = argparse.ArgumentParser(description='Using python and numpy from the Sh
 parser.add_argument('--nopipe', help='Not reading from pipe', default=False, action='store_true')
 parser.add_argument('-d', '--delimiter', help='Delimiter to use', type=str)
 parser.add_argument('--float', dest='dofloat', action='store_true', help='Convert all to float. Put np.nan on strings')
-parser.add_argument('cmd', help='Command to run', type=str)
+parser.add_argument('-s', '--script', help='Script to run. The data are stored in the numpy array A')
+parser.add_argument('-c', '--cmd', help='Command to run. The data are stored in the numpy array A', type=str)
 args = parser.parse_args()
 
 
@@ -75,4 +77,7 @@ if not args.nopipe:
     A = np.asarray(A)
     if args.dofloat:
         A = np.asarray(A, dtype=float)
-exec(args.cmd)
+if args.cmd is not None:
+    exec(args.cmd)
+if args.script is not None:
+    exec(open(args.script).read())
