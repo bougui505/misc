@@ -30,5 +30,5 @@ curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l
 
 cd $REMINDIR
 git pull
-git commit -a -m "Update"
+git commit -a -m "Update" || echo "Nothing to commit..."
 git push
