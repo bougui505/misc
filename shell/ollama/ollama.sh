@@ -20,6 +20,14 @@ if [ ! -t 0 ]; then
   PROMPT+="\n$(</dev/stdin)"
 fi
 
+if tsp | grep $DIRSCRIPT/server.sh > /dev/null ; then
+  echo "$DIRSCRIPT/server.sh running" > /dev/null
+else
+  tsp -S 2
+  tsp $DIRSCRIPT/server.sh
+  sleep 2
+fi
+
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
 $DIRSCRIPT/ollama run mistral "$PROMPT"
 # $DIRSCRIPT/ollama run orca-mini "$PROMPT"
