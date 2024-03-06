@@ -17,6 +17,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 REMINDIR=$HOME/reminders
 
+cd $REMINDIR
+git pull
+
 URL=$(cat $DIRSCRIPT/gcal_ical_url.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIL > $REMINDIR/gcal_bougui.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_malo.txt)
@@ -30,7 +33,5 @@ curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l
 URL=$(cat $DIRSCRIPT/gcal_ical_url_guitare.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIT > $REMINDIR/gcal_guitare.rem
 
-cd $REMINDIR
-git pull
 git commit -a -m "Update" || echo "Nothing to commit..."
 git push
