@@ -27,6 +27,8 @@ URL=$(cat $DIRSCRIPT/ical_vacances_zone_C.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l VACS > $REMINDIR/gcal_vacs.rem
 URL=$(cat $DIRSCRIPT/ical_off.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l OFF_ > $REMINDIR/gcal_off.rem
+URL=$(cat $DIRSCRIPT/gcal_ical_url_guitare.txt)
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIT > $REMINDIR/gcal_guitare.rem
 
 cd $REMINDIR
 git pull
