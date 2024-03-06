@@ -14,19 +14,15 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
+trap "tsp -k $TSPID" EXIT INT
 
 PROMPT="$1"
 if [ ! -t 0 ]; then
   PROMPT+="\n$(</dev/stdin)"
 fi
 
-if tsp | grep $DIRSCRIPT/server.sh > /dev/null ; then
-  echo "$DIRSCRIPT/server.sh running" > /dev/null
-else
-  tsp -S 2
-  tsp $DIRSCRIPT/server.sh
-  sleep 2
-fi
+TSPID=$(tsp $DIRSCRIPT/server.sh)
+sleep 0.5
 
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
 $DIRSCRIPT/ollama run mistral "$PROMPT"
