@@ -15,4 +15,4 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-singularity run $DIRSCRIPT/bougui.sif pdbsumup "$@"
+singularity run -B $(pwd) $DIRSCRIPT/bougui.sif pdbsumup "$@"
