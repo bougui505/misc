@@ -9,7 +9,6 @@
 # creation_date: Tue Mar 19 14:14:46 2024
 # Manage ext4 metadata
 
-set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
