@@ -53,11 +53,12 @@ echo "Updating ligand structure files: $DBPATH/pdbechem_v2"
     && rsync -a --update --info=progress2 -h rsync.ebi.ac.uk::pub/databases/msd/pdbechem_v2 $DBPATH
 
 
-# echo "Updating sequence file: /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
-# [ -f /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta ] \
-    #     && rm /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
-# [ -d /media/bougui/scratch/pdb_seqres ] \
-    #     && wget -O - https://ftp.wwpdb.org/pub/pdb/derived_data/pdb_seqres.txt.gz | gunzip > /media/bougui/scratch/pdb_seqres/pdb_seqres.fasta
+echo "Updating sequence file: $DBPATH/pdb_seqres/pdb_seqres.fasta"
+[ -f $DBPATH/pdb_seqres/pdb_seqres.fasta ] \
+        && rm $DBPATH/pdb_seqres/pdb_seqres.fasta
+[ -d $DBPATH/pdb_seqres ] \
+        && cd $DBPATH/pdb_seqres \
+        && wget https://files.rcsb.org/pub/pdb/derived_data/pdb_seqres.txt.gz
 #
 # echo "Building blastdb for sequences"
 # [ -d /media/bougui/scratch/pdb_seqres ] \
