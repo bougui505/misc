@@ -41,12 +41,15 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
+MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 function usage () {
     cat << EOF
 Help message
     -h, --help print this help message and exit
     -f, --fasta sequence fasta file
+    -s, --seq sequence to fold
     --cpu CPU only inference
 EOF
 }
@@ -55,6 +58,7 @@ CPU=0
 while [ "$#" -gt 0 ]; do
     case $1 in
         -f|--fasta) FASTA="$2"; shift ;;
+        -s|--seq) SEQ=$2; shift ;;
         --cpu) CPU=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
@@ -62,6 +66,11 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+
+if [[ ! -z $SEQ ]]; then
+    echo ">prot\n$SEQ" > $MYTMP/seq.fasta
+    FASTA=$MYTMP/seq.fasta
+fi
 
 execstr="singularity exec --nv $DIRSCRIPT/esm.sif $DIRSCRIPT/esmfold_inference.py -i $FASTA -o esmfold_results --cpu-offload"
 if [ $CPU -eq 1 ]; then
