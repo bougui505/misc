@@ -97,7 +97,7 @@ if [[ ! -z $IMG ]]; then
 \begin{frame}{$TITLE}
 \centering
 \includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$IMG}
-\blfootnote{\scriptsize $(date +"%Y/%m/%d"):\url{$CWD}}
+\blfootnote{\scriptsize $(date +"%Y/%m/%d"):\url{$IMG}}
 \end{frame}
 \end{document}
 EOF
