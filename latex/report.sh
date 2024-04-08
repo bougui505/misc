@@ -40,6 +40,7 @@ Help message
     -r, --report directory name of the given report $PRPATH
     -i, --img image to integrate to the slides
     -t, --title title of the slide
+    -R, --recompile recompile the given report (-r)
 EOF
 }
 
@@ -49,6 +50,7 @@ while [ "$#" -gt 0 ]; do
         -r|--report) REPORT="$PRPATH/$2"; shift ;;
         -i|--img) IMG="$2"; shift ;;
         -t|--title) TITLE="$2"; shift ;;
+        -R|--recompile) RECOMPILE=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -105,6 +107,12 @@ EOF
         latexmk -pdf -outdir=build slides.tex
     fi
     cd -
+fi
+
+if [[ $RECOMPILE -eq 1 ]]; then
+    cd $REPORT
+    bk build/slides.pdf
+    latexmk -pdf -outdir=build slides.tex
 fi
 
 if [[ ! -z $REPORT ]] && [[ -d $REPORT ]]; then
