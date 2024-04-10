@@ -46,7 +46,7 @@ EOF
 
 while [ "$#" -gt 0 ]; do
     case $1 in
-        -l|--list) ls -d $PRPATH/*/ ;;
+        -l|--list) exa --icons -lh -snew -d --no-permissions --no-filesize --no-user $PRPATH/*/ ;;
         -r|--report) REPORT="$PRPATH/$2"; shift ;;
         -i|--img) IMG="$2"; shift ;;
         -t|--title) TITLE="$2"; shift ;;
