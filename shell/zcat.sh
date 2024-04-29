@@ -19,6 +19,6 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 FILENAMES=$@
-TOTALBYTES=$(du -sb $FILENAMES|awk '{S+=$1}END{print S}')
-cat $FILENAMES | pv -p -e -b -s $TOTALBYTES | zcat 2> /dev/null
+TOTALBYTES=$(du -b $FILENAMES|awk '{S+=$1}END{print S}')
+cat $FILENAMES | pv -N "$FILENAMES" -p -e -b -s $TOTALBYTES | zcat 2> /dev/null
 
