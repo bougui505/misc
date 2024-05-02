@@ -60,11 +60,11 @@ done
 
 open_report ()
 {
-    PROCESS_NAME="zathura $REPORT/build/slides.pdf"
+    PROCESS_NAME="evince $REPORT/build/slides.pdf"
     if pgrep -xf "$PROCESS_NAME" > /dev/null ; then
         echo "Process $PROCESS_NAME exists."
     else
-        zathura $REPORT/build/slides.pdf &
+        evince $REPORT/build/slides.pdf &
     fi
 }
 
@@ -89,16 +89,24 @@ fi
 
 if [[ ! -z $IMG ]]; then
     IMG=$(realpath $IMG)
+    CKSUM=$(echo $IMG | md5sum | awk '{print $1}')
+    IMGEXT=$IMG:e
+    echo "CKSUM=${CKSUM}"
     CWD=$(pwd)
     cd $REPORT
-    if grep "$IMG" slides.tex > /dev/null; then
+    if [[ ! -d figures ]]; then
+        mkdir figures
+    fi
+    LOCALIMG="figures/$CKSUM.$IMGEXT"
+    cp -f -a -v $IMG $LOCALIMG
+    if grep "$LOCALIMG" slides.tex > /dev/null; then
         echo "Image $IMG already presents in $REPORT"
     else
         sed -i '/\end{document}/d' slides.tex
         cat << EOF >> slides.tex
 \begin{frame}{$TITLE}
 \centering
-\includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$IMG}
+\includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$LOCALIMG}
 \blfootnote{\scriptsize $(date +"%Y/%m/%d"):\url{$IMG}}
 \end{frame}
 \end{document}
