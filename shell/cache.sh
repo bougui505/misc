@@ -63,6 +63,8 @@ CKSUM=$(cat .cksum)
 CACHEFILE=".cache/${CKSUM}"
 [[ ! -d .cache ]] && mkdir .cache
 if [[ ! -f $CACHEFILE ]]; then
-    mv .cachefile $CACHEFILE
+    echo "#CACHEFILE=$CACHEFILE" | gzip > $CACHEFILE
+    echo "#DATE=$(date +'%Y/%m/%d %H:%M:%S')" | gzip >> $CACHEFILE
+    cat .cachefile >> $CACHEFILE
 fi
 $DIRSCRIPT/pcat.sh $CACHEFILE | zcat
