@@ -60,11 +60,11 @@ done
 
 open_report ()
 {
-    PROCESS_NAME="evince $REPORT/build/slides.pdf"
+    PROCESS_NAME="zathura $REPORT/build/slides.pdf"
     if pgrep -xf "$PROCESS_NAME" > /dev/null ; then
         echo "Process $PROCESS_NAME exists."
     else
-        evince $REPORT/build/slides.pdf &
+        zathura $REPORT/build/slides.pdf &
     fi
 }
 
