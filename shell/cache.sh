@@ -43,6 +43,8 @@ cat \
             print > ".header"
         }
         if (NR==N){
+            # flush the buffer
+            fflush()
             # Compute the md5sum checksum for the header
             "md5sum -z .header"|getline cksum
             split(cksum,a," ")
