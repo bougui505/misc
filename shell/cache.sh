@@ -16,7 +16,7 @@
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 # trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
-trap 'rm -rf .header .cache .cksum' EXIT INT
+trap 'rm -rf .header .cachefile .cksum' EXIT INT
 
 function usage () {
     cat << EOF
@@ -49,19 +49,20 @@ cat \
             cksum=a[1]
             print(cksum) > ".cksum"
             # check if cache file exists
-            "ls ."cksum|getline f
-            if (f=="."cksum){
+            "ls .cache/"cksum|getline f
+            if (f==".cache/"cksum){
                 exit 0
             }
         }
-        # print | "gzip > .cache"
         print
     }' \
     2> >(grep -v "^ls:") \
-    | gzip > .cache
+    | gzip > .cachefile
 
 CKSUM=$(cat .cksum)
-if [[ ! -f .${CKSUM} ]]; then
-    mv .cache .${CKSUM}
+CACHEFILE=".cache/${CKSUM}"
+[[ ! -d .cache ]] && mkdir .cache
+if [[ ! -f $CACHEFILE ]]; then
+    mv .cachefile $CACHEFILE
 fi
-$DIRSCRIPT/pcat.sh .${CKSUM} | zcat
+$DIRSCRIPT/pcat.sh $CACHEFILE | zcat
