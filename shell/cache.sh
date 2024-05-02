@@ -42,7 +42,7 @@ cat \
         if (NR<=N){
             print > ".header"
         }
-        if (NR==N+1){
+        if (NR==N){
             # Compute the md5sum checksum for the header
             "md5sum -z .header"|getline cksum
             split(cksum,a," ")
