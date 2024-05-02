@@ -14,8 +14,8 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-# MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
-# trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
+MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 # Path for progress reports
 PRPATH=$HOME/Documents/progress_reports
@@ -41,6 +41,8 @@ Help message
     -i, --img image to integrate to the slides
     -t, --title title of the slide
     -R, --recompile recompile the given report (-r)
+        --fix fix the tex file by copying the images to the local figures directory
+              and adjusting accordingly the path in the tex file
 EOF
 }
 
@@ -51,6 +53,7 @@ while [ "$#" -gt 0 ]; do
         -i|--img) IMG="$2"; shift ;;
         -t|--title) TITLE="$2"; shift ;;
         -R|--recompile) RECOMPILE=1 ;;
+        --fix) FIX=1 ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -115,6 +118,27 @@ EOF
         latexmk -pdf -outdir=build slides.tex
     fi
     cd -
+fi
+
+if [[ $FIX -eq 1 ]]; then
+    cd $REPORT
+    pwd
+    if [[ ! -d figures ]]; then
+        mkdir figures
+    fi
+    grep "^\\\includegraphics" slides.tex \
+        | grep -v "{figures/" \
+        | awk -F"{|}" '{print $2}' \
+        > $MYTMP/files.list
+    for IMG in $(cat $MYTMP/files.list); do
+        echo $IMG
+        CKSUM=$(echo $IMG | md5sum | awk '{print $1}')
+        IMGEXT=$IMG:e
+        LOCALIMG="figures/$CKSUM.$IMGEXT"
+        cp -f -a -v $IMG $LOCALIMG
+        sed -i "/includegraphics/s,$IMG,$LOCALIMG," slides.tex
+    done
+    RECOMPILE=1
 fi
 
 if [[ $RECOMPILE -eq 1 ]]; then
