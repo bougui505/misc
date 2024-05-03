@@ -26,4 +26,4 @@ sleep 0.5
 
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
 # $DIRSCRIPT/ollama run mistral "$PROMPT"
-$DIRSCRIPT/ollama run codellama "$PROMPT"
+$DIRSCRIPT/ollama run codellama "$PROMPT" --nowordwrap
