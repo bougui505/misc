@@ -79,8 +79,12 @@ ${bold}-v${normal} can be given as in standard awk command. E.g. ${bold}recawk -
 
 The semicolon ";" terminates the statement. It is highly recommanded to put the semicolon ";" at the end of the statements, even in a script on multiple lines, to avoid bugs.
 
-Examples:
-    
+${bold}IMPORTANT REMARKS${normal}
+
+- For ${bold}float or integer values${normal}, string ${bold}conversion to float or integer${normal} is needed using;
+    '{value=rec["key"]*1}'
+
+${bold}EXAMPLES${normal}
 ${bold} 
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'

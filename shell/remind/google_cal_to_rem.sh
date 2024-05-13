@@ -15,13 +15,23 @@ set -o pipefail  # exit when a process in the pipe fails
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
+REMINDIR=$HOME/reminders
+
+cd $REMINDIR
+git pull
+
 URL=$(cat $DIRSCRIPT/gcal_ical_url.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIL > $HOME/gcal_bougui.rem
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIL > $REMINDIR/gcal_bougui.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_malo.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l MALO > $HOME/gcal_malo.rem
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l MALO > $REMINDIR/gcal_malo.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_maud.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l MAUD > $HOME/gcal_maud.rem
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l MAUD > $REMINDIR/gcal_maud.rem
 URL=$(cat $DIRSCRIPT/ical_vacances_zone_C.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l VACS > $HOME/gcal_vacs.rem
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l VACS > $REMINDIR/gcal_vacs.rem
 URL=$(cat $DIRSCRIPT/ical_off.txt)
-curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l OFF_ > $HOME/gcal_off.rem
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l OFF_ > $REMINDIR/gcal_off.rem
+URL=$(cat $DIRSCRIPT/gcal_ical_url_guitare.txt)
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIT > $REMINDIR/gcal_guitare.rem
+
+git commit -a -m "Update" || echo "Nothing to commit..."
+git push
