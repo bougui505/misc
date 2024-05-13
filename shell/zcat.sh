@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
@@ -6,7 +6,8 @@
 # Copyright (c) 2024 Institut Pasteur                                       #
 #############################################################################
 #
-# creation_date: Thu Feb 29 15:04:17 2024
+# creation_date: Mon Apr 29 15:28:59 2024
+# Custom zcat with progress bar
 
 set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
@@ -14,16 +15,16 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-trap "tsp -k $TSPID" EXIT INT
+# MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+# trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-PROMPT="$1"
-if [ ! -t 0 ]; then
-  PROMPT+="\n$(</dev/stdin)"
-fi
+FILENAMES=$@
+# TOTALBYTES=$(du -b $FILENAMES|awk '{S+=$1}END{print S}')
+TOTALBYTES=$(
+for F in $(echo $FILENAMES); do
+  du -b $F
+done \
+  | awk '{S+=$1}END{print S}'
+)
+cat $FILENAMES | pv -N "$FILENAMES" -p -e -b -s $TOTALBYTES | zcat 2> /dev/null
 
-TSPID=$(tsp $DIRSCRIPT/server.sh)
-sleep 0.5
-
-# $DIRSCRIPT/ollama run llama2 "$PROMPT"
-$DIRSCRIPT/ollama run mistral "$PROMPT" --nowordwrap
-# $DIRSCRIPT/ollama run codellama "$PROMPT"
