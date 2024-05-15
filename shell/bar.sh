@@ -37,7 +37,7 @@ cat /dev/stdin \
     | awk -v FIELD=$FIELD -v MAXLEN=$MAXLEN -v SCALE=$SCALE '{
     printf $0"\t"
     LENGTH=$FIELD*SCALE
-    MAXLEN=MAXLEN*SCALE
+    MAXLEN=MAXLEN
     for (i=1;i<=MAXLEN+1;i++){
         if (i<=LENGTH){
             printf "#"
