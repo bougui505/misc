@@ -77,6 +77,16 @@ if [[ ! -d $REPORT ]] && [[ ! -z $REPORT ]]; then
     cat << EOF > $REPORT/slides.tex
 \documentclass[aspectratio=169]{beamer}
 \usepackage{beamer_header}
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
 \title{$REPORT:t progress report}
 \date{$(date +"%Y/%m/%d")}
 \begin{document}
