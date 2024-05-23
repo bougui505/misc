@@ -76,6 +76,9 @@ if [[ ! -d $REPORT ]] && [[ ! -z $REPORT ]]; then
     cp -v $DIRSCRIPT/beamer_header.sty $REPORT/
     cat << EOF > $REPORT/slides.tex
 \documentclass[aspectratio=169]{beamer}
+% \setbeameroption{hide notes} % Only slides
+% \setbeameroption{show only notes} % Only notes
+% \setbeameroption{show notes on second screen=right} % Both
 \usepackage{beamer_header}
 \AtBeginSection[]{
   \begin{frame}
@@ -120,6 +123,7 @@ if [[ ! -z $IMG ]]; then
 \begin{frame}{$TITLE}
 \centering
 \includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$LOCALIMG}
+% \note[item]{}
 \blfootnote{\scriptsize $(date +"%Y/%m/%d"):\url{$IMG}}
 \end{frame}
 \end{document}
