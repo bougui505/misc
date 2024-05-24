@@ -97,7 +97,7 @@ if [[ ! -d $REPORT ]] && [[ ! -z $REPORT ]]; then
 \end{document}
 EOF
     cd $REPORT
-    bk build/slides.pdf
+    # bk build/slides.pdf
     latexmk -pdf -outdir=build slides.tex
     cd -
     open_report
@@ -128,7 +128,7 @@ if [[ ! -z $IMG ]]; then
 \end{frame}
 \end{document}
 EOF
-        bk build/slides.pdf
+        # bk build/slides.pdf
         latexmk -pdf -outdir=build slides.tex
     fi
     cd -
@@ -157,7 +157,7 @@ fi
 
 if [[ $RECOMPILE -eq 1 ]]; then
     cd $REPORT
-    bk build/slides.pdf
+    # bk build/slides.pdf
     latexmk -pdf -outdir=build slides.tex
 fi
 
