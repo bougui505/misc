@@ -35,9 +35,11 @@
 #  This program is free software: you can redistribute it and/or modify     #
 #                                                                           #
 #############################################################################
-
 # Compute the QED (see: https://www.nature.com/articles/nchem.1243)
+
+import gzip
 import os
+
 from rdkit import Chem
 from rdkit.Chem import QED
 from tqdm import tqdm
@@ -51,29 +53,29 @@ def get_props(smifilename, properties):
     """
     unavailable_properties = set(properties) - set(AVAILABLE_PROPERTIES)
     assert len(unavailable_properties) == 0, f"Unavailable properties: {unavailable_properties}"
-    outfilename = os.path.splitext(smifilename)[0] + "_properties.smi"
-    num_lines = sum(1 for line in open(smifilename))
-    with open(smifilename, 'r') as smifile:
-        with open(outfilename, 'w') as outfile:
+    outfilename = os.path.splitext(smifilename.replace(".gz", ""))[0] + "_properties.smi.gz"
+    num_lines = sum(1 for line in gzip.open(smifilename))
+    with gzip.open(smifilename, 'rt') as smifile:
+        with gzip.open(outfilename, 'wt') as outfile:
             for line in tqdm(smifile, total=num_lines):
                 line = line.strip()
-                if line.startswith("#"):
+                if line.startswith("#"):  # type: ignore
                     header = line
                     for prop in properties:
-                        header += f" #{prop}"
-                    outfile.write(header + "\n")
+                        header += f" #{prop}"  # type: ignore
+                    outfile.write(header + "\n")  # type: ignore
                     continue
                 fields = line.split()
                 smiles = fields[0]
                 others = fields[1:]
-                outstr = f"{smiles} {' '.join(others)}"
-                mol = Chem.MolFromSmiles(smiles)
+                outstr = f"{smiles} {' '.join(others)}"  # type: ignore
+                mol = Chem.MolFromSmiles(smiles)  # type: ignore
                 for prop in properties:
                     if prop == 'qed':
                         qed, outstr = get_qed(mol, outstr)
                     if prop == 'num_heavy':
                         num_heavy, outstr = get_num_heavy(mol, outstr)
-                outfile.write(outstr + "\n")
+                outfile.write(outstr + "\n")  # type: ignore
 
 
 def get_qed(mol, outstr):
@@ -108,9 +110,10 @@ def GetScriptDir():
 
 
 if __name__ == '__main__':
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
@@ -123,7 +126,7 @@ if __name__ == '__main__':
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--smi', help="SMILES file to process")
+    parser.add_argument('--smi', help="Gzipped SMILES file to process")
     parser.add_argument('--properties',
                         help=f"Properties to compute. Available properties: {AVAILABLE_PROPERTIES}",
                         nargs='+')
