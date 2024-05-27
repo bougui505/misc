@@ -13,13 +13,14 @@ import gzip
 import os
 
 from rdkit import Chem, DataStructs
+from rdkit.Chem import rdFMCS
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from misc import rec
 
 
-def fpsim(smi1, smi2):
+def fpsim(smi1=None, smi2=None, mol1=None, mol2=None):
     """
     # FPSim: Fingerprint similarity
     >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
@@ -28,12 +29,31 @@ def fpsim(smi1, smi2):
     >>> sim
     0.16223067173637515
     """
-    mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
-    mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+    if mol1 is None:
+        mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+    if mol2 is None:
+        mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
     fs1 = Chem.RDKFingerprint(mol1)  # type: ignore
     fs2 = Chem.RDKFingerprint(mol2)  # type: ignore
     sim = DataStructs.FingerprintSimilarity(fs1, fs2)
     return sim
+
+def mcs_sim(smi1=None, smi2=None, mol1=None, mol2=None):
+    """
+    mcs_sim: Maximum common substructure similarity
+    See: https://github.com/shuan4638/mcs_sim/blob/88f71fa6795101bcfd7a78a33652f0366077ce16/MCS_similarity.py#L57
+    >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
+    >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
+    >>> sim = mcs_sim(smi1, smi2)
+    >>> sim
+    0.5185185185185185
+    """
+    if mol1 is None:
+        mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+    if mol2 is None:
+        mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+    res = rdFMCS.FindMCS([mol1, mol2], ringMatchesRingOnly=True,completeRingsOnly=True)
+    return (2*res.numAtoms)/(mol1.GetNumAtoms()+mol2.GetNumAtoms())
 
 class SmiDataset(Dataset):
     def __init__(self, filename) -> None:
@@ -88,20 +108,25 @@ class RecDataset(Dataset):
     >>> len(recdataset)
     1000
 
-    >>> sim  = recdataset[0]
+    >>> sim, sim_mcs  = recdataset[0]
     >>> sim
     0.33902759526938236
+    >>> sim_mcs
+    0.19444444444444445
 
-    >>> sim = recdataset[1]
+    >>> sim, sim_mcs = recdataset[1]
     >>> sim
     0.3353096179183136
+    >>> sim_mcs
+    0.2153846153846154
     """
-    def __init__(self, recfilename, key1, key2) -> None:
+    def __init__(self, recfilename, key1, key2, mcs=False) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
         self.recfilename = recfilename
         self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2])
+        self.mcs = mcs
 
     def __len__(self):
         return len(self.data[self.key1])
@@ -111,10 +136,16 @@ class RecDataset(Dataset):
         smi1 = smi1.replace("'", "")
         smi2 = smi2.replace("'", "")
         if isvalid(smi1) and isvalid(smi2):
-            sim = fpsim(smi1, smi2)
+            mol1, mol2 = Chem.MolFromSmiles(smi1), Chem.MolFromSmiles(smi2)  # type: ignore
+            sim = fpsim(mol1=mol1, mol2=mol2)
+            if self.mcs:
+                sim_mcs = mcs_sim(mol1=mol1, mol2=mol2)
+            else:
+                sim_mcs = -1
         else:
             sim = -1
-        return sim
+            sim_mcs = -1
+        return sim, sim_mcs
 
 def get_len(recfilename):
     """
@@ -132,8 +163,8 @@ def get_len(recfilename):
 class RecordsDataset(Dataset):
     """
     >>> import torch
-    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000))
-    >>> sim, record = recordsdataset[3]
+    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000), similarities_mcs=torch.ones(1000)*2)
+    >>> record = recordsdataset[3]
     >>> print(record)
     smi_ref='O=C(O)C1CCN(C(=O)C=Cc2ccc(Sc3ccc4c(c3)OCCO4)c(C(F)(F)F)c2C(F)(F)F)CC1'
     sel='resn_LIG_and_chain_L_and_resi_1'
@@ -145,15 +176,17 @@ class RecordsDataset(Dataset):
     valid=1
     smi_gen_greedy='C=C(C)CC1=C(C)C(=O)C(=O)N(Cc1ccccc1)C(=O)NC(Cc1ccc(O)c(O)c1)=NO'
     sim=1.0
+    sim_mcs=2.0
     --
     <BLANKLINE>
     """
-    def __init__(self, recfilename, similarities) -> None:
+    def __init__(self, recfilename, similarities, similarities_mcs) -> None:
         super().__init__()
         self.recfilename = recfilename
         self.recfile = gzip.open(self.recfilename, "rt")
         self.length = get_len(self.recfilename)
         self.similarities = similarities
+        self.similarities_mcs = similarities_mcs
 
     def __len__(self):
         return self.length
@@ -164,25 +197,29 @@ class RecordsDataset(Dataset):
             line = line.strip()
             if line == '--':
                 sim = self.similarities[i]
-                record += f"sim={sim}\n--\n"
-                return sim, record
+                sim_mcs = self.similarities_mcs[i]
+                record += f"sim={sim}\n"
+                record += f"sim_mcs={sim_mcs}\n--\n"
+                return record
             else:
                 record += line + '\n'
 
 
-def process_recfile(recfile, key1, key2):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2)
+def process_recfile(recfile, key1, key2, mcs=False):
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, mcs=mcs)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
+    similarities_mcs = list()
     for batch in tqdm(recdataloader, desc="computing similarities"):
-        sims = batch
+        sims, sims_mcs = batch
         similarities.extend(list(sims.numpy()))
-    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities)
+        similarities_mcs.extend(list(sims_mcs.numpy()))
+    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities, similarities_mcs=similarities_mcs)
     recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1)
     with gzip.open(outfilename, "wt") as outgz:
         for batch in tqdm(recordsdataloader, desc=f"writing file: {outfilename}"):
-            sims, records = batch
+            records = batch
             for record in records:
                 outgz.write(record)
 
@@ -197,6 +234,7 @@ if __name__ == "__main__":
     parser.add_argument("--smi2", help='Second SMILES string, or rech key if --rec is given', metavar="['O1C(=O)C=Cc2cc(OC)c(O)cc12', 'smi_ref']")
     parser.add_argument("--file", help='Process the given file with the following line format: smi1 smi2 [info1] [...] [infon]. The result will be printed in the last column')
     parser.add_argument("--rec", help='Process the given rec file. The key to read smi1 and smi2 are read from options --smi1 and --smi2 respectively.', metavar='molsim_test.rec.gz')
+    parser.add_argument("--mcs", help="Compute Maximum Common Substructure similarity (sim_mcs)", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -222,4 +260,4 @@ if __name__ == "__main__":
     if args.file is not None:
         process_smifile(args.file)
     if args.rec is not None:
-        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2)
+        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, mcs=args.mcs)
