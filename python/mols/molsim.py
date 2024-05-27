@@ -28,10 +28,10 @@ def fpsim(smi1, smi2):
     >>> sim
     0.16223067173637515
     """
-    mol1 = Chem.MolFromSmiles(smi1)
-    mol2 = Chem.MolFromSmiles(smi2)
-    fs1 = Chem.RDKFingerprint(mol1)
-    fs2 = Chem.RDKFingerprint(mol2)
+    mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+    mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+    fs1 = Chem.RDKFingerprint(mol1)  # type: ignore
+    fs2 = Chem.RDKFingerprint(mol2)  # type: ignore
     sim = DataStructs.FingerprintSimilarity(fs1, fs2)
     return sim
 
@@ -58,7 +58,7 @@ def process_smifile(filename):
     """
     outfilename = os.path.splitext(filename)[0] + "_sim" + ".txt"
     smidataset = SmiDataset(filename)
-    smidataloader = DataLoader(smidataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
+    smidataloader = DataLoader(smidataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     with open(outfilename, "w") as outfile:
         for batch in tqdm(smidataloader, "process_smifile"):
             # print(batch)
@@ -73,7 +73,7 @@ def process_smifile(filename):
 
 def isvalid(smi):
     if smi is not None and len(smi) > 0:
-        mol = Chem.MolFromSmiles(smi)
+        mol = Chem.MolFromSmiles(smi)  # type: ignore
         if mol is not None:
             valid = True
         else:
@@ -173,7 +173,7 @@ class RecordsDataset(Dataset):
 def process_recfile(recfile, key1, key2):
     recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
-    recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())
+    recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
     for batch in tqdm(recdataloader, desc="computing similarities"):
         sims = batch
