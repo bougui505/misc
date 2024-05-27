@@ -12,6 +12,7 @@
 import gzip
 import os
 
+import MCS_similarity
 from rdkit import Chem, DataStructs
 from rdkit.Chem import rdFMCS
 from torch.utils.data import DataLoader, Dataset
@@ -104,7 +105,7 @@ def isvalid(smi):
 
 class RecDataset(Dataset):
     """
-    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref')
+    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', mcs=True)
     >>> len(recdataset)
     1000
 
@@ -119,14 +120,20 @@ class RecDataset(Dataset):
     0.3353096179183136
     >>> sim_mcs
     0.2153846153846154
+
+    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', fastmcs=True)
+    >>> sim, sim_mcs  = recdataset[0]
+    >>> sim_mcs
+    0.1111111111111111
     """
-    def __init__(self, recfilename, key1, key2, mcs=False) -> None:
+    def __init__(self, recfilename, key1, key2, mcs=False, fastmcs=False) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
         self.recfilename = recfilename
         self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2])
         self.mcs = mcs
+        self.fastmcs = fastmcs
 
     def __len__(self):
         return len(self.data[self.key1])
@@ -138,8 +145,11 @@ class RecDataset(Dataset):
         if isvalid(smi1) and isvalid(smi2):
             mol1, mol2 = Chem.MolFromSmiles(smi1), Chem.MolFromSmiles(smi2)  # type: ignore
             sim = fpsim(mol1=mol1, mol2=mol2)
-            if self.mcs:
-                sim_mcs = mcs_sim(mol1=mol1, mol2=mol2)
+            if self.mcs or self.fastmcs:
+                if self.fastmcs:
+                    sim_mcs = MCS_similarity.fast_MCS_Sim(mol1=mol1, mol2=mol2)
+                else:
+                    sim_mcs = mcs_sim(mol1=mol1, mol2=mol2)
             else:
                 sim_mcs = -1
         else:
@@ -205,8 +215,8 @@ class RecordsDataset(Dataset):
                 record += line + '\n'
 
 
-def process_recfile(recfile, key1, key2, mcs=False):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, mcs=mcs)
+def process_recfile(recfile, key1, key2, mcs=False, fastmcs=False):
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, mcs=mcs, fastmcs=fastmcs)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
@@ -235,6 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", help='Process the given file with the following line format: smi1 smi2 [info1] [...] [infon]. The result will be printed in the last column')
     parser.add_argument("--rec", help='Process the given rec file. The key to read smi1 and smi2 are read from options --smi1 and --smi2 respectively.', metavar='molsim_test.rec.gz')
     parser.add_argument("--mcs", help="Compute Maximum Common Substructure similarity (sim_mcs)", action="store_true")
+    parser.add_argument("--fastmcs", help="Compute a fast approximation of the Maximum Common Substructure similarity (sim_mcs)", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -260,4 +271,4 @@ if __name__ == "__main__":
     if args.file is not None:
         process_smifile(args.file)
     if args.rec is not None:
-        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, mcs=args.mcs)
+        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, mcs=args.mcs, fastmcs=args.fastmcs)
