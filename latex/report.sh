@@ -120,6 +120,7 @@ if [[ ! -z $IMG ]]; then
     else
         sed -i '/\end{document}/d' slides.tex
         cat << EOF >> slides.tex
+
 \begin{frame}{$TITLE}
 \centering
 \includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$LOCALIMG}
