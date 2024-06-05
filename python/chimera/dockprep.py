@@ -12,11 +12,13 @@
 import sys
 
 import chimera
+from chimera import runCommand
 from DockPrep import prep
 
 outfile = sys.argv[-1]
 
 models = chimera.openModels.list(modelTypes=[chimera.Molecule])
+runCommand('delete @H')
 prep(models)
 from WriteMol2 import writeMol2
 
