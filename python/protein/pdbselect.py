@@ -9,6 +9,7 @@
 
 import os
 import subprocess
+import tempfile
 
 from pymol import cmd
 
@@ -72,7 +73,11 @@ if __name__ == '__main__':
         cmd.remove("hydrogens")
     if args.h_add:
         cmd.h_add("all")
-    cmd.save(args.out, selection=args.select)
     if args.dockprep:
-        subprocess.run(f"{GetScriptDir()}/dockprep.sh -i {args.out} -o {args.out}", shell=True)
+        # Save a temporary pdb as chimera will interpret the atom type. It does not when a mol2 is given
+        pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
+        cmd.save(pdb_tmp, selection=args.select)
+        subprocess.run(f"{GetScriptDir()}/dockprep.sh -i {pdb_tmp} -o {args.out}", shell=True)
         print("dockprep done")
+    else:
+        cmd.save(args.out, selection=args.select)
