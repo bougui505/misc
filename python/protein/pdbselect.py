@@ -74,6 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--select')
     parser.add_argument('-o', '--out')
     parser.add_argument('--h_add', help="Add hydrogens", action='store_true')
+    parser.add_argument('--h_remove', help="Remove hydrogens", action='store_true')
     parser.add_argument('--test', help='Test the code', action='store_true')
     parser.add_argument('--func', help='Test only the given function(s)', nargs='+')
     args = parser.parse_args()
@@ -93,6 +94,8 @@ if __name__ == '__main__':
         sys.exit()
 
     cmd.load(args.pdb, object='INPDB')
+    if args.h_remove:
+        cmd.remove("hydrogens")
     if args.h_add:
         cmd.h_add("all")
     cmd.save(args.out, selection=args.select)
