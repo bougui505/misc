@@ -24,3 +24,4 @@ from WriteMol2 import writeMol2
 
 writeMol2(models, outfile)
 print("Output written in:", outfile)
+quit()

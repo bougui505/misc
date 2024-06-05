@@ -39,3 +39,4 @@ done
 
 OUT="$(pwd)/$OUT"
 chimera --nogui $INP $DIRSCRIPT/dockprep.py $OUT
+echo "done"
