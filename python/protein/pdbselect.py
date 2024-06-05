@@ -74,4 +74,5 @@ if __name__ == '__main__':
         cmd.h_add("all")
     cmd.save(args.out, selection=args.select)
     if args.dockprep:
-        subprocess.Popen([f"{GetScriptDir()}/dockprep.sh", "-i", f"{args.out}", "-o", f"{args.out}"])
+        subprocess.run(f"{GetScriptDir()}/dockprep.sh -i {args.out} -o {args.out}", shell=True)
+        print("dockprep done")
