@@ -126,12 +126,14 @@ class RecDataset(Dataset):
     >>> sim_mcs
     0.1111111111111111
     """
-    def __init__(self, recfilename, key1, key2, mcs=False, fastmcs=False) -> None:
+    def __init__(self, recfilename, key1, key2, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
+        self.key_mol2_1 = key_mol2_1
+        self.key_mol2_2 = key_mol2_2
         self.recfilename = recfilename
-        self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2])
+        self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
         self.mcs = mcs
         self.fastmcs = fastmcs
 
@@ -139,12 +141,24 @@ class RecDataset(Dataset):
         return len(self.data[self.key1])
 
     def __getitem__(self, i):
-        smi1, smi2 = self.data[self.key1][i], self.data[self.key2][i]
-        smi1 = smi1.replace("'", "")
-        smi2 = smi2.replace("'", "")
-        if isvalid(smi1) and isvalid(smi2):
-            mol1, mol2 = Chem.MolFromSmiles(smi1), Chem.MolFromSmiles(smi2)  # type: ignore
-            sim = fpsim(mol1=mol1, mol2=mol2)
+        if self.key1 is not None:
+            smi1 = self.data[self.key1][i]
+            smi1 = smi1.replace("'", "")
+            mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+        if self.key2 is not None:
+            smi2 = self.data[self.key2][i]
+            smi2 = smi2.replace("'", "")
+            mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+        if self.key_mol2_1 is not None:
+            mol2_1 = self.data[self.key_mol2_1][i]
+            mol2_1 = mol2_1.replace("'", "")
+            mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1, sanitize=True)  # type: ignore
+        if self.key_mol2_2 is not None:
+            mol2_2 = self.data[self.key_mol2_2][i]
+            mol2_2 = mol2_2.replace("'", "")
+            mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=True)  # type: ignore
+        if mol1 is not None and mol2 is not None:  # type: ignore
+            sim = fpsim(mol1=mol1, mol2=mol2)  # type: ignore
             if self.mcs or self.fastmcs:
                 if self.fastmcs:
                     sim_mcs = MCS_similarity.fast_MCS_Sim(mol1=mol1, mol2=mol2)
@@ -215,8 +229,8 @@ class RecordsDataset(Dataset):
                 record += line + '\n'
 
 
-def process_recfile(recfile, key1, key2, mcs=False, fastmcs=False):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, mcs=mcs, fastmcs=fastmcs)
+def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False):
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2, mcs=mcs, fastmcs=fastmcs)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
@@ -242,6 +256,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute molecular similarity between the 2 given smiles smi1 and smi2")
     parser.add_argument("--smi1", help='First SMILES string, or rec key if --rec is given', metavar="['Oc1cccc2C(=O)C=CC(=O)c12', 'smi_gen']")
     parser.add_argument("--smi2", help='Second SMILES string, or rech key if --rec is given', metavar="['O1C(=O)C=Cc2cc(OC)c(O)cc12', 'smi_ref']")
+    parser.add_argument("--mol2_1", help='First mol2 file, or rec key if --rec is given')
+    parser.add_argument("--mol2_2", help='Second mol2 file, or rec key if --rec is given')
     parser.add_argument("--file", help='Process the given file with the following line format: smi1 smi2 [info1] [...] [infon]. The result will be printed in the last column')
     parser.add_argument("--rec", help='Process the given rec file. The key to read smi1 and smi2 are read from options --smi1 and --smi2 respectively.', metavar='molsim_test.rec.gz')
     parser.add_argument("--mcs", help="Compute Maximum Common Substructure similarity (sim_mcs)", action="store_true")
@@ -271,4 +287,4 @@ if __name__ == "__main__":
     if args.file is not None:
         process_smifile(args.file)
     if args.rec is not None:
-        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, mcs=args.mcs, fastmcs=args.fastmcs)
+        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, key_mol2_1=args.mol2_1, key_mol2_2=args.mol2_2, mcs=args.mcs, fastmcs=args.fastmcs)
