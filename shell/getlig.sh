@@ -41,4 +41,6 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-curl "https://models.rcsb.org/v1/$PDB/ligand?auth_asym_id=$CHAIN&auth_seq_id=$RESID&encoding=mol2" >! $OUT
+if [[ ! -f $OUT ]]; then
+    curl "https://models.rcsb.org/v1/$PDB/ligand?auth_asym_id=$CHAIN&auth_seq_id=$RESID&encoding=mol2" >! $OUT
+fi
