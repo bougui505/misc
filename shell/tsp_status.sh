@@ -47,10 +47,15 @@ tsp | awk 'NR>1{
             for (status in n){
                 print status,n[status]
             }
-            t_mean=t/n["finished"]"s"
-            "qalc -t "t_mean | getline t_mean_fmt
-            print "average_running_time "t_mean_fmt
-            progress=n["finished"]/(n["queued"]+n["running"]+n["finished"])
-            print("progress "progress*100" %")
+            if (n["finished"]>0){
+              t_mean=t/n["finished"]"s"
+              "qalc -t "t_mean | getline t_mean_fmt
+              print "average_running_time "t_mean_fmt
+            }
+            n_total=n["queued"]+n["running"]+n["finished"]
+            if (n_total>0){
+              progress=n["finished"]/(n_total)
+              print("progress "progress*100" %")
+            }
            }' > $MYTMP/tsp_status.out
 cat $MYTMP/tsp_status.out
