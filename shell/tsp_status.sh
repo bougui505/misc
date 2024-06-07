@@ -41,12 +41,19 @@ tsp | awk 'NR>1{
             if (status=="finished"){
                 split($5,a,"/")
                 t+=a[1]
+                if ($4*1>0){
+                  n_error+=1
+                }
+                else{
+                  n_error+=0
+                }
             }
            }
            END{
             for (status in n){
                 print status,n[status]
             }
+            print "n_error", n_error
             if (n["finished"]>0){
               t_mean=t/n["finished"]"s"
               "qalc -t "t_mean | getline t_mean_fmt
