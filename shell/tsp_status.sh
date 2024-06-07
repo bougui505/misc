@@ -57,5 +57,8 @@ tsp | awk 'NR>1{
               progress=n["finished"]/(n_total)
               print("progress "progress*100" %")
             }
+            if (n["finished"]==1000){
+              system("tsp -C")
+            }
            }' > $MYTMP/tsp_status.out
 cat $MYTMP/tsp_status.out
