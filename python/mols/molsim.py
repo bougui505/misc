@@ -153,10 +153,14 @@ class RecDataset(Dataset):
             mol2_1 = self.data[self.key_mol2_1][i]
             mol2_1 = mol2_1.replace("'", "")
             mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1, sanitize=True)  # type: ignore
+            if mol1 is None:
+                mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1, sanitize=False)  # type: ignore
         if self.key_mol2_2 is not None:
             mol2_2 = self.data[self.key_mol2_2][i]
             mol2_2 = mol2_2.replace("'", "")
             mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=True)  # type: ignore
+            if mol2 is None:
+                mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=False)  # type: ignore
         if mol1 is not None and mol2 is not None:  # type: ignore
             sim = fpsim(mol1=mol1, mol2=mol2)  # type: ignore
             if self.mcs or self.fastmcs:
