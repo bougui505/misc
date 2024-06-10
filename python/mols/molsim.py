@@ -141,6 +141,7 @@ class RecDataset(Dataset):
         return len(self.data[self.key1])
 
     def __getitem__(self, i):
+        mol1, mol2 = None, None
         if self.key1 is not None:
             smi1 = self.data[self.key1][i]
             smi1 = smi1.replace("'", "")
@@ -161,6 +162,12 @@ class RecDataset(Dataset):
             mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=True)  # type: ignore
             if mol2 is None:
                 mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=False)  # type: ignore
+        if mol1 is None and mol2 is None:
+            return -1, -1
+        if mol1 is None:
+            return -0.25, -0.25
+        if mol2 is None:
+            return -0.5, -0.5
         if mol1 is not None and mol2 is not None:  # type: ignore
             sim = fpsim(mol1=mol1, mol2=mol2)  # type: ignore
             if self.mcs or self.fastmcs:
@@ -170,9 +177,6 @@ class RecDataset(Dataset):
                     sim_mcs = mcs_sim(mol1=mol1, mol2=mol2)
             else:
                 sim_mcs = -1
-        else:
-            sim = -1
-            sim_mcs = -1
         return sim, sim_mcs
 
 def get_len(recfilename):
