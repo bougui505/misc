@@ -97,6 +97,8 @@ def get_footer(texfilename):
                 isfooter = True
             if isfooter:
                 footer += line
+    if footer=="":
+        footer="\\end{document}"
     return footer
 
 
