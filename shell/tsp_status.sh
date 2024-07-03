@@ -57,8 +57,10 @@ tsp | awk 'NR>1{
             if (n["finished"]>0){
               t_mean=t/n["finished"]
               system("echo -n \x27average_running_time \x27; qalc -t "t_mean"s")
-              eta=((n["queued"]+n["running"])/n["running"])*t_mean
-              system("echo -n \x27ETA \x27; qalc -t "eta"s")
+              if (n["running"]>0){
+                eta=((n["queued"]+n["running"])/n["running"])*t_mean
+                system("echo -n \x27ETA \x27; qalc -t "eta"s")
+              }
             }
             n_total=n["queued"]+n["running"]+n["finished"]
             if (n_total>0){
