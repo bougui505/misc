@@ -152,6 +152,9 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
         fig, ax = plt.subplots(figsize=[8,4.5])
     for t in periods:
         ax.axvline(x=t, color='k', linewidth=1.5)
+    date_fmt = '%d-%m %H:%M'
+    date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
+    ax.xaxis.set_major_formatter(date_formatter)
     color = 'tab:blue'
     ax.plot_date(data[:,0].astype(np.datetime64), data[:,1], fmt='-', color=color, lw=3, label='in')
     ax.plot_date(data[:,0].astype(np.datetime64), data[:,3], fmt='.--', color='tab:green', lw=2, label='out')
@@ -173,21 +176,21 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
     ax.grid()
     ax.legend()
 
-    ax2 = ax.twinx()
-    color = 'tab:cyan'
-    ax2.set_ylabel('humidity (%)', color=color)
-    ax2.plot_date(data[:,0].astype(np.datetime64), data[:,2], fmt='-', color=color, lw=1)
-    ax2.plot_date(data[:,0].astype(np.datetime64), data[:,4], fmt='.--', color=color, lw=1)
-    ax2.tick_params(axis='y', labelcolor=color)
+    # ax2 = ax.twinx()
+    # color = 'tab:cyan'
+    # ax2.set_ylabel('humidity (%)', color=color)
+    # ax2.plot_date(data[:,0].astype(np.datetime64), data[:,2], fmt='-', color=color, lw=1)
+    # ax2.plot_date(data[:,0].astype(np.datetime64), data[:,4], fmt='.--', color=color, lw=1)
+    # ax2.tick_params(axis='y', labelcolor=color)
 
     # Use a DateFormatter to set the data to the correct format.
     # date_fmt = '%d-%m-%y %H:%M:%S'
     date_fmt = '%d-%m %H:%M'
     date_formatter = mdate.DateFormatter(date_fmt, tz=tz.gettz('Europe/Paris'))
-    ax2.xaxis.set_major_formatter(date_formatter)
+    # ax2.xaxis.set_major_formatter(date_formatter)
     # Sets the tick labels diagonal so they fit easier.
     fig.autofmt_xdate()
-    ax2.set_xlabel("date")
+    # ax2.set_xlabel("date")
 
     last_sample_date = datetime.datetime.fromtimestamp(data[-1,0]).strftime('%d-%m %H:%M')
     last_sample_T = data[-1,1]
@@ -200,6 +203,6 @@ def plot_data(data, outfile, ndays=1, compute_gradient=False):
 data = np.genfromtxt(DATAFILE)
 
 
-plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=True)
-plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=True)
+plot_data(data, outfile="/var/www/html/figures/T.png", ndays=1, compute_gradient=False)
+plot_data(data, outfile="/var/www/html/figures/T_week.png", ndays=7, compute_gradient=False)
 plot_stats(data, ndays=3*30, outfile="/var/www/html/figures/T_stat.png")
