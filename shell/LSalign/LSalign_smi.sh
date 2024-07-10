@@ -57,4 +57,7 @@ $DOCKPREP -i $MYTMP/smi2.sdf -o $OUT2 > /dev/null 2>&1 || exit1
 mv $OUT1 $MYTMP/smi1.mol2
 mv $OUT2 $MYTMP/smi2.mol2
 ($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "done") > $MYTMP/out.txt
-awk '/smi1.sdf/{s1=$3;s2=$4; if (s1>s2){print s1}else{print s2}}' $MYTMP/out.txt
+awk '/smi1.sdf/{
+    s1=$3;s2=$4
+    if (s1>s2){print s1}else{print s2}
+    }' $MYTMP/out.txt
