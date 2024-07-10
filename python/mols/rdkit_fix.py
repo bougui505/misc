@@ -5,12 +5,13 @@
 # https://research.pasteur.fr/en/member/guillaume-bouvier/
 # 2020-12-18 11:15:44 (UTC+0100)
 
+import os
+import re
+import sys
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
-import os
-import sys
-import re
 
 
 def molfromsmiles(smiles):
@@ -50,6 +51,7 @@ def get_coords(mol):
 
 if __name__ == '__main__':
     import argparse
+
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
@@ -64,6 +66,7 @@ if __name__ == '__main__':
                         '--smiles',
                         help='input smiles file to convert in 3D and fix. Multiple smiles can be given.',
                         nargs='+')
+    parser.add_argument('-o', '--out', help='Optional output name')
     parser.add_argument('-t', '--tautomers', help='generate all tautomers', action='store_true')
     args = parser.parse_args()
 
@@ -104,9 +107,11 @@ if __name__ == '__main__':
         print()
         sys.exit(0)
     for i, (m, outname) in enumerate(zip(mlist, outnames)):
-        sys.stdout.write(f'Fixing mol {i+1}/{n}\r')
-        sys.stdout.flush()
+        # sys.stdout.write(f'Fixing mol {i+1}/{n}\r')
+        # sys.stdout.flush()
         m = fixmol(m, constrain=constrain, template=template)
+        if args.out is not None:
+            outname = args.out
         w = Chem.SDWriter(outname)
         w.write(m)
     print()
