@@ -17,9 +17,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-PNGFILE=$1
-OUTFILE=$PNGFILE:r.pdf
-echo "$PNGFILE -> $OUTFILE"
+IMGFILE=$1
+OUTFILE=$IMGFILE:r.pdf
+echo "$IMGFILE -> $OUTFILE"
 inkscape $1 -o $OUTFILE
 gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dEmbedAllFonts=true -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$MYTMP/$OUTFILE:t $OUTFILE
 mv $MYTMP/$OUTFILE:t $OUTFILE
