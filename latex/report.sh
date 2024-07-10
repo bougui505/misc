@@ -115,6 +115,9 @@ if [[ ! -z $IMG ]]; then
     fi
     LOCALIMG="figures/$CKSUM.$IMGEXT"
     cp -f -a -v $IMG $LOCALIMG
+    PDFIMG="figures/$CKSUM.pdf"
+    $DIRSCRIPT/png2pdf.sh $LOCALIMG $PDFIMG
+    LOCALIMG=$PDFIMG
     if grep "$LOCALIMG" slides.tex > /dev/null; then
         echo "Image $IMG already presents in $REPORT"
     else

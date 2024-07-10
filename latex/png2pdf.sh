@@ -19,6 +19,7 @@ trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 PNGFILE=$1
 OUTFILE=$PNGFILE:r.pdf
+echo "$PNGFILE -> $OUTFILE"
 inkscape $1 -o $OUTFILE
-gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dEmbedAllFonts=true -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$MYTMP/$OUTFILE $OUTFILE
-mv $MYTMP/$OUTFILE $OUTFILE
+gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dEmbedAllFonts=true -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$MYTMP/$OUTFILE:t $OUTFILE
+mv $MYTMP/$OUTFILE:t $OUTFILE
