@@ -13,6 +13,8 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
+MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 bold=$(tput bold)
 normal=$(tput sgr0)
@@ -22,6 +24,7 @@ function usage () {
 
     -h, --help print this help message and exit
     -n, --nrec print the number of records for the given rec file
+    -s, --sample give the number of records to pick up randomly from the given rec file
 
 ----------------${bold}RECAWK${normal}----------------
 
@@ -100,14 +103,16 @@ EOF
 
 V="V=0"
 GETNREC=0
+SAMPLE=0
 case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
     -n|--nrec) GETNREC=1 ;;
+    -s|--sample) SAMPLE=$2; shift ;;
 esac
 
 getnrec(){
-    grep -c "^--$"
+    grep -c "^--$" $1
 }
 
 if [ "$#" -eq 0 ]; then
@@ -123,14 +128,31 @@ if [[ $GETNREC -eq 1 ]]; then
     exit 0
 fi
 
-awk -v $V -F"=" '
+if [[ $SAMPLE -gt 0 ]]; then
+    cat > $MYTMP/in
+    FILENAMES="$MYTMP/in $FILENAMES"
+    NREC=$(getnrec $FILENAMES)
+    V="NREC=$NREC"
+    CMD='{if (fnr in RECSEL){printrec();print("--")}}'
+fi
+
+awk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
 function printrec(){
     for (field in rec){
         print field"="rec[field]
     }
 }
 BEGIN{
+srand(seed)
 nr=0
+if (SAMPLE>0){
+    n=0
+    while (n<SAMPLE){
+        r=int(NREC*rand())
+        RECSEL[r]=r
+        n=length(RECSEL)
+    }
+}
 }
 {
 if (FNR==1){
