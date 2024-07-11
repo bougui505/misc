@@ -17,31 +17,28 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-function usage () {
-    cat << EOF
-Run flexible LSalign algorithm (see: https://zhanggroup.org/LS-align/) on 2 molecular SMILES
-    -h, --help print this help message and exit
-    --smi1 first SMILES
-    --smi2 second SMILES
-EOF
-}
-
-N=1  # Default value
-while [ "$#" -gt 0 ]; do
-    case $1 in
-        -n|--number) N="$2"; shift ;;
-        --smi1) SMI1="$2"; shift ;;
-        --smi2) SMI2="$2"; shift ;;
-        -h|--help) usage; exit 0 ;;
-        --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
-        *) usage; exit 1 ;;
-    esac
-    shift
-done
+SMI1=$1
+SMI2=$2
 
 exit1 (){
     echo -1
     exit 1
 }
 
-_LSalign_smi_.sh $SMI1 $SMI2
+# echo "SMI1: $SMI1"
+# echo "SMI2: $SMI2"
+RDKITFIX="$DIRSCRIPT/../../python/mols/rdkit_fix.py"
+DOCKPREP="$DIRSCRIPT/../../python/chimera/dockprep.sh"
+$RDKITFIX -s $SMI1 -o $MYTMP/smi1.sdf > /dev/null 2>&1 || exit1
+$RDKITFIX -s $SMI2 -o $MYTMP/smi2.sdf > /dev/null 2>&1 || exit1
+OUT1=$(mktemp -p . --suffix .mol2)
+OUT2=$(mktemp -p . --suffix .mol2)
+$DOCKPREP -i $MYTMP/smi1.sdf -o $OUT1 > /dev/null 2>&1 || exit1
+$DOCKPREP -i $MYTMP/smi2.sdf -o $OUT2 > /dev/null 2>&1 || exit1
+mv $OUT1 $MYTMP/smi1.mol2
+mv $OUT2 $MYTMP/smi2.mol2
+($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "done") > $MYTMP/out.txt
+awk '/smi1.sdf/{
+    s1=$3;s2=$4
+    if (s1>s2){print s1}else{print s2}
+    }' $MYTMP/out.txt
