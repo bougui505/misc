@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
@@ -50,7 +50,9 @@ exit1 (){
 if [[ -z $REC ]]; then
     $DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2
 else
+    OUTREC=${REC:r:r:r}_lsalign.rec.gz
     $DIRSCRIPT/../../python/rec.py --file $REC \
                                    --fields $SMI1 $SMI2 \
-                                   --run PC-score1,PC-score2,PC-score_max,Pval1,Pval2,jaccard,rmsd,size1,size2=$DIRSCRIPT/_LSalign_rec_.sh
+                                   --run PC-score1,PC-score2,PC-score_max,Pval1,Pval2,jaccard,rmsd,size1,size2=$DIRSCRIPT/_LSalign_rec_.sh \
+        | gzip > $OUTREC
 fi
