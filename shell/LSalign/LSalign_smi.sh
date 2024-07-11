@@ -44,4 +44,4 @@ exit1 (){
     exit 1
 }
 
-_LSalign_smi_.sh $SMI1 $SMI2
+$DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2
