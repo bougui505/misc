@@ -23,6 +23,8 @@ Run flexible LSalign algorithm (see: https://zhanggroup.org/LS-align/) on 2 mole
     -h, --help print this help message and exit
     --smi1 first SMILES
     --smi2 second SMILES
+    --rec rec file to process. If given, '--smi1' give the field name for the first SMILES and
+          '--smi2' the second one.
 EOF
 }
 
@@ -32,6 +34,7 @@ while [ "$#" -gt 0 ]; do
         -n|--number) N="$2"; shift ;;
         --smi1) SMI1="$2"; shift ;;
         --smi2) SMI2="$2"; shift ;;
+        --rec) REC="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
@@ -44,4 +47,10 @@ exit1 (){
     exit 1
 }
 
-$DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2
+if [[ -z $REC ]]; then
+    $DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2
+else
+    $DIRSCRIPT/../../python/rec.py --file $REC \
+                                   --fields $SMI1 $SMI2 \
+                                   --run PC-score1,PC-score2,PC-score_max,Pval1,Pval2,jaccard,rmsd,size1,size2=$DIRSCRIPT/_LSalign_rec_.sh
+fi
