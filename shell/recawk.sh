@@ -21,6 +21,7 @@ function usage () {
     cat << EOF
 
     -h, --help print this help message and exit
+    -n, --nrec print the number of records for the given rec file
 
 ----------------${bold}RECAWK${normal}----------------
 
@@ -98,10 +99,16 @@ EOF
 }
 
 V="V=0"
+GETNREC=0
 case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
+    -n|--nrec) GETNREC=1 ;;
 esac
+
+getnrec(){
+    grep -c "^--$"
+}
 
 if [ "$#" -eq 0 ]; then
     usage; exit 0
@@ -110,6 +117,11 @@ fi
 CMD=$(echo "$1" | tr "\n" "$" | awk -F"END" '{print $1}' | tr "$" "\n")
 ENDCMD=$(echo "$1" | tr "\n" "$" | awk -F"END" '{print $2}' | tr "$" "\n")
 FILENAMES="${@:2}"
+
+if [[ $GETNREC -eq 1 ]]; then
+    getnrec $FILENAMES
+    exit 0
+fi
 
 awk -v $V -F"=" '
 function printrec(){
