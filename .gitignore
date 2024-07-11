@@ -1076,3 +1076,6 @@ shell/remind/gcal_ical_url_malo.txt
 shell/remind/gcal_ical_url_maud.txt
 shell/ollama/ollama
 shell/remind/gcal_ical_url_guitare.txt
+shell/LSalign/test_lsalign.rec.gz
+shell/LSalign/valid_train_stoch.rec.gz
+shell/LSalign/valid_train_stoch_lsalign.rec.gz
