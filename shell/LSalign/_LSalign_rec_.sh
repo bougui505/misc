@@ -20,5 +20,5 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 SMI1=$1
 SMI2=$2
 
-$DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2 \
+(timeout 10 $DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2 || exit 0) \
     | recawk '{print rec["PC-score1"],rec["PC-score2"],rec["PC-score_max"],rec["Pval1"],rec["Pval2"],rec["jaccard"],rec["rmsd"],rec["size1"],rec["size2"]}'
