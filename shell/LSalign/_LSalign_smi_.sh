@@ -21,12 +21,24 @@ SMI1=$1
 SMI2=$2
 
 exit1 (){
-    echo -1
+    seq 1 \
+    | awk -v SMI1="$SMI1" -v SMI2="$SMI2" '{
+        print "smi1="SMI1
+        print "smi2="SMI2
+        print "PC-score1=-1"
+        print "PC-score2=-1"
+        print "PC-score_max=-1"
+        print "Pval1=-1"
+        print "Pval2=-1"
+        print "jaccard=-1"
+        print "rmsd=-1"
+        print "size1=-1"
+        print "size2=-1"
+        print "--"
+        }'
     exit 1
 }
 
-# echo "SMI1: $SMI1"
-# echo "SMI2: $SMI2"
 RDKITFIX="$DIRSCRIPT/../../python/mols/rdkit_fix.py"
 DOCKPREP="$DIRSCRIPT/../../python/chimera/dockprep.sh"
 $RDKITFIX -s $SMI1 -o $MYTMP/smi1.sdf > /dev/null 2>&1 || exit1
@@ -38,7 +50,20 @@ $DOCKPREP -i $MYTMP/smi2.sdf -o $OUT2 > /dev/null 2>&1 || exit1
 mv $OUT1 $MYTMP/smi1.mol2
 mv $OUT2 $MYTMP/smi2.mol2
 ($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "done") > $MYTMP/out.txt
-awk '/smi1.sdf/{
-    s1=$3;s2=$4
-    if (s1>s2){print s1}else{print s2}
+# cat $MYTMP/out.txt
+awk -v SMI1="$SMI1" -v SMI2="$SMI2" '/smi1.sdf/{
+    s1=$3;s2=$4;pval1=$5;pval2=$6;j=$7;rmsd=$8;size1=$9;size2=$10
+    if (s1>s2){smax=s1}else{smax=s2}
+    print "smi1="SMI1
+    print "smi2="SMI2
+    print "PC-score1="s1
+    print "PC-score2="s2
+    print "PC-score_max="smax
+    print "Pval1="pval1
+    print "Pval2="pval2
+    print "jaccard="j
+    print "rmsd="rmsd
+    print "size1="size1
+    print "size2="size2
+    print "--"
     }' $MYTMP/out.txt
