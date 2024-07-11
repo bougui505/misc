@@ -39,19 +39,11 @@ exit1 (){
     exit 0
 }
 
-RDKITFIX="$DIRSCRIPT/../../python/mols/rdkit_fix.py"
-DOCKPREP="$DIRSCRIPT/../../python/chimera/dockprep.sh"
-$RDKITFIX -s $SMI1 -o $MYTMP/smi1.sdf > /dev/null 2>&1 || exit1
-$RDKITFIX -s $SMI2 -o $MYTMP/smi2.sdf > /dev/null 2>&1 || exit1
-OUT1=$(mktemp -p . --suffix .mol2)
-OUT2=$(mktemp -p . --suffix .mol2)
-$DOCKPREP -i $MYTMP/smi1.sdf -o $OUT1 > /dev/null 2>&1 || exit1
-$DOCKPREP -i $MYTMP/smi2.sdf -o $OUT2 > /dev/null 2>&1 || exit1
-mv $OUT1 $MYTMP/smi1.mol2
-mv $OUT2 $MYTMP/smi2.mol2
-($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "smi1.sdf smi2.sdf -1 -1 -1 -1 -1 -1 -1 -1") > $MYTMP/out.txt
+echo $SMI1 | obabel -ismi --gen3d -o mol2 2> /dev/null | sed 's/\*\*\*\*\*/smi1/' > $MYTMP/smi1.mol2
+echo $SMI2 | obabel -ismi --gen3d -o mol2 2> /dev/null | sed 's/\*\*\*\*\*/smi2/' > $MYTMP/smi2.mol2
+($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "smi1 smi2 -1 -1 -1 -1 -1 -1 -1 -1") > $MYTMP/out.txt
 # cat $MYTMP/out.txt
-awk -v SMI1="$SMI1" -v SMI2="$SMI2" '/smi1.sdf/{
+awk -v SMI1="$SMI1" -v SMI2="$SMI2" '/smi1/{
     s1=$3;s2=$4;pval1=$5;pval2=$6;j=$7;rmsd=$8;size1=$9;size2=$10
     if (s1>s2){smax=s1}else{smax=s2}
     print "smi1="SMI1
