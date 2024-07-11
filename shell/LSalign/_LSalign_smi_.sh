@@ -49,7 +49,7 @@ $DOCKPREP -i $MYTMP/smi1.sdf -o $OUT1 > /dev/null 2>&1 || exit1
 $DOCKPREP -i $MYTMP/smi2.sdf -o $OUT2 > /dev/null 2>&1 || exit1
 mv $OUT1 $MYTMP/smi1.mol2
 mv $OUT2 $MYTMP/smi2.mol2
-($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "done") > $MYTMP/out.txt
+($DIRSCRIPT/LSalign $MYTMP/smi1.mol2 $MYTMP/smi2.mol2 -rf 1 || echo "smi1.sdf smi2.sdf -1 -1 -1 -1 -1 -1 -1 -1") > $MYTMP/out.txt
 # cat $MYTMP/out.txt
 awk -v SMI1="$SMI1" -v SMI2="$SMI2" '/smi1.sdf/{
     s1=$3;s2=$4;pval1=$5;pval2=$6;j=$7;rmsd=$8;size1=$9;size2=$10
@@ -66,4 +66,5 @@ awk -v SMI1="$SMI1" -v SMI2="$SMI2" '/smi1.sdf/{
     print "size1="size1
     print "size2="size2
     print "--"
+    exit
     }' $MYTMP/out.txt
