@@ -17,8 +17,12 @@ precmd() {
     [ -f fun.sh ] && source fun.sh && FUNFILES+="$(realpath fun.sh)" && FUNFILES=$(echo $FUNFILES | awk -F":" '{for (i=1;i<=NF;i++){print $i}}' | sort -u | awk '{printf $1":"}')
 }
 
-test_LSalign_smi () {
+test_lsalign_smi () {
     SMI1="CCOC1=CC(C(O)C1O)n1cnc2c(N)ncnc12"
     SMI2="Cc1ccccc1NC(=O)C(C1CCCCC1)n1c(nc2cc(F)c(F)cc12)-c1ccc(Cl)cc1"
-    ./LSalign_smi.sh --smi1 $SMI1 --smi2 $SMI2
+    ./lsalign.sh --smi1 $SMI1 --smi2 $SMI2
+}
+
+test_lsalign_rec () {
+    ./lsalign.sh --rec test.rec.gz --smi1 smi_gen --smi2 smi_ref
 }

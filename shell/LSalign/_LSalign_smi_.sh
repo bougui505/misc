@@ -36,7 +36,7 @@ exit1 (){
         print "size2=-1"
         print "--"
         }'
-    exit 1
+    exit 0
 }
 
 RDKITFIX="$DIRSCRIPT/../../python/mols/rdkit_fix.py"
