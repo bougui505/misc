@@ -51,6 +51,10 @@ if [[ -z $REC ]]; then
     $DIRSCRIPT/_LSalign_smi_.sh $SMI1 $SMI2
 else
     OUTREC=${REC:r:r}_lsalign.rec.gz
+    if [[ -f $OUTREC ]]; then
+        echo "$OUTREC already exists"
+        exit 0
+    fi
     $DIRSCRIPT/../../python/rec.py --file $REC \
                                    --fields $SMI1 $SMI2 \
                                    --run PC-score1,PC-score2,PC-score_max,Pval1,Pval2,jaccard,rmsd,size1,size2=$DIRSCRIPT/_LSalign_rec_.sh \
