@@ -1,0 +1,24 @@
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2024 Institut Pasteur                                       #
+#############################################################################
+#
+# creation_date: <DATE>
+
+SHELL := zsh
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+
+outputs=target1 target2
+all: target1 target2
+.PHONY: all clean #  which targets are not represented by files
+
+target1:
+	echo "Hello from target1" > $@
+
+target2: target1
+	cat $< =(echo "Hello from target2") > $@
+
+clean:
+	rm $(outputs)
