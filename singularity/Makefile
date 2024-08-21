@@ -4,24 +4,17 @@
 # Copyright (c) 2024 Institut Pasteur                                       #
 #############################################################################
 #
-# creation_date: <DATE>
+# creation_date: Wed Aug 21 16:34:41 2024
 
 SHELL := zsh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-outputs=target1 target2
 .PHONY: help clean #  which targets are not represented by files
 
 help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
-target1:
-	echo "Hello from target1" > $@
-
-target2: target1
-	cat $< =(echo "Hello from target2") > $@
-
-clean:
-	rm $(outputs)
+bougui.sif: bougui.def
+	singularity build bougui.sif bougui.def
