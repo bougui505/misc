@@ -17,4 +17,4 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 bougui.sif: bougui.def
-	singularity build bougui.sif bougui.def
+	singularity build --force bougui.sif bougui.def
