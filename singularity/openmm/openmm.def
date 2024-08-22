@@ -1,0 +1,37 @@
+BOOTSTRAP: docker
+FROM: debian:11
+# Bootstrap: localimage
+# From: ../bougui.sif
+
+%post
+
+apt-get update
+apt-get install -y wget cmake python3-numpy python3-setuptools doxygen swig cython3 software-properties-common
+
+cd /opt
+mkdir cuda-toolkit
+cd cuda-toolkit
+wget https://developer.download.nvidia.com/compute/cuda/12.6.0/local_installers/cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
+dpkg -i cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
+cp /var/cuda-repo-debian11-12-6-local/cuda-*-keyring.gpg /usr/share/keyrings/
+add-apt-repository contrib
+apt-get update
+apt-get -y install cuda-toolkit-12-6
+DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers
+
+cd /opt
+mkdir openmm
+cd openmm
+wget https://github.com/openmm/openmm/archive/refs/tags/8.1.2.tar.gz
+tar -xzvf 8.1.2.tar.gz
+cd openmm-8.1.2
+pwd  # /opt/openmm/openmm-8.1.2
+mkdir build
+cd build
+cmake ..
+make -j 16
+# make -j 16 test
+make -j 16 install
+make -j 16 PythonInstall
+python3 -m openmm.testInstallation
+

@@ -1081,3 +1081,4 @@ shell/LSalign/valid_train_stoch.rec.gz
 shell/LSalign/valid_train_stoch_lsalign.rec.gz
 shell/LSalign/valid_train_stoch_100000.rec.gz
 shell/LSalign/valid_train_stoch_100000_lsalign.rec.gz
+singularity/openmm/openmm.sif
