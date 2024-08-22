@@ -10,7 +10,7 @@ SHELL := zsh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help clean #  which targets are not represented by files
+.PHONY: help clean test #  which targets are not represented by files
 
 help:
 	@echo "\e[4mTargets:\e[0m"
@@ -18,3 +18,6 @@ help:
 
 bougui.sif: bougui.def
 	singularity build --force bougui.sif bougui.def
+
+test-cuda: bougui.sif
+	singularity run --nv bougui.sif python3 -c 'import torch; print(torch.cuda.is_available())'
