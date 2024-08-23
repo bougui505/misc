@@ -139,9 +139,9 @@ def graph2smiles(mol2graph):
     """
     Convert a mol2.graph object to a SMILES
     >>> mol2filename = "data/7zc7_IKL_A_401.mol2"
-    >>> mol2 = mol2parser(mol2filename, H=False)
+    >>> mol2 = mol2parser(mol2filename, H=True)
     >>> graph2smiles(mol2.graph)
-    '[C]c1[c]c([C])n(-c2[c][c]c([C]C(=O)[N-]c3noc4c3[C][C][C][C]4)[c][c]2)n1'
+    'Cc1cc(C)n(-c2ccc(CC(=O)Nc3noc4c3CCCC4)cc2)n1'
     """
     mol2str = graph2mol2(mol2graph)
     mol = Chem.MolFromMol2Block(mol2str)
