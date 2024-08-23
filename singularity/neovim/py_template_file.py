@@ -13,7 +13,7 @@ import os
 
 def log(msg):
     try:
-        logging.info(msg)
+        logging.info(msg)  # type: ignore
     except NameError:
         pass
 
