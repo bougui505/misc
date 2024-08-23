@@ -11,6 +11,7 @@
 import os
 
 import torch
+from rdkit import Chem
 from torch_geometric.data import Data
 
 
@@ -79,9 +80,73 @@ class Mol2:
         """
         torch_geometric graph
         """
-        # DataBatch(x=[1724, 58], edge_index=[2, 28758], edge_attr=[28758, 1], y=[8], smi=[8, 86], molgraph=[8], pl_contacts=[8], batch=[1724], ptr=[9])
         g = Data(x=self.node_features, edge_index=self.edge_index, edge_attr=self.edge_attr)
         return g
+
+def graph2mol2(mol2graph):
+    """
+    Convert a mol2.graph to a mol2
+    >>> mol2filename = "data/7zc7_IKL_A_401.mol2"
+    >>> mol2 = mol2parser(mol2filename, H=False)
+    >>> mol2str = graph2mol2(mol2.graph)
+    >>> print(mol2str)
+    @<TRIPOS>MOLECULE
+    molecule
+    26 29
+    SMALL
+    NO_CHARGES
+    @<TRIPOS>ATOM
+    1 C 0.0 0.0 0.0 C.2 1 molecule
+    2 C 0.0 0.0 0.0 C.2 1 molecule
+    3 C 0.0 0.0 0.0 C.2 1 molecule
+    ...
+    >>> with open("/tmp/out.mol2", "w") as f:
+    ...     f.write(mol2str)
+    1225
+    """
+    __ATOMTYPES__ = Mol2().__ATOMTYPES__
+    inds = torch.nonzero(mol2graph.x)[:, 1]
+    atom_types = [__ATOMTYPES__[_] for _ in inds]
+    mol2str = ""
+    mol2str += "@<TRIPOS>MOLECULE\n"
+    mol2str += "molecule\n"
+    mol2str += f"{len(atom_types)} {len(mol2graph.edge_index.T)}\n"
+    mol2str += "SMALL\n"
+    mol2str += "NO_CHARGES\n"
+    mol2str += "@<TRIPOS>ATOM\n"
+    atom_id = 1
+    for atom_type in atom_types:
+        atom_name = atom_type.split(".")[0]
+        x = 0.0
+        y = 0.0
+        z = 0.0
+        mol2str += f"{atom_id} {atom_name} {x} {y} {z} {atom_type} 1 molecule\n"
+        atom_id+=1
+    mol2str += "@<TRIPOS>BOND\n"
+    bond_id = 1
+    for edge, bond_type in zip(mol2graph.edge_index.T, mol2graph.edge_attr):
+        origin_atom_id, target_atom_id = edge
+        bond_type = Mol2().__BONDTYPES__[torch.nonzero(bond_type)]
+        mol2str += f"{bond_id} {origin_atom_id} {target_atom_id} {bond_type}\n"
+        bond_id += 1
+    mol2str += "@<TRIPOS>SUBSTRUCTURE\n"
+    mol2str += "1 molecule 1"
+    return mol2str
+
+
+
+def graph2smiles(mol2graph):
+    """
+    Convert a mol2.graph object to a SMILES
+    >>> mol2filename = "data/7zc7_IKL_A_401.mol2"
+    >>> mol2 = mol2parser(mol2filename, H=False)
+    >>> graph2smiles(mol2.graph)
+    '[C]c1[c]c([C])n(-c2[c][c]c([C]C(=O)[N-]c3noc4c3[C][C][C][C]4)[c][c]2)n1'
+    """
+    mol2str = graph2mol2(mol2graph)
+    mol = Chem.MolFromMol2Block(mol2str)
+    smi = Chem.MolToSmiles(mol)
+    return smi
 
 def mol2parser(mol2filename, H=True):
     """
@@ -114,6 +179,8 @@ def mol2parser(mol2filename, H=True):
     if not H:
         exclusion = ["H", "H.spc", "H.t3p"]
         mol2.__ATOMTYPES__ = [_ for _ in mol2.__ATOMTYPES__ if _  not in exclusion]
+    atom_id_dict = dict()
+    re_atom_id = 1
     with open(mol2filename, "r") as mol2file:
         section = ""
         H_atom_ids = []
@@ -124,11 +191,14 @@ def mol2parser(mol2filename, H=True):
                 continue
             if section=="ATOM":
                 atom_id, atom_name, x, y, z, atom_type = line.split()[:6]
+                atom_id = int(atom_id)
                 if not H:
                     if atom_type in exclusion:
                         H_atom_ids.append(atom_id)
                         continue
-                mol2.atom_id.append(int(atom_id))
+                atom_id_dict[atom_id] = re_atom_id
+                re_atom_id += 1
+                mol2.atom_id.append(atom_id_dict[atom_id])
                 mol2.atom_name.append(atom_name)
                 mol2.x.append(float(x))
                 mol2.y.append(float(y))
@@ -136,11 +206,12 @@ def mol2parser(mol2filename, H=True):
                 mol2.atom_type.append(atom_type)
             if section=="BOND":
                 bond_id, origin_atom_id, target_atom_id, bond_type = line.split()[:4]
+                origin_atom_id, target_atom_id = int(origin_atom_id), int(target_atom_id)
                 if origin_atom_id in H_atom_ids or target_atom_id in H_atom_ids:
                     continue
                 mol2.bond_id.append(int(bond_id))
-                mol2.origin_atom_id.append(int(origin_atom_id))
-                mol2.target_atom_id.append(int(target_atom_id))
+                mol2.origin_atom_id.append(atom_id_dict[origin_atom_id])
+                mol2.target_atom_id.append(atom_id_dict[target_atom_id])
                 mol2.bond_type.append(bond_type)
     return mol2
 
