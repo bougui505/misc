@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2024 Institut Pasteur                                       #
+#############################################################################
+#
+# creation_date: Fri Aug 23 10:53:18 2024
+
+import os
+
+import torch
+from torch_geometric.data import Data
+
+
+def GetScriptDir():
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+    return scriptdir
+
+def log(msg):
+    try:
+        logging.info(msg)  # type: ignore
+    except NameError:
+        pass
+
+class Mol2:
+    """
+    >>> mol2 = Mol2()
+    >>> mol2.__ATOMTYPES__
+    ['C.3', 'C.2', 'C.1', 'C.ar', 'C.cat', 'N.3', 'N.2', 'N.1', 'N.ar', 'N.am', 'N.pl3', 'N.4', 'O.3', 'O.2', 'O.co2', 'O.spc', 'O.t3p', 'S.3', 'S.2', 'S.O', 'S.O2', 'P.3', 'F', 'Cl', 'Br', 'I', 'Sn', 'H', 'H.spc', 'H.t3p', 'LP', 'Du', 'Du.C', 'Any', 'Hal', 'Het', 'Hev', 'Li', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Cr.th', 'Cr.oh', 'Mn', 'Fe', 'Co.oh', 'Cu', 'Zn', 'Se', 'Mo']
+    >>> len(mol2.__ATOMTYPES__)
+    53
+    """
+    def __init__(self):
+        self.atom_id = []
+        self.atom_name = []
+        self.x = []
+        self.y = []
+        self.z = []
+        self.atom_type = []
+        self.bond_id = [] 
+        self.origin_atom_id = []
+        self.target_atom_id = []
+        self.bond_type = []
+        self.scriptdir = GetScriptDir()
+        self.__ATOMTYPES__ = [l.split()[0] for l in open(f"{self.scriptdir}/mol2.atom_types", "r")]
+        self.__BONDTYPES__ = ["1", "2", "3", "am", "ar", "du", "un", "nc"]
+
+    @property
+    def coords(self):
+        return torch.stack((torch.tensor(self.x), torch.tensor(self.y), torch.tensor(self.z))).T
+
+    @property
+    def edge_index(self):
+        return torch.stack((torch.tensor(self.origin_atom_id), torch.tensor(self.target_atom_id)))
+
+    @property
+    def node_features(self):
+        """
+        1-hot encoding of self.atom_type
+        """
+        inds = [self.__ATOMTYPES__.index(_) for _ in self.atom_type]
+        onehot = torch.nn.functional.one_hot(torch.tensor(inds), num_classes=len(self.__ATOMTYPES__))
+        return onehot
+
+    @property
+    def edge_attr(self):
+        """
+        1-hot encoding for self.bond_type
+        """
+        inds = [self.__BONDTYPES__.index(_) for _ in self.bond_type]
+        onehot = torch.nn.functional.one_hot(torch.tensor(inds), num_classes=len(self.__BONDTYPES__))
+        return onehot
+
+    @property
+    def graph(self):
+        """
+        torch_geometric graph
+        """
+        # DataBatch(x=[1724, 58], edge_index=[2, 28758], edge_attr=[28758, 1], y=[8], smi=[8, 86], molgraph=[8], pl_contacts=[8], batch=[1724], ptr=[9])
+        g = Data(x=self.node_features, edge_index=self.edge_index, edge_attr=self.edge_attr)
+        return g
+
+def mol2parser(mol2filename, H=True):
+    """
+    For mol2 format description see: https://www.structbio.vanderbilt.edu/archives/amber-archive/2007/att-1568/01-mol2_2pg_113.pdf
+
+    >>> mol2filename = "data/7zc7_IKL_A_401.mol2"
+    >>> mol2 = mol2parser(mol2filename, H=False)
+    >>> mol2.atom_type
+    ['C.2', 'C.2', 'C.2', 'C.3', 'C.3', 'C.3', 'C.2', 'C.3', 'C.2', 'N.2', 'N.3', 'C.2', 'C.3', 'C.2', 'C.2', 'C.2', 'C.2', 'C.3', 'O.2', 'N.3', 'C.2', 'N.2', 'O.3', 'C.2', 'C.3', 'C.2']
+    >>> mol2.x
+    [-12.743, -12.749, -9.862, -8.78, -7.536, -8.594, -15.381, -17.158, -16.254, -15.933, -15.11, -14.901, -14.059, -15.615, -14.574, -13.242, -13.547, -13.021, -13.579, -11.459, -11.065, -11.74, -10.949, -9.817, -7.741, -14.877]
+    >>> mol2.coords
+    tensor([[-12.7430, -12.7850,  48.0000],
+            [-12.7490, -15.1650,  49.8030],
+            [ -9.8620, -16.5570,  47.7560],
+            ...
+    >>> mol2.bond_id
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+    >>> mol2.edge_index.shape
+    torch.Size([2, 29])
+    >>> mol2.node_features.shape
+    torch.Size([26, 50])
+    >>> mol2.edge_attr.shape
+    torch.Size([29, 8])
+    >>> mol2.graph
+    Data(x=[26, 50], edge_index=[2, 29], edge_attr=[29, 8])
+    """
+    mol2 = Mol2()
+    exclusion = []
+    if not H:
+        exclusion = ["H", "H.spc", "H.t3p"]
+        mol2.__ATOMTYPES__ = [_ for _ in mol2.__ATOMTYPES__ if _  not in exclusion]
+    with open(mol2filename, "r") as mol2file:
+        section = ""
+        H_atom_ids = []
+        for line in mol2file:
+            line = line.strip()
+            if line.startswith("@<TRIPOS>"):
+                section = line.split("@<TRIPOS>")[1]
+                continue
+            if section=="ATOM":
+                atom_id, atom_name, x, y, z, atom_type = line.split()[:6]
+                if not H:
+                    if atom_type in exclusion:
+                        H_atom_ids.append(atom_id)
+                        continue
+                mol2.atom_id.append(int(atom_id))
+                mol2.atom_name.append(atom_name)
+                mol2.x.append(float(x))
+                mol2.y.append(float(y))
+                mol2.z.append(float(z))
+                mol2.atom_type.append(atom_type)
+            if section=="BOND":
+                bond_id, origin_atom_id, target_atom_id, bond_type = line.split()[:4]
+                if origin_atom_id in H_atom_ids or target_atom_id in H_atom_ids:
+                    continue
+                mol2.bond_id.append(int(bond_id))
+                mol2.origin_atom_id.append(int(origin_atom_id))
+                mol2.target_atom_id.append(int(target_atom_id))
+                mol2.bond_type.append(bond_type)
+    return mol2
+
+
+if __name__ == "__main__":
+    import argparse
+    import doctest
+    import sys
+
+    # ### UNCOMMENT FOR LOGGING ####
+    # import os
+    # import logging
+    # if not os.path.isdir('logs'):
+    #     os.mkdir('logs')
+    # logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
+    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
+    # logging.info(f"################ Starting {__file__} ################")
+    # ### ##################### ####
+    # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
+    parser = argparse.ArgumentParser(description="")
+    # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
+    parser.add_argument("-a", "--arg1")
+    parser.add_argument("--test", help="Test the code", action="store_true")
+    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
+    args = parser.parse_args()
+
+    # If log is present log the arguments to the log file:
+    for k, v in args._get_kwargs():
+        log(f"# {k}: {v}")
+
+    if args.test:
+        if args.func is None:
+            doctest.testmod(
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+            )
+        else:
+            for f in args.func:
+                print(f"Testing {f}")
+                f = getattr(sys.modules[__name__], f)
+                doctest.run_docstring_examples(
+                    f,
+                    globals(),
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                )
+        sys.exit()
