@@ -54,8 +54,19 @@ class Mol2:
         return torch.stack((torch.tensor(self.x), torch.tensor(self.y), torch.tensor(self.z))).T
 
     @property
+    def natoms(self):
+        return self.node_features.shape[0]
+
+    @property
     def edge_index(self):
         return torch.stack((torch.tensor(self.origin_atom_id), torch.tensor(self.target_atom_id)))
+
+    @property
+    def adjacency(self):
+        adjmat = torch.zeros(self.natoms, self.natoms, dtype=torch.int)
+        adjmat[self.edge_index[0]-1, self.edge_index[1]-1] = 1
+        adjmat[self.edge_index[1]-1, self.edge_index[0]-1] = 1
+        return adjmat
 
     @property
     def node_features(self):
@@ -173,6 +184,10 @@ def mol2parser(mol2filename, H=True):
     torch.Size([29, 8])
     >>> mol2.graph
     Data(x=[26, 50], edge_index=[2, 29], edge_attr=[29, 8])
+    >>> mol2.natoms
+    26
+    >>> mol2.adjacency.shape
+    torch.Size([26, 26])
     """
     mol2 = Mol2()
     exclusion = []
