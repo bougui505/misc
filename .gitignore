@@ -1082,3 +1082,6 @@ shell/LSalign/valid_train_stoch_lsalign.rec.gz
 shell/LSalign/valid_train_stoch_100000.rec.gz
 shell/LSalign/valid_train_stoch_100000_lsalign.rec.gz
 singularity/openmm/openmm.sif
+python/pytorch/mol2graph/data/reclig.mol2
+python/pytorch/mol2graph/data/reclig.pdb
+python/pytorch/mol2graph/data/reclig.pt
