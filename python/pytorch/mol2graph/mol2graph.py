@@ -9,8 +9,11 @@
 # creation_date: Fri Aug 23 10:53:18 2024
 
 import os
+import subprocess
+import tempfile
 
 import torch
+from pymol import cmd
 from rdkit import Chem
 from torch_geometric.data import Data
 
@@ -248,7 +251,8 @@ if __name__ == "__main__":
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument("-m", "--mol2", help="Input mol2 filename to convert to graph")
+    parser.add_argument("-i", "--inp", help="Input filename to convert to graph")
+    parser.add_argument("-s", "--select", help="Optionnal selection")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -272,8 +276,19 @@ if __name__ == "__main__":
                     optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
                 )
         sys.exit()
-    if args.mol2 is not None:
-        mol2 = mol2parser(args.mol2)
-        outpt = os.path.splitext(args.mol2)[0] + '.pt'
+    if args.inp is not None:
+        basename, ext = os.path.splitext(args.inp)
+        outpt =  basename + '.pt'
+        if ext == ".mol2" and args.sel is None:
+            mol2 = mol2parser(args.inp)
+        else:
+            cmd.load(args.inp, object='INPUTFILE')
+            pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
+            mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
+            cmd.save(pdb_tmp, selection=args.select)
+            subprocess.run(f"{GetScriptDir()}/dockprep.sh -i {pdb_tmp} -o {mol2_tmp}", shell=True)
+            print("dockprep done")
+            mol2 = mol2parser(mol2_tmp)
         torch.save(mol2.graph, outpt)
+        print(f"{mol2.graph=}")
         print(f"Graph saved in: {outpt}")
