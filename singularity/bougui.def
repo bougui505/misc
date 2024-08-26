@@ -7,6 +7,7 @@ neovim/sh_template_file.sh /opt
 neovim/Makefile_template_file /opt
 neovim/vimrc.vim /opt
 collada2gltf-2.1.4-h6bb024c_0.tar.bz2 /opt
+chimera/chimera-1.18-linux_x86_64.bin /opt
 
 %post
 ################################# APT INSTALL #################################
@@ -168,6 +169,16 @@ pip3 install --break-system-packages rdkit
 pip3 install --break-system-packages gcalcli
 pip3 install --break-system-packages remind
 #########################################################################################
+
+################################# CHIMERA #################################
+cd /opt
+chmod u+x chimera-1.18-linux_x86_64.bin
+./chimera-1.18-linux_x86_64.bin << EOF
+/opt/chimera
+EOF
+cd /usr/bin/
+ln -s /opt/chimera/bin/chimera .
+###########################################################################
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container

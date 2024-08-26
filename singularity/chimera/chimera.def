@@ -1,0 +1,14 @@
+Bootstrap: localimage
+From: ../bougui.sif
+
+%files
+chimera-1.18-linux_x86_64.bin /opt
+
+%post
+cd /opt
+chmod u+x chimera-1.18-linux_x86_64.bin
+./chimera-1.18-linux_x86_64.bin << EOF
+/opt/chimera
+EOF
+cd /usr/bin/
+ln -s /opt/chimera/bin/chimera .
