@@ -17,6 +17,9 @@ from pymol import cmd
 from rdkit import Chem
 from torch_geometric.data import Data
 
+DISTANCE_BASED = False
+D_THRESHOLD = 5.0
+
 
 def GetScriptDir():
     scriptpath = os.path.realpath(__file__)
@@ -37,7 +40,14 @@ class Mol2:
     >>> len(mol2.__ATOMTYPES__)
     53
     """
-    def __init__(self):
+    def __init__(self, distance_based=DISTANCE_BASED, d_threshold=D_THRESHOLD):
+        """
+        If:
+            - distance_based is False, the edge_index are defined based on the BOND section of the mol2 file and the edge_attr are based on the mol2 bond types
+            - distance_based is True, the edge_index are defined based on the pairwise distance between atoms and the edge_attr store the distance between atoms below a given distance cutoff (d_threshold).
+        """
+        self.distance_based = distance_based
+        self.d_threshold = d_threshold
         self.atom_id = []
         self.atom_name = []
         self.x = []
@@ -61,14 +71,26 @@ class Mol2:
         return self.node_features.shape[0]
 
     @property
+    def dmat(self):
+        """
+        Compute the distance matrix using self.coords
+        """
+        return torch.cdist(self.coords, self.coords)
+
+    @property
     def edge_index(self):
-        return torch.stack((torch.tensor(self.origin_atom_id), torch.tensor(self.target_atom_id)))
+        if not self.distance_based:
+            return torch.stack((torch.tensor(self.origin_atom_id), torch.tensor(self.target_atom_id)))
+        else:
+            return torch.nonzero(self.dmat < self.d_threshold).T
+
 
     @property
     def adjacency(self):
         adjmat = torch.zeros(self.natoms, self.natoms, dtype=torch.int)
-        adjmat[self.edge_index[0]-1, self.edge_index[1]-1] = 1
-        adjmat[self.edge_index[1]-1, self.edge_index[0]-1] = 1
+        inds = torch.tensor([self.__BONDTYPES__.index(_) for _ in self.bond_type], dtype=torch.int)
+        adjmat[self.edge_index[0]-1, self.edge_index[1]-1] = inds
+        adjmat[self.edge_index[1]-1, self.edge_index[0]-1] = inds
         return adjmat
 
     @property
@@ -85,9 +107,13 @@ class Mol2:
         """
         1-hot encoding for self.bond_type
         """
-        inds = [self.__BONDTYPES__.index(_) for _ in self.bond_type]
-        onehot = torch.nn.functional.one_hot(torch.tensor(inds), num_classes=len(self.__BONDTYPES__))
-        return onehot
+        if not self.distance_based:
+            inds = [self.__BONDTYPES__.index(_) for _ in self.bond_type]
+            onehot = torch.nn.functional.one_hot(torch.tensor(inds), num_classes=len(self.__BONDTYPES__))
+            return onehot
+        else:
+            return self.dmat[*self.edge_index][:, None]
+
 
     @property
     def graph(self):
@@ -162,7 +188,7 @@ def graph2smiles(mol2graph):
     smi = Chem.MolToSmiles(mol)
     return smi
 
-def mol2parser(mol2filename, H=True):
+def mol2parser(mol2filename, H=True, distance_based=False, d_threshold=D_THRESHOLD):
     """
     For mol2 format description see: https://www.structbio.vanderbilt.edu/archives/amber-archive/2007/att-1568/01-mol2_2pg_113.pdf
 
@@ -191,8 +217,18 @@ def mol2parser(mol2filename, H=True):
     26
     >>> mol2.adjacency.shape
     torch.Size([26, 26])
+
+    # Testing with a protein structure using distances between atoms
+    >>> mol2filename = "data/reclig.mol2"
+    >>> mol2 = mol2parser(mol2filename, H=False, distance_based=True)
+    >>> mol2.coords.shape
+    torch.Size([2201, 3])
+    >>> mol2.dmat.shape
+    torch.Size([2201, 2201])
+    >>> mol2.graph
+    Data(x=[2201, 50], edge_index=[2, 54081], edge_attr=[54081, 1])
     """
-    mol2 = Mol2()
+    mol2 = Mol2(distance_based=distance_based, d_threshold=d_threshold)
     exclusion = []
     if not H:
         exclusion = ["H", "H.spc", "H.t3p"]
