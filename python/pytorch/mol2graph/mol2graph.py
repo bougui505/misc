@@ -282,11 +282,13 @@ if __name__ == "__main__":
         if ext == ".mol2" and args.sel is None:
             mol2 = mol2parser(args.inp)
         else:
+            if args.select is None:
+                args.select = "all"
             cmd.load(args.inp, object='INPUTFILE')
             pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
             mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
             cmd.save(pdb_tmp, selection=args.select)
-            subprocess.run(f"{GetScriptDir()}/dockprep.sh -i {pdb_tmp} -o {mol2_tmp}", shell=True)
+            subprocess.run(f"chimera --nogui {pdb_tmp} {GetScriptDir()}/dockprep.py {mol2_tmp}", shell=True)
             print("dockprep done")
             mol2 = mol2parser(mol2_tmp)
         torch.save(mol2.graph, outpt)

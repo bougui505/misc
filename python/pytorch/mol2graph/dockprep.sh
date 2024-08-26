@@ -1,1 +1,0 @@
-/home/bougui/source/misc/python/chimera/dockprep.sh
