@@ -12,8 +12,8 @@ import os
 import subprocess
 import tempfile
 
+import pymol2
 import torch
-from pymol import cmd
 from rdkit import Chem
 from torch_geometric.data import Data
 
@@ -270,13 +270,14 @@ def mol2parser(mol2filename, H=True, distance_based=False, d_threshold=D_THRESHO
     return mol2
 
 def selparser(infile, selection, distance_based=DISTANCE_BASED, d_threshold=D_THRESHOLD):
-    cmd.load(infile, object='INPUTFILE')
-    pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
-    mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
-    cmd.save(pdb_tmp, selection=selection)
-    subprocess.run(f"chimera --nogui {pdb_tmp} {GetScriptDir()}/dockprep.py {mol2_tmp}", shell=True)
-    print("dockprep done")
-    mol2 = mol2parser(mol2_tmp, distance_based=distance_based, d_threshold=d_threshold)
+    with pymol2.PyMOL() as p1:
+        p1.cmd.load(infile, object='INPUTFILE')
+        pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
+        mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
+        p1.cmd.save(pdb_tmp, selection=selection)
+        subprocess.run(f"chimera --nogui {pdb_tmp} {GetScriptDir()}/dockprep.py {mol2_tmp}", shell=True)
+        print("dockprep done")
+        mol2 = mol2parser(mol2_tmp, distance_based=distance_based, d_threshold=d_threshold)
     return mol2
 
 
