@@ -269,6 +269,16 @@ def mol2parser(mol2filename, H=True, distance_based=False, d_threshold=D_THRESHO
                 mol2.bond_type.append(bond_type)
     return mol2
 
+def selparser(infile, selection, distance_based=DISTANCE_BASED, d_threshold=D_THRESHOLD):
+    cmd.load(infile, object='INPUTFILE')
+    pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
+    mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
+    cmd.save(pdb_tmp, selection=selection)
+    subprocess.run(f"chimera --nogui {pdb_tmp} {GetScriptDir()}/dockprep.py {mol2_tmp}", shell=True)
+    print("dockprep done")
+    mol2 = mol2parser(mol2_tmp, distance_based=distance_based, d_threshold=d_threshold)
+    return mol2
+
 
 if __name__ == "__main__":
     import argparse
@@ -289,6 +299,7 @@ if __name__ == "__main__":
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("-i", "--inp", help="Input filename to convert to graph")
     parser.add_argument("-s", "--select", help="Optionnal selection")
+    parser.add_argument("-d", "--d_threshold", help="Distance threshold to compute edge. If not set use the mol2 bond section, else use a distance based neighbor definition to define the graph edges.", type=float)
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -320,13 +331,10 @@ if __name__ == "__main__":
         else:
             if args.select is None:
                 args.select = "all"
-            cmd.load(args.inp, object='INPUTFILE')
-            pdb_tmp = tempfile.NamedTemporaryFile(suffix='.pdb').name
-            mol2_tmp = tempfile.NamedTemporaryFile(suffix='.mol2').name
-            cmd.save(pdb_tmp, selection=args.select)
-            subprocess.run(f"chimera --nogui {pdb_tmp} {GetScriptDir()}/dockprep.py {mol2_tmp}", shell=True)
-            print("dockprep done")
-            mol2 = mol2parser(mol2_tmp)
+            if args.d_threshold is not None:
+                DISTANCE_BASED = True
+                D_THRESHOLD = args.d_threshold
+            mol2 = selparser(infile=args.inp, selection=args.select, distance_based=DISTANCE_BASED, d_threshold=D_THRESHOLD)
         torch.save(mol2.graph, outpt)
         print(f"{mol2.graph=}")
         print(f"Graph saved in: {outpt}")
