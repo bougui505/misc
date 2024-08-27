@@ -98,7 +98,7 @@ class Mol2:
         """
         1-hot encoding of self.atom_type
         """
-        inds = [self.__ATOMTYPES__.index(_) for _ in self.atom_type]
+        inds = [ [a.lower() for a in self.__ATOMTYPES__].index(b.lower()) for b in self.atom_type]
         onehot = torch.nn.functional.one_hot(torch.tensor(inds), num_classes=len(self.__ATOMTYPES__))
         return onehot
 
