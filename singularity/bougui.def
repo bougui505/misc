@@ -154,7 +154,7 @@ npm install -g tree-sitter-cli
 ###########################################################################
 
 ################################# PYTORCH #################################
-pip3 install --break-system-packages torch torchvision torchaudio
+pip3 install --break-system-packages torch torchvision torchaudio torchinfo
 ###########################################################################
 
 ################################# PYTORCH-GEOMETRIC #################################
