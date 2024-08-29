@@ -19,4 +19,12 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 # sudo multitail -i /root/.local/share/backintime/worker.progress -i /root/.local/share/backintime/worker.message
 # sudo tail -f /root/.local/share/backintime/worker.progress 2> /dev/null
-sudo watch -d cat /root/.local/share/backintime/worker.progress =(echo "--") /root/.local/share/backintime/worker.message
+# sudo watch -d cat /root/.local/share/backintime/worker.progress =(echo "--") /root/.local/share/backintime/worker.message
+while sleep 2; do
+  clear
+  sudo cat /root/.local/share/backintime/worker.progress
+  echo "--"
+  sudo cat /root/.local/share/backintime/worker.message
+  echo "\n--"
+  sudo progress
+done
