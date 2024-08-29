@@ -43,7 +43,7 @@ set -o noclobber  # prevent overwritting redirection
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-DBPATH="/media/bougui/scratch/pdb_seqres/pdb_seqres.fasta"
+DBPATH="/opt/bougui/DB/pdb_seqres/pdb_seqres.fasta"
 
 function usage () {
     cat << EOF
