@@ -28,6 +28,7 @@ apt-get install -y clustalw
 apt-get install -y qalc
 apt-get install -y gztool
 apt-get install -y graphviz
+apt-get install -y python3-pudb
 apt-get clean
 ###############################################################################
 
