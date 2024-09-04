@@ -52,6 +52,9 @@ fi
 if [[ -d /opt/bougui ]]; then
   CMD+="-B /opt/bougui "
 fi
+if [[ -d /scratch ]]; then
+  CMD+="-B /scratch "
+fi
 if lspci | grep -q -i nvidia; then
   CMD+="--nv "
 fi
