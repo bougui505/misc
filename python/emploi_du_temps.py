@@ -9,6 +9,7 @@
 # creation_date: Fri Sep  6 16:08:51 2024
 
 import datetime
+import itertools
 import os
 from datetime import timedelta
 
@@ -44,7 +45,7 @@ def get_week_dates(base_date, start_day, end_day=5):
     week_dates = [monday + timedelta(days=i) for i in range(7)]
     return week_dates[start_day - 1:end_day or start_day]
 
-def getweek(week="A", offset=0):
+def getweek(week="A", offset=0, print_header=True):
     """
     offset: number of week to add
     to get the next week schedule offset=1
@@ -77,7 +78,8 @@ def getweek(week="A", offset=0):
     """
     startdate = datetime.date.today() + timedelta(days=offset*7)
     dates = get_week_dates(startdate, 1)
-    print("Subject,Start date,Start time,Description")
+    if print_header:
+        print("Subject,Start date,Start time,Description")
     for date in dates:
         if week=="A":
             if date.weekday()==0:
@@ -135,6 +137,7 @@ if __name__ == "__main__":
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
     parser.add_argument("-w", "--week", help="set week A or B")
     parser.add_argument("-o", "--offset", help="Number of weeks to offset. To get next week -o 1, in 2 weeks -o 2 and so on...", default=0, type=int)
+    parser.add_argument("-n", "--nweeks", help="Make the schedule for the given number of weeks. Please provide the -w option to start with week A or B", type=int, default=1)
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -159,5 +162,10 @@ if __name__ == "__main__":
                 )
         sys.exit()
 
-    if args.week is not None:
-        getweek(week=args.week, offset=args.offset)
+    if args.nweeks is not None and args.week is not None:
+        otherweek = list(set(["A","B"])-set([args.week]))[0]
+        weeks = args.week + otherweek
+        weeks = itertools.cycle(weeks)
+        for w in range(args.nweeks):
+            week = next(weeks)
+            getweek(week=week, offset=w, print_header=(w==0))
