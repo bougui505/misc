@@ -1087,3 +1087,4 @@ python/pytorch/mol2graph/data/reclig.pt
 singularity/chimera/chimera-1.18-linux_x86_64.bin
 singularity/gnina/cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
 singularity/gnina/cuda-repo-debian12-12-6-local_12.6.1-560.35.03-1_amd64.deb
+singularity/gnina/gnina.sif
