@@ -7,6 +7,7 @@ autocmd BufNewFile *.sh %s/<DATE>/\=strftime("%c")/
 autocmd BufNewFile *.py %s/<DATE>/\=strftime("%c")/
 autocmd BufNewFile Makefile 0r /etc/xdg/nvim/Makefile_template_file
 autocmd BufNewFile Makefile %s/<DATE>/\=strftime("%c")/
+autocmd BufNewFile *.def 0r /etc/xdg/nvim/apptainer_template.def
 
 " Make file executable if #! /bin/
 function ModeChange()

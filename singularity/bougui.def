@@ -5,6 +5,7 @@ FROM: debian:12.1
 neovim/py_template_file.py /opt
 neovim/sh_template_file.sh /opt
 neovim/Makefile_template_file /opt
+neovim/apptainer_template.def /opt
 neovim/vimrc.vim /opt
 collada2gltf-2.1.4-h6bb024c_0.tar.bz2 /opt
 chimera/chimera-1.18-linux_x86_64.bin /opt
@@ -144,6 +145,7 @@ git clone --depth 1 https://github.com/AstroNvim/template nvim
 mv /opt/py_template_file.py /etc/xdg/nvim
 mv /opt/sh_template_file.sh /etc/xdg/nvim
 mv /opt/Makefile_template_file /etc/xdg/nvim
+mv /opt/apptainer_template.def /etc/xdg/nvim
 mv /opt/vimrc.vim /etc/xdg/nvim
 cat << EOF >> /etc/xdg/nvim/init.lua
 local vimrc = vim.fn.stdpath("config") .. "/vimrc.vim"
