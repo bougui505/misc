@@ -53,7 +53,7 @@ if __name__ == "__main__":
     if args.test:
         if args.func is None:
             doctest.testmod(
-                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
+                optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE | doctest.REPORT_NDIFF
             )
         else:
             for f in args.func:
@@ -62,6 +62,6 @@ if __name__ == "__main__":
                 doctest.run_docstring_examples(
                     f,
                     globals(),
-                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
+                    optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE | doctest.REPORT_NDIFF,
                 )
         sys.exit()
