@@ -6,106 +6,64 @@
 # Copyright (c) 2024 Institut Pasteur                                       #
 #############################################################################
 #
-# creation_date: Wed Sep 11 08:56:45 2024
+# creation_date: Wed Sep 11 10:13:50 2024
 
 import os
+import sys
+import traceback
+from types import FrameType
 
+import numpy as np
 import torch
 
 
-def log(msg):
-    try:
-        logging.info(msg)  # type: ignore
-    except NameError:
-        pass
-
-
-def GetScriptDir():
-    scriptpath = os.path.realpath(__file__)
-    scriptdir = os.path.dirname(scriptpath)
-    return scriptdir
-
-class debug_context():
+# trace function to print every frame event, the function name, the line and the 
+# raw code of that line and local the local variables
+def trace_func_local_vars(frame: FrameType, event, arg, verbose=False):
     """
-    Debug context to trace any function calls inside the context
-    See: https://stackoverflow.com/a/32261446/1679629
+    See: https://toptechtips.github.io/2023-04-13-trace-local-variable-python-function/
     """
+    stack = traceback.extract_stack(limit=2)
+    code = traceback.format_list(stack)[0].split('\n')[1].strip()  # gets the source code of the line
+    _locals = frame.f_locals
+    # print("Event: {0}  Func: {1}, Line: {2}, raw_code: {3}, local_vars: {4}".format(event, 
+    #                                                 frame.f_code.co_name,
+    #                                                 frame.f_lineno,
+    #                                                 code, _locals))
+    funcname = frame.f_code.co_name
+    lineno = frame.f_lineno
+    local_vars = _locals
+    filename = frame.f_code.co_filename
+    # print(f"{filename}:{funcname}:{lineno}:")
+    if verbose:
+        print(f"{filename=}")
+        print(f"{funcname=}")
+        print(f"{lineno=}")
+    varprinter(local_vars)
+    if verbose:
+        print("--")
+    return trace_func_local_vars
 
-    def __init__(self, name):
-        self.name = name
+def varprinter(local_vars):
+    for k in local_vars:
+        v = local_vars[k]
+        if torch.is_tensor(v):
+            print(f"{k}={v.shape}")
+        elif isinstance(v, np.ndarray):
+            print(f"{k}={v.shape}")
+        else:
+            print(f"{k}={v}")
 
-    def __enter__(self):
-        print('Entering Debug Decorated func')
-        # Set the trace function to the trace_calls function
-        # So all events are now traced
-        sys.settrace(self.trace_calls)
+def start():
+    sys.settrace(trace_func_local_vars)
 
-    def __exit__(self, *args, **kwargs):
-        # Stop tracing all events
-        sys.settrace = None
+def stop():
+    sys.settrace(None)
 
-    def trace_calls(self, frame, event, arg): 
-        # We want to only trace our call to the decorated function
-        if event != 'call':
-            return
-        elif frame.f_code.co_name != self.name:
-            return
-        # return the trace function to use when you go into that 
-        # function call
-        return self.trace_lines
-
-    def varprinter(self, local_vars):
-        for k in local_vars:
-            v = local_vars[k]
-            if torch.is_tensor(v):
-                print(k, v.shape)
-            elif isinstance(v, np.ndarray):
-                print(k, v.shape)
-            else:
-                print(k, v)
-
-    def trace_lines(self, frame, event, arg):
-        # If you want to print local variables each line
-        # keep the check for the event 'line'
-        # If you want to print local variables only on return
-        # check only for the 'return' event
-        if event not in ['line', 'return']:
-            return
-        co = frame.f_code
-        func_name = co.co_name
-        line_no = frame.f_lineno
-        filename = co.co_filename
-        local_vars = frame.f_locals
-        if len(local_vars) > 0:
-            print(f"{func_name}:{event} {line_no}")
-            self.varprinter(local_vars)
-        # print ('  {0} {1} {2} locals: {3}'.format(func_name, 
-        #                                           event,
-        #                                           line_no, 
-        #                                           local_vars))
-
-def debug_decorator(func):
-    """ Debug decorator to call the function within the debug context """
-    def decorated_func(*args, **kwargs):
-        with debug_context(func.__name__):
-            return_value = func(*args, **kwargs)
-        return return_value
-    return decorated_func
 
 if __name__ == "__main__":
     import argparse
-    import doctest
-    import sys
 
-    # ### UNCOMMENT FOR LOGGING ####
-    # import os
-    # import logging
-    # if not os.path.isdir('logs'):
-    #     os.mkdir('logs')
-    # logfilename = 'logs/' + os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    # logging.basicConfig(filename=logfilename, level=logging.INFO, format='%(asctime)s: %(message)s')
-    # logging.info(f"################ Starting {__file__} ################")
-    # ### ##################### ####
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description="")
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
@@ -114,33 +72,14 @@ if __name__ == "__main__":
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
-    # If log is present log the arguments to the log file:
-    for k, v in args._get_kwargs():
-        log(f"# {k}: {v}")
-
     if args.test:
-        import numpy as np
+        def do_multiply(a, b):
+            return a * b
 
-        @debug_decorator
-        def testing() : 
-            a = 10
-            b = 20
+        def do_add(a, b):
             c = a + b
-            A = np.zeros((3, 3))
+            return do_multiply(a, c)
 
-        testing()
-
-        # if args.func is None:
-        #     doctest.testmod(
-        #         optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE
-        #     )
-        # else:
-        #     for f in args.func:
-        #         print(f"Testing {f}")
-        #         f = getattr(sys.modules[__name__], f)
-        #         doctest.run_docstring_examples(
-        #             f,
-        #             globals(),
-        #             optionflags=doctest.ELLIPSIS | doctest.REPORT_ONLY_FIRST_FAILURE,
-        #         )
-        sys.exit()
+        start()
+        do_add(1,3)
+        stop()
