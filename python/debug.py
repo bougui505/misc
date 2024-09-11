@@ -19,46 +19,49 @@ import torch
 
 # trace function to print every frame event, the function name, the line and the 
 # raw code of that line and local the local variables
-def trace_func_local_vars(frame: FrameType, event, arg, verbose=False):
-    """
-    See: https://toptechtips.github.io/2023-04-13-trace-local-variable-python-function/
-    """
-    stack = traceback.extract_stack(limit=2)
-    code = traceback.format_list(stack)[0].split('\n')[1].strip()  # gets the source code of the line
-    _locals = frame.f_locals
-    # print("Event: {0}  Func: {1}, Line: {2}, raw_code: {3}, local_vars: {4}".format(event, 
-    #                                                 frame.f_code.co_name,
-    #                                                 frame.f_lineno,
-    #                                                 code, _locals))
-    funcname = frame.f_code.co_name
-    lineno = frame.f_lineno
-    local_vars = _locals
-    filename = frame.f_code.co_filename
-    # print(f"{filename}:{funcname}:{lineno}:")
-    if verbose:
-        print(f"{filename=}")
-        print(f"{funcname=}")
-        print(f"{lineno=}")
-    varprinter(local_vars)
-    if verbose:
-        print("--")
-    return trace_func_local_vars
-
-def varprinter(local_vars):
-    for k in local_vars:
-        v = local_vars[k]
-        if torch.is_tensor(v):
-            print(f"{k}={v.shape}")
-        elif isinstance(v, np.ndarray):
-            print(f"{k}={v.shape}")
-        else:
-            print(f"{k}={v}")
-
-def start():
-    sys.settrace(trace_func_local_vars)
-
-def stop():
-    sys.settrace(None)
+class Debugger():
+    def __init__(self):
+        """"""
+        self.printed_var = dict()
+    def start(self):
+        sys.settrace(self.trace_func_local_vars)
+    def trace_func_local_vars(self, frame: FrameType, event, arg, verbose=False):
+        """
+        See: https://toptechtips.github.io/2023-04-13-trace-local-variable-python-function/
+        """
+        stack = traceback.extract_stack(limit=2)
+        code = traceback.format_list(stack)[0].split('\n')[1].strip()  # gets the source code of the line
+        _locals = frame.f_locals
+        # print("Event: {0}  Func: {1}, Line: {2}, raw_code: {3}, local_vars: {4}".format(event, 
+        #                                                 frame.f_code.co_name,
+        #                                                 frame.f_lineno,
+        #                                                 code, _locals))
+        funcname = frame.f_code.co_name
+        lineno = frame.f_lineno
+        local_vars = _locals
+        filename = frame.f_code.co_filename
+        # print(f"{filename}:{funcname}:{lineno}:")
+        if verbose:
+            print(f"{filename=}")
+            print(f"{funcname=}")
+            print(f"{lineno=}")
+        for k in local_vars:
+            v = local_vars[k]
+            if k in self.printed_var:
+                if v == self.printed_var[k]:
+                    continue
+            if torch.is_tensor(v):
+                print(f"{k}={v.shape}")
+            elif isinstance(v, np.ndarray):
+                print(f"{k}={v.shape}")
+            else:
+                print(f"{k}={v}")
+            self.printed_var[k] = v
+        if verbose:
+            print("--")
+        return self.trace_func_local_vars
+    def stop(self):
+        sys.settrace(None)
 
 
 if __name__ == "__main__":
@@ -80,6 +83,7 @@ if __name__ == "__main__":
             c = a + b
             return do_multiply(a, c)
 
-        start()
+        debugger = Debugger()
+        debugger.start()
         do_add(1,3)
-        stop()
+        debugger.stop()
