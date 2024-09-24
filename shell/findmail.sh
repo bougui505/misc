@@ -34,7 +34,8 @@ rga-fzf() {
     for x in $(echo $query_file); do
         fullpath="$MAILDIR/gzips/$x"
         echo $fullpath
-        zless $fullpath
+        # zless $fullpath
+        zcat $fullpath | batcat --decorations never --color always -l email | /bin/less -R
     done
 }
 
