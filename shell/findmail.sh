@@ -32,7 +32,9 @@ rga-fzf() {
             --preview-window="70%:wrap")"
     cd -
     for x in $(echo $query_file); do
-        echo $MAILDIR/gzips/$x
+        fullpath="$MAILDIR/gzips/$x"
+        echo $fullpath
+        zless $fullpath
     done
 }
 
