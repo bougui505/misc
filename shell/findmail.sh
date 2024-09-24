@@ -26,7 +26,7 @@ rga-fzf() {
     local file
     query_file="$(
         FZF_DEFAULT_COMMAND="$RG_PREFIX '$1'" \
-            fzf --multi --color=light --sort --preview="[[ ! -z {} ]] && rga --rga-adapters=+mail --pretty --context 1 {q} {}" \
+            fzf --multi --color=light --sort --preview="[[ ! -z {} ]] && rga --rga-adapters=+mail --pretty --context 30 {q} {}" \
             --phony -q "$1" \
             --bind "change:reload:$RG_PREFIX {q}" \
             --preview-window="70%:wrap")"
