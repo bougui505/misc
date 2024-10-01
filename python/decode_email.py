@@ -26,6 +26,18 @@ def GetScriptDir():
     scriptdir = os.path.dirname(scriptpath)
     return scriptdir
 
+def print_body(msg):
+    try:
+        body = msg.get_payload(decode=True).decode()
+    except (AttributeError, UnicodeDecodeError):
+        body = msg.get_payload()
+    try:
+        soup = BeautifulSoup(body, features="lxml")  # type: ignore
+        body = soup.get_text()
+    except AttributeError:
+        pass
+    print(body)
+
 def decode_email(emailfilename):
     f = open(emailfilename, 'r', encoding='ISO-8859-1')
     msg = email.message_from_string(f.read())
@@ -34,19 +46,24 @@ def decode_email(emailfilename):
     print(f"Subject: {msg['Subject']}")
     print(f"Date: {msg['Date']}")
     print("")
-    try:
-        body = msg.get_payload(decode=True).decode()  # type: ignore
-    except (AttributeError, UnicodeDecodeError):
-        body = msg.get_payload()
-    if not isinstance(body, list):
-        body = [body,]
-    for e in body:
-        try:
-            soup = BeautifulSoup(e, features="lxml")  # type: ignore
-            e = soup.get_text()
-        except AttributeError:
-            pass
-        print(e)
+    if msg.is_multipart():
+        for part in msg.get_payload():
+            print_body(part)
+    else:
+        print_body(msg)
+    # try:
+    #     body = msg.get_payload(decode=True).decode()  # type: ignore
+    # except (AttributeError, UnicodeDecodeError):
+    #     body = msg.get_payload()
+    # if not isinstance(body, list):
+    #     body = [body,]
+    # for e in body:
+    #     try:
+    #         soup = BeautifulSoup(e, features="lxml")  # type: ignore
+    #         e = soup.get_text()
+    #     except AttributeError:
+    #         pass
+    #     print(e)
 
 
 if __name__ == "__main__":
