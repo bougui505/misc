@@ -71,4 +71,4 @@ for mail in $(cat $MYTMP/todo.list); do
         && echo $mail >> $MAILDIR/mail.list
 done
 
-rga-fzf
+rga-fzf $1
