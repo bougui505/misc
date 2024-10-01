@@ -57,17 +57,7 @@ for mail in $(cat $MYTMP/todo.list); do
     mkdir -p $GZIPDIR
     GZIPFILE=$GZIPDIR"/$mail:t.gz"
     echo "Creating: $GZIPFILE"
-    if grep -Fq "Content-Type: text/plain" $mail; then
-        mu view $mail | gzip > "$GZIPFILE" \
-            && echo $mail >> $MAILDIR/mail.list
-    elif grep -Fq "Content-Type: text/html" $mail; then
-        echo "HTML: $mail"
-        cat $mail | elinks -force-html -dump | gzip > "$GZIPFILE" \
-            && echo $mail >> $MAILDIR/mail.list
-    else
-        mu view $mail | gzip > "$GZIPFILE" \
-            && echo $mail >> $MAILDIR/mail.list
-    fi
+    decode_email -e $mail | gzip > $GZIPFILE
 done
 
 rga-fzf
