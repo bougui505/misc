@@ -22,11 +22,11 @@ touch $MAILDIR/mail.list
 
 rga-fzf() {
     cd $MAILDIR/gzips
-    RG_PREFIX="rga --files-with-matches --rga-adapters=+mail"
+    RG_PREFIX="rga --files-with-matches --rga-adapters=+mail --multiline --multiline-dotall"
     local file
     query_file="$(
         FZF_DEFAULT_COMMAND="$RG_PREFIX '$1' | sort" \
-            fzf --multi --color=light --no-sort --preview="[[ ! -z {} ]] && rga --rga-adapters=+mail --pretty --context 30 {q} {}" \
+            fzf --multi --color=light --no-sort --preview="[[ ! -z {} ]] && rga --rga-adapters=+mail --pretty --context 30 --multiline --multiline-dotall {q} {}" \
             --phony -q "$1" \
             --bind "change:reload:$RG_PREFIX {q} | sort" \
             --preview-window="70%:wrap")"
