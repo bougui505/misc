@@ -37,6 +37,7 @@ rga-fzf() {
         echo $fullpath
         echo $origin
         # zless $fullpath
+        $DIRSCRIPT/../python/get_email_attachments.py -e $origin
         zcat $fullpath | batcat --decorations never --color always -l email | /bin/less -R
     done
 }
