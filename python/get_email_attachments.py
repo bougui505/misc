@@ -39,7 +39,7 @@ def get_attachments(emailfilename):
         for part in msg.get_payload():
             filename = part.get_filename()  # type:ignore
             if filename is not None:
-                filename = filename.replace(" ", "_").replace("'", "_")
+                filename = filename.replace(" ", "_").replace("'", "_").replace("(", "_").replace(")", "_")
                 filename = f"{outdir}/{filename}"
                 print(f"{filename=}")
                 if not os.path.isfile(filename):
