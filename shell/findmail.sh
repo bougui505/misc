@@ -25,10 +25,10 @@ rga-fzf() {
     RG_PREFIX="rga --files-with-matches --rga-adapters=+mail"
     local file
     query_file="$(
-        FZF_DEFAULT_COMMAND="$RG_PREFIX '$1' | sort" \
+        FZF_DEFAULT_COMMAND="$RG_PREFIX '$1' | sort -r" \
             fzf --multi --color=light --no-sort --preview="[[ ! -z {} ]] && rga --rga-adapters=+mail --pretty --context 30 {q} {}" \
             --phony -q "$1" \
-            --bind "change:reload:$RG_PREFIX {q} | sort" \
+            --bind "change:reload:$RG_PREFIX {q} | sort -r" \
             --preview-window="70%:wrap")"
     cd -
     for x in $(echo $query_file); do
