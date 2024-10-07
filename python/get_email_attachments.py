@@ -10,6 +10,7 @@
 
 import email
 import os
+import re
 
 
 def log(msg):
@@ -40,6 +41,7 @@ def get_attachments(emailfilename):
             filename = part.get_filename()  # type:ignore
             if filename is not None:
                 filename = filename.replace(" ", "_").replace("'", "_").replace("(", "_").replace(")", "_")
+                filename = re.sub('[^0-9a-zA-Z.]+', '_', filename)
                 filename = f"{outdir}/{filename}"
                 print(f"{filename=}")
                 if not os.path.isfile(filename):
