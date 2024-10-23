@@ -128,7 +128,7 @@ if [[ ! -z $IMG ]]; then
 \centering
 \includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{$LOCALIMG}
 % \note[item]{}
-\blfootnote{\scriptsize $(date +"%Y/%m/%d"):\url{$IMG}}
+\blfootnote{\tiny $(date +"%Y/%m/%d"):\url{$IMG}}
 \end{frame}
 \end{document}
 EOF
