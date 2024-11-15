@@ -183,9 +183,18 @@ cd /usr/bin/
 ln -s /opt/chimera/bin/chimera .
 ###########################################################################
 
+######## ProtTrans ######## 
+cd /opt
+export HF_HOME="/opt/cache/huggingface/datasets"
+pip3 install --break-system-packages transformers sentencepiece protobuf
+python3 -c "from transformers import T5Tokenizer, T5EncoderModel;tokenizer = T5Tokenizer.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc', do_lower_case=False);model = T5EncoderModel.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc')"
+############################
+
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
 export MATPLOTLIBRC=$HOME/.config/matplotlib/matplotlibrc
 # for neovim
 export XDG_CONFIG_HOME=/etc/xdg
+# for ProtTrans
+export HF_HOME="/opt/cache/huggingface/datasets"
