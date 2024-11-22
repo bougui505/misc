@@ -133,7 +133,12 @@ if [[ $SAMPLE -gt 0 ]]; then
     FILENAMES="$MYTMP/in $FILENAMES"
     NREC=$(getnrec $FILENAMES)
     V="NREC=$NREC"
-    CMD='{if (fnr in RECSEL){printrec();print("--")}}'
+    if [[ $SAMPLE -lt NREC ]]; then
+        CMD='{if (fnr in RECSEL){printrec();print("--")}}'
+    else
+        cat $MYTMP/in
+        exit 0
+    fi
 fi
 
 awk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
