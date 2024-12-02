@@ -54,9 +54,23 @@ class ScaledDotProductAttention(nn.Module):
         return output, attn
 
 
-class MultiHeadAttentionNew(nn.Module):
+class MultiHeadAttention(nn.Module):
     """
     See: https://einops.rocks/pytorch-examples.html
+    
+    >>> bs = 8
+    >>> d_model = 128
+    >>> d_k = 16
+    >>> d_v = 32
+    >>> nq = 100
+    >>> nv = 78
+    >>> mha = MultiHeadAttention(n_head=1, d_model=d_model, d_k=d_k, d_v=d_v)
+    >>> q = torch.rand(bs, nq, d_model)
+    >>> v = torch.rand(bs, nv, d_model)
+    >>> k = torch.clone(v)
+    >>> out, attn =  mha(q, k, v)
+    >>> out.shape
+    torch.Size([8, 100, 128])
     """
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
