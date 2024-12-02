@@ -45,7 +45,7 @@ class ScaledDotProductAttention(nn.Module):
         attn = attn / self.temperature
 
         if mask is not None:
-            attn = attn.masked_fill(mask, -np.inf)
+            attn = attn.masked_fill(mask, -torch.inf)
 
         attn = self.softmax(attn)
         attn = self.dropout(attn)
@@ -64,13 +64,51 @@ class MultiHeadAttention(nn.Module):
     >>> d_v = 32
     >>> nq = 100
     >>> nv = 78
-    >>> mha = MultiHeadAttention(n_head=1, d_model=d_model, d_k=d_k, d_v=d_v)
+    >>> nhead = 8
+    >>> mha = MultiHeadAttention(n_head=nhead, d_model=d_model, d_k=d_k, d_v=d_v)
     >>> q = torch.rand(bs, nq, d_model)
     >>> v = torch.rand(bs, nv, d_model)
     >>> k = torch.clone(v)
     >>> out, attn =  mha(q, k, v)
     >>> out.shape
     torch.Size([8, 100, 128])
+    >>> attn.shape
+    torch.Size([64, 100, 78])
+
+    # To compare when key_padding_mask is not None
+    >>> res = []
+    >>> for i in range(1,nhead+1):
+    ...     res.append((attn[-i, :, nv-1] == 0).all())
+    >>> torch.tensor(res).all()
+    tensor(False)
+
+    >>> res = []
+    >>> for i in range(1,nhead+1):
+    ...     res.append((attn[-i-bs, :, nv-2] == 0).all())
+    >>> torch.tensor(res).all()
+    tensor(False)
+
+    >>> key_padding_mask = torch.zeros(bs, nv, dtype=bool)
+    >>> key_padding_mask[bs-1, nv-1] = True
+    >>> key_padding_mask[bs-2, nv-2] = True
+    >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
+    >>> out.shape
+    torch.Size([8, 100, 128])
+    >>> attn.shape
+    torch.Size([64, 100, 78])
+
+    # Heads are stacked in the attention matrix. Below is to checke the key_padding_mask:
+    >>> res = []
+    >>> for i in range(1,nhead+1):
+    ...     res.append((attn[-i, :, nv-1] == 0).all())
+    >>> torch.tensor(res).all()
+    tensor(True)
+
+    >>> res = []
+    >>> for i in range(1,nhead+1):
+    ...     res.append((attn[-i-bs, :, nv-2] == 0).all())
+    >>> torch.tensor(res).all()
+    tensor(True)
     """
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
@@ -96,7 +134,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
 
-    def forward(self, q, k, v, mask=None):
+    def forward(self, q, k, v, mask=None, key_padding_mask=None):
         
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
         
@@ -116,6 +154,13 @@ class MultiHeadAttention(nn.Module):
         
         if mask is not None:
             mask = mask.repeat(n_head, 1, 1) # (n*b) x .. x ..
+        if key_padding_mask is not None:  #(sz_b, len_k)
+            key_padding_mask = torch.stack([key_padding_mask,]*n_head, dim=1).reshape(sz_b*n_head, 1, len_k) * torch.ones(sz_b*n_head, len_q, 1, dtype=torch.bool)
+            if mask is not None:
+                mask = mask + key_padding_mask
+            else:
+                mask = key_padding_mask
+
         output, attn = self.attention(q, k, v, mask=mask)
         
         output = output.view(n_head, sz_b, len_q, d_v)
