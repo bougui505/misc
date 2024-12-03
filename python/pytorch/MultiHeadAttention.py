@@ -73,21 +73,9 @@ class MultiHeadAttention(nn.Module):
     >>> out.shape
     torch.Size([8, 100, 128])
     >>> attn.shape
-    torch.Size([64, 100, 78])
+    torch.Size([8, 100, 78])
 
     # To compare when key_padding_mask is not None
-    >>> res = []
-    >>> for i in range(1,nhead+1):
-    ...     res.append((attn[-i, :, nv-1] == 0).all())
-    >>> torch.tensor(res).all()
-    tensor(False)
-
-    >>> res = []
-    >>> for i in range(1,nhead+1):
-    ...     res.append((attn[-i-bs, :, nv-2] == 0).all())
-    >>> torch.tensor(res).all()
-    tensor(False)
-
     >>> key_padding_mask = torch.zeros(bs, nv, dtype=bool)
     >>> key_padding_mask[bs-1, nv-1] = True
     >>> key_padding_mask[bs-2, nv-2] = True
@@ -95,20 +83,12 @@ class MultiHeadAttention(nn.Module):
     >>> out.shape
     torch.Size([8, 100, 128])
     >>> attn.shape
-    torch.Size([64, 100, 78])
-
-    # Heads are stacked in the attention matrix. Below is to checke the key_padding_mask:
-    >>> res = []
-    >>> for i in range(1,nhead+1):
-    ...     res.append((attn[-i, :, nv-1] == 0).all())
-    >>> torch.tensor(res).all()
+    torch.Size([8, 100, 78])
+    >>> (attn[bs-1, :, nv-1] == 0).all()
+    tensor(True)
+    >>> (attn[bs-2, :, nv-2] == 0).all()
     tensor(True)
 
-    >>> res = []
-    >>> for i in range(1,nhead+1):
-    ...     res.append((attn[-i-bs, :, nv-2] == 0).all())
-    >>> torch.tensor(res).all()
-    tensor(True)
     """
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
@@ -134,7 +114,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
 
-    def forward(self, q, k, v, mask=None, key_padding_mask=None):
+    def forward(self, q, k, v, mask=None, key_padding_mask=None, average_attn_weights=True):
         
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
         
@@ -162,6 +142,13 @@ class MultiHeadAttention(nn.Module):
                 mask = key_padding_mask
 
         output, attn = self.attention(q, k, v, mask=mask)
+        # >>> output.shape
+        # torch.Size([sz_b, len_q, d_v])
+        # >>> attn.shape
+        # torch.Size([sz_b*n_head, len_q, len_k])
+        if average_attn_weights:
+            attn = attn.view(sz_b, n_head, len_q, len_k)
+            attn = attn.mean(dim=1)
         
         output = output.view(n_head, sz_b, len_q, d_v)
         output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1) # b x lq x (n*dv)
