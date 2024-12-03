@@ -75,13 +75,44 @@ class MultiHeadAttention(nn.Module):
     >>> attn.shape
     torch.Size([4, 100, 78])
 
-    # To compare when key_padding_mask is not None
+    To compare when key_padding_mask is not None
+    Put infinite values in k:
+    >>> k[bs-1, nv-1] = torch.inf
+    >>> k[bs-2, nv-2] = torch.inf
+    >>> out, attn =  mha(q, k, v)
+
+    Consequently the output contain nan at those positions
+    >>> torch.isnan(out[bs-1, nv-1]).all()
+    tensor(True)
+    >>> torch.isnan(out[bs-2, nv-2]).all()
+    tensor(True)
+
+    and not at the other:
+    >>> torch.isnan(out[bs-3, nv-3]).any()
+    tensor(False)
+
+    As well as the attention matrix (attn)
+    >>> torch.isnan(attn[bs-1, :, nv-1]).all()
+    tensor(True)
+    >>> torch.isnan(attn[bs-2, :, nv-2]).all()
+    tensor(True)
+    >>> torch.isnan(attn[bs-3, :, nv-3]).any()
+    tensor(False)
+
     >>> key_padding_mask = torch.zeros(bs, nv, dtype=bool)
     >>> key_padding_mask[bs-1, nv-1] = True
     >>> key_padding_mask[bs-2, nv-2] = True
     >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
     >>> out.shape
     torch.Size([4, 100, 128])
+
+    The output doesn't contain nan anymore as the infinite values are masked:
+    >>> torch.isnan(out[bs-1, nv-1]).any()
+    tensor(False)
+    >>> torch.isnan(out[bs-2, nv-2]).any()
+    tensor(False)
+
+    The attn matrix contain 0 at the masked positions
     >>> attn.shape
     torch.Size([4, 100, 78])
     >>> (attn[bs-1, :, nv-1] == 0).all()
