@@ -58,7 +58,7 @@ class MultiHeadAttention(nn.Module):
     """
     See: https://einops.rocks/pytorch-examples.html
     
-    >>> bs = 8
+    >>> bs = 4
     >>> d_model = 128
     >>> d_k = 16
     >>> d_v = 32
@@ -71,9 +71,9 @@ class MultiHeadAttention(nn.Module):
     >>> k = torch.clone(v)
     >>> out, attn =  mha(q, k, v)
     >>> out.shape
-    torch.Size([8, 100, 128])
+    torch.Size([4, 100, 128])
     >>> attn.shape
-    torch.Size([8, 100, 78])
+    torch.Size([4, 100, 78])
 
     # To compare when key_padding_mask is not None
     >>> key_padding_mask = torch.zeros(bs, nv, dtype=bool)
@@ -81,9 +81,9 @@ class MultiHeadAttention(nn.Module):
     >>> key_padding_mask[bs-2, nv-2] = True
     >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
     >>> out.shape
-    torch.Size([8, 100, 128])
+    torch.Size([4, 100, 128])
     >>> attn.shape
-    torch.Size([8, 100, 78])
+    torch.Size([4, 100, 78])
     >>> (attn[bs-1, :, nv-1] == 0).all()
     tensor(True)
     >>> (attn[bs-2, :, nv-2] == 0).all()
@@ -128,6 +128,7 @@ class MultiHeadAttention(nn.Module):
         k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)
         v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)
         
+        # Order for n_head and batch size: (n_head, sz_b, ...)
         q = q.permute(2, 0, 1, 3).contiguous().view(-1, len_q, d_k) # (n*b) x lq x dk
         k = k.permute(2, 0, 1, 3).contiguous().view(-1, len_k, d_k) # (n*b) x lk x dk
         v = v.permute(2, 0, 1, 3).contiguous().view(-1, len_v, d_v) # (n*b) x lv x dv
@@ -135,7 +136,7 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             mask = mask.repeat(n_head, 1, 1) # (n*b) x .. x ..
         if key_padding_mask is not None:  #(sz_b, len_k)
-            key_padding_mask = torch.stack([key_padding_mask,]*n_head, dim=1).reshape(sz_b*n_head, 1, len_k) * torch.ones(sz_b*n_head, len_q, 1, dtype=torch.bool)
+            key_padding_mask = torch.stack([key_padding_mask,]*n_head, dim=0).reshape(sz_b*n_head, 1, len_k) * torch.ones(sz_b*n_head, len_q, 1, dtype=torch.bool)
             if mask is not None:
                 mask = mask + key_padding_mask
             else:
@@ -147,8 +148,8 @@ class MultiHeadAttention(nn.Module):
         # >>> attn.shape
         # torch.Size([sz_b*n_head, len_q, len_k])
         if average_attn_weights:
-            attn = attn.view(sz_b, n_head, len_q, len_k)
-            attn = attn.mean(dim=1)
+            attn = attn.view(n_head, sz_b, len_q, len_k)
+            attn = attn.mean(dim=0)
         
         output = output.view(n_head, sz_b, len_q, d_v)
         output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1) # b x lq x (n*dv)
