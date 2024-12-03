@@ -33,11 +33,11 @@ class ScaledDotProductAttention(nn.Module):
     See: https://einops.rocks/pytorch-examples.html
     """
 
-    def __init__(self, temperature, attn_dropout=0.1):
+    def __init__(self, temperature, attn_dropout=0.1, activation=nn.Softmax(dim=2)):
         super().__init__()
         self.temperature = temperature
         self.dropout = nn.Dropout(attn_dropout)
-        self.softmax = nn.Softmax(dim=2)
+        self.activation = activation
 
     def forward(self, q, k, v, mask=None):
 
@@ -47,7 +47,7 @@ class ScaledDotProductAttention(nn.Module):
         if mask is not None:
             attn = attn.masked_fill(mask, -torch.inf)
 
-        attn = self.softmax(attn)
+        attn = self.activation(attn)
         attn = self.dropout(attn)
         output = torch.bmm(attn, v)
 
@@ -99,6 +99,7 @@ class MultiHeadAttention(nn.Module):
     >>> torch.isnan(attn[bs-3, :, nv-3]).any()
     tensor(False)
 
+    Define a mask
     >>> key_padding_mask = torch.zeros(bs, nv, dtype=bool)
     >>> key_padding_mask[bs-1, nv-1] = True
     >>> key_padding_mask[bs-2, nv-2] = True
@@ -120,9 +121,21 @@ class MultiHeadAttention(nn.Module):
     >>> (attn[bs-2, :, nv-2] == 0).all()
     tensor(True)
 
+    The attn matrix is softmaxed
+    >>> mha = MultiHeadAttention(n_head=nhead, d_model=d_model, d_k=d_k, d_v=d_v, attn_dropout=0)
+    >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
+    >>> torch.isclose(attn.sum(dim=2), torch.ones_like(attn.sum(dim=2))).all()
+    tensor(True)
+
+    The user can define another activation function (or identity)
+    >>> mha = MultiHeadAttention(n_head=nhead, d_model=d_model, d_k=d_k, d_v=d_v, attn_dropout=0, attn_activation=lambda x: x, attn_temperature=1.0)
+    >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
+    >>> torch.isclose(attn.sum(dim=2), torch.ones_like(attn.sum(dim=2))).all()
+    tensor(False)
+    
     """
 
-    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
+    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1, attn_dropout=0.1, attn_activation=nn.Softmax(dim=2), attn_temperature=None):
         super().__init__()
 
         self.n_head = n_head
@@ -136,7 +149,9 @@ class MultiHeadAttention(nn.Module):
         nn.init.normal_(self.w_ks.weight, mean=0, std=np.sqrt(2.0 / (d_model + d_k)))
         nn.init.normal_(self.w_vs.weight, mean=0, std=np.sqrt(2.0 / (d_model + d_v)))
 
-        self.attention = ScaledDotProductAttention(temperature=np.power(d_k, 0.5))
+        if attn_temperature is None:
+            attn_temperature = np.power(d_k, 0.5)
+        self.attention = ScaledDotProductAttention(temperature=attn_temperature, attn_dropout=attn_dropout, activation=attn_activation)
         self.layer_norm = nn.LayerNorm(d_model)
 
         self.fc = nn.Linear(n_head * d_v, d_model)
