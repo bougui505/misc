@@ -1089,3 +1089,4 @@ singularity/gnina/cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
 singularity/gnina/cuda-repo-debian12-12-6-local_12.6.1-560.35.03-1_amd64.deb
 singularity/gnina/gnina.sif
 singularity/prolif/prolif.sif
+singularity/freecad/freecad.sif
