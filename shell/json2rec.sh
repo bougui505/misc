@@ -19,6 +19,6 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 JSONFILE=$1
 
-jq -r 'to_entries[] | "\(.key): \(.value)"' \
+jq -r 'to_entries[] | "\(.key)=\(.value)"' \
     $JSONFILE
 echo "--"
