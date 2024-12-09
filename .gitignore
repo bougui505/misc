@@ -1091,3 +1091,6 @@ singularity/gnina/gnina.sif
 singularity/prolif/prolif.sif
 singularity/freecad/freecad.sif
 singularity/boltz.sif
+singularity/boltz/boltz.sif
+singularity/boltz/boltz_data/boltz1_conf.ckpt
+singularity/boltz/boltz_data/ccd.pkl

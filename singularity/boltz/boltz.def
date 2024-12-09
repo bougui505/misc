@@ -2,6 +2,7 @@ BOOTSTRAP: docker
 FROM: debian:12.1
 
 %files
+boltz_data /opt
 
 %post
 ################################# APT INSTALL #################################
