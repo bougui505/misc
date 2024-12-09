@@ -1094,3 +1094,4 @@ singularity/boltz.sif
 singularity/boltz/boltz.sif
 singularity/boltz/boltz_data/boltz1_conf.ckpt
 singularity/boltz/boltz_data/ccd.pkl
+singularity/boltz/boltz_results_1t4e

@@ -1,0 +1,8 @@
+version: 1
+sequences:
+  - protein:
+      id: A
+      sequence: GSQIPASEQETLVRPKPLLLKLLKSVGAQKDTYTMKEVLFYLGQYIMTKRLYDEKQQHIVYCSNDLLGDLFGVPSFSVKEHRKIYTMIYRNLVVVN
+  - ligand:
+      id: B
+      smiles: O=C(O)[C@H](c1ccc(Cl)cc1)N1C(=O)c2cc(I)ccc2NC(=O)[C@@H]1c1ccc(Cl)cc1
