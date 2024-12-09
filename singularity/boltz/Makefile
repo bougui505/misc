@@ -18,4 +18,7 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 test:
-	./boltz-predict.sh data/1t4e.yml --use_msa_server
+	./boltz-predict.sh data/1t4e.yml --use_msa_server --override
+
+test2:
+	./boltz-predict.sh data/1t4e.fasta --use_msa_server --override
