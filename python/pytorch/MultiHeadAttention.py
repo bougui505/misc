@@ -132,15 +132,27 @@ class MultiHeadAttention(nn.Module):
     >>> out, attn =  mha(q, k, v, key_padding_mask=key_padding_mask)
     >>> torch.isclose(attn.sum(dim=2), torch.ones_like(attn.sum(dim=2))).all()
     tensor(False)
-    
+
+    User defined output dimension d_out:
+    >>> q.shape
+    torch.Size([4, 100, 128])
+    >>> k.shape
+    torch.Size([4, 78, 128])
+    >>> v.shape
+    torch.Size([4, 78, 128])
+    >>> mha = MultiHeadAttention(n_head=nhead, d_model=d_model, d_k=d_k, d_v=d_v, d_out=64)
+    >>> out, attn = mha(q, k, v, key_padding_mask=key_padding_mask)
+    >>> out.shape, attn.shape
+    (torch.Size([4, 100, 64]), torch.Size([4, 100, 78]))
     """
 
-    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1, attn_dropout=0.1, attn_activation=nn.Softmax(dim=2), attn_temperature=None):
+    def __init__(self, n_head, d_model, d_k, d_v, d_out=None, dropout=0.1, attn_dropout=0.1, attn_activation=nn.Softmax(dim=2), attn_temperature=None, skip_connection=True):
         super().__init__()
 
         self.n_head = n_head
         self.d_k = d_k
         self.d_v = d_v
+        self.skip_connection = skip_connection
 
         self.w_qs = nn.Linear(d_model, n_head * d_k)
         self.w_ks = nn.Linear(d_model, n_head * d_k)
@@ -152,9 +164,13 @@ class MultiHeadAttention(nn.Module):
         if attn_temperature is None:
             attn_temperature = np.power(d_k, 0.5)
         self.attention = ScaledDotProductAttention(temperature=attn_temperature, attn_dropout=attn_dropout, activation=attn_activation)
-        self.layer_norm = nn.LayerNorm(d_model)
 
-        self.fc = nn.Linear(n_head * d_v, d_model)
+        if d_out is None:
+            d_out = d_model
+        elif d_out != d_model:
+            self.skip_connection = False
+        self.layer_norm = nn.LayerNorm(d_out)
+        self.fc = nn.Linear(n_head * d_v, d_out)
         nn.init.xavier_normal_(self.fc.weight)
 
         self.dropout = nn.Dropout(dropout)
@@ -201,8 +217,10 @@ class MultiHeadAttention(nn.Module):
         output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1) # b x lq x (n*dv)
         
         output = self.dropout(self.fc(output))
-        output = self.layer_norm(output + residual)
-        
+        if self.skip_connection:
+            output = self.layer_norm(output + residual)
+        else:
+            output = self.layer_norm(output)
         return output, attn
 
 
