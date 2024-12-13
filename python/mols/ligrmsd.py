@@ -96,3 +96,4 @@ if __name__ == "__main__":
             print(f"{rmsd_lig=:.4g}")
             print(f"{d_threshold=}")
             print(f"{aligned_ratio=:.4g}")
+            print("--")
