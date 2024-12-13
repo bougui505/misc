@@ -67,6 +67,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--pdbref", help="Structure with molecule of reference")
+    parser.add_argument("--ligref", help="Companion ligand of pdbref if not present in pdb")
     parser.add_argument("--pdb", help="Structure with molecule to compare with reference")
     parser.add_argument("--selref", help="Selection for ligand of reference (see --molref)")
     parser.add_argument("--sel", help="Selection for ligand to compare with reference (see --mol)")
@@ -79,6 +80,10 @@ if __name__ == "__main__":
             pymol.cmd.set("fetch_type_default", "mmtf")
             load_or_fetch(args.pdbref, "ref")
             load_or_fetch(args.pdb, "other")
+            if args.ligref is not None:
+                pymol.cmd.load(args.ligref, "ligref")
+                args.selref = "ligref"
+            pymol.cmd.remove("hydrogens or resn hoh")
             out = pymol.cmd.align("other", "ref")
             rmsd_all = out[0]
             print(f"{rmsd_all=:.4g}")
