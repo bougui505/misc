@@ -83,6 +83,7 @@ if __name__ == "__main__":
             if args.ligref is not None:
                 pymol.cmd.load(args.ligref, "ligref")
                 args.selref = "ligref"
+                print(f"ligref={args.ligref}")
             pymol.cmd.remove("hydrogens or resn hoh")
             out = pymol.cmd.align("other", "ref")
             rmsd_all = out[0]
