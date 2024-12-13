@@ -46,12 +46,12 @@ def get_rmsd(mol, molref, coord_ref=None):
     return rmsd, match_ratio, molname
 
 
-def load_or_fetch(pdb, name):
+def load_or_fetch(pdb, name, extrastr=""):
     if os.path.isfile(pdb):
-        print(f"loading={pdb}")
+        print(f"loading{extrastr}={pdb}")
         pymol.cmd.load(pdb, name)
     else:
-        print(f"fetching={pdb}")
+        print(f"fetching{extrastr}={pdb}")
         pymol.cmd.fetch(pdb, name)
 
 def hungarian(coords1, coords2, simthreshold=1.0):
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             fetch_path=os.path.expanduser("~/pdb")
             pymol.cmd.set("fetch_path", fetch_path)
             pymol.cmd.set("fetch_type_default", "mmtf")
-            load_or_fetch(args.pdbref, "ref")
+            load_or_fetch(args.pdbref, "ref", extrastr="_ref")
             load_or_fetch(args.pdb, "other")
             if args.ligref is not None:
                 pymol.cmd.load(args.ligref, "ligref")
