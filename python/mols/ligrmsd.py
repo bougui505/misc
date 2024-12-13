@@ -54,46 +54,26 @@ def load_or_fetch(pdb, name):
         print(f"fetching={pdb}")
         pymol.cmd.fetch(pdb, name)
 
-def hungarian(coords1, coords2):
+def hungarian(coords1, coords2, simthreshold=1.0):
     """"""
     pdist = scidist.cdist(coords1, coords2)
     row_ind, col_ind = linear_sum_assignment(pdist)
     rmsd = np.sqrt(((coords1[row_ind, :] - coords2[col_ind, :])**2).mean(axis=0).sum())
-    return rmsd
+    sim = (pdist[row_ind, col_ind]<simthreshold).sum()/len(coords2)
+    return rmsd, sim
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--mol2ref", help="Reference mol2 file")
-    parser.add_argument("--sdf", help="sdf file with molecules to compare with reference")
     parser.add_argument("--pdbref", help="Structure with molecule of reference")
     parser.add_argument("--pdb", help="Structure with molecule to compare with reference")
     parser.add_argument("--selref", help="Selection for ligand of reference (see --molref)")
     parser.add_argument("--sel", help="Selection for ligand to compare with reference (see --mol)")
-    parser.add_argument("--test", help="Test the code", action="store_true")
-    parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
 
-    if args.mol2ref is not None:
-        molref = Chem.MolFromMol2File(args.mol2ref, sanitize=True)
-    else:
-        molref = None
-    if args.sdf is not None and molref is not None:
-        suppl = Chem.SDMolSupplier(args.sdf, sanitize=True)
-
-        coord_ref = get_coords(molref)
-
-        for mol in suppl:
-            rmsd, match_ratio, molname = get_rmsd(mol, molref, coord_ref)
-            print(f"{molname=}")
-            print(f"{match_ratio=:.3g}")
-            print(f"{rmsd=:.4g}")
-            print("--")
     if args.pdbref is not None and args.pdb is not None:
         with pymol2.PyMOL() as pymol:
-            # tmpdir = tempfile.mkdtemp()
-            # print(f"{tmpdir=}")
             fetch_path=os.path.expanduser("~/pdb")
             pymol.cmd.set("fetch_path", fetch_path)
             pymol.cmd.set("fetch_type_default", "mmtf")
@@ -101,21 +81,13 @@ if __name__ == "__main__":
             load_or_fetch(args.pdb, "other")
             out = pymol.cmd.align("other", "ref")
             rmsd_all = out[0]
-            print(f"{rmsd_all=}")
+            print(f"{rmsd_all=:.4g}")
             coords_ref = pymol.cmd.get_coords(args.selref)
             coords = pymol.cmd.get_coords(args.sel)
             print(f"{coords_ref.shape=}")
             print(f"{coords.shape=}")
-            rmsd_lig = hungarian(coords, coords_ref)
-            print(f"{rmsd_lig=}")
-            # pymol.cmd.h_add()
-            # pymol.cmd.save(f"{tmpdir}/ref.mol2", selection=args.selref)
-            # pymol.cmd.save(f"{tmpdir}/other.mol2", selection=args.sel)
-            # molref = Chem.MolFromMol2File(f"{tmpdir}/ref.mol2", sanitize=False)
-            # mol = Chem.MolFromMol2File(f"{tmpdir}/other.mol2", sanitize=False)
-            # smi____ = Chem.MolToSmiles(mol)
-            # smi_ref = Chem.MolToSmiles(molref)
-            # print(f"{smi____=}")
-            # print(f"{smi_ref=}")
-            # rmsd_lig, match_ratio, molname = get_rmsd(mol, molref)
-            # print(f"{rmsd_lig=}")
+            d_threshold = 1.0
+            rmsd_lig, aligned_ratio = hungarian(coords, coords_ref, simthreshold=d_threshold)
+            print(f"{rmsd_lig=:.4g}")
+            print(f"{d_threshold=}")
+            print(f"{aligned_ratio=:.4g}")
