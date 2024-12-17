@@ -13,12 +13,14 @@ import gzip
 import os
 
 from misc import rec
-from rdkit import Chem, DataStructs
+from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import rdFMCS, rdRascalMCES
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 import MCS_similarity
+
+RDLogger.DisableLog('rdApp.*')
 
 
 def fpsim(smi1=None, smi2=None, mol1=None, mol2=None):
