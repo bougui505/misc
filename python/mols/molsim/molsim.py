@@ -14,7 +14,7 @@ import os
 
 import MCS_similarity
 from rdkit import Chem, DataStructs
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdFMCS, rdRascalMCES
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
@@ -55,6 +55,25 @@ def mcs_sim(smi1=None, smi2=None, mol1=None, mol2=None):
         mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
     res = rdFMCS.FindMCS([mol1, mol2], ringMatchesRingOnly=True,completeRingsOnly=True)
     return (2*res.numAtoms)/(mol1.GetNumAtoms()+mol2.GetNumAtoms())
+
+def rascal_sim(smi1=None, smi2=None, mol1=None, mol2=None):
+    """
+    See: https://greglandrum.github.io/rdkit-blog/posts/2023-11-08-introducingrascalmces.html#similarity-threshold
+    >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
+    >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
+    >>> rascal_sim(smi1=smi1, smi2=smi2)
+    0.8633461047254151
+    """
+    if mol1 is None:
+        mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+    if mol2 is None:
+        mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+    opts = rdRascalMCES.RascalOptions()
+    opts.similarityThreshold = 0.
+    opts.returnEmptyMCES = True
+    results = rdRascalMCES.FindMCES(mol1, mol2, opts)
+    # print(results[0].tier1Sim, results[0].tier2Sim)
+    return results[0].tier1Sim
 
 class SmiDataset(Dataset):
     def __init__(self, filename) -> None:
