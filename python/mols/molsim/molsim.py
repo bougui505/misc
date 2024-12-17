@@ -12,13 +12,13 @@
 import gzip
 import os
 
-import MCS_similarity
+from misc import rec
 from rdkit import Chem, DataStructs
 from rdkit.Chem import rdFMCS, rdRascalMCES
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from misc import rec
+import MCS_similarity
 
 
 def fpsim(smi1=None, smi2=None, mol1=None, mol2=None):
@@ -62,18 +62,22 @@ def rascal_sim(smi1=None, smi2=None, mol1=None, mol2=None):
     >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
     >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
     >>> rascal_sim(smi1=smi1, smi2=smi2)
-    0.8633461047254151
+    0.36909323116219667
     """
     if mol1 is None:
         mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
     if mol2 is None:
         mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
     opts = rdRascalMCES.RascalOptions()
-    opts.similarityThreshold = 0.
-    opts.returnEmptyMCES = True
+    opts.similarityThreshold = 0.7
+    # opts.timeout = 1
+    # opts.returnEmptyMCES = True
     results = rdRascalMCES.FindMCES(mol1, mol2, opts)
     # print(results[0].tier1Sim, results[0].tier2Sim)
-    return results[0].tier1Sim
+    try:
+        return results[0].similarity
+    except IndexError:
+        return -1.0
 
 class SmiDataset(Dataset):
     def __init__(self, filename) -> None:
@@ -128,24 +132,31 @@ class RecDataset(Dataset):
     >>> len(recdataset)
     1000
 
-    >>> sim, sim_mcs  = recdataset[0]
+    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
     >>> sim
     0.33902759526938236
     >>> sim_mcs
     0.19444444444444445
 
-    >>> sim, sim_mcs = recdataset[1]
+    >>> sim, sim_mcs, sim_rascal = recdataset[1]
     >>> sim
     0.3353096179183136
     >>> sim_mcs
     0.2153846153846154
 
     >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', fastmcs=True)
-    >>> sim, sim_mcs  = recdataset[0]
+    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
     >>> sim_mcs
     0.1111111111111111
+
+    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', rascal=True)
+    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
+    >>> sim
+    0.33902759526938236
+    >>> sim_rascal
+    0.3451595649848458
     """
-    def __init__(self, recfilename, key1, key2, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False) -> None:
+    def __init__(self, recfilename, key1, key2, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
@@ -155,6 +166,7 @@ class RecDataset(Dataset):
         self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
         self.mcs = mcs
         self.fastmcs = fastmcs
+        self.rascal = rascal
 
     def __len__(self):
         return len(self.data[self.key1])
@@ -182,11 +194,12 @@ class RecDataset(Dataset):
             # if mol2 is None:
             #     mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=False)  # type: ignore
         if mol1 is None and mol2 is None:
-            return -1, -1
+            return -1, -1, -1
         if mol1 is None:
-            return -0.25, -0.25
+            return -0.25, -0.25, -0.25
         if mol2 is None:
-            return -0.5, -0.5
+            return -0.5, -0.5, -0.5
+        sim, sim_mcs, sim_rascal = -1, -1, -1
         if mol1 is not None and mol2 is not None:  # type: ignore
             sim = fpsim(mol1=mol1, mol2=mol2)  # type: ignore
             if self.mcs or self.fastmcs:
@@ -196,7 +209,9 @@ class RecDataset(Dataset):
                     sim_mcs = mcs_sim(mol1=mol1, mol2=mol2)
             else:
                 sim_mcs = -1
-        return sim, sim_mcs
+            if self.rascal:
+                sim_rascal = rascal_sim(mol1=mol1, mol2=mol2)
+        return sim, sim_mcs, sim_rascal
 
 def get_len(recfilename):
     """
@@ -214,7 +229,7 @@ def get_len(recfilename):
 class RecordsDataset(Dataset):
     """
     >>> import torch
-    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000), similarities_mcs=torch.ones(1000)*2)
+    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000), similarities_mcs=torch.ones(1000)*2, similarities_rascal=torch.ones(1000)*3)
     >>> record = recordsdataset[3]
     >>> print(record)
     smi_ref='O=C(O)C1CCN(C(=O)C=Cc2ccc(Sc3ccc4c(c3)OCCO4)c(C(F)(F)F)c2C(F)(F)F)CC1'
@@ -228,16 +243,18 @@ class RecordsDataset(Dataset):
     smi_gen_greedy='C=C(C)CC1=C(C)C(=O)C(=O)N(Cc1ccccc1)C(=O)NC(Cc1ccc(O)c(O)c1)=NO'
     sim=1.0
     sim_mcs=2.0
+    sim_rascal=3.0
     --
     <BLANKLINE>
     """
-    def __init__(self, recfilename, similarities, similarities_mcs) -> None:
+    def __init__(self, recfilename, similarities, similarities_mcs, similarities_rascal) -> None:
         super().__init__()
         self.recfilename = recfilename
         self.recfile = gzip.open(self.recfilename, "rt")
         self.length = get_len(self.recfilename)
         self.similarities = similarities
         self.similarities_mcs = similarities_mcs
+        self.similarities_rascal = similarities_rascal
 
     def __len__(self):
         return self.length
@@ -249,24 +266,28 @@ class RecordsDataset(Dataset):
             if line == '--':
                 sim = self.similarities[i]
                 sim_mcs = self.similarities_mcs[i]
+                sim_rascal =  self.similarities_rascal[i]
                 record += f"sim={sim}\n"
-                record += f"sim_mcs={sim_mcs}\n--\n"
+                record += f"sim_mcs={sim_mcs}\n"
+                record += f"sim_rascal={sim_rascal}\n--\n"
                 return record
             else:
                 record += line + '\n'
 
 
-def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2, mcs=mcs, fastmcs=fastmcs)
+def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False):
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2, mcs=mcs, fastmcs=fastmcs, rascal=rascal)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
     similarities_mcs = list()
+    similarities_rascal = list()
     for batch in tqdm(recdataloader, desc="computing similarities"):
-        sims, sims_mcs = batch
+        sims, sims_mcs, sims_rascal = batch
         similarities.extend(list(sims.numpy()))
         similarities_mcs.extend(list(sims_mcs.numpy()))
-    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities, similarities_mcs=similarities_mcs)
+        similarities_rascal.extend(list(sims_rascal.numpy()))
+    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities, similarities_mcs=similarities_mcs, similarities_rascal=similarities_rascal)
     recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1)
     with gzip.open(outfilename, "wt") as outgz:
         for batch in tqdm(recordsdataloader, desc=f"writing file: {outfilename}"):
@@ -289,6 +310,7 @@ if __name__ == "__main__":
     parser.add_argument("--rec", help='Process the given rec file. The key to read smi1 and smi2 are read from options --smi1 and --smi2 respectively.', metavar='molsim_test.rec.gz')
     parser.add_argument("--mcs", help="Compute Maximum Common Substructure similarity (sim_mcs)", action="store_true")
     parser.add_argument("--fastmcs", help="Compute a fast approximation of the Maximum Common Substructure similarity (sim_mcs)", action="store_true")
+    parser.add_argument("--rascal", help="Compute rascal similarity (see: https://greglandrum.github.io/rdkit-blog/posts/2023-11-08-introducingrascalmces.html#similarity-threshold)", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -314,4 +336,4 @@ if __name__ == "__main__":
     if args.file is not None:
         process_smifile(args.file)
     if args.rec is not None:
-        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, key_mol2_1=args.mol2_1, key_mol2_2=args.mol2_2, mcs=args.mcs, fastmcs=args.fastmcs)
+        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, key_mol2_1=args.mol2_1, key_mol2_2=args.mol2_2, mcs=args.mcs, fastmcs=args.fastmcs, rascal=args.rascal)
