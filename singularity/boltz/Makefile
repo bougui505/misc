@@ -20,6 +20,9 @@ help:
 boltz.sif: boltz.def
 	singularity build -F $@ $^
 
+rsync-boltz.sif:
+	rsync -a --update -P -h boltz.sif desk:/c7/scratch2/bougui/source/misc/singularity/.
+
 test:
 	./boltz-predict.sh data/1t4e.yml --use_msa_server --override
 
