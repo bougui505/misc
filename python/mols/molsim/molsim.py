@@ -93,8 +93,10 @@ def murcko_sim(smi1=None, smi2=None, mol1=None, mol2=None):
         mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
     if mol2 is None:
         mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
-    core1 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol1))
-    core2 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol2))
+    # core1 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol1))
+    # core2 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol2))
+    core1 = MurckoScaffold.GetScaffoldForMol(mol1)
+    core2 = MurckoScaffold.GetScaffoldForMol(mol2)
     fs1 = Chem.RDKFingerprint(core1)  # type: ignore
     fs2 = Chem.RDKFingerprint(core2)  # type: ignore
     sim = DataStructs.FingerprintSimilarity(fs1, fs2)
