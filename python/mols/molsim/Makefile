@@ -18,4 +18,4 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 test_molsim:
-	molsim --rec molsim_test.rec.gz --smi1 smi_gen --smi2 smi_ref --fastmcs --rascal
+	molsim --rec molsim_test.rec.gz --smi1 smi_gen --smi2 smi_ref --fastmcs --rascal --murcko

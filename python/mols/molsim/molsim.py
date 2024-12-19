@@ -15,6 +15,7 @@ import os
 from misc import rec
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import rdFMCS, rdRascalMCES
+from rdkit.Chem.Scaffolds import MurckoScaffold
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
@@ -64,7 +65,7 @@ def rascal_sim(smi1=None, smi2=None, mol1=None, mol2=None):
     >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
     >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
     >>> rascal_sim(smi1=smi1, smi2=smi2)
-    0.36909323116219667
+    -1.0
     """
     if mol1 is None:
         mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
@@ -80,6 +81,25 @@ def rascal_sim(smi1=None, smi2=None, mol1=None, mol2=None):
         return results[0].similarity
     except IndexError:
         return -1.0
+
+def murcko_sim(smi1=None, smi2=None, mol1=None, mol2=None):
+    """
+    >>> smi1 = 'Oc1cccc2C(=O)C=CC(=O)c12'
+    >>> smi2 = 'O1C(=O)C=Cc2cc(OC)c(O)cc12'
+    >>> murcko_sim(smi1=smi1, smi2=smi2)
+    0.9629629629629629
+    """
+    if mol1 is None:
+        mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+    if mol2 is None:
+        mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+    core1 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol1))
+    core2 = MurckoScaffold.MakeScaffoldGeneric(MurckoScaffold.GetScaffoldForMol(mol2))
+    fs1 = Chem.RDKFingerprint(core1)  # type: ignore
+    fs2 = Chem.RDKFingerprint(core2)  # type: ignore
+    sim = DataStructs.FingerprintSimilarity(fs1, fs2)
+    return sim
+
 
 class SmiDataset(Dataset):
     def __init__(self, filename) -> None:
@@ -130,35 +150,18 @@ def isvalid(smi):
 
 class RecDataset(Dataset):
     """
-    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', mcs=True)
-    >>> len(recdataset)
-    1000
-
-    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
+    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', mcs=True, fastmcs=True, rascal=True, murcko=True)
+    >>> sim, sim_mcs, sim_rascal, sim_murcko  = recdataset[0]
     >>> sim
     0.33902759526938236
-    >>> sim_mcs
-    0.19444444444444445
-
-    >>> sim, sim_mcs, sim_rascal = recdataset[1]
-    >>> sim
-    0.3353096179183136
-    >>> sim_mcs
-    0.2153846153846154
-
-    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', fastmcs=True)
-    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
     >>> sim_mcs
     0.1111111111111111
-
-    >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref', rascal=True)
-    >>> sim, sim_mcs, sim_rascal  = recdataset[0]
-    >>> sim
-    0.33902759526938236
     >>> sim_rascal
-    0.3451595649848458
+    -1.0
+    >>> sim_murcko
+    0.9629629629629629
     """
-    def __init__(self, recfilename, key1, key2, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False) -> None:
+    def __init__(self, recfilename, key1, key2, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False, murcko=False) -> None:
         super().__init__()
         self.key1 = key1
         self.key2 = key2
@@ -169,6 +172,7 @@ class RecDataset(Dataset):
         self.mcs = mcs
         self.fastmcs = fastmcs
         self.rascal = rascal
+        self.murcko = murcko
 
     def __len__(self):
         return len(self.data[self.key1])
@@ -196,12 +200,12 @@ class RecDataset(Dataset):
             # if mol2 is None:
             #     mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=False)  # type: ignore
         if mol1 is None and mol2 is None:
-            return -1, -1, -1
+            return -1, -1, -1, -1
         if mol1 is None:
-            return -0.25, -0.25, -0.25
+            return -0.25, -0.25, -0.25, -0.25
         if mol2 is None:
-            return -0.5, -0.5, -0.5
-        sim, sim_mcs, sim_rascal = -1, -1, -1
+            return -0.5, -0.5, -0.5, -0.5
+        sim, sim_mcs, sim_rascal, sim_murcko = -1, -1, -1, -1
         if mol1 is not None and mol2 is not None:  # type: ignore
             sim = fpsim(mol1=mol1, mol2=mol2)  # type: ignore
             if self.mcs or self.fastmcs:
@@ -213,7 +217,9 @@ class RecDataset(Dataset):
                 sim_mcs = -1
             if self.rascal:
                 sim_rascal = rascal_sim(mol1=mol1, mol2=mol2)
-        return sim, sim_mcs, sim_rascal
+            if self.murcko:
+                sim_murcko = murcko_sim(mol1=mol1, mol2=mol2)
+        return sim, sim_mcs, sim_rascal, sim_murcko
 
 def get_len(recfilename):
     """
@@ -231,7 +237,7 @@ def get_len(recfilename):
 class RecordsDataset(Dataset):
     """
     >>> import torch
-    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000), similarities_mcs=torch.ones(1000)*2, similarities_rascal=torch.ones(1000)*3)
+    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=torch.ones(1000), similarities_mcs=torch.ones(1000)*2, similarities_rascal=torch.ones(1000)*3, similarities_murcko=torch.ones(1000)*4)
     >>> record = recordsdataset[3]
     >>> print(record)
     smi_ref='O=C(O)C1CCN(C(=O)C=Cc2ccc(Sc3ccc4c(c3)OCCO4)c(C(F)(F)F)c2C(F)(F)F)CC1'
@@ -245,11 +251,12 @@ class RecordsDataset(Dataset):
     smi_gen_greedy='C=C(C)CC1=C(C)C(=O)C(=O)N(Cc1ccccc1)C(=O)NC(Cc1ccc(O)c(O)c1)=NO'
     sim=1.0
     sim_mcs=2.0
+    sim_murcko=4.0
     sim_rascal=3.0
     --
     <BLANKLINE>
     """
-    def __init__(self, recfilename, similarities, similarities_mcs, similarities_rascal) -> None:
+    def __init__(self, recfilename, similarities, similarities_mcs, similarities_rascal, similarities_murcko) -> None:
         super().__init__()
         self.recfilename = recfilename
         self.recfile = gzip.open(self.recfilename, "rt")
@@ -257,6 +264,7 @@ class RecordsDataset(Dataset):
         self.similarities = similarities
         self.similarities_mcs = similarities_mcs
         self.similarities_rascal = similarities_rascal
+        self.similarities_murcko = similarities_murcko
 
     def __len__(self):
         return self.length
@@ -269,27 +277,31 @@ class RecordsDataset(Dataset):
                 sim = self.similarities[i]
                 sim_mcs = self.similarities_mcs[i]
                 sim_rascal =  self.similarities_rascal[i]
+                sim_murcko = self.similarities_murcko[i]
                 record += f"sim={sim}\n"
                 record += f"sim_mcs={sim_mcs}\n"
+                record += f"sim_murcko={sim_murcko}\n"
                 record += f"sim_rascal={sim_rascal}\n--\n"
                 return record
             else:
                 record += line + '\n'
 
 
-def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2, mcs=mcs, fastmcs=fastmcs, rascal=rascal)
+def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None, mcs=False, fastmcs=False, rascal=False, murcko=False):
+    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2, mcs=mcs, fastmcs=fastmcs, rascal=rascal, murcko=murcko)
     outfilename = os.path.splitext(recfile)[0] + "_sim" + ".rec.gz"
     recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
     similarities = list()
     similarities_mcs = list()
     similarities_rascal = list()
+    similarities_murcko = list()
     for batch in tqdm(recdataloader, desc="computing similarities"):
-        sims, sims_mcs, sims_rascal = batch
+        sims, sims_mcs, sims_rascal, sims_murcko = batch
         similarities.extend(list(sims.numpy()))
         similarities_mcs.extend(list(sims_mcs.numpy()))
         similarities_rascal.extend(list(sims_rascal.numpy()))
-    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities, similarities_mcs=similarities_mcs, similarities_rascal=similarities_rascal)
+        similarities_murcko.extend(list(sims_murcko.numpy()))
+    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities, similarities_mcs=similarities_mcs, similarities_rascal=similarities_rascal, similarities_murcko=similarities_murcko)
     recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1)
     with gzip.open(outfilename, "wt") as outgz:
         for batch in tqdm(recordsdataloader, desc=f"writing file: {outfilename}"):
@@ -313,6 +325,7 @@ if __name__ == "__main__":
     parser.add_argument("--mcs", help="Compute Maximum Common Substructure similarity (sim_mcs)", action="store_true")
     parser.add_argument("--fastmcs", help="Compute a fast approximation of the Maximum Common Substructure similarity (sim_mcs)", action="store_true")
     parser.add_argument("--rascal", help="Compute rascal similarity (see: https://greglandrum.github.io/rdkit-blog/posts/2023-11-08-introducingrascalmces.html#similarity-threshold)", action="store_true")
+    parser.add_argument("--murcko", help="Compute similarity between Murcko scaffold", action="store_true")
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -338,4 +351,4 @@ if __name__ == "__main__":
     if args.file is not None:
         process_smifile(args.file)
     if args.rec is not None:
-        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, key_mol2_1=args.mol2_1, key_mol2_2=args.mol2_2, mcs=args.mcs, fastmcs=args.fastmcs, rascal=args.rascal)
+        process_recfile(recfile=args.rec, key1=args.smi1, key2=args.smi2, key_mol2_1=args.mol2_1, key_mol2_2=args.mol2_2, mcs=args.mcs, fastmcs=args.fastmcs, rascal=args.rascal, murcko=args.murcko)
