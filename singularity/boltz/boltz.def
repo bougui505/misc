@@ -13,12 +13,16 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip
+apt-get install -y python3-pip git
 ###############################################################################
 
 ################################# PIP INSTALL #################################
 mkdir -p /tmp/pip/cache
 # See: https://github.com/jwohlwend/boltz
-pip3 --cache-dir=/tmp/pip/cache install --break-system-packages boltz -U
+# pip3 --cache-dir=/tmp/pip/cache install --break-system-packages boltz -U
+cd /opt
+git clone https://github.com/jwohlwend/boltz.git
+cd boltz
+pip3 --cache-dir=/tmp/pip/cache install --break-system-packages -e .
 ###############################################################################
 

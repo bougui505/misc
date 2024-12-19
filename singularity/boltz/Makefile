@@ -17,6 +17,9 @@ help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
+boltz.sif: boltz.def
+	singularity build -F $@ $^
+
 test:
 	./boltz-predict.sh data/1t4e.yml --use_msa_server --override
 
