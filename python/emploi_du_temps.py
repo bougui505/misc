@@ -85,7 +85,7 @@ def getweek(week="A", offset=0, print_header=True):
             if date.weekday()==0:
                 print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},10:10,17:10,Emploi du temps 6C")
             if date.weekday()==1:
-                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,16:15,Emploi du temps 6C")
+                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,17:10,Emploi du temps 6C")
             if date.weekday()==2:
                 print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,11:30,Emploi du temps 6C")
             if date.weekday()==3:
@@ -96,11 +96,11 @@ def getweek(week="A", offset=0, print_header=True):
             if date.weekday()==0:
                 print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,17:10,Emploi du temps 6C")
             if date.weekday()==1:
-                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,16:15,Emploi du temps 6C")
+                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,17:10,Emploi du temps 6C")
             if date.weekday()==2:
                 print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,11:30,Emploi du temps 6C")
             if date.weekday()==3:
-                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,17:10,Emploi du temps 6C")
+                print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},9:15,17:10,Emploi du temps 6C")
             if date.weekday()==4:
                 print(f"Cours Malo S{week},{date.day}/{date.month}/{date.year},8:15,16:15,Emploi du temps 6C")
 
