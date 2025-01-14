@@ -35,4 +35,4 @@ If you need to unban an IP Address use this command. Change the number to the li
 
 List banned ip:
 
-  $> sudo fail2ban-client banned
+	$> sudo fail2ban-client banned
