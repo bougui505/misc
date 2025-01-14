@@ -32,3 +32,7 @@ Check IPTables list with the following command to see all your banned IP Address
 If you need to unban an IP Address use this command. Change the number to the line you want to remove:
 
 	$> sudo iptables -D fail2ban-ssh 1
+
+List banned ip:
+
+  $> sudo fail2ban-client banned
