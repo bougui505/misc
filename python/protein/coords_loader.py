@@ -37,10 +37,11 @@
 #                                                                           #
 #############################################################################
 import os
-from pymol import cmd
-from misc.randomgen import randomstring
+
 import numpy as np
 from misc.protein.rotate import rotate
+from misc.randomgen import randomstring
+from pymol import cmd
 
 cmd.feedback(action="disable", module="all", mask="everything")
 
@@ -159,7 +160,7 @@ def get_coords(
         angles = get_random_angles(verbose=verbose)
         angle_x, angle_y, angle_z = angles
     cmd.set("fetch_path", fetch_path)
-    cmd.set("fetch_type_default", "mmtf")
+    cmd.set("fetch_type_default", "cif")
     if obj is None:
         obj = randomstring()
     if os.path.exists(pdb):
@@ -210,9 +211,9 @@ def GetScriptDir():
 
 
 if __name__ == "__main__":
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
 
     # ### UNCOMMENT FOR LOGGING ####
     # import os
