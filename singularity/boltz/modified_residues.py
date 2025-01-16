@@ -26,6 +26,10 @@ if __name__ == "__main__":
 
     # THIS IS ABSOLUTELY NECESSARY TO MAKE SURE THAT ALL PROPERTIES ARE PICKLED OR ELSE BOLTZ WILL CRASH.
     Chem.SetDefaultPickleProperties(Chem.PropertyPickleOptions.AllProps)
+    # See: https://sourceforge.net/p/rdkit/mailman/rdkit-discuss/thread/0a92fb5e-058b-466c-bbe1-534132d0886a%40gmail.com/
+    params  =  AllChem.AdjustQueryParameters()
+    params.makeAtomsGeneric  =  True
+    params.makeBondsGeneric  =  True
 
     ncaa_smiles_str = eval('"' + args.smi.replace('"', '\\"') + '"')  # rf"{args.smi}"
     print(f"{ncaa_smiles_str=}")
@@ -52,9 +56,13 @@ if __name__ == "__main__":
     reference_cys_mol = AllChem.RemoveHs(cys_mol)
 
     # Search for the cysteine substructure in the ncaa molecule
-    has_match = smiles_mol.HasSubstructMatch(reference_cys_mol)
+    # See: https://sourceforge.net/p/rdkit/mailman/rdkit-discuss/thread/0a92fb5e-058b-466c-bbe1-534132d0886a%40gmail.com/
+    smiles_mol_tmp = AllChem.AdjustQueryProperties(smiles_mol, params)
+    reference_cys_mol_tmp = AllChem.AdjustQueryProperties(reference_cys_mol, params)
+    has_match = smiles_mol_tmp.HasSubstructMatch(reference_cys_mol_tmp)
+    print(f"{has_match=}")
     if has_match:
-        match_indices = smiles_mol.GetSubstructMatch(reference_cys_mol)
+        match_indices = smiles_mol_tmp.GetSubstructMatch(reference_cys_mol_tmp)
         substruct_to_match = {i.GetProp('name'): match_indices[idx] for idx, i in enumerate(reference_cys_mol.GetAtoms())}
 
     # Construct mapping of cysteine atom name to atom index in the ncaa molecule
