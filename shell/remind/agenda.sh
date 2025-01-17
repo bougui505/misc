@@ -49,7 +49,7 @@ function agenda () {
     else
         DATE=$1  # Optionnal start date (YYYY/MM/DD)
     fi
-    rem -b1 -n $DATE | sort -r | h $DATE MALO MAUD GUIL VACS OFF_ GUIT
+    rem -b1 -n $DATE | sort -r | h $DATE MALO MAUD GUIL VACS OFF_ GUIT PASTEUR
 }
 
 if [[ $FZF -eq 1 ]]; then

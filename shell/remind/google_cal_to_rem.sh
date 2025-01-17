@@ -32,6 +32,8 @@ URL=$(cat $DIRSCRIPT/ical_off.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l OFF_ > $REMINDIR/gcal_off.rem
 URL=$(cat $DIRSCRIPT/gcal_ical_url_guitare.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l GUIT > $REMINDIR/gcal_guitare.rem
+URL=$(cat $DIRSCRIPT/gcal_ical_url_pasteur.txt)
+curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l PASTEUR > $REMINDIR/gcal_pasteur.rem
 
 git commit -a -m "Update" || echo "Nothing to commit..."
 git push
