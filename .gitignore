@@ -1096,3 +1096,4 @@ singularity/boltz/boltz.sif
 singularity/boltz/boltz_data/
 singularity/boltz/boltz_results_1t4e
 *.sif
+af3.bin.zst
