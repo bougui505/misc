@@ -36,6 +36,7 @@ cmd_args="--db_dir=${ALPHAFOLD3_DATA}\
           $@"
 
 apptainer run \
+  -B /pasteur/appa/homes/bougui \
   -B /local/databases/rel/alphafold3 \
   -B $ALPHAFOLD3_DATA \
   --nv $SIFFILE \
