@@ -19,7 +19,7 @@
 set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
-set -x
+# set -x
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
