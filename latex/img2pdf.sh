@@ -27,5 +27,5 @@ OUTFILE=$IMGFILE:r.pdf
 [[ ! -f $IMGFILE ]] && usage && exit 1
 echo "$IMGFILE -> $OUTFILE"
 inkscape $1 -o $OUTFILE
-gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dEmbedAllFonts=true -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$MYTMP/$OUTFILE:t $OUTFILE
+gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dEmbedAllFonts=true -dPDFSETTINGS=/printer -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$MYTMP/$OUTFILE:t $OUTFILE
 mv $MYTMP/$OUTFILE:t $OUTFILE
