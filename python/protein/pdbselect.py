@@ -11,6 +11,7 @@ import os
 import subprocess
 import tempfile
 
+import pymol
 from pymol import cmd
 
 
@@ -68,7 +69,10 @@ if __name__ == '__main__':
                 doctest.run_docstring_examples(f, globals())
         sys.exit()
 
-    cmd.load(args.pdb, object='INPDB')
+    try:
+        cmd.load(args.pdb, object='INPDB')
+    except pymol.CmdException:
+        cmd.fetch(args.pdb, name='INPDB')
     if args.h_remove:
         cmd.remove("hydrogens")
     if args.h_add:
