@@ -17,13 +17,19 @@ help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
-INSTALL_DIR="./scripts/"
+all: bin/run_all_external.pl
 
-scripts/aa321CA.pl:
+bin:
+	mkdir -p bin
+
+bin/aa321CA.pl: bin
 	wget https://github.com/bjornwallner/ProQ_scripts/raw/refs/heads/master/bin/aa321CA.pl -O $@
 	chmod +x $@
 
-scripts/run_all_external.pl: scripts/aa321CA.pl
+bin/create_profile.sh: bin
+	wget https://github.com/bjornwallner/ProQ_scripts/raw/refs/heads/master/bin/create_profile.sh -O $@
+	chmod +x $@
+
+bin/run_all_external.pl: bin/aa321CA.pl bin/create_profile.sh
 	wget https://github.com/bjornwallner/ProQ_scripts/raw/refs/heads/master/bin/run_all_external.pl -O $@
-	sed "s,\$$seq=`\$$INSTALL_DIR/bin/aa321CA.pl \$$pdb`;,\$$seq=`${INSTALL_DIR}/aa321CA.pl \$$pdb`;"
 	chmod +x $@
