@@ -25,7 +25,7 @@ eval {
 };
 
 
-my $DB="/proj/wallner/users/x_bjowa/DB/uniref90.fasta";
+my $DB="/empohrr/home/areguei/Téléchargements/uniref90.fasta";
 
 
 
