@@ -30,6 +30,7 @@ apt-get install -y qalc
 apt-get install -y gztool
 apt-get install -y graphviz
 apt-get install -y python3-pudb
+apt-get install -y pigz
 apt-get clean
 ###############################################################################
 
@@ -129,10 +130,10 @@ curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo 
 
 # install neovim
 cd /opt
-wget https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz
-tar xzvf nvim-linux64.tar.gz
+wget https://github.com/neovim/neovim-releases/releases/download/v0.10.4/nvim-linux-x86_64.tar.gz
+tar xzvf nvim-linux-x86_64.tar.gz
 cd /usr/local/bin
-ln -s /opt/nvim-linux64/bin/nvim .
+ln -s /opt/nvim-linux-x86_64/bin/nvim .
 
 # configure neovim
 # spell languages
