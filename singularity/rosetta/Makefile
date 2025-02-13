@@ -23,4 +23,4 @@ rosetta.tar.gz:
 	rm -rf rosetta/
 
 rosetta.sif: rosetta.def rosetta.tar.gz
-	apptainer build --sandbox --force $@ rosetta.def
+	apptainer build --force $@ rosetta.def
