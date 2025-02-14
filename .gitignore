@@ -1121,3 +1121,4 @@ singularity/alphafold3/test_output/2pv7/seed-1_sample-4/confidences.json
 singularity/alphafold3/test_output/2pv7/seed-1_sample-4/model.cif
 singularity/alphafold3/test_output/2pv7/seed-1_sample-4/summary_confidences.json
 ~/source/misc/singularity/rosetta/rosetta
+.del/
