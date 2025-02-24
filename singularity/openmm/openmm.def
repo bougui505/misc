@@ -4,6 +4,7 @@ FROM: debian:11
 # From: ../bougui.sif
 
 %post
+export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
 apt-get install -y wget cmake python3-numpy python3-setuptools doxygen swig cython3 software-properties-common
@@ -17,7 +18,7 @@ cp /var/cuda-repo-debian11-12-6-local/cuda-*-keyring.gpg /usr/share/keyrings/
 add-apt-repository contrib
 apt-get update
 apt-get -y install cuda-toolkit-12-6
-DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers
+# apt-get install -y cuda-drivers  # not required, using drivers from the machine with --nv option
 rm cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
 
 cd /opt
