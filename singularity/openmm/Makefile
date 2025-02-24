@@ -27,3 +27,9 @@ test-openmm: openmm.sif
 
 test-openmm-pip: openmm-pip.sif
 	singularity exec $^ python3 -m openmm.testInstallation
+
+push: openmm.sif
+	ssh desk << EOF
+	mkdir -p /c7/scratch2/bougui/source/misc/singularity/openmm
+	EOF
+	rsync -a --update -P -h $^ desk:/c7/scratch2/bougui/source/misc/singularity/openmm/
