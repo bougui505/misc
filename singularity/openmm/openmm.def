@@ -18,6 +18,7 @@ add-apt-repository contrib
 apt-get update
 apt-get -y install cuda-toolkit-12-6
 DEBIAN_FRONTEND=noninteractive apt-get install -y cuda-drivers
+rm cuda-repo-debian11-12-6-local_12.6.0-560.28.03-1_amd64.deb
 
 cd /opt
 mkdir openmm
@@ -33,5 +34,10 @@ make -j 16
 # make -j 16 test
 make -j 16 install
 make -j 16 PythonInstall
-python3 -m openmm.testInstallation
 
+apt-get autoremove
+apt-get autoclean
+apt-get clean
+rm -r /var/cuda-repo-debian11-12-6-local
+
+python3 -m openmm.testInstallation

@@ -17,7 +17,13 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 openmm.sif: openmm.def
-	singularity build --force openmm.sif openmm.def  # --sandbox 
+	singularity build --force $@ $^
 
-test: openmm.sif
-	singularity exec openmm.sif python3 -m openmm.testInstallation
+openmm-pip.sif: openmm-pip.def
+	singularity build --force $@ $^
+
+test-openmm: openmm.sif
+	singularity exec $^ python3 -m openmm.testInstallation
+
+test-openmm-pip: openmm-pip.sif
+	singularity exec $^ python3 -m openmm.testInstallation
