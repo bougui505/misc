@@ -32,4 +32,4 @@ push: openmm.sif
 	ssh desk << EOF
 	mkdir -p /c7/scratch2/bougui/source/misc/singularity/openmm
 	EOF
-	rsync -a --update -P -h $^ desk:/c7/scratch2/bougui/source/misc/singularity/openmm/
+	rsync -a --update -P -h $^ openmm.def desk:/c7/scratch2/bougui/source/misc/singularity/openmm/
