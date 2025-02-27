@@ -12,12 +12,21 @@ SHELL := zsh
 
 .PHONY: help test #  which targets are not represented by files
 
+REMOTEHOST=horace
+REMOTEPATH=/home/bougui/source/misc/singularity/openmm
+
 help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
 openmm.sif: openmm.def
+	rsync -a --update -P -h $^ ${REMOTEHOST}:${REMOTEPATH}/.
+	ssh -t ${REMOTEHOST} << EOF
+	cd ${REMOTEPATH}
+	pwd
 	singularity build --force $@ $^
+	EOF
+	rsync -a --update -P -h ${REMOTEHOST}:${REMOTEPATH}/$@ .
 
 openmm-pip.sif: openmm-pip.def
 	singularity build --force $@ $^
