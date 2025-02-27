@@ -20,13 +20,27 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 openmm.sif: openmm.def
-	rsync -a --update -P -h $^ ${REMOTEHOST}:${REMOTEPATH}/.
-	ssh -t ${REMOTEHOST} << EOF
-	cd ${REMOTEPATH}
-	pwd
 	singularity build --force $@ $^
-	EOF
-	rsync -a --update -P -h ${REMOTEHOST}:${REMOTEPATH}/$@ .
+	# rsync -a --update -P -h $^ ${REMOTEHOST}:${REMOTEPATH}/.
+	# ssh -t ${REMOTEHOST} << EOF
+	# cd ${REMOTEPATH}
+	# pwd
+	# singularity build --force $@ $^
+	# EOF
+	# rsync -a --update -P -h ${REMOTEHOST}:${REMOTEPATH}/$@ .
+
+plumed.sif: plumed.def openmm.sif
+	P1=$$(echo $^ | awk '{print $$1}')
+	P2=$$(echo $^ | awk '{print $$2}')
+	apptainer build --force $@ $$P1
+
+openmm-plumed.sif: openmm-plumed.def plumed.sif
+	P1=$$(echo $^ | awk '{print $$1}')
+	P2=$$(echo $^ | awk '{print $$2}')
+	apptainer build --force $@ $$P1
+
+test-openmm-plumed: openmm-plumed.sif
+	./openmm-plumed.sif python -c "from openmmplumed import PlumedForce"
 
 openmm-pip.sif: openmm-pip.def
 	singularity build --force $@ $^
