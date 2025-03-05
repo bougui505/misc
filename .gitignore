@@ -1124,3 +1124,4 @@ singularity/alphafold3/test_output/2pv7/seed-1_sample-4/summary_confidences.json
 .del/
 singularity/openmm/NOTES
 singularity/openmm/openmm-plumed-apptainer.tar.gz
+python/pytorch/figures/truncated_normal.png
