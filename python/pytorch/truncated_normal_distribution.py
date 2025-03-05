@@ -13,28 +13,41 @@ import os
 import torch
 
 
-def truncated_normal(mean, std, low, high, size):
+def truncated_normal(mean, std, low, high, size, uniform_factor=100):
     """
-    >>> num_sample = 750
+    uniform_factor: Mutliplication factors for the number of points uniformally sampled
+    regarding the final number of points sampled
+
+    >>> num_sample = 2000
     >>> samples = truncated_normal(mean=5.0, std=2.0, low=0.0, high=10.0, size=(num_sample,))
     >>> samples.shape
-    torch.Size([750])
+    torch.Size([2000])
 
     # Sampling num_sample points for 3 different std values
     >>> std = torch.tensor([1.0, 2.0, 3.0]).view((3, 1))
     >>> samples = truncated_normal(mean=5.0, std=std, low=0.0, high=10.0, size=(num_sample,))
     >>> samples.shape
-    torch.Size([750, 3])
+    torch.Size([2000, 3])
 
     >>> num_distributions = 64
-    >>> std = torch.tensor([1.0, 2.0, 3.0]).view(1, 3, 1).expand((num_distributions, 3, 1))
+    >>> std = torch.tensor([3.0, 2.0, 1.0]).view(1, 3, 1).expand((num_distributions, 3, 1))
     >>> std.shape
     torch.Size([64, 3, 1])
     >>> samples = truncated_normal(mean=5.0, std=std, low=0.0, high=10.0, size=(num_sample,))
     >>> samples.shape
-    torch.Size([750, 64, 3])
+    torch.Size([2000, 64, 3])
+
+    >>> import matplotlib.pyplot as plt
+    >>> samples = samples.swapaxes(0, 1)
+    >>> samples.shape
+    torch.Size([64, 2000, 3])
+    >>> for i, stdv in enumerate(std[0, :, 0]):
+    ...     h = plt.hist(samples[:, :, i].flatten(), label=stdv, alpha=0.75, bins=50)
+    >>> os.makedirs("figures", exist_ok=True)
+    >>> l = plt.legend()
+    >>> plt.savefig("figures/truncated_normal.png")
     """
-    x_uniform = torch.distributions.uniform.Uniform(low, high).sample(size)
+    x_uniform = torch.distributions.uniform.Uniform(low, high).sample((s*uniform_factor for s in size))
     normal = torch.distributions.normal.Normal(loc=mean, scale=std)
     log_p_x = normal.log_prob(x_uniform)
     categorical = torch.distributions.categorical.Categorical(logits=log_p_x)
