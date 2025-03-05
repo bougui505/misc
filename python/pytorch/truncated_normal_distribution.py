@@ -46,6 +46,13 @@ def truncated_normal(mean, std, low, high, size, uniform_factor=100):
     >>> os.makedirs("figures", exist_ok=True)
     >>> l = plt.legend()
     >>> plt.savefig("figures/truncated_normal.png")
+
+    >>> num_distributions = 750
+    >>> num_sample = 1024
+    >>> std = torch.rand((num_distributions,)).view(num_distributions, 1)
+    >>> samples = truncated_normal(mean=5.0, std=std, low=0.0, high=10.0, size=(num_sample,))
+    >>> samples.shape
+    torch.Size([1024, 750])
     """
     x_uniform = torch.distributions.uniform.Uniform(low, high).sample((s*uniform_factor for s in size))
     normal = torch.distributions.normal.Normal(loc=mean, scale=std)
