@@ -75,7 +75,7 @@
     {   \foreach \y in {\steppingy,\secondy,...,\dimy}
         {   \pgfmathsetmacro{\lowx}{(\x-\steppingx)}
             \pgfmathsetmacro{\lowy}{(\y-\steppingy)}
-            \filldraw[fill=orange,draw=blue] (\lowx,\lowy,\dimz) -- (\lowx,\y,\dimz) -- (\x,\y,\dimz) -- (\x,\lowy,\dimz) -- cycle;
+            \draw[draw=blue] (\lowx,\lowy,\dimz) -- (\lowx,\y,\dimz) -- (\x,\y,\dimz) -- (\x,\lowy,\dimz) -- cycle;
 
         }
     }
@@ -83,14 +83,14 @@
     {   \foreach \z in {\steppingz,\secondz,...,\dimz}
         {   \pgfmathsetmacro{\lowx}{(\x-\steppingx)}
             \pgfmathsetmacro{\lowz}{(\z-\steppingz)}
-            \filldraw[fill=green,draw=red] (\lowx,\dimy,\lowz) -- (\lowx,\dimy,\z) -- (\x,\dimy,\z) -- (\x,\dimy,\lowz) -- cycle;
+            \draw[draw=red] (\lowx,\dimy,\lowz) -- (\lowx,\dimy,\z) -- (\x,\dimy,\z) -- (\x,\dimy,\lowz) -- cycle;
         }
     }
     \foreach \y in {\steppingy,\secondy,...,\dimy}
     {   \foreach \z in {\steppingz,\secondz,...,\dimz}
         {   \pgfmathsetmacro{\lowy}{(\y-\steppingy)}
             \pgfmathsetmacro{\lowz}{(\z-\steppingz)}
-            \filldraw[fill=red!50!blue,draw=yellow] (\dimx,\lowy,\lowz) -- (\dimx,\lowy,\z) -- (\dimx,\y,\z) -- (\dimx,\y,\lowz) -- cycle;
+            \draw[draw=yellow] (\dimx,\lowy,\lowz) -- (\dimx,\lowy,\z) -- (\dimx,\y,\z) -- (\dimx,\y,\lowz) -- cycle;
         }
     }
     \end{scope}
