@@ -1,0 +1,24 @@
+BOOTSTRAP: docker
+FROM: ubuntu:24.04
+
+%files
+ucsf-chimerax_1.9ubuntu24.04_amd64.deb /opt
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y wget
+cd /opt
+apt install -y ./ucsf-chimerax_1.9ubuntu24.04_amd64.deb
+rm ucsf-chimerax_1.9ubuntu24.04_amd64.deb
+###############################################################################
+
+%runscript
+chimerax $@
+
