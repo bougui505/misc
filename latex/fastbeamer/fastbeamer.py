@@ -174,8 +174,8 @@ class Fastbeamer(object):
                 self.pdfs = self.compile()
                 self.merge()
                 # see: https://stackoverflow.com/a/43276598/1679629 for p.poll()
-                if os.path.exists('build/fastbeamer.pdf') and p.poll() is not None:
-                    p = subprocess.Popen('evince build/fastbeamer.pdf', shell=True)
+                if os.path.exists('fb-build/fastbeamer.pdf') and p.poll() is not None:
+                    p = subprocess.Popen('evince fb-build/fastbeamer.pdf', shell=True)
                     isopened = True
             time.sleep(1)
 
@@ -184,10 +184,10 @@ class Fastbeamer(object):
         processes = []
         for slide in self.slides:
             # use call for non-parallel compilation
-            p = subprocess.Popen(f'latexmk -shell-escape -pdf -outdir=build {slide}', shell=True)
+            p = subprocess.Popen(f'latexmk -shell-escape -pdf -outdir=fb-build {slide}', shell=True)
             processes.append(p)
             basename = os.path.splitext(os.path.basename(slide))[0]
-            outpdf.append(f'build/{basename}.pdf')
+            outpdf.append(f'fb-build/{basename}.pdf')
         # p_status = p.wait()
         p_status = [p.wait() for p in processes]
         outpdf = [e for e in outpdf if os.path.exists(e)]
@@ -203,7 +203,7 @@ class Fastbeamer(object):
                 readpdf = PdfFileReader(pdffile)
                 totalpages = readpdf.numPages
                 merger.append(fileobj=pdffile, pages=(0, totalpages-1))  # (-1 is to remove the slides of references -- bibliography)
-        with open('build/fastbeamer.pdf', 'wb') as output:
+        with open('fb-build/fastbeamer.pdf', 'wb') as output:
             merger.write(output)
         merger.close()
 
