@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF8 -*-
 
+import hashlib
 #############################################################################
 # Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
 # https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
@@ -36,7 +37,6 @@
 #                                                                           #
 #############################################################################
 import os
-import hashlib
 
 
 def hash(inputdata, md5=None, return_md5_obj=False):
@@ -55,9 +55,13 @@ def hash(inputdata, md5=None, return_md5_obj=False):
     if os.path.isfile(inputdata):
         md5 = update_md5(inputdata, md5)
     if os.path.isdir(inputdata):
-        filelist = os.listdir(inputdata)
+        filelist = list()
+        for root, dirs, files in os.walk(inputdata):
+            for file in files:
+                #append the file name to the list
+                filelist.append(os.path.join(root,file))
         for filename in filelist:
-            md5 = update_md5(f'{inputdata}/{filename}', md5)
+            md5 = update_md5(f'{filename}', md5)
     if return_md5_obj:
         return md5
     else:
@@ -102,9 +106,10 @@ def GetScriptDir():
 
 
 if __name__ == '__main__':
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
