@@ -164,9 +164,10 @@ class Fastbeamer(object):
         self.hash = None
         isopened = False
         p = subprocess.Popen('pwd', shell=True)
+        list_to_monitor = [self.texfilename, 'figures/', 'tex/']
         while True:
-            if hashfile.cathash([self.texfilename, 'figures']) != self.hash:
-                self.hash = hashfile.cathash([self.texfilename, 'figures'])
+            if hashfile.cathash(list_to_monitor) != self.hash:
+                self.hash = hashfile.cathash(list_to_monitor)
                 self.header = get_header(self.texfilename)
                 self.footer = get_footer(self.texfilename)
                 self.slides = splitframes(self.texfilename, header=self.header, footer=self.footer)
