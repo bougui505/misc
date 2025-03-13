@@ -37,8 +37,9 @@
 #############################################################################
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+import pca
 from pymol import cmd
+from scipy.spatial.transform import Rotation as R
 
 
 def get_rotation_matrix(angle_x, angle_y, angle_z):
@@ -86,17 +87,30 @@ def rotate_pdb(pdbin, pdbout, rotation_matrix=None, angle_x=0, angle_y=0, angle_
 
 if __name__ == '__main__':
     import argparse
+
     # argparse.ArgumentParser(prog=None, usage=None, description=None, epilog=None, parents=[], formatter_class=argparse.HelpFormatter, prefix_chars='-', fromfile_prefix_chars=None, argument_default=None, conflict_handler='error', add_help=True, allow_abbrev=True, exit_on_error=True)
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument(name or flags...[, action][, nargs][, const][, default][, type][, choices][, required][, help][, metavar][, dest])
-    parser.add_argument('--pdb', help='pdb file to rotate', required=True)
-    parser.add_argument('--out', help='out pdb filename', required=True)
+    parser.add_argument('--pdb', help='pdb file to rotate')
+    parser.add_argument('--orient', action='store_true')
+    parser.add_argument('--flip', action='store_true')
+    parser.add_argument('--out', help='out pdb filename')
     parser.add_argument('--alpha', help='Angle (deg.) for x axis', type=float, default=0.)
     parser.add_argument('--beta', help='Angle (deg.) for y axis', type=float, default=0.)
     parser.add_argument('--gamma', help='Angle (deg.) for z axis', type=float, default=0.)
     args = parser.parse_args()
 
-    alpha = np.deg2rad(args.alpha)
-    beta = np.deg2rad(args.beta)
-    gamma = np.deg2rad(args.gamma)
-    rotate_pdb(args.pdb, args.out, angle_x=alpha, angle_y=beta, angle_z=gamma)
+    if args.orient:
+        cmd.reinitialize()
+        cmd.load(args.pdb, object='inpdb')
+        coords = cmd.get_coords()
+        coords_o = pca.orient(coords, flip=args.flip)
+        print(f"{coords_o.mean(axis=0)=}")  # type: ignore
+        cmd.load_coords(coords_o, 'inpdb')
+        cmd.save(args.out)
+
+    if args.alpha or args.beta or args.gamma:
+        alpha = np.deg2rad(args.alpha)
+        beta = np.deg2rad(args.beta)
+        gamma = np.deg2rad(args.gamma)
+        rotate_pdb(args.pdb, args.out, angle_x=alpha, angle_y=beta, angle_z=gamma)

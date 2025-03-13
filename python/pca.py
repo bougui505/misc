@@ -36,11 +36,12 @@
 #                                                                           #
 #############################################################################
 import os
+
 import numpy as np
 from sklearn.decomposition import PCA
 
 
-def orient(coords, return_pca=False):
+def orient(coords, flip=False):
     """
     >>> import misc.protein.coords_loader as coords_loader
     >>> coords = coords_loader.get_coords(pdb='1ycr')
@@ -63,13 +64,20 @@ def orient(coords, return_pca=False):
            [ -8.906612 ,  13.1606245,  -3.0734174],
            [ -8.294708 ,  10.60735  ,   1.6816623]], dtype=float32)
     """
-    pca = PCA()
-    pca.fit(coords)
-    if return_pca:
-        return pca
-    else:
-        coords = pca.transform(coords)
-        return coords
+    coords -= coords.mean(axis=0)
+    eigenvalues, eigenvectors = np.linalg.eigh(coords.T.dot(coords))
+    print(f"{eigenvectors}")
+    if flip:
+        print("flipping")
+        eigenvectors[:, 0] *= -1
+    print(f"{eigenvectors}")
+    det = np.linalg.det(eigenvectors)
+    if det < 0:
+        print("regularizing")
+        eigenvectors[:, -1] *= -1
+    print(f"{eigenvectors}")
+    coords = coords.dot(eigenvectors)
+    return coords
 
 
 def log(msg):
@@ -86,9 +94,10 @@ def GetScriptDir():
 
 
 if __name__ == '__main__':
-    import sys
-    import doctest
     import argparse
+    import doctest
+    import sys
+
     # ### UNCOMMENT FOR LOGGING ####
     # import os
     # import logging
