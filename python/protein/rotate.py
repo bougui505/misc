@@ -37,9 +37,47 @@
 #############################################################################
 
 import numpy as np
-import pca
 from pymol import cmd
 from scipy.spatial.transform import Rotation as R
+
+
+def orient(coords, flip=False):
+    """
+    >>> import misc.protein.coords_loader as coords_loader
+    >>> coords = coords_loader.get_coords(pdb='1ycr')
+    Fetching 1ycr from the PDB
+    >>> coords
+    array([[ 10.801, -12.147,  -5.18 ],
+           [ 11.124, -13.382,  -4.414],
+           [ 11.769, -12.878,  -3.13 ],
+           ...,
+           [ 14.536, -16.773,  -4.071],
+           [ 12.963, -18.387,  -4.023],
+           [ 16.296, -17.351,   0.139]], dtype=float32)
+    >>> coords = orient(coords)
+    >>> coords
+    array([[-14.8789215,  10.66122  ,  -4.8155413],
+           [-13.844462 ,  11.316589 ,  -3.9689634],
+           [-14.034291 ,  10.702146 ,  -2.588702 ],
+           ...,
+           [ -9.175905 ,  10.936841 ,  -2.8206384],
+           [ -8.906612 ,  13.1606245,  -3.0734174],
+           [ -8.294708 ,  10.60735  ,   1.6816623]], dtype=float32)
+    """
+    coords -= coords.mean(axis=0)
+    eigenvalues, eigenvectors = np.linalg.eigh(coords.T.dot(coords))
+    print(f"{eigenvectors}")
+    if flip:
+        print("flipping")
+        eigenvectors[:, 0] *= -1
+    print(f"{eigenvectors}")
+    det = np.linalg.det(eigenvectors)
+    if det < 0:
+        print("regularizing")
+        eigenvectors[:, -1] *= -1
+    print(f"{eigenvectors}")
+    coords = coords.dot(eigenvectors)
+    return coords
 
 
 def get_rotation_matrix(angle_x, angle_y, angle_z):
@@ -104,7 +142,7 @@ if __name__ == '__main__':
         cmd.reinitialize()
         cmd.load(args.pdb, object='inpdb')
         coords = cmd.get_coords()
-        coords_o = pca.orient(coords, flip=args.flip)
+        coords_o = orient(coords, flip=args.flip)
         print(f"{coords_o.mean(axis=0)=}")  # type: ignore
         cmd.load_coords(coords_o, 'inpdb')
         cmd.save(args.out)
