@@ -1,20 +1,48 @@
-BOOTSTRAP: localimage
-FROM: esm.sif
+BOOTSTRAP: docker
+FROM: debian:12.1
+
+%environment
+export TORCH_HOME="/opt/torch"
 
 %post
 
+### INSTALL ESM
+apt-get update
+apt-get install -y g++
+apt-get install -y git python3-pip
+pip3 install --break-system-packages h5py
+pip3 install --break-system-packages termcolor
+pip3 install --break-system-packages pandas
+pip3 install --break-system-packages torch
+pip3 install --break-system-packages "fair-esm[esmfold]"
+# OpenFold and its remaining dependency
+pip3 install --break-system-packages 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
+# pip3 install --break-system-packages 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
+pip3 install --break-system-packages biotite
+mkdir -p /opt/torch/hub
+export TORCH_HOME="/opt/torch"
+# python3 -c '
+# import torch
+# import esm
+# # torch.hub.set_dir("/opt/torch/hub")
+# model = esm.pretrained.esm2_t36_3B_UR50D()
+# model = esm.pretrained.esm1v_t33_650M_UR90S_1()
+# '
+chmod -R ugo+r /opt/torch/hub
+###############
+
 # Downloading required ESM weight files
-python -c '
+python3 -c '
 import esm
 model = esm.pretrained.esm2_t33_650M_UR50D()
 '
 chmod -R +r /opt/torch/hub/checkpoints
 ls -rlth /opt/torch/hub/checkpoints/*
 
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-pip3 install rdkit
-pip3 install e3nn
-pip3 install spyrmsd
+pip3 install --break-system-packages torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+pip3 install --break-system-packages rdkit
+pip3 install --break-system-packages e3nn
+pip3 install --break-system-packages spyrmsd
 
 cd /opt
 git clone https://github.com/bougui505/DiffDock.git
@@ -25,7 +53,7 @@ sed -i 's/truncation_seq_length = 1022/truncation_seq_length = 9999/' utils/infe
 grep "truncation_seq_length =" utils/inference_utils.py
 
 # Header
-sed -i '1s,^,#!/usr/bin/env python\n,' inference.py
+sed -i '1s,^,#!/usr/bin/env python3\n,' inference.py
 
 # Saving cache files
 sed -i 's,.p.npy,/opt/DiffDock/.p.npy,g' utils/torus.py
