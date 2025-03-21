@@ -18,6 +18,7 @@ OUTFILENAME="$OLLAMA_OUPUT_DIR/$(echo $PROMPT | sed 's/ /_/g ; s/?//g').md"
 
 if [[ -f $OUTFILENAME ]]; then
   batcat -p $OUTFILENAME
+  echo "ANSWER READ FROM CACHE: $OUTFILENAME"
   exit 0
 fi
 
