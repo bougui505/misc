@@ -25,5 +25,5 @@ TSPID=$(tsp $DIRSCRIPT/server.sh)
 sleep 0.5
 
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
-$DIRSCRIPT/ollama run mistral "$PROMPT" --nowordwrap | tee /tmp/ollama.out
+$DIRSCRIPT/ollama run codegemma "$PROMPT" --nowordwrap | tee /tmp/ollama.out
 # $DIRSCRIPT/ollama run codellama "$PROMPT"
