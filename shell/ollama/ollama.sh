@@ -14,7 +14,7 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-trap "tsp -k $TSPID" EXIT INT
+trap "tsp -k $TSPID && (cat /tmp/ollama.out | xclip) && echo 'ANSWER COPIED TO CLIPBOARD'" EXIT INT
 
 PROMPT="$1"
 if [ ! -t 0 ]; then
@@ -25,5 +25,5 @@ TSPID=$(tsp $DIRSCRIPT/server.sh)
 sleep 0.5
 
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
-$DIRSCRIPT/ollama run mistral "$PROMPT" --nowordwrap
+$DIRSCRIPT/ollama run mistral "$PROMPT" --nowordwrap | tee /tmp/ollama.out
 # $DIRSCRIPT/ollama run codellama "$PROMPT"
