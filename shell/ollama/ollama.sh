@@ -14,7 +14,7 @@ set -o noclobber  # prevent overwritting redirection
 
 OLLAMA_OUPUT_DIR="$HOME/Documents/ollama-ouputs"
 PROMPT="$1"
-OUTFILENAME="$OLLAMA_OUPUT_DIR/$(echo $PROMPT | sed 's/ /_/g ; s/?//g').md"
+OUTFILENAME="$OLLAMA_OUPUT_DIR/$(echo $PROMPT | tr -c '[:alnum:]' '_').md"
 
 if [[ -f $OUTFILENAME ]]; then
   batcat -p $OUTFILENAME
