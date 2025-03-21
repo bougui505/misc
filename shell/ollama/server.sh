@@ -14,7 +14,7 @@ set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
-SIFFILE=$(realpath ollama.sif)
+SIFFILE=$(realpath $DIRSCRIPT/ollama.sif)
 echo $SIFFILE
 
 apptainer run --nv $SIFFILE serve
