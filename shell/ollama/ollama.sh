@@ -12,6 +12,8 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
+tsp -C
+
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 trap "tsp -k $TSPID && (cat /tmp/ollama.out | xclip) && echo 'ANSWER COPIED TO CLIPBOARD'" EXIT INT
@@ -25,5 +27,5 @@ TSPID=$(tsp $DIRSCRIPT/server.sh)
 sleep 0.5
 
 # $DIRSCRIPT/ollama run llama2 "$PROMPT"
-$DIRSCRIPT/ollama run codegemma "$PROMPT" --nowordwrap | tee /tmp/ollama.out
+$DIRSCRIPT/ollama run custom "$PROMPT" --nowordwrap | tee /tmp/ollama.out
 # $DIRSCRIPT/ollama run codellama "$PROMPT"
