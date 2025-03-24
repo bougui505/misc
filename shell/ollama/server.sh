@@ -9,6 +9,7 @@
 # creation_date: Thu Feb 29 14:56:15 2024
 
 set -e  # exit on error
+set -x
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
