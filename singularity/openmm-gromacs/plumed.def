@@ -1,0 +1,33 @@
+BOOTSTRAP: localimage
+FROM: openmm.sif
+
+%files
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+#mkdir -p /tmp/apt/cache
+#mkdir -p /tmp/apt/lists
+#echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+#echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+rm /etc/apt/sources.list.d/cuda*
+apt-get update
+# apt-get install -y python3-pip
+###############################################################################
+
+# ################################# PIP INSTALL #################################
+# mkdir -p /tmp/pip/cache
+# pip3 --cache-dir=/tmp/pip/cache install --break-system-packages PACKAGE ...
+# ###############################################################################
+
+## PLUMED
+cd /opt
+wget https://github.com/plumed/plumed2/releases/download/v2.9.3/plumed-2.9.3.tgz
+tar xvzf plumed-2.9.3.tgz
+cd plumed-2.9.3
+./configure
+make -j 24
+make install -j 24
+cd /
+rm -rf /opt/plumed-2.9.3

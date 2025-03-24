@@ -1,0 +1,56 @@
+BOOTSTRAP: localimage
+FROM: openmm-plumed.sif
+
+%files
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+export CUDACXX=/usr/local/cuda-12.8/bin/nvcc
+#mkdir -p /tmp/apt/cache
+#mkdir -p /tmp/apt/lists
+#echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+#echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y openmpi-bin libopenmpi-dev
+
+mpicc --version
+mpicxx --version
+
+###############################################################################
+
+# ################################# PIP INSTALL #################################
+# mkdir -p /tmp/pip/cache
+# pip3 --cache-dir=/tmp/pip/cache install --break-system-packages PACKAGE ...
+# ###############################################################################
+
+## GROMACS-PLUMED
+cd /bin
+mkdir gromacs-2024.5
+
+cd /opt
+wget https://ftp.gromacs.org/gromacs/gromacs-2024.5.tar.gz
+tar -xzvf gromacs-2024.5.tar.gz
+cd gromacs-2024.5
+#plumed patch -p --shared -e gromacs-2024.3
+mkdir build
+cd build
+
+cmake ../ -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-12.8  -DGMX_GPU=CUDA  \
+           -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/bin/gromacs-2024.5 \
+           -DGMX_OPENMP=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=OFF \
+           -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DGMX_BUILD_OWN_FFTW=ON 
+
+make -j24 CXXFLAGS="-O3"
+make install -j 24
+
+apt-get autoremove
+apt-get autoclean
+apt-get clean
+
+%runscript
+
+. /bin/gromacs-2024.5/bin/GMXRC
+echo "Arguments received: $*"
+exec $@

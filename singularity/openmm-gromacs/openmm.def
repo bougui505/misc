@@ -1,0 +1,47 @@
+BOOTSTRAP: docker
+FROM: debian:12
+# Bootstrap: localimage
+# From: ../bougui.sif
+
+%post
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y wget cmake python3-numpy python3-setuptools doxygen swig cython3 software-properties-common
+
+## CUDA
+cd /opt
+mkdir cuda-toolkit
+cd cuda-toolkit
+wget https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda-repo-debian12-12-8-local_12.8.0-570.86.10-1_amd64.deb
+dpkg -i cuda-repo-debian12-12-8-local_12.8.0-570.86.10-1_amd64.deb
+cp /var/cuda-repo-debian12-12-8-local/cuda-*-keyring.gpg /usr/share/keyrings/
+add-apt-repository contrib
+apt-get update
+apt-get -y install cuda-toolkit-12-8
+rm cuda-repo-debian12-12-8-local_12.8.0-570.86.10-1_amd64.deb
+
+## OPENMM
+OPENMM_VERSION=8.2.0
+cd /opt
+mkdir openmm
+cd openmm
+wget https://github.com/openmm/openmm/archive/refs/tags/${OPENMM_VERSION}.tar.gz
+tar -xzvf ${OPENMM_VERSION}.tar.gz
+cd openmm-${OPENMM_VERSION}
+pwd  # /opt/openmm/openmm-${OPENMM_VERSION}
+mkdir build
+cd build
+cmake ..
+sed -i -e 's/-O3/-O2/g' platforms/cuda/sharedTarget/CMakeFiles/OpenMMCUDA.dir/flags.make
+make -j 24
+# make -j 16 test
+make -j 24 install
+make -j 24 PythonInstall
+
+apt-get autoremove
+apt-get autoclean
+apt-get clean
+rm -r /var/cuda-repo-debian12-12-8-local
+
+python3 -m openmm.testInstallation
