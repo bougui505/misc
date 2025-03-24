@@ -1,0 +1,6 @@
+BOOTSTRAP: docker
+FROM: pharmai/plip:latest
+
+%files
+
+%post
