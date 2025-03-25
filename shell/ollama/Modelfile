@@ -1,4 +1,4 @@
-FROM codegemma
+FROM codellama
 # See: https://dev.to/sp90/fast-predictable-self-hosted-ai-code-completion-1f4d
 
 # set the temperature to 1 [higher is more creative, lower is more coherent]
