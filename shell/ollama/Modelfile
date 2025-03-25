@@ -1,3 +1,4 @@
+# FROM deepseek-coder-v2
 FROM codellama
 # See: https://dev.to/sp90/fast-predictable-self-hosted-ai-code-completion-1f4d
 
