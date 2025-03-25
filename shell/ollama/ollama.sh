@@ -17,7 +17,7 @@ PROMPT="$1"
 OUTFILENAME="$OLLAMA_OUPUT_DIR/$(echo $PROMPT | tr -c '[:alnum:]' '_').md"
 
 if [[ -f $OUTFILENAME ]]; then
-  batcat -p $OUTFILENAME
+  less -X -F -R $OUTFILENAME
   echo "ANSWER READ FROM CACHE: $OUTFILENAME"
   exit 0
 fi
