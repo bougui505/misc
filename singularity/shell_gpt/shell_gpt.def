@@ -1,0 +1,30 @@
+BOOTSTRAP: docker
+FROM: debian:12.1
+
+%files
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip curl task-spooler
+###############################################################################
+
+cd /opt
+curl https://ollama.ai/install.sh | sh
+
+################################# PIP INSTALL #################################
+# See: https://github.com/TheR1D/shell_gpt/wiki/Ollama
+# and https://github.com/TheR1D/shell_gpt/discussions/654 to setup properly
+mkdir -p /tmp/pip/cache
+pip3 --cache-dir=/tmp/pip/cache install --break-system-packages "shell-gpt[litellm]"
+###############################################################################
+
+# %runscript
+# ollama pull deepseek-coder-v2
+# tsp ollama serve
