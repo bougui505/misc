@@ -139,21 +139,7 @@ ln -s /opt/nvim-linux-x86_64/bin/nvim .
 
 # configure neovim
 # spell languages
-cd /opt/nvim-linux64/share/nvim/runtime/spell && wget http://ftp.vim.org/vim/runtime/spell/fr.utf-8.spl
-#################
-cd /opt
-mkdir -p /etc/xdg
-cd /etc/xdg
-git clone --depth 1 https://github.com/AstroNvim/template nvim
-mv /opt/py_template_file.py /etc/xdg/nvim
-mv /opt/sh_template_file.sh /etc/xdg/nvim
-mv /opt/Makefile_template_file /etc/xdg/nvim
-mv /opt/apptainer_template.def /etc/xdg/nvim
-mv /opt/vimrc.vim /etc/xdg/nvim
-cat << EOF >> /etc/xdg/nvim/init.lua
-local vimrc = vim.fn.stdpath("config") .. "/vimrc.vim"
-vim.cmd.source(vimrc)
-EOF
+cd /opt/nvim-linux-x86_64/share/nvim/runtime/spell && wget https://www.mirrorservice.org/pub/vim/runtime/spell/fr.utf-8.spl
 
 # install tree-sitter-cli for neovim
 npm install -g tree-sitter-cli
@@ -197,7 +183,5 @@ python3 -c "from transformers import T5Tokenizer, T5EncoderModel;tokenizer = T5T
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
 export MATPLOTLIBRC=$HOME/.config/matplotlib/matplotlibrc
-# for neovim
-export XDG_CONFIG_HOME=/etc/xdg
 # for ProtTrans
 export HF_HOME="/opt/cache/huggingface/datasets"
