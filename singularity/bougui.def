@@ -61,6 +61,10 @@ cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
 git clone https://github.com/bougui505/pymol_isosurface.git
 ##########################################################################
 
+################################# Typer ###################################
+pip3 install --break-system-packages typer
+###########################################################################
+
 ################################# TMTOOLS #################################
 pip3 install --break-system-packages tmtools
 ###########################################################################
@@ -142,7 +146,7 @@ ln -s /opt/nvim-linux-x86_64/bin/nvim .
 cd /opt/nvim-linux-x86_64/share/nvim/runtime/spell && wget https://www.mirrorservice.org/pub/vim/runtime/spell/fr.utf-8.spl
 
 # install tree-sitter-cli for neovim
-npm install -g tree-sitter-cli
+# npm install -g tree-sitter-cli
 ###########################################################################
 
 ################################# PYTORCH #################################
