@@ -145,8 +145,9 @@ ln -s /opt/nvim-linux-x86_64/bin/nvim .
 # spell languages
 cd /opt/nvim-linux-x86_64/share/nvim/runtime/spell && wget https://www.mirrorservice.org/pub/vim/runtime/spell/fr.utf-8.spl
 
-# install tree-sitter-cli for neovim
-# npm install -g tree-sitter-cli
+cd /opt
+curl -fsSL https://ollama.com/install.sh | sh
+pip3 install --break-system-packages pygls ollama
 ###########################################################################
 
 ################################# PYTORCH #################################
