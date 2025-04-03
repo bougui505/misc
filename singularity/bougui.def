@@ -36,6 +36,14 @@ apt-get install -y exa
 apt-get clean
 ###############################################################################
 
+################################# Node.js for nvim ####################################
+# See: https://github.com/nodesource/distributions?tab=readme-ov-file#installation-instructions-deb
+cd /opt
+curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+bash nodesource_setup.sh
+apt-get install -y nodejs
+node -v
+#######################################################################################
 
 ################################# MODELLER ##################################
 cd /opt
