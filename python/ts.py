@@ -38,10 +38,10 @@ def timer(
         string, now = format_string(color, ts, elapsed, delta, start, last)
         if line == "":
             break
-        print(f"{string}[/{color}]{line}", end="")
+        print(f"{string}{line}", end="")
         # print(f"[green]123|[/green]{line}", end="")
         last = now
-    print(f"{string}[/{color}]##### END OF OUTPUT #####", end="")
+    print(f"{string}##### END OF OUTPUT #####", end="")
 
 
 def format_string(color, ts, elapsed, delta, start, last):
@@ -49,7 +49,7 @@ def format_string(color, ts, elapsed, delta, start, last):
     now = datetime.now()
     if ts:
         ts_str = now.strftime("%Y%m%d %H:%M:%S")
-        string += f"[{color}]{ts_str}"
+        string += f"{ts_str}"
     if elapsed:
         elapsed_str = now - start
         string += f" t={elapsed_str}"
