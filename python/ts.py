@@ -20,8 +20,9 @@ app = typer.Typer(
 
 @app.command()
 def timer(
-    print_ts:bool=True,
-    print_elapsed:bool=True,
+    ts:bool=True,
+    elapsed:bool=True,
+    delta:bool=False,
     color:str="green",
 ):
     """
@@ -29,23 +30,34 @@ def timer(
     """
     # read from stdin as a stream
     start = datetime.now()
+    last = start
     while True:
-        string = f"[{color}]"
         # read a line from stdin
         # line = input()
         line = sys.stdin.readline()
+        string, now = format_string(color, ts, elapsed, delta, start, last)
         if line == "":
             break
-        now = datetime.now()
-        if print_ts:
-            ts_str = now.strftime("%Y%m%d %H:%M:%S")
-            string += f"[{color}]{ts_str}"
-        if print_elapsed:
-            elapsed_str = now - start
-            string += f" ({elapsed_str})"
-        string += f"|[/{color}]"
-        print(string+line, end="")
-    print(string+"##### END OF OUTPUT #####", end="")
+        print(f"{string}[/{color}]{line}", end="")
+        # print(f"[green]123|[/green]{line}", end="")
+        last = now
+    print(f"{string}[/{color}]##### END OF OUTPUT #####", end="")
+
+
+def format_string(color, ts, elapsed, delta, start, last):
+    string = f"[{color}]"
+    now = datetime.now()
+    if ts:
+        ts_str = now.strftime("%Y%m%d %H:%M:%S")
+        string += f"[{color}]{ts_str}"
+    if elapsed:
+        elapsed_str = now - start
+        string += f" ({elapsed_str})"
+    if delta:
+        delta_str = now - last
+        string += f" {delta_str}"
+    string += f"|[/{color}]"
+    return string, now
         
 
 if __name__ == "__main__":
