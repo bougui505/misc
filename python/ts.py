@@ -20,6 +20,8 @@ app = typer.Typer(
 
 @app.command()
 def timer(
+    print_ts:bool=True,
+    print_elapsed:bool=True,
     color:str="green",
 ):
     """
@@ -28,17 +30,22 @@ def timer(
     # read from stdin as a stream
     start = datetime.now()
     while True:
+        string = f"[{color}]"
         # read a line from stdin
         # line = input()
         line = sys.stdin.readline()
         if line == "":
             break
         now = datetime.now()
-        ts = now.strftime("%Y%m%d %H:%M:%S")
-        elapsed = now - start
-        # elapsed = str(elapsed).split(".")[0]
-        print(f"[{color}]{ts} ({elapsed})|[/{color}]{line}", end="")
-    print(f"[{color}]{ts} ({elapsed})|[/{color}]##### END OF OUTPUT #####", end="")
+        if print_ts:
+            ts_str = now.strftime("%Y%m%d %H:%M:%S")
+            string += f"[{color}]{ts_str}"
+        if print_elapsed:
+            elapsed_str = now - start
+            string += f" ({elapsed_str})"
+        string += f"|[/{color}]"
+        print(string+line, end="")
+    print(string+"##### END OF OUTPUT #####", end="")
         
 
 if __name__ == "__main__":
