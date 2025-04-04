@@ -38,6 +38,7 @@ def timer(
         elapsed = now - start
         # elapsed = str(elapsed).split(".")[0]
         print(f"[{color}]{ts} ({elapsed})|[/{color}]{line}", end="")
+    print(f"[{color}]{ts} ({elapsed})|[/{color}]##### END OF OUTPUT #####", end="")
         
 
 if __name__ == "__main__":
