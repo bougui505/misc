@@ -52,10 +52,10 @@ def format_string(color, ts, elapsed, delta, start, last):
         string += f"[{color}]{ts_str}"
     if elapsed:
         elapsed_str = now - start
-        string += f" ({elapsed_str})"
+        string += f" t={elapsed_str}"
     if delta:
         delta_str = now - last
-        string += f" {delta_str}"
+        string += f" Δ={delta_str}"
     string += f"|[/{color}]"
     return string, now
         
