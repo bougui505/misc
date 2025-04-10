@@ -32,7 +32,7 @@ apt-get install -y graphviz
 apt-get install -y python3-pudb
 apt-get install -y pigz
 apt-get install -y ncbi-blast+
-apt-get install -y exa
+apt-get install -y exa task-spooler
 apt-get clean
 ###############################################################################
 
