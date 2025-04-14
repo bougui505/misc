@@ -33,6 +33,7 @@ apt-get install -y python3-pudb
 apt-get install -y pigz
 apt-get install -y ncbi-blast+
 apt-get install -y exa task-spooler
+apt-get install -y make gcc libz-dev
 apt-get clean
 ###############################################################################
 
@@ -191,6 +192,16 @@ export HF_HOME="/opt/cache/huggingface/datasets"
 pip3 install --break-system-packages transformers sentencepiece protobuf
 python3 -c "from transformers import T5Tokenizer, T5EncoderModel;tokenizer = T5Tokenizer.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc', do_lower_case=False);model = T5EncoderModel.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc')"
 ############################
+
+########### SQUASHFS ##########
+cd /opt
+wget https://github.com/plougher/squashfs-tools/archive/refs/tags/4.6.1.tar.gz
+tar -xzvf 4.6.1.tar.gz
+cd squashfs-tools-4.6.1
+cd squashfs-tools
+make
+make install
+###############################
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
