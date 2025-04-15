@@ -40,13 +40,17 @@ function print_line () {
     echo "$deltat $line"; if [[ $ELAPSED -eq 0 ]]; then t0=$(date +%s%3N); fi
 }
 
+function checkline () {
+    read -r -t 0.001 line
+}
+
 # Get start time in milliseconds
 t0=$(date +%s%3N)
 while sleep 0.001s; do
     t1=$(date +%s%3N)
     deltat=$((t1 - t0))
     deltat=$(printf "%02d:%02d:%02d.%03d" $((deltat/3600000)) $(( (deltat%3600000)/60000 )) $(( (deltat%60000)/1000 )) $(( deltat%1000 )))
-    read -r -t 0.001 line \
+    checkline \
         && print_line \
         || echo -ne "$deltat\r"
 done < "${1:-/dev/stdin}"
