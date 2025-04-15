@@ -36,15 +36,17 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
+function print_line () {
+    echo "$deltat $line"; if [[ $ELAPSED -eq 0 ]]; then t0=$(date +%s%3N); fi
+}
+
 # Get start time in milliseconds
 t0=$(date +%s%3N)
-while read -r line; do
+while sleep 0.001s; do
     t1=$(date +%s%3N)
     deltat=$((t1 - t0))
-    # format deltat in hh:mm:ss.mmm
     deltat=$(printf "%02d:%02d:%02d.%03d" $((deltat/3600000)) $(( (deltat%3600000)/60000 )) $(( (deltat%60000)/1000 )) $(( deltat%1000 )))
-    echo "$deltat $line"
-    if [[ $ELAPSED -eq 0 ]]; then
-        t0=$(date +%s%3N)
-    fi
+    read -r -t 0.001 line \
+        && print_line \
+        || echo -ne "$deltat\r"
 done < "${1:-/dev/stdin}"
