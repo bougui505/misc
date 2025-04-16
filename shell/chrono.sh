@@ -98,6 +98,7 @@ else
 fi
 
 function print_line () {
+    sleep 0.001s  # to avoid missing letters in the output
     echo "$deltat $line"
     if [[ $ELAPSED -eq 0 ]]; then 
         t0=$(date +%s%3N)
