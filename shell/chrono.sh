@@ -20,9 +20,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 function usage () {
     cat << EOF
 Usage: cmd | $(basename "$0") [options]
-This script reads lines from standard input and prints the elapsed time since the start of the script.
-The elapsed time is printed in green, orange or red depending on the time elapsed.
 The script will read lines from standard input and print the elapsed time in the format HH:MM:SS.mmm.
+The elapsed time is printed in green, orange or red depending on the time elapsed,
+green for less than MEDIUM, orange for between MEDIUM and HIGH, and red for more than HIGH.
 The total running time will be printed in cyan and underlined when the input is closed.
 The script will exit when the input is closed or when the user presses Ctrl+C.
 Options:
