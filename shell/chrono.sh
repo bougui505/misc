@@ -22,19 +22,50 @@ function usage () {
 Help message
     -h, --help print this help message and exit
     -e, --elapsed print elapsed time since the start of the script
+    -m, --medium <number><s|m|h> set the medium time when the time is printed in orange (s for seconds, m for minutes, h for hours)
+        default: 1m
+    -H, --high <number><s|m|h> set the high time when the time is printed in red (s for seconds, m for minutes, h for hours)
+        default: 5m
 EOF
 }
 
 ELAPSED=0  # Default value
+MEDIUM=1m  # medium time when the time is printed in orange (s for seconds, m for minutes, h for hours)
+HIGH=5m  # high time when the time is printed in red (s for seconds, m for minutes, h for hours)
 while [ "$#" -gt 0 ]; do
     case $1 in
         -e|--elapsed) ELAPSED=1 ;;
+        -m|--medium) shift; MEDIUM="$1" ;;
+        -H|--high) shift; HIGH="$1" ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
     shift
 done
+
+# Convert MEDIUM to milliseconds
+if [[ $MEDIUM =~ ^([0-9]+)([smh])$ ]]; then
+    case ${BASH_REMATCH[2]} in
+        s) MEDIUM=$(( ${BASH_REMATCH[1]} * 1000 )) ;;
+        m) MEDIUM=$(( ${BASH_REMATCH[1]} * 60000 )) ;;
+        h) MEDIUM=$(( ${BASH_REMATCH[1]} * 3600000 )) ;;
+    esac
+else
+    echo "Error: MEDIUM is not in the format <number><s|m|h>" >&2
+    exit 1
+fi
+# Convert HIGH to milliseconds
+if [[ $HIGH =~ ^([0-9]+)([smh])$ ]]; then
+    case ${BASH_REMATCH[2]} in
+        s) HIGH=$(( ${BASH_REMATCH[1]} * 1000 )) ;;
+        m) HIGH=$(( ${BASH_REMATCH[1]} * 60000 )) ;;
+        h) HIGH=$(( ${BASH_REMATCH[1]} * 3600000 )) ;;
+    esac
+else
+    echo "Error: HIGH is not in the format <number><s|m|h>" >&2
+    exit 1
+fi
 
 function print_line () {
     echo "$deltat $line"
@@ -47,8 +78,18 @@ function print_line () {
 t0=$(date +%s%3N)
 while sleep 0.001s; do
     t1=$(date +%s%3N)
-    deltat=$((t1 - t0))
-    deltat=$(printf "%02d:%02d:%02d.%03d" $((deltat/3600000)) $(( (deltat%3600000)/60000 )) $(( (deltat%60000)/1000 )) $(( deltat%1000 )))
+    deltat_ms=$((t1 - t0))
+    deltat=$(printf "%02d:%02d:%02d.%03d" $((deltat_ms/3600000)) $(( (deltat_ms%3600000)/60000 )) $(( (deltat_ms%60000)/1000 )) $(( deltat_ms%1000 )))
+    if [[ $deltat_ms -gt $MEDIUM && $deltat_ms -le $HIGH ]]; then
+        # format deltat in orange
+        deltat=$(echo -ne "\033[0;33m$deltat\033[0m")
+    elif [[ $deltat_ms -gt $HIGH ]]; then
+        # format deltat in red
+        deltat=$(echo -ne "\033[0;31m$deltat\033[0m")
+    else
+        # format deltat in green
+        deltat=$(echo -ne "\033[0;32m$deltat\033[0m")
+    fi
     read -r -t 0.001 line
     ret=$?
     if [[ $ret -eq 1 ]]; then  # this is the end of the input
