@@ -28,16 +28,16 @@ The script will exit when the input is closed or when the user presses Ctrl+C.
 Options:
     -h, --help print this help message and exit
     -e, --elapsed print elapsed time since the start of the script
-    -m, --medium <number><s|m|h> set the medium time when the time is printed in orange (s for seconds, m for minutes, h for hours)
+    -m, --medium <number><ms|s|m|h> set the medium time when the time is printed in orange (ms for milliseconds, s for seconds, m for minutes, h for hours)
         default: 1m
-    -H, --high <number><s|m|h> set the high time when the time is printed in red (s for seconds, m for minutes, h for hours)
+    -H, --high <number><ms|s|m|h> set the high time when the time is printed in red (ms for milliseconds, s for seconds, m for minutes, h for hours)
         default: 5m
 EOF
 }
 
 ELAPSED=0  # Default value
-MEDIUM=1m  # medium time when the time is printed in orange (s for seconds, m for minutes, h for hours)
-HIGH=5m  # high time when the time is printed in red (s for seconds, m for minutes, h for hours)
+MEDIUM=1m  # medium time when the time is printed in orange (ms for milliseconds, s for seconds, m for minutes, h for hours)
+HIGH=5m  # high time when the time is printed in red (ms for milliseconds, s for seconds, m for minutes, h for hours)
 while [ "$#" -gt 0 ]; do
     case $1 in
         -e|--elapsed) ELAPSED=1 ;;
@@ -51,7 +51,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Convert MEDIUM to milliseconds
-if [[ $MEDIUM =~ ^([0-9]+)([smh])$ ]]; then
+if grep -q 'ms' <<< "$MEDIUM"; then
+    MEDIUM=${MEDIUM//ms/}
+elif [[ $MEDIUM =~ ^([0-9]+)([smh])$ ]]; then
     case ${BASH_REMATCH[2]} in
         s) MEDIUM=$(( ${BASH_REMATCH[1]} * 1000 )) ;;
         m) MEDIUM=$(( ${BASH_REMATCH[1]} * 60000 )) ;;
@@ -62,7 +64,9 @@ else
     exit 1
 fi
 # Convert HIGH to milliseconds
-if [[ $HIGH =~ ^([0-9]+)([smh])$ ]]; then
+if grep -q 'ms' <<< "$HIGH"; then
+    HIGH=${HIGH//ms/}
+elif [[ $HIGH =~ ^([0-9]+)([smh])$ ]]; then
     case ${BASH_REMATCH[2]} in
         s) HIGH=$(( ${BASH_REMATCH[1]} * 1000 )) ;;
         m) HIGH=$(( ${BASH_REMATCH[1]} * 60000 )) ;;
