@@ -80,6 +80,7 @@ function print_line () {
 }
 
 # Get start time in milliseconds
+T0=$(date +%s%3N)  # Global start time of the script
 t0=$(date +%s%3N)
 while sleep 0.001s; do
     t1=$(date +%s%3N)
@@ -98,6 +99,12 @@ while sleep 0.001s; do
     read -r -t 0.001 line
     ret=$?
     if [[ $ret -eq 1 ]]; then  # this is the end of the input
+        TOTALTIME=$(($t1 - $T0))
+        # format TOTALTIME in HH:MM:SS.mmm
+        TOTALTIME=$(printf "%02d:%02d:%02d.%03d" $((TOTALTIME/3600000)) $(( (TOTALTIME%3600000)/60000 )) $(( (TOTALTIME%60000)/1000 )) $(( TOTALTIME%1000 )))
+        # echo the total time in cyan and underlined
+        TOTALTIME=$(echo -ne "\033[0;36m\033[4m$TOTALTIME\033[0m")
+        echo -ne "\nTotal time: $TOTALTIME"
         exit 0
     elif [[ $ret -eq 0 ]]; then  # a line was read
         print_line
