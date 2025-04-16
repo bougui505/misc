@@ -8,8 +8,8 @@
 #
 # creation_date: Tue Apr 15 14:34:38 2025
 
-set -e  # exit on error
-set -o pipefail  # exit when a process in the pipe fails
+# set -e  # exit on error
+# set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
 # Full path to the directory of the current script
@@ -37,11 +37,10 @@ while [ "$#" -gt 0 ]; do
 done
 
 function print_line () {
-    echo "$deltat $line"; if [[ $ELAPSED -eq 0 ]]; then t0=$(date +%s%3N); fi
-}
-
-function checkline () {
-    read -r -t 0.001 line
+    echo "$deltat $line"
+    if [[ $ELAPSED -eq 0 ]]; then 
+        t0=$(date +%s%3N)
+    fi
 }
 
 # Get start time in milliseconds
@@ -50,7 +49,13 @@ while sleep 0.001s; do
     t1=$(date +%s%3N)
     deltat=$((t1 - t0))
     deltat=$(printf "%02d:%02d:%02d.%03d" $((deltat/3600000)) $(( (deltat%3600000)/60000 )) $(( (deltat%60000)/1000 )) $(( deltat%1000 )))
-    checkline \
-        && print_line \
-        || echo -ne "$deltat\r"
+    read -r -t 0.001 line
+    ret=$?
+    if [[ $ret -eq 1 ]]; then  # this is the end of the input
+        exit 0
+    elif [[ $ret -eq 0 ]]; then  # a line was read
+        print_line
+    else  # print the elapsed time
+        echo -ne "$deltat\r"
+    fi
 done < "${1:-/dev/stdin}"
