@@ -19,7 +19,12 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Help message
+Usage: cmd | $(basename "$0") [options]
+This script reads lines from standard input and prints the elapsed time since the start of the script.
+The elapsed time is printed in green, orange or red depending on the time elapsed.
+The script will read lines from standard input and print the elapsed time in the format HH:MM:SS.mmm.
+The script will exit when the input is closed or when the user presses Ctrl+C.
+Options:
     -h, --help print this help message and exit
     -e, --elapsed print elapsed time since the start of the script
     -m, --medium <number><s|m|h> set the medium time when the time is printed in orange (s for seconds, m for minutes, h for hours)
