@@ -33,8 +33,12 @@ def get_rmsd(mol1, mol2, maxIters):
     mol1 = Chem.RemoveHs(mol1)
     mol2 = Chem.RemoveHs(mol2)
     mcs = rdFMCS.FindMCS([mol1, mol2])
-    numAtoms = mcs.numAtoms
-    print(f"numAtoms={numAtoms}")
+    natom1 = mol1.GetNumAtoms()
+    natom2 = mol2.GetNumAtoms()
+    print(f"{natom1=}")
+    print(f"{natom2=}")
+    ncomatom = mcs.numAtoms
+    print(f"{ncomatom=}")
     patt = Chem.MolFromSmarts(mcs.smartsString)
     refMatch = mol1.GetSubstructMatch(patt)
     mv = mol2.GetSubstructMatch(patt)
