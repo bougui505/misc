@@ -16,6 +16,7 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 # trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
+trap print_totaltime EXIT
 
 function usage () {
     cat << EOF
@@ -105,6 +106,14 @@ function print_line () {
     fi
 }
 
+function print_totaltime () {
+    # format TOTALTIME in HH:MM:SS.mmm
+    TOTALTIME=$(printf "%02d:%02d:%02d.%03d" $((TOTALTIME/3600000)) $(( (TOTALTIME%3600000)/60000 )) $(( (TOTALTIME%60000)/1000 )) $(( TOTALTIME%1000 )))
+    # echo the total time in cyan and underlined
+    TOTALTIME=$(echo -ne "\033[0;36m\033[4m$TOTALTIME\033[0m")
+    echo -ne "\nTotal time: $TOTALTIME"
+}
+
 # Get start time in milliseconds
 T0=$(date +%s%3N)  # Global start time of the script
 t0=$(date +%s%3N)
@@ -141,11 +150,7 @@ while sleep 0.001s; do
     read -r -t 0.001 line
     ret=$?
     if [[ $ret -eq 1 ]]; then  # this is the end of the input
-        # format TOTALTIME in HH:MM:SS.mmm
-        TOTALTIME=$(printf "%02d:%02d:%02d.%03d" $((TOTALTIME/3600000)) $(( (TOTALTIME%3600000)/60000 )) $(( (TOTALTIME%60000)/1000 )) $(( TOTALTIME%1000 )))
-        # echo the total time in cyan and underlined
-        TOTALTIME=$(echo -ne "\033[0;36m\033[4m$TOTALTIME\033[0m")
-        echo -ne "\nTotal time: $TOTALTIME"
+        # print_totaltime  # not needed, the trap will do it
         exit 0
     elif [[ $ret -eq 0 ]]; then  # a line was read
         print_line
