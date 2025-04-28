@@ -1,21 +1,23 @@
 Bootstrap: docker
 From: nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
-%files
-	vortex /vortex
+# %files
+# 	vortex /vortex
 
 %post
-	export DEBIAN_FRONTEND=noninteractive
-	apt update -y
-	apt install -y git python3-pip python3-tomli
-	cd /vortex
-	python3 -c 'import tomli;\
-                p = tomli.load(open("pyproject.toml", "rb"))["project"];\
-                print("\n".join(p["dependencies"] + p.get("optional-dependencies", {"special": []})["special"]))'\
-    	>  requirements.txt
+export DEBIAN_FRONTEND=noninteractive
+apt update -y
+apt install -y git python3-pip python3-tomli
+cd /
+git clone --recurse-submodules https://github.com/Zymrael/vortex.git
+cd /vortex
+python3 -c 'import tomli;\
+              p = tomli.load(open("pyproject.toml", "rb"))["project"];\
+              print("\n".join(p["dependencies"] + p.get("optional-dependencies", {"special": []})["special"]))'\
+  	>  requirements.txt
 
-	pip install `cat requirements.txt | grep ^torch`
-	pip install -r requirements.txt
-	cp -r vortex/ops /usr/src/vortex-ops
-	cd /usr/src/vortex-ops/attn && MAX_JOBS=1 pip install -v -e  . --no-build-isolation
+pip install `cat requirements.txt | grep ^torch`
+pip install -r requirements.txt
+cp -r vortex/ops /usr/src/vortex-ops
+cd /usr/src/vortex-ops/attn && MAX_JOBS=1 pip install -v -e  . --no-build-isolation
 
