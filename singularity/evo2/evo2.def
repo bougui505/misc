@@ -1,0 +1,28 @@
+BOOTSTRAP: docker
+FROM: nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip git
+###############################################################################
+
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+
+cd /opt
+git clone --recurse-submodules https://github.com/ArcInstitute/evo2.git
+cd evo2
+pip install .
+# python3 setup.py install  # See: https://github.com/ArcInstitute/evo2/issues/90
+
+pip install transformer_engine[pytorch]==1.13  # see: https://github.com/ArcInstitute/evo2/issues/75
+
+# %runscript
+# cmd $@
+
