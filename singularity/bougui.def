@@ -172,6 +172,10 @@ pip3 install --break-system-packages torch_geometric
 pip3 install --break-system-packages rdkit
 #########################################################################
 
+################################# SELFIES #################################
+pip3 install --break-system-packages selfies
+###########################################################################
+
 ################################# Python Remind library #################################
 pip3 install --break-system-packages gcalcli
 pip3 install --break-system-packages remind
