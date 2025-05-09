@@ -79,6 +79,26 @@ def sascore():
         except:
             continue
 
+@app.command()
+def n_heavy():
+    """
+    Count the number of heavy atoms in the molecule from the SMILES
+    file given in the standard input.
+    """
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+            # Count the number of heavy atoms
+            n_heavy = mol.GetNumHeavyAtoms()
+            print(f"{line} n_heavy: {n_heavy}")
+        except:
+            continue
+
 if __name__ == "__main__":
     import doctest
 
