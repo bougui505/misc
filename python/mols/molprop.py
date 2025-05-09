@@ -51,7 +51,7 @@ def qed():
             Chem.SanitizeMol(mol)
             # Compute QED using rdkit
             qed = QED.qed(mol)
-            print(f"{line} {qed:.3f}")
+            print(f"{line} {qed=:.3f}")
         except:
             continue
 
@@ -75,7 +75,7 @@ def sascore():
             Chem.SanitizeMol(mol)
             # Compute SAScore using sascorer
             sascore = sascorer.calculateScore(mol)
-            print(f"{line} {sascore:.3f}")
+            print(f"{line} {sascore=:.3f}")
         except:
             continue
 
