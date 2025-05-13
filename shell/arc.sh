@@ -85,12 +85,15 @@ ssh "$REMOTEHOST" "rm -v $OUTFILE"
 rm -v "$(realpath "$FILE").arc.sh"
 EOF
             chmod +x "${FILE}.arc.sh"
+        else
+            if [ -f ${FILE}.arc.sh ]; then
+                echo "File $FILE is already archived"
+            else
+                echo "File $FILE is not a regular file"
+            fi
         fi
     done
 else
     echo "File $1 does not exist or is not a regular file"
-    if [ -L $1 ]; then
-        echo "File $1 is a symbolic link"
-    fi
     exit 1
 fi
