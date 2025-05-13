@@ -80,6 +80,7 @@ pip3 install --break-system-packages tmtools
 
 ################################# IPYTHON #################################
 pip3 install --break-system-packages ipython
+pip3 install --break-system-packages jupyterlab
 ###########################################################################
 
 ############################## deadcode ###################################
