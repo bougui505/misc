@@ -55,7 +55,7 @@ if [[ -f $1 ]]; then
         PROGRESS=$(echo "scale=2; $i*100/$NLINES" | bc)
         ELAPSED=$SECONDS  # SECONDS: built-in variable that returns the number of seconds since the script started
         REMAINING=$((ELAPSED * (NLINES - i) / i))
-        ETA=$(printf "%02d:%02d" $((REMAINING / 60)) $((REMAINING % 60)))
+        ETA=$(printf "%02d:%02d:%02d" $((REMAINING / 3600)) $(((REMAINING % 3600) / 60)) $((REMAINING % 60)))
         printf "\rArchiving files: [%-50s] %.2f%% ETA: %s " $(printf '#%.0s' $(seq 1 $((i*50/NLINES)))) $PROGRESS $ETA
         i=$((i+1))
         if [ -f $FILE ] && [ ! -L $FILE ]; then
