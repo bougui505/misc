@@ -47,7 +47,17 @@ fi
 
 if [[ -f $1 ]]; then
     # the given file contains a list of files to be archived
+    NLINES=$(wc -l < "$1")
+    echo $NLINES files to be archived
+    i=1
     for FILE in $(cat "$1"); do
+        # print a progress bar
+        PROGRESS=$(echo "scale=2; $i*100/$NLINES" | bc)
+        ELAPSED=$SECONDS  # SECONDS: built-in variable that returns the number of seconds since the script started
+        REMAINING=$((ELAPSED * (NLINES - i) / i))
+        ETA=$(printf "%02d:%02d" $((REMAINING / 60)) $((REMAINING % 60)))
+        printf "\rArchiving files: [%-50s] %.2f%% ETA: %s " $(printf '#%.0s' $(seq 1 $((i*50/NLINES)))) $PROGRESS $ETA
+        i=$((i+1))
         if [ -f $FILE ] && [ ! -L $FILE ]; then
             DIRNAME=$(dirname $(realpath "$FILE"))
             ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${DIRNAME}"
@@ -56,14 +66,12 @@ if [[ -f $1 ]]; then
             pcat "$FILE" | pigz -c | ssh "$REMOTEHOST" "cat > $OUTFILE"
             # check if the file was successfully archived
             if ssh "$REMOTEHOST" "test -f $OUTFILE"; then
-                echo "File $FILE archived as $OUTFILE"
+                echo "File $FILE archived as $OUTFILE" > /dev/null
             else
-                echo "Error archiving file $FILE"
+                echo "Error archiving file $FILE" > /dev/stderr
                 exit 1
             fi
-            # remove the original file
-            rm -v "$FILE"
-            # and replace it with a script that will unarchive it
+            # replace FILE with a script that will unarchive it
             # the script will be called ${file}.arc.sh
             cat << EOF > "${FILE}.arc.sh"
 #!/usr/bin/env bash
@@ -85,6 +93,8 @@ ssh "$REMOTEHOST" "rm -v $OUTFILE"
 rm -v "$(realpath "$FILE").arc.sh"
 EOF
             chmod +x "${FILE}.arc.sh"
+            # remove the original file
+            rm "$FILE"
         else
             if [ -f ${FILE}.arc.sh ]; then
                 echo "File $FILE is already archived"
