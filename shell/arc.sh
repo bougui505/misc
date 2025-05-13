@@ -47,12 +47,11 @@ fi
 
 if [[ -f $1 ]]; then
     # the given file contains a list of files to be archived
-    # ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${PWD}"
     for FILE in $(cat "$1"); do
         if [ -f $FILE ] && [ ! -L $FILE ]; then
             DIRNAME=$(dirname $(realpath "$FILE"))
             ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${DIRNAME}"
-            OUTFILE="${REMOTEDIR}${PWD}/${FILE}.gz"
+            OUTFILE="${REMOTEDIR}$(realpath $FILE).gz"
             # cat the file to gzip and send it to the remote host
             pcat "$FILE" | pigz -c | ssh "$REMOTEHOST" "cat > $OUTFILE"
             # check if the file was successfully archived
