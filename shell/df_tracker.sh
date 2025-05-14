@@ -29,9 +29,22 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     exit 0
 fi
 if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
+    YMIN=$(awk 'NR>1 {print $5/(1024^2)}' "$OUTFILE" | sort -n | head -n 1)
+    YMAX=$(awk 'NR>1 {print $5/(1024^2)}' "$OUTFILE" | sort -n | tail -n 1)
+    YMAX=$(echo "scale=2; $YMAX+($YMAX-$YMIN)/10" | bc)
+    YMIN=$(echo "scale=2; $YMIN-($YMAX-$YMIN)/10" | bc)
     cat "$OUTFILE" \
-        | awk 'NR>1 {print strftime("%Y%m%d%H%M", $1),$5/(1024^2)}' \
-        | plot3 --xlabel "date" --ylabel "disk available" plot --fields "x y"
+        | awk 'NR>1 {print $1,$3/(1024^2),$5/(1024^2)}' \
+        | plot3 --xlabel "date" \
+                --ylabel "disk available (GB)" \
+                plot \
+                    --fields "ts y y" \
+                    --labels "total available" \
+                    --ymin $YMIN \
+                    --ymax $YMAX \
+                    --shade "1 1" \
+                    --alpha-shade 1 \
+                    --fmt "lightcoral lightcyan"
     exit 0
 fi
 
