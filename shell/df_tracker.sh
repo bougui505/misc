@@ -28,6 +28,25 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     usage
     exit 0
 fi
+
+HEADER="timestamp filesystem size used available use% mounted_on"
+if [ ! -f "$OUTFILE" ]; then
+    echo "$HEADER" > "$OUTFILE"
+fi
+SECONDS_SINCE_EPOCH=$(date +%s)
+DF=$(df / | awk 'NR>1')
+echo -e "$HEADER\n$SECONDS_SINCE_EPOCH $DF" | column -t
+echo "$SECONDS_SINCE_EPOCH $DF" >> "$OUTFILE"
+
+# Remove lines if the file exceeds MAXLINES
+if [ $(wc -l < "$OUTFILE") -gt $MAXLINES ]; then
+    tail -n $MAXLINES "$OUTFILE" > "${OUTFILE}.tmp"
+    rm "$OUTFILE"
+    echo "$HEADER" > "$OUTFILE"
+    cat "${OUTFILE}.tmp" >> "$OUTFILE"
+    rm "${OUTFILE}.tmp"
+fi
+
 if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
     YMIN=$(awk 'NR>1 {print $5/(1024^2)}' "$OUTFILE" | sort -n | head -n 1)
     YMAX=$(awk 'NR>1 {print $5/(1024^2)}' "$OUTFILE" | sort -n | tail -n 1)
@@ -45,22 +64,4 @@ if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
                     --shade "1 1" \
                     --alpha-shade 1 \
                     --fmt "lightcoral lightcyan"
-    exit 0
-fi
-
-HEADER="timestamp filesystem size used available use% mounted_on"
-if [ ! -f "$OUTFILE" ]; then
-    echo "$HEADER" > "$OUTFILE"
-fi
-SECONDS_SINCE_EPOCH=$(date +%s)
-DF=$(df / | awk 'NR>1')
-echo "$SECONDS_SINCE_EPOCH $DF" >> "$OUTFILE"
-
-# Remove lines if the file exceeds MAXLINES
-if [ $(wc -l < "$OUTFILE") -gt $MAXLINES ]; then
-    tail -n $MAXLINES "$OUTFILE" > "${OUTFILE}.tmp"
-    rm "$OUTFILE"
-    echo "$HEADER" > "$OUTFILE"
-    cat "${OUTFILE}.tmp" >> "$OUTFILE"
-    rm "${OUTFILE}.tmp"
 fi
