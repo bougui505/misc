@@ -50,10 +50,11 @@ if [[ -f $1 ]]; then
     NLINES=$(wc -l < "$1")
     echo $NLINES files to be archived
     i=1
+    T0=$SECONDS  # SECONDS: built-in variable that returns the number of seconds since the script started
     for FILE in $(cat "$1"); do
         # print a progress bar
         PROGRESS=$(echo "scale=2; $i*100/$NLINES" | bc)
-        ELAPSED=$SECONDS  # SECONDS: built-in variable that returns the number of seconds since the script started
+        ELAPSED=$((SECONDS - T0))
         REMAINING=$((ELAPSED * (NLINES - i) / i))
         ETA=$(printf "%02d:%02d:%02d" $((REMAINING / 3600)) $(((REMAINING % 3600) / 60)) $((REMAINING % 60)))
         printf "\rArchiving files: [%-50s] %.2f%% ETA: %s " $(printf '#%.0s' $(seq 1 $((i*50/NLINES)))) $PROGRESS $ETA
@@ -98,6 +99,9 @@ EOF
         else
             if [ -f ${FILE}.arc.sh ]; then
                 echo "File $FILE is already archived"
+                NLINES=$((NLINES-1))
+                i=$((i-1))
+                T0=$SECONDS
             else
                 echo "File $FILE is not a regular file"
             fi
