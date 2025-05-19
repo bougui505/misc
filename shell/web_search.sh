@@ -26,6 +26,7 @@ Options:
     -g, --google   Use Google as the search engine (default).
     -w, --wikipedia Use Wikipedia as the search engine.
     -l, --location LOCATION  Specify the location for the search (default: 'en'), only for Wikipedia.
+    -s, --stackoverflow Use Stack Overflow as the search engine.
     -h, --help print this help message and exit
 EOF
 }
@@ -52,6 +53,10 @@ while [[ $# -gt 0 ]]; do
                 echo "Error: --location requires an argument."
                 exit 1
             fi
+            ;;
+        -s|--stackoverflow)
+            SEARCH_ENGINE="stackoverflow"
+            shift
             ;;
         -h|--help)
             usage
@@ -85,6 +90,12 @@ case "$SEARCH_ENGINE" in
         SEARCH_TERMS_ENCODED=$(echo "$SEARCH_TERMS" | jq -sRr @uri)
         # Open Wikipedia search in the default web browser
         xdg-open "https://$LOCATION.wikipedia.org/w/index.php?search=$SEARCH_TERMS_ENCODED" &>/dev/null &
+        ;;
+    stackoverflow)
+        # URL encode the search terms
+        SEARCH_TERMS_ENCODED=$(echo "$SEARCH_TERMS" | jq -sRr @uri)
+        # Open Stack Overflow search in the default web browser
+        xdg-open "https://stackoverflow.com/search?q=$SEARCH_TERMS_ENCODED" &>/dev/null &
         ;;
     *)
         echo "Error: Unsupported search engine '$SEARCH_ENGINE'."
