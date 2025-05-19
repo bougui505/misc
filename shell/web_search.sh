@@ -41,6 +41,10 @@ while [[ $# -gt 0 ]]; do
             SEARCH_ENGINE="google"
             shift
             ;;
+        -q|--qwant)
+            SEARCH_ENGINE="qwant"
+            shift
+            ;;
         -w|--wikipedia)
             SEARCH_ENGINE="wikipedia"
             shift
@@ -84,6 +88,12 @@ case "$SEARCH_ENGINE" in
         SEARCH_TERMS_ENCODED=$(echo "$SEARCH_TERMS" | jq -sRr @uri)
         # Open Google search in the default web browser
         xdg-open "https://www.google.com/search?q=$SEARCH_TERMS_ENCODED" &>/dev/null &
+        ;;
+    qwant)
+        # URL encode the search terms
+        SEARCH_TERMS_ENCODED=$(echo "$SEARCH_TERMS" | jq -sRr @uri)
+        # Open Qwant search in the default web browser
+        xdg-open "https://www.qwant.com/?q=$SEARCH_TERMS_ENCODED" &>/dev/null &
         ;;
     wikipedia)
         # URL encode the search terms
