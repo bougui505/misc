@@ -99,6 +99,43 @@ def n_heavy():
         except:
             continue
 
+@app.command()
+def smiles(infmt:str="sdf"):
+    """
+    Convert the stdin to SMILES format.
+    """
+    sdfblock = ""
+    for i, line in enumerate(sys.stdin):
+        if infmt == "sdf":
+            sdfblock += line
+            if line.startswith("$$$$"):
+                # Convert the SDF block to SMILES
+                suppl = Chem.SDMolSupplier()
+                suppl.SetData(sdfblock)
+                for mol in suppl:
+                    if mol is None:
+                        continue
+                    try:
+                        Chem.SanitizeMol(mol)
+                        smiles = Chem.MolToSmiles(mol)
+                        # recover the sdf fields
+                        for field in mol.GetPropNames():
+                            if field == "SMILES":
+                                continue
+                            try:
+                                value = mol.GetProp(field)
+                                smiles += f" {field.replace(' ', '_')}: {value}"
+                            except:
+                                pass
+                        print(smiles)
+                    except:
+                        continue
+                sdfblock = ""
+        else:
+            print(f"{infmt} format not supported")
+            exit(1)
+
+
 if __name__ == "__main__":
     import doctest
 
