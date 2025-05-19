@@ -28,8 +28,8 @@ app = typer.Typer(
 @app.callback()
 def callback(debug:bool=False):
     """
-    This is a template file for a Python script using Typer.
-    It contains a main function and a test function.
+    Compute various molecular properties from the SMILES file given in the
+    standard input.
     """
     global DEBUG
     DEBUG = debug
@@ -157,34 +157,69 @@ def stripmol():
         except:
             continue
 
+@app.command()
+def rec():
+    """
+    Convert the SMILES file given in the standard input to a recfile format.\n
+    \n
+    input format:\n
+    \n
+    SMILES1 field11: value11 field12: value12 ...\n
+    SMILES2 field21: value21 field22: value22 ...\n
+    \n
+    output format:\n
+    \n
+    smiles=SMILES1\n
+    field1=value1\n
+    field2=value2\n
+    ...\n
+    --\n
+    smiles=SMILES2\n
+    field1=value1\n
+    field2=value2\n
+    ...\n
+    --\n
+    """
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        print(f"smiles={smiles}")
+        other = line.split()[1:]
+        fields = other[0::2]
+        values = other[1::2]
+        for field, value in zip(fields, values):
+            field = field.replace(":", "")
+            print(f"{field}={value}")
+        print("--")
+
 
 if __name__ == "__main__":
-    import doctest
+    # import doctest
 
-    @app.command()
-    def test():
-        """
-        Test the code
-        """
-        doctest.testmod(
-            optionflags=doctest.ELLIPSIS \
-                        | doctest.REPORT_ONLY_FIRST_FAILURE \
-                        | doctest.REPORT_NDIFF
-        )
+    # @app.command()
+    # def test():
+    #     """
+    #     Test the code
+    #     """
+    #     doctest.testmod(
+    #         optionflags=doctest.ELLIPSIS \
+    #                     | doctest.REPORT_ONLY_FIRST_FAILURE \
+    #                     | doctest.REPORT_NDIFF
+    #     )
 
-    @app.command()
-    def test_func(func:str):
-        """
-        Test the given function
-        """
-        print(f"Testing {func}")
-        f = getattr(sys.modules[__name__], func)
-        doctest.run_docstring_examples(
-            f,
-            globals(),
-            optionflags=doctest.ELLIPSIS \
-                        | doctest.REPORT_ONLY_FIRST_FAILURE \
-                        | doctest.REPORT_NDIFF,
-        )
+    # @app.command()
+    # def test_func(func:str):
+    #     """
+    #     Test the given function
+    #     """
+    #     print(f"Testing {func}")
+    #     f = getattr(sys.modules[__name__], func)
+    #     doctest.run_docstring_examples(
+    #         f,
+    #         globals(),
+    #         optionflags=doctest.ELLIPSIS \
+    #                     | doctest.REPORT_ONLY_FIRST_FAILURE \
+    #                     | doctest.REPORT_NDIFF,
+    #     )
 
     app()
