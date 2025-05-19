@@ -71,7 +71,7 @@ git clone https://github.com/bougui505/pymol_isosurface.git
 ##########################################################################
 
 ################################# Typer ###################################
-pip3 install --break-system-packages typer
+pip3 install --break-system-packages typer "click<8.2.0"  # see: https://github.com/modelcontextprotocol/python-sdk/issues/688#issuecomment-2871923731
 ###########################################################################
 
 ################################# TMTOOLS #################################
