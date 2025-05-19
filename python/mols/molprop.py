@@ -12,7 +12,7 @@ import sys
 
 import typer
 from rdkit import Chem
-from rdkit.Chem import QED, RDConfig
+from rdkit.Chem import QED, RDConfig, SaltRemover
 
 # See: https://mattermodeling.stackexchange.com/a/8544
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
@@ -150,7 +150,6 @@ def stripmol():
         try:
             Chem.SanitizeMol(mol)
             # Strip the molecule
-            from rdkit.Chem import SaltRemover
             remover = SaltRemover.SaltRemover()
             mol = remover.StripMol(mol)
             smiles = Chem.MolToSmiles(mol)
