@@ -135,6 +135,29 @@ def smiles(infmt:str="sdf"):
             print(f"{infmt} format not supported")
             exit(1)
 
+@app.command()
+def stripmol():
+    """
+    Strip the molecule from the SMILES file given in the standard input.\n
+    Remove salts from the molecule and keep only the main molecule.
+    """
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+            # Strip the molecule
+            from rdkit.Chem import SaltRemover
+            remover = SaltRemover.SaltRemover()
+            mol = remover.StripMol(mol)
+            smiles = Chem.MolToSmiles(mol)
+            print(f"{line} stripped: {smiles}")
+        except:
+            continue
+
 
 if __name__ == "__main__":
     import doctest
