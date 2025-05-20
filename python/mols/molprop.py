@@ -13,6 +13,7 @@ import sys
 import typer
 from rdkit import Chem
 from rdkit.Chem import QED, RDConfig, SaltRemover
+from rdkit.Chem.Scaffolds import MurckoScaffold
 
 # See: https://mattermodeling.stackexchange.com/a/8544
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
@@ -108,13 +109,13 @@ def fp_sim(ref:str):
     """
     ref_mol = Chem.MolFromSmiles(ref)
     if ref_mol is None:
-        print(f"Error: {ref} is not a valid SMILES")
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
         exit(1)
     try:
         Chem.SanitizeMol(ref_mol)
         ref_fp = Chem.RDKFingerprint(ref_mol)
     except:
-        print(f"Error: {ref} is not a valid SMILES")
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
         exit(1)
 
     for i, line in enumerate(sys.stdin):
@@ -129,6 +130,41 @@ def fp_sim(ref:str):
             fp = Chem.RDKFingerprint(mol)
             sim = Chem.DataStructs.TanimotoSimilarity(ref_fp, fp)
             print(f"{line} sim({ref}): {sim:.3f}")
+        except:
+            continue
+
+@app.command()
+def murcko_sim(ref:str):
+    """
+    Compute the Tanimoto similarity between the Murcko fingerprints of the
+    molecules from the SMILES file given in the standard input and a 
+    reference molecule.\n
+    """
+    ref_mol = Chem.MolFromSmiles(ref)
+    if ref_mol is None:
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
+        exit(1)
+    try:
+        Chem.SanitizeMol(ref_mol)
+        ref_core = MurckoScaffold.GetScaffoldForMol(ref_mol)
+        ref_fp = Chem.RDKFingerprint(ref_core)
+    except:
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
+        exit(1)
+
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+            # Compute the Tanimoto similarity
+            core = MurckoScaffold.GetScaffoldForMol(mol)
+            fp = Chem.RDKFingerprint(core)
+            sim = Chem.DataStructs.TanimotoSimilarity(ref_fp, fp)
+            print(f"{line} murcko_sim({ref}): {sim:.3f}")
         except:
             continue
 
