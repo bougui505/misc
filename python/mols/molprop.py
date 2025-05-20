@@ -12,7 +12,7 @@ import sys
 
 import typer
 from rdkit import Chem
-from rdkit.Chem import QED, RDConfig, SaltRemover
+from rdkit.Chem import QED, RDConfig, SaltRemover, rdFMCS, rdRascalMCES
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
 # See: https://mattermodeling.stackexchange.com/a/8544
@@ -165,6 +165,43 @@ def murcko_sim(ref:str):
             fp = Chem.RDKFingerprint(core)
             sim = Chem.DataStructs.TanimotoSimilarity(ref_fp, fp)
             print(f"{line} murcko_sim({ref}): {sim:.3f}")
+        except:
+            continue
+
+@app.command()
+def rascal_sim(ref:str):
+    """
+    Compute the Tanimoto similarity between the RASCAL fingerprints of the
+    molecules from the SMILES file given in the standard input and a 
+    reference molecule.\n
+    """
+    opts = rdRascalMCES.RascalOptions()
+    opts.singleLargestFrag = True
+    opts.allBestMCESs = True
+    opts.ignoreAtomAromaticity = True
+    opts.ringMatchesRingOnly = False
+    opts.completeAromaticRings = False
+    ref_mol = Chem.MolFromSmiles(ref)
+    if ref_mol is None:
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
+        exit(1)
+    try:
+        Chem.SanitizeMol(ref_mol)
+    except:
+        print(f"Error: {ref} is not a valid SMILES", file=sys.stderr)
+        exit(1)
+
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+            rascal_matches = rdRascalMCES.FindMCES(ref_mol, mol, opts)
+            sim = rascal_matches[0].similarity
+            print(f"{line} rascal_sim({ref}): {sim:.3f}")
         except:
             continue
 
