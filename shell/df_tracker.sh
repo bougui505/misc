@@ -56,6 +56,7 @@ if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
         | awk 'NR>1 {print $1,$3/(1024^2),$5/(1024^2)}' \
         | plot3 --xlabel "date" \
                 --ylabel "disk available (GB)" \
+                --grid \
                 plot \
                     --fields "ts y y" \
                     --labels "total available" \
