@@ -100,6 +100,39 @@ def n_heavy():
             continue
 
 @app.command()
+def fp_sim(ref:str):
+    """
+    Compute the Tanimoto similarity between the fingerprints of the
+    molecules from the SMILES file given in the standard input and a 
+    reference molecule.\n
+    """
+    ref_mol = Chem.MolFromSmiles(ref)
+    if ref_mol is None:
+        print(f"Error: {ref} is not a valid SMILES")
+        exit(1)
+    try:
+        Chem.SanitizeMol(ref_mol)
+        ref_fp = Chem.RDKFingerprint(ref_mol)
+    except:
+        print(f"Error: {ref} is not a valid SMILES")
+        exit(1)
+
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+            # Compute the Tanimoto similarity
+            fp = Chem.RDKFingerprint(mol)
+            sim = Chem.DataStructs.TanimotoSimilarity(ref_fp, fp)
+            print(f"{line} sim({ref}): {sim:.3f}")
+        except:
+            continue
+
+@app.command()
 def smiles(infmt:str="sdf"):
     """
     Convert the stdin to SMILES format.
