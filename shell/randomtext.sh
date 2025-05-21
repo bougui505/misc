@@ -19,7 +19,7 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Generate a text file with random words taken from /usr/share/dict/words
+Generate text with random words taken from /usr/share/dict/words
 
     -h, --help print this help message and exit
     -s, --size <int><unit> size of the text file to generate
@@ -46,6 +46,12 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+
+# If no arguments are given, print the help message
+if [ "$#" -eq 0 ]; then
+    usage
+    exit 0
+fi
 
 # Check if LINES is set
 if [ ! -z "$LINES" ]; then
