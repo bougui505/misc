@@ -29,16 +29,24 @@ Generate text with random words taken from /usr/share/dict/words
             M for megabytes
             G for gigabytes
     -n, --number <int> number of words to generate
+    -w, --width <int> width of the text file to generate (number of words per line)
     -l, --lines <int> number of lines to generate
-        -n must be used with -l to generate a file with the specified number of lines
-        with -n giving the number of words per line
+        -w must be used with -l to generate a file with the specified number of lines
+        with -w giving the number of words per line
 EOF
 }
+
+# If no arguments are given, print the help message
+if [ "$#" -eq 0 ]; then
+    usage
+    exit 0
+fi
 
 while [ "$#" -gt 0 ]; do
     case $1 in
         -s|--size) SIZE="$2"; shift ;;
         -n|--number) NUMBER="$2"; shift ;;
+        -w|--width) WIDTH="$2"; shift ;;
         -l|--lines) LINES="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
@@ -47,24 +55,17 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-# If no arguments are given, print the help message
-if [ "$#" -eq 0 ]; then
-    usage
-    exit 0
-fi
-
 # Check if LINES is set
 if [ ! -z "$LINES" ]; then
-    # Check if NUMBER is set
-    if [ ! -z "$NUMBER" ]; then
-        NWORDS=$((LINES * NUMBER))
-        echo "$NWORDS"
+    # Check if WIDTH is set
+    if [ ! -z "$WIDTH" ]; then
+        NWORDS=$((LINES * WIDTH))
         shuf -r /usr/share/dict/words | head -n $NWORDS \
-            | awk -v"NUMBER=$NUMBER" '{printf $0" "; if (NR % NUMBER == 0) {print ""}}' \
+            | awk -v"WIDTH=$WIDTH" '{printf $0" "; if (NR % WIDTH == 0) {print ""}}' \
             | head -n $LINES > /dev/stdout
         exit 0
     else
-        echo "ERROR: -n must be used with -l to generate a file with the specified number of lines with -n giving the number of words per line"
+        echo "ERROR: -n must be used with -w to generate a file with the specified number of lines with -w giving the number of words per line" >&2
         exit 1
     fi
 fi
