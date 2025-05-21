@@ -71,8 +71,15 @@ if [ ! -z "$LINES" ]; then
 fi
 # Check if SIZE is set
 if [ ! -z "$SIZE" ]; then
-    shuf -r /usr/share/dict/words | tr '\n' ' ' | head -c "$SIZE" > /dev/stdout
-    exit 0
+    if [ ! -z "$WIDTH" ]; then
+        shuf -r /usr/share/dict/words \
+            | awk -v"WIDTH=$WIDTH" '{printf $0" "; if (NR % WIDTH == 0) {print ""}}' \
+            | head -c "$SIZE" > /dev/stdout
+        exit 0
+    else
+        shuf -r /usr/share/dict/words | tr '\n' ' ' | head -c "$SIZE" > /dev/stdout
+        exit 0
+    fi
 fi
 # Check if NUMBER is set
 if [ ! -z "$NUMBER" ]; then
