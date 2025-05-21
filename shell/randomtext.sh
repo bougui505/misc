@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2025 Institut Pasteur                                       #
+#############################################################################
+#
+# creation_date: Wed May 21 09:47:25 2025
+
+set -e  # exit on error
+set -o pipefail  # exit when a process in the pipe fails
+set -o noclobber  # prevent overwriting redirection
+
+# Full path to the directory of the current script
+DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
+# MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
+# trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
+
+function usage () {
+    cat << EOF
+Generate a text file with random words taken from /usr/share/dict/words
+
+    -h, --help print this help message and exit
+    -s, --size <int><unit> size of the text file to generate
+        <int> is the size of the file
+        <unit> is the unit of the size. It can be:
+            K for kilobytes
+            M for megabytes
+            G for gigabytes
+    -n, --number <int> number of words to generate
+    -l, --lines <int> number of lines to generate
+        -n must be used with -l to generate a file with the specified number of lines
+        with -n giving the number of words per line
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        -s|--size) SIZE="$2"; shift ;;
+        -n|--number) NUMBER="$2"; shift ;;
+        -l|--lines) LINES="$2"; shift ;;
+        -h|--help) usage; exit 0 ;;
+        --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
+        *) usage; exit 1 ;;
+    esac
+    shift
+done
+
+# Check if LINES is set
+if [ ! -z "$LINES" ]; then
+    # Check if NUMBER is set
+    if [ ! -z "$NUMBER" ]; then
+        NWORDS=$((LINES * NUMBER))
+        echo "$NWORDS"
+        shuf -r /usr/share/dict/words | head -n $NWORDS \
+            | awk -v"NUMBER=$NUMBER" '{printf $0" "; if (NR % NUMBER == 0) {print ""}}' \
+            | head -n $LINES > /dev/stdout
+        exit 0
+    else
+        echo "ERROR: -n must be used with -l to generate a file with the specified number of lines with -n giving the number of words per line"
+        exit 1
+    fi
+fi
+# Check if SIZE is set
+if [ ! -z "$SIZE" ]; then
+    shuf -r /usr/share/dict/words | tr '\n' ' ' | head -c "$SIZE" > /dev/stdout
+    exit 0
+fi
+# Check if NUMBER is set
+if [ ! -z "$NUMBER" ]; then
+    shuf -r /usr/share/dict/words | head -n "$NUMBER" | tr '\n' ' ' > /dev/stdout
+    exit 0
+fi
