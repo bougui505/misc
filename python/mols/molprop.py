@@ -10,10 +10,18 @@
 import os
 import sys
 
+import torch
 import typer
 from rdkit import Chem
-from rdkit.Chem import QED, RDConfig, SaltRemover, rdFMCS, rdRascalMCES
+from rdkit.Chem import QED, RDConfig, SaltRemover, rdFMCS
+
+try:
+    from rdkit.Chem import rdRascalMCES
+except ImportError:
+    print("WARNING: rdRascalMCES not found, please install rdkit with the rascal option", file=sys.stderr)
+
 from rdkit.Chem.Scaffolds import MurckoScaffold
+from torch.utils.data import Dataset
 
 # See: https://mattermodeling.stackexchange.com/a/8544
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
@@ -132,6 +140,84 @@ def fp_sim(ref:str):
             print(f"{line} sim({ref}): {sim:.3f}")
         except:
             continue
+
+
+@app.command()
+def max_sim(
+    ref_smifile:str,
+    batch_size:int=-1,
+    n_workers:int=-1,
+    ):
+    """
+    Compute the maximum Tanimoto similarity between the fingerprints of the
+    molecules from the SMILES file given in the standard input and a
+    set of reference molecules given in ref_smifile.\n
+
+    - ref_smifile: path to the reference SMILES file\n
+    - batch_size: batch size for the dataloader\n
+        if -1, use the number of available CPU cores\n
+    - n_workers: number of workers for the dataloader\n
+        if -1, use all available CPU cores\n
+    """
+    # create a torch dataset from the reference SMILES file
+    dataset = Fingerprint_Dataset(ref_smifile)
+    # create a torch dataloader
+    if n_workers == -1:
+        n_workers = os.cpu_count()  # type: ignore[assignment]
+    if batch_size == -1:
+        batch_size = n_workers
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             num_workers=n_workers,
+                                             collate_fn=lambda x: [i for i in x if i is not None],
+                                             )
+    for i, line in enumerate(sys.stdin):
+        line = line.strip()
+        smiles = line.split()[0]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            continue
+        try:
+            Chem.SanitizeMol(mol)
+        except:
+            continue
+        ref_fp = Chem.RDKFingerprint(mol)
+        # Compute the minimum Tanimoto similarity
+        max_sim = 0.0
+        smiles_max = ""
+        for batch in dataloader:
+            for e in batch:
+                smiles, fp = e
+                sim = Chem.DataStructs.TanimotoSimilarity(ref_fp, fp)
+                if sim > max_sim:
+                    max_sim = sim
+                    smiles_max = smiles
+                if max_sim == 1.0:
+                    break
+        print(f"{line} max_sim({smiles_max}): {max_sim:.3f}")
+            
+
+class Fingerprint_Dataset(Dataset):
+    def __init__(self, smiles_file:str):
+        with open(smiles_file, "r") as f:
+            self.smiles = [line.strip().split()[0] for line in f.readlines() if not line.startswith("#")]
+        self.smiles = [s for s in self.smiles if s != ""]
+
+    def __len__(self):
+        return len(self.smiles)
+
+    def __getitem__(self, idx):
+        smiles = self.smiles[idx]
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        try:
+            Chem.SanitizeMol(mol)
+            fp = Chem.RDKFingerprint(mol)
+            return smiles, fp
+        except:
+            return None
+        
 
 @app.command()
 def murcko_sim(ref:str):
