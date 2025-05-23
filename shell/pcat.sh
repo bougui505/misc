@@ -26,5 +26,5 @@ for F in $(echo $FILENAMES); do
 done \
   | awk '{S+=$1}END{print S}'
 )
-cat $FILENAMES | pv -N "$FILENAMES" -p -e -b -s $TOTALBYTES
+cat $FILENAMES | pv -f -N "$FILENAMES" -p -e -b -s $TOTALBYTES
 
