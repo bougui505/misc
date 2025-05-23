@@ -145,8 +145,8 @@ def fp_sim(ref:str):
 @app.command()
 def max_sim(
     ref_smifile:str,
-    batch_size:int=-1,
-    n_workers:int=-1,
+    batch_size:int=1,
+    n_workers:int=0,
     ):
     """
     Compute the maximum Tanimoto similarity between the fingerprints of the
@@ -199,22 +199,49 @@ def max_sim(
             
 
 class Fingerprint_Dataset(Dataset):
-    def __init__(self, smiles_file:str):
-        with open(smiles_file, "r") as f:
-            self.smiles = [line.strip().split()[0] for line in f.readlines() if not line.startswith("#")]
-        self.smiles = [s for s in self.smiles if s != ""]
+    def __init__(self, smiles_file:str, use_cache:bool=True):
+        self.fingerprints = list()
+        if use_cache:
+            self.smiles = list()
+            i = 0
+            with open(smiles_file, "r") as f:
+                for i, line in enumerate(f):
+                    print(f"Caching {i}\r", end="", flush=True, file=sys.stderr)
+                    line = line.strip()
+                    if line.startswith("#"):
+                        continue
+                    smiles = line.split()[0]
+                    mol = Chem.MolFromSmiles(smiles)
+                    if mol is None:
+                        continue
+                    try:
+                        Chem.SanitizeMol(mol)
+                        fp = Chem.RDKFingerprint(mol)
+                        self.fingerprints.append(fp)
+                        self.smiles.append(smiles)
+                    except:
+                        continue
+            print(f"Caching {i}\r", end="", flush=True, file=sys.stderr)
+        else:
+            with open(smiles_file, "r") as f:
+                self.smiles = [line.strip().split()[0] for line in f.readlines() if not line.startswith("#")]
+            self.smiles = [s for s in self.smiles if s != ""]
+
 
     def __len__(self):
         return len(self.smiles)
 
     def __getitem__(self, idx):
         smiles = self.smiles[idx]
+        if len(self.fingerprints) > 0:
+            return smiles, self.fingerprints[idx]
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return None
         try:
             Chem.SanitizeMol(mol)
             fp = Chem.RDKFingerprint(mol)
+            self.fingerprints[idx] = fp
             return smiles, fp
         except:
             return None
