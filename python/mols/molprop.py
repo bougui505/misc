@@ -194,7 +194,8 @@ def max_sim(
                     smiles_max = smiles
                 if max_sim == 1.0:
                     break
-        print(f"{line} max_sim({smiles_max}): {max_sim:.3f}")
+        # print(f"{line} max_sim({smiles_max}): {max_sim:.3f}")
+        print(f"{line} smiles_max_sim: {smiles_max} max_sim: {max_sim:.3f}")
             
 
 class Fingerprint_Dataset(Dataset):
