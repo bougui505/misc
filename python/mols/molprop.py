@@ -145,8 +145,7 @@ def fp_sim(ref:str):
 @app.command()
 def max_sim(
     ref_smifile:str,
-    batch_size:int=1,
-    n_workers:int=0,
+    batch_size:int=-1,
     ):
     """
     Compute the maximum Tanimoto similarity between the fingerprints of the
@@ -162,13 +161,11 @@ def max_sim(
     # create a torch dataset from the reference SMILES file
     dataset = Fingerprint_Dataset(ref_smifile)
     # create a torch dataloader
-    if n_workers == -1:
-        n_workers = os.cpu_count()  # type: ignore[assignment]
     if batch_size == -1:
-        batch_size = n_workers
+        batch_size = os.cpu_count()  # type: ignore[assignment]
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
-                                             num_workers=n_workers,
+                                             num_workers=0,
                                              collate_fn=lambda x: [i for i in x if i is not None],
                                              )
     for i, line in enumerate(sys.stdin):
