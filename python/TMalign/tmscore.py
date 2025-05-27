@@ -42,7 +42,7 @@ def usalign():
     cat input.txt | python tmscore.py usalign\n
     \n
     The command could also be run in parallel using the split command (e.g. for 16 processes in parallel):\n
-    cat input.txt | split -n r/16 -u --filter="tmscore.py usalign"\n
+    cat input.txt | split -n r/16 -u --filter="tmscore usalign"\n
     \n
     Example output:\n
     pdb1='1abc'\n
