@@ -58,20 +58,17 @@ def usalign():
             if len(parts) < 2:
                 print("Error: At least two arguments are required (pdb1 and pdb2).")
                 continue
-            pdb1 = parts[0]
-            pdb2 = parts[1]
-            sel1 = parts[2] if len(parts) > 2 else "all"
-            sel2 = parts[3] if len(parts) > 3 else "all"
-            tmscore = run_usalign(
-                pdb1, pdb2, selmodel=sel1, selnative=sel2
-            )
-            # print(f"{pdb1=}")
-            # print(f"{pdb2=}")
-            # print(f"{sel1=}")
-            # print(f"{sel2=}")
-            # print(f"{tmscore=:.4f}")
-            # print("--")
-            print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}")
+            try:
+                pdb1 = parts[0]
+                pdb2 = parts[1]
+                sel1 = parts[2] if len(parts) > 2 else "all"
+                sel2 = parts[3] if len(parts) > 3 else "all"
+                tmscore = run_usalign(
+                    pdb1, pdb2, selmodel=sel1, selnative=sel2
+                )
+                print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}")
+            except Exception as e:
+                print(f"Error processing line '{line}': {e}", file=sys.stderr)
     else:
         print("No input provided. Please pipe data to this script.")
 
