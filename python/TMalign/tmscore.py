@@ -45,12 +45,7 @@ def usalign():
     cat input.txt | split -n r/16 -u --filter="tmscore usalign"\n
     \n
     Example output:\n
-    pdb1='1abc'\n
-    pdb2='2def'\n
-    sel1='all'\n
-    sel2='all'\n
-    tmscore=0.1234\n
-    --\n
+    pdb1='1abc.pdb',pdb2='2xyz.pdb',sel1='all',sel2='all',tmscore=0.1234\n
     ...\n
     """ 
 
@@ -70,12 +65,13 @@ def usalign():
             tmscore = run_usalign(
                 pdb1, pdb2, selmodel=sel1, selnative=sel2
             )
-            print(f"{pdb1=}")
-            print(f"{pdb2=}")
-            print(f"{sel1=}")
-            print(f"{sel2=}")
-            print(f"{tmscore=:.4f}")
-            print("--")
+            # print(f"{pdb1=}")
+            # print(f"{pdb2=}")
+            # print(f"{sel1=}")
+            # print(f"{sel2=}")
+            # print(f"{tmscore=:.4f}")
+            # print("--")
+            print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}")
     else:
         print("No input provided. Please pipe data to this script.")
 
