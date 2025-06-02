@@ -163,6 +163,7 @@ pip3 install --break-system-packages pygls ollama
 
 ################################# PYTORCH #################################
 pip3 install --break-system-packages torch torchvision torchaudio torchinfo torchviz
+pip3 install --break-system-packages captum
 ###########################################################################
 
 ################################# PYTORCH-GEOMETRIC #################################
