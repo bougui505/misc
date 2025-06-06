@@ -46,16 +46,24 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ $NUM -gt 0 ]; then
-    FILES=$(find -L . -type f | sed 's,./,,')
+    # FILES=$(find -L . -type f | sed 's,./,,')
+    if [ $ALL -eq 1 ]; then
+        # find the $NUM newest files without taking into account the delay
+        FILES=$(find -L . -type f -printf '%T@ %p\n' | sort -n | tail -n $NUM | cut -d' ' -f2- | sed 's,./,,')
+    else
+        # find the $NUM newest files without taking into account the delay and excluding hidden files
+        FILES=$(find -L . -type f ! -path '*/\.*' -printf '%T@ %p\n' | sort -n | tail -n $NUM | cut -d' ' -f2- | sed 's,./,,')
+    fi
 else
-    FILES=$(find -L . -type f -mmin -$DELAY | sed 's,./,,')
-fi
-if [ $ALL -eq 0 ]; then
-    FILES=$(echo $FILES | tr " " "\n" | grep -v -e "^\." -e "/\." -e "__pycache__")
+    if [ $ALL -eq 1 ]; then
+        FILES=$(find -L . -type f -mmin -$DELAY | sed 's,./,,')
+    else
+        FILES=$(find -L . -type f ! -path '*/\.*' -mmin -$DELAY | sed 's,./,,')
+    fi
 fi
 if [[ ! -z $FILES ]]; then
     if [ $NUM -gt 0 ]; then
-        echo $FILES | xargs ls -rth | tail -n $NUM | xargs lt
+        echo $FILES | xargs lt
     else
         echo $FILES | xargs lt
     fi
