@@ -48,9 +48,9 @@ node -v
 
 ################################# MODELLER ##################################
 cd /opt
-wget https://salilab.org/modeller/10.4/modeller_10.4-1_amd64.deb
-env KEY_MODELLER=MODELIRANJE dpkg -i modeller_10.4-1_amd64.deb
-rm modeller_10.4-1_amd64.deb
+wget https://salilab.org/modeller/10.7/modeller_10.7-1_amd64.deb
+env KEY_MODELLER=MODELIRANJE dpkg -i modeller_10.7-1_amd64.deb
+rm modeller_10.7-1_amd64.deb
 #############################################################################
 
 ################################# PYMOL ##################################
