@@ -2,19 +2,19 @@ BOOTSTRAP: docker
 FROM: debian:12.1
 
 %files
-/c7/scratch2/ablondel/Comp/Boltz2/Build/mols /opt/Boltz/
-/c7/scratch2/ablondel/Comp/Boltz2/Build/boltz2_aff.ckpt /opt/Boltz/
-/c7/scratch2/ablondel/Comp/Boltz2/Build/boltz2_conf.ckpt /opt/Boltz/
+boltz_data /opt/
 
 %post
 export DEBIAN_FRONTEND=noninteractive
-#echo 'Dir::Cache "/dev/shm/apt/cache";' > /etc/apt/apt.conf.d/99custum
-#echo 'Dir::State::Lists "/dev/shm/apt/lists";' >> /etc/apt/apt.conf.d/99custum
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 apt-get update
 apt-get install -y python3-pip # git
 
 python3 -m pip config set global.break-system-packages true
-pip --cache-dir=/dev/shm/pip/cache install boltz -U
+pip --cache-dir=/tmp/pip/cache install boltz -U
 
 %environment
-export BOLTZ_CACHE=/opt/Boltz/
+export BOLTZ_CACHE=/opt/boltz_data
