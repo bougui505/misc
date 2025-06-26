@@ -25,6 +25,9 @@ function usage () {
     -h, --help print this help message and exit
     -n, --nrec print the number of records for the given rec file
     -s, --sample give the number of records to pick up randomly from the given rec file
+    --torec <separator> convert a column file with the first line as keys and the rest 
+    of the lines as values to a rec file. Columns are separated by <separator>.
+    The first line is used as keys, the rest of the lines as values. The output is written to stdout.
 
 ----------------${bold}RECAWK${normal}----------------
 
@@ -104,11 +107,13 @@ EOF
 V="V=0"
 GETNREC=0
 SAMPLE=0
+TOREC=0
 case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
     -n|--nrec) GETNREC=1 ;;
     -s|--sample) SAMPLE=$2; shift ;;
+    --torec) TOREC=$2; shift ;;
 esac
 
 getnrec(){
@@ -127,6 +132,30 @@ if [[ $GETNREC -eq 1 ]]; then
     getnrec $FILENAMES
     exit 0
 fi
+
+if [[ $TOREC != 0 ]]; then
+    if [[ -z $TOREC ]]; then
+        echo "Error: --torec requires a separator argument." >&2
+        exit 1
+    fi
+    awk -F"$TOREC" '{
+        if (NR==1){
+            for (i=1; i<=NF; i++){
+                keys[i]=$i
+            }
+        }
+        else{
+            for (i=1; i<=NF; i++){
+                if (keys[i] != ""){
+                    print keys[i]"="$i
+                }
+            }
+            print "--"
+        }
+    }' "$FILENAMES"
+    exit 0
+fi
+    
 
 if [[ $SAMPLE -gt 0 ]]; then
     cat > $MYTMP/in
