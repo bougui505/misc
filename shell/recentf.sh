@@ -17,4 +17,8 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 # trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-find . -type f -not -path '*/.*' -print0 | xargs -0 stat --format '%Y :%y %n' | sort -nr | cut -d: -f2-
+find . -type f -not -path '*/.*' -print0 \
+  | xargs -0 stat --format '%Y :%y %n' \
+  | sort -nr \
+  | cut -d: -f2- \
+  | tac
