@@ -38,8 +38,8 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # adapted from: https://askubuntu.com/a/942735/415396
 
 TARGET_SITE="$1"
-PDF_DIR="$(echo "$TARGET_SITE" | sed -e 's/https\?:\/\///')-pdfs"
-OUTPDF="$(echo $TARGET_SITE | sed -e 's/https\?:\/\///').pdf"
+PDF_DIR="$(echo "$TARGET_SITE" | sed -e 's/https\?:\/\///' -e 's,/,_,g')-pdfs"
+OUTPDF="$(echo $TARGET_SITE | sed -e 's/https\?:\/\///' -e 's,/,_,g').pdf"
 NPROC=$(nproc)
 
 mkdir -p "$PDF_DIR"
@@ -61,6 +61,6 @@ COUNT=0
 #   wkhtmltopdf "$i" "$PDF_DIR/$(echo "$i" | sed -e 's/https\?:\/\///' -e 's/\//-/g' ).pdf" 2>&1 &> /dev/null
 # done
 # rewrite the loop above in parallel
-parallel --bar --eta -j $NPROC wkhtmltopdf --log-level none {} "$PDF_DIR/{#}.pdf" :::: url-list.txt
+parallel --bar --eta -j $NPROC wkhtmltopdf --log-level none --lowquality {} "$PDF_DIR/{#}.pdf" :::: url-list.txt
 
 gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=$OUTPDF $(ls -v -1 $PDF_DIR/*.pdf)
