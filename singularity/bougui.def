@@ -34,6 +34,7 @@ apt-get install -y pigz
 apt-get install -y ncbi-blast+
 apt-get install -y exa task-spooler
 apt-get install -y make gcc libz-dev
+apt-get install -y python3-openbabel
 apt-get clean
 ###############################################################################
 
