@@ -40,6 +40,15 @@ boltz_data/boltz2_aff.ckpt:
 boltz.sif: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/boltz2_conf.ckpt boltz_data/boltz2_aff.ckpt
 	singularity build -F $@ $<
 
+boltz.sif-maestro: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/
+	ssh maestro << EOF
+	cd /pasteur/appa/homes/bougui/source/misc
+	git pull
+	cd /pasteur/appa/homes/bougui/source/misc/singularity/boltz
+	module load apptainer
+	make boltz.sif
+	EOF
+
 test:
 	apptainer run --nv boltz.sif boltz predict data/1t4e.yml --use_msa_server --override
 
