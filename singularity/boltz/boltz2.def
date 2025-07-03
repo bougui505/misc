@@ -16,11 +16,6 @@ apt-get install -y python3-pip # git
 python3 -m pip config set global.break-system-packages true
 mkdir -p /tmp/pip/cache
 pip --cache-dir=/tmp/pip/cache install boltz -U
-# I got this error when trying to run a prediction on maestro:
-# Exception: Failed to import Triton-based component: triangle_multiplicative_update:
-# Please make sure to install triton==3.3.0. Other versions may not work!
-# =>
-pip --cache-dir=/tmp/pip/cache install --force-reinstall triton==3.3.0
 
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
