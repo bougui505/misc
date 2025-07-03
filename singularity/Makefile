@@ -19,5 +19,14 @@ help:
 bougui.sif: bougui.def
 	singularity build --force bougui.sif bougui.def
 
+bougui.sif-maestro:
+	rsync -a --update -P -h chimera maestro:/pasteur/appa/homes/bougui/source/misc/singularity/
+	ssh maestro << EOF
+	cd /pasteur/appa/homes/bougui/source/misc/singularity
+	git pull
+	module load apptainer
+	apptainer build --force bougui.sif bougui.def
+	EOF
+
 test-cuda: bougui.sif
 	singularity run --nv bougui.sif python3 -c 'import torch; print(torch.cuda.is_available())'
