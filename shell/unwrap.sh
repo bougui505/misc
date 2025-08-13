@@ -12,5 +12,14 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
-awk '{for (i=1;i<=NF;i++){printf $i" "}; if (NF==0){print}}' $1 \
-  | sponge $1
+awk '{
+  if (NF>10 && $1!="-"){  # more than 10 words in the line and not starting by "-"
+    for (i=1;i<=NF;i++){  # unwrap the line
+      printf $i" "
+    }
+  }
+  else{
+    print  # print the line as is
+  }
+  }' $1 # \
+  # | sponge $1
