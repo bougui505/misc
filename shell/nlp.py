@@ -27,6 +27,23 @@ def callback(debug:bool=False):
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
 
+NLP = spacy.load("en_core_web_sm")
+
+def has_verb(sentence):
+    """
+    Checks if a spaCy sentence object contains at least one verb.
+    """
+    # Process the sentence string to get a Doc object
+    doc = NLP(sentence)
+    
+    # Iterate through the tokens in the sentence
+    for token in doc:
+        # Check if the token's part-of-speech is a verb or an auxiliary verb
+        # print(token.text, token.pos_)
+        if token.pos_ in ["VERB", "AUX"]:
+            return True
+    return False
+
 @app.command()
 def sbd():
     """
@@ -37,11 +54,12 @@ def sbd():
     if not text:
         typer.echo("No text provided. Please provide text to process.")
         raise typer.Exit(code=1)
-    nlp = spacy.load("en_core_web_sm")
-    doc = nlp(text)
+    doc = NLP(text)
     for sentence in doc.sents:
         # print the sentence text
-        typer.echo(sentence.text.strip())
+        if not has_verb(sentence.text):
+            print("")
+        print(sentence.text.strip())
 
 if __name__ == "__main__":
     import sys
