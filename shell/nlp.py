@@ -54,6 +54,8 @@ def sbd():
     if not text:
         typer.echo("No text provided. Please provide text to process.")
         raise typer.Exit(code=1)
+    # remove carriage returns in text:
+    text = text.replace("\n", " ")
     doc = NLP(text)
     for sentence in doc.sents:
         # print the sentence text
