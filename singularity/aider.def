@@ -7,6 +7,7 @@ FROM: debian:12.1
 export PATH=/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin:$PATH
 
 %post
+set -e
 ################################# APT INSTALL #################################
 export DEBIAN_FRONTEND=noninteractive
 mkdir -p /tmp/apt/cache
@@ -25,7 +26,7 @@ mkdir -p /tmp/pip/cache
 pip --cache-dir=/tmp/pip/cache install aider-install
 aider-install
 /root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
-/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium || exit 1
 cd /root/.local/bin
 for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
     filename=$(basename "$f")
