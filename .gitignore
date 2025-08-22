@@ -1127,3 +1127,4 @@ singularity/openmm/openmm-plumed-apptainer.tar.gz
 python/pytorch/figures/truncated_normal.png
 singularity/chimerax/ucsf-chimerax_1.9ubuntu24.04_amd64.deb
 slurm/
+.aider*
