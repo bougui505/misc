@@ -27,7 +27,13 @@ aider-install
 /root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
 /root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium
 cd /root/.local/bin
-# AI! link all files in /root/.local/share/uv/tools/aider-chat/bin to /root/.local/bin if not already linked or present
+for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
+    filename=$(basename "$f")
+    target="/root/.local/bin/$filename"
+    if [ -f "$f" ] && [ ! -e "$target" ]; then
+        ln -s "$f" "$target"
+    fi
+done
 ###############################################################################
 
 # %runscript
