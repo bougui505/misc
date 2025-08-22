@@ -1,0 +1,35 @@
+BOOTSTRAP: docker
+FROM: debian:12.1
+
+%files
+
+%environment
+export PATH=/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin:$PATH
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip git
+###############################################################################
+
+export PATH=/root/.local/bin:$PATH
+################################# PIP INSTALL #################################
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+mkdir -p /tmp/pip/cache
+pip --cache-dir=/tmp/pip/cache install aider-install
+aider-install
+/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium
+cd /root/.local/bin
+# AI! link all files in /root/.local/share/uv/tools/aider-chat/bin to /root/.local/bin if not already linked or present
+###############################################################################
+
+# %runscript
+# cmd $@
+
