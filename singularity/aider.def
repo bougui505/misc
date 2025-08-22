@@ -5,6 +5,7 @@ FROM: debian:12.1
 
 %environment
 export PATH=/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin:$PATH
+export PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 %post
 set -e
@@ -26,7 +27,7 @@ mkdir -p /tmp/pip/cache
 pip --cache-dir=/tmp/pip/cache install aider-install
 aider-install
 /root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
-/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium || exit 1
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium
 cd /root/.local/bin
 for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
     filename=$(basename "$f")
