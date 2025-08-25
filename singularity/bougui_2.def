@@ -15,13 +15,12 @@ apt-get update
 # apt-get install -y python3-pip
 ###############################################################################
 
-################################# spaCy #################################
-python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
-mkdir -p /tmp/pip/cache
-pip3 --cache-dir=/tmp/pip/cache install spacy
-python3 -m spacy download en_core_web_sm
-python3 -m spacy download fr_core_news_sm
-##########################################################################
+################################# Group SELFIES #################################
+cd /opt
+git clone https://github.com/aspuru-guzik-group/group-selfies
+cd group-selfies
+pip install .
+#################################################################################
 
 # %runscript
 # cmd $@
