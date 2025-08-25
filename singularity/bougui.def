@@ -13,6 +13,11 @@ chimera/chimera-1.18-linux_x86_64.bin /opt
 %post
 export PIP_CACHE_DIR="/tmp/pip/cache"
 mkdir -p "$PIP_CACHE_DIR"
+
+export APT_CACHE_DIR="/tmp/apt/archives"
+mkdir -p "$APT_CACHE_DIR"
+echo "Dir::Cache::Archives \"$APT_CACHE_DIR\";" > /etc/apt/apt.conf.d/99tmp-cache
+
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
 
 ################################# APT INSTALL #################################
