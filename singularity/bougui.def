@@ -11,6 +11,10 @@ collada2gltf-2.1.4-h6bb024c_0.tar.bz2 /opt
 chimera/chimera-1.18-linux_x86_64.bin /opt
 
 %post
+export PIP_CACHE_DIR="/tmp/pip/cache"
+mkdir -p "$PIP_CACHE_DIR"
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+
 ################################# APT INSTALL #################################
 apt-get update
 apt-get install -y cmake
@@ -35,7 +39,6 @@ apt-get install -y ncbi-blast+
 apt-get install -y exa task-spooler
 apt-get install -y make gcc libz-dev
 apt-get install -y python3-openbabel
-apt-get clean
 ###############################################################################
 
 ################################# Node.js for nvim ####################################
@@ -55,7 +58,7 @@ rm modeller_10.7-1_amd64.deb
 #############################################################################
 
 ################################# PyVista ###################################
-pip3 install --break-system-packages pyvista
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" pyvista
 #############################################################################
 
 ################################# PYMOL ##################################
@@ -76,26 +79,26 @@ git clone https://github.com/bougui505/pymol_isosurface.git
 ##########################################################################
 
 ################################# Typer ###################################
-pip3 install --break-system-packages typer "click<8.2.0"  # see: https://github.com/modelcontextprotocol/python-sdk/issues/688#issuecomment-2871923731
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" typer "click<8.2.0"  # see: https://github.com/modelcontextprotocol/python-sdk/issues/688#issuecomment-2871923731
 ###########################################################################
 
 ################################# TMTOOLS #################################
-pip3 install --break-system-packages tmtools
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" tmtools
 ###########################################################################
 
 ################################# IPYTHON #################################
-pip3 install --break-system-packages ipython
-pip3 install --break-system-packages jupyterlab
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" ipython
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" jupyterlab
 ###########################################################################
 
 ############################## deadcode ###################################
 # See: https://github.com/albertas/deadcode
-pip3 install --break-system-packages deadcode
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" deadcode
 ###########################################################################
 
 ############################### pydeps ####################################
 # See: https://github.com/thebjorn/pydeps
-pip3 install --break-system-packages pydeps
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" pydeps
 ###########################################################################
 
 ################################ MISC REPO ###############################
@@ -114,7 +117,7 @@ cd /usr/local/bin && ln -s /opt/misc/python/linkage.py linkage
 cd /usr/local/bin && ln -s /opt/misc/shell/recawk.sh recawk
 cd /usr/local/bin && ln -s /opt/misc/python/pycat.py pycat
 cd /usr/local/bin && ln -s /opt/misc/python/project.py project
-pip3 install --break-system-packages termcolor
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" termcolor
 ##########################################################################
 
 ################################ MATPLOT - PLOT ################################
@@ -126,13 +129,13 @@ ln -s /opt/matplot/matplot2.py plot2
 ln -s /opt/matplot/matplot3.py plot3
 cd /usr/local/lib/python3.11/dist-packages
 ln -s /opt/matplot/*.py .
-pip3 install --break-system-packages scikit-learn scipy numexpr numpy pillow matplotlib datashader bokeh holoviews scikit-image colorcet umap-learn
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" scikit-learn scipy numexpr numpy pillow matplotlib datashader bokeh holoviews scikit-image colorcet umap-learn
 ################################################################################
 
 
 ################################ plotext ################################
 # https://github.com/piccolomo/plotext
-pip3 install --break-system-packages "plotext[completion]"
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" "plotext[completion]"
 #########################################################################
 
 ################################# PDBSUMUP #################################
@@ -163,29 +166,29 @@ cd /opt/nvim-linux-x86_64/share/nvim/runtime/spell && wget https://www.mirrorser
 
 cd /opt
 curl -fsSL https://ollama.com/install.sh | sh
-pip3 install --break-system-packages pygls ollama
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" pygls ollama
 ###########################################################################
 
 ################################# PYTORCH #################################
-pip3 install --break-system-packages torch torchvision torchaudio torchinfo torchviz
-pip3 install --break-system-packages captum
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch torchvision torchaudio torchinfo torchviz
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" captum
 ###########################################################################
 
 ################################# PYTORCH-GEOMETRIC #################################
-pip3 install --break-system-packages torch_geometric
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch_geometric
 ################################# PYTORCH-GEOMETRIC #################################
 
 ################################# RDKIT #################################
-pip3 install --break-system-packages rdkit
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" rdkit
 #########################################################################
 
 ################################# SELFIES #################################
-pip3 install --break-system-packages selfies
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" selfies
 ###########################################################################
 
 ################################# Python Remind library #################################
-pip3 install --break-system-packages gcalcli
-pip3 install --break-system-packages remind
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" gcalcli
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" remind
 #########################################################################################
 
 ################################# CHIMERA #################################
@@ -201,7 +204,7 @@ ln -s /opt/chimera/bin/chimera .
 ######## ProtTrans ######## 
 cd /opt
 export HF_HOME="/opt/cache/huggingface/datasets"
-pip3 install --break-system-packages transformers sentencepiece protobuf
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" transformers sentencepiece protobuf
 python3 -c "from transformers import T5Tokenizer, T5EncoderModel;tokenizer = T5Tokenizer.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc', do_lower_case=False);model = T5EncoderModel.from_pretrained('Rostlab/prot_t5_xl_half_uniref50-enc')"
 ############################
 
@@ -216,12 +219,15 @@ make install
 ###############################
 
 ################################# spaCy #################################
-python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
-mkdir -p /tmp/pip/cache
-pip3 --cache-dir=/tmp/pip/cache install spacy
+# The global pip config is set at the top of %post
+# The pip cache directory is created at the top of %post
+pip3 --cache-dir="$PIP_CACHE_DIR" install spacy
 python3 -m spacy download en_core_web_sm
 python3 -m spacy download fr_core_news_sm
 ##########################################################################
+
+rm -rf "$PIP_CACHE_DIR"
+apt-get clean
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
