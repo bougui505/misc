@@ -19,6 +19,9 @@ help:
 bougui.sif: bougui.def
 	singularity build --force bougui.sif bougui.def
 
+bougui_2.sif: bougui_2.def
+	APPTAINER_TMPDIR=/home/bougui/source/misc/singularity/tmp apptainer build bougui_2.{sif,def}
+
 bougui.sif-maestro:
 	rsync -a --update -P -h chimera maestro:/pasteur/appa/homes/bougui/source/misc/singularity/
 	ssh maestro << EOF
