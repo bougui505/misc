@@ -232,7 +232,7 @@ python3 -m spacy download fr_core_news_sm
 ##########################################################################
 
 rm -rf "$PIP_CACHE_DIR"
-apt-get clean
+rm -rf "$APT_CACHE_DIR"
 
 %environment
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
