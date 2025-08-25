@@ -15,13 +15,6 @@ apt-get update
 # apt-get install -y python3-pip
 ###############################################################################
 
-################################# Group SELFIES #################################
-cd /opt
-git clone https://github.com/aspuru-guzik-group/group-selfies
-cd group-selfies
-pip install .
-#################################################################################
-
 # %runscript
 # cmd $@
 
