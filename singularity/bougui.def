@@ -18,6 +18,9 @@ export APT_CACHE_DIR="/tmp/apt/archives"
 mkdir -p "$APT_CACHE_DIR"
 echo "Dir::Cache::Archives \"$APT_CACHE_DIR\";" > /etc/apt/apt.conf.d/99tmp-cache
 
+# Ensure 'python3' command points to python3.13
+ln -sf /usr/bin/python3.13 /usr/bin/python3
+
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
 
 ################################# APT INSTALL #################################
