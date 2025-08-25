@@ -29,7 +29,6 @@ apt-get install -y meld trash-cli
 apt-get install -y sqlite3 coreutils
 apt-get install -y htop
 apt-get install -y parallel
-apt-get install -y python3-pandas
 apt-get install -y pv
 apt-get install -y gawk
 apt-get install -y clustalw
@@ -132,7 +131,7 @@ ln -s /opt/matplot/matplot2.py plot2
 ln -s /opt/matplot/matplot3.py plot3
 cd /usr/local/lib/python3.13/dist-packages
 ln -s /opt/matplot/*.py .
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" scikit-learn scipy numexpr numpy pillow matplotlib datashader bokeh holoviews scikit-image colorcet umap-learn
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" scikit-learn scipy numexpr numpy pillow matplotlib datashader bokeh holoviews scikit-image colorcet umap-learn pandas
 ################################################################################
 
 
