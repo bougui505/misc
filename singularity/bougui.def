@@ -1,5 +1,5 @@
 BOOTSTRAP: docker
-FROM: debian:12.1
+FROM: debian:13
 
 %files
 neovim/py_template_file.py /opt
@@ -15,7 +15,7 @@ chimera/chimera-1.18-linux_x86_64.bin /opt
 apt-get update
 apt-get install -y cmake
 apt-get install -y remind
-apt-get install -y python3.11-venv  # required to install formatter in neovim -- AstroNvim
+apt-get install -y python3.13-venv  # required to install formatter in neovim -- AstroNvim
 apt-get install -y wget git bzip2 build-essential python3-pip
 apt-get install -y bash zsh curl lua-nvim unzip fzf xz-utils npm ripgrep default-jre
 apt-get install -y meld trash-cli
