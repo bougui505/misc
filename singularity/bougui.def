@@ -23,6 +23,8 @@ apt-get update
 apt-get install -y cmake
 apt-get install -y remind
 apt-get install -y python3.13-venv  # required to install formatter in neovim -- AstroNvim
+# Ensure 'python3' command points to python3.13
+ln -sf /usr/bin/python3.13 /usr/bin/python3
 apt-get install -y wget git bzip2 build-essential python3-pip
 apt-get install -y bash zsh curl unzip fzf xz-utils npm ripgrep default-jre
 apt-get install -y meld trash-cli
@@ -77,6 +79,11 @@ tar xf collada2gltf-*.tar.bz2 -C / bin/collada2gltf
 git clone --depth 1 https://github.com/schrodinger/pymol-testing.git
 git clone --depth 1 https://github.com/rcsb/mmtf-cpp.git
 cp -R mmtf-cpp/include/mmtf* include/
+
+# Add msgpack include path for PyMol compilation
+export CPLUS_INCLUDE_PATH="/usr/include/msgpack:$CPLUS_INCLUDE_PATH"
+export C_INCLUDE_PATH="/usr/include/msgpack:$C_INCLUDE_PATH"
+
 python3 setup.py --glut True build install
 # PYMOL PLUGINS:
 cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
