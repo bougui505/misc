@@ -41,7 +41,7 @@ apt-get install -y ncbi-blast+
 apt-get install -y eza task-spooler
 apt-get install -y make gcc libz-dev
 apt-get install -y python3-openbabel
-        libnss3 \
+apt-get install -y libnss3 \
         libatk-bridge2.0-0 \
         libgtk-3-0 \
         libxss1 \
@@ -88,23 +88,6 @@ bash nodesource_setup.sh
 apt-get install -y nodejs
 node -v
 #######################################################################################
-
-################################# AIDER INSTALL #################################
-export PATH=/root/.local/bin:$PATH
-python3 -m pip config set global.break-system-packages true
-pip --cache-dir="$PIP_CACHE_DIR" install aider-install
-aider-install
-/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
-/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
-cd /root/.local/bin
-for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
-    filename=$(basename "$f")
-    target="/root/.local/bin/$filename"
-    if [ -f "$f" ] && [ ! -e "$target" ]; then
-        ln -s "$f" "$target"
-    fi
-done
-###############################################################################
 
 ################################# MODELLER ##################################
 cd /opt
@@ -286,6 +269,23 @@ git clone https://github.com/aspuru-guzik-group/group-selfies
 cd group-selfies
 pip install .
 #################################################################################
+
+################################# AIDER INSTALL #################################
+export PATH=/root/.local/bin:$PATH
+python3 -m pip config set global.break-system-packages true
+pip --cache-dir="$PIP_CACHE_DIR" install aider-install
+aider-install
+/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
+cd /root/.local/bin
+for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
+    filename=$(basename "$f")
+    target="/root/.local/bin/$filename"
+    if [ -f "$f" ] && [ ! -e "$target" ]; then
+        ln -s "$f" "$target"
+    fi
+done
+###############################################################################
 
 # rm -rf "$PIP_CACHE_DIR"
 # rm -rf "$APT_CACHE_DIR"
