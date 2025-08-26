@@ -41,6 +41,41 @@ apt-get install -y ncbi-blast+
 apt-get install -y eza task-spooler
 apt-get install -y make gcc libz-dev
 apt-get install -y python3-openbabel
+        libnss3 \
+        libatk-bridge2.0-0 \
+        libgtk-3-0 \
+        libxss1 \
+        fonts-liberation \
+        ca-certificates \
+        chromium \
+        libfontconfig1 \
+        libgbm1 \
+        libglib2.0-0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxrandr2 \
+        libxkbcommon0 \
+        libpangocairo-1.0-0 \
+        libatk1.0-0 \
+        libcairo2 \
+        libcups2 \
+        libdrm2 \
+        libegl1 \
+        libgdk-pixbuf-2.0-0 \
+        libgstreamer-plugins-base1.0-0 \
+        libgstreamer1.0-0 \
+        libharfbuzz0b \
+        libjpeg62-turbo \
+        libnotify4 \
+        libnspr4 \
+        libopengl0 \
+        libwayland-client0 \
+        libwayland-egl1 \
+        libwayland-cursor0 \
+        libxshmfence1 \
+        xdg-utils
 ###############################################################################
 
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
@@ -53,6 +88,23 @@ bash nodesource_setup.sh
 apt-get install -y nodejs
 node -v
 #######################################################################################
+
+################################# AIDER INSTALL #################################
+export PATH=/root/.local/bin:$PATH
+python3 -m pip config set global.break-system-packages true
+pip --cache-dir="$PIP_CACHE_DIR" install aider-install
+aider-install
+/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
+cd /root/.local/bin
+for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
+    filename=$(basename "$f")
+    target="/root/.local/bin/$filename"
+    if [ -f "$f" ] && [ ! -e "$target" ]; then
+        ln -s "$f" "$target"
+    fi
+done
+###############################################################################
 
 ################################# MODELLER ##################################
 cd /opt
@@ -239,6 +291,8 @@ pip install .
 # rm -rf "$APT_CACHE_DIR"
 
 %environment
+export PATH=/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin:$PATH
+export PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
 export MATPLOTLIBRC=$HOME/.config/matplotlib/matplotlibrc
