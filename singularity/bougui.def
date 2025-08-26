@@ -291,7 +291,7 @@ done
 # rm -rf "$APT_CACHE_DIR"
 
 %environment
-export PATH=/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin:$PATH
+export PATH=$PATH:/root/.local/bin:/root/.local/share/uv/tools/aider-chat/bin
 export PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 export PYTHONNOUSERSITE=1  # Do not use local python file outside the container
 export PYTHONPATH=
