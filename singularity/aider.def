@@ -46,18 +46,18 @@ apt-get install -y --no-install-recommends \
         libcups2 \
         libdrm2 \
         libegl1 \
-        libgdk-pixbuf2.0-0 \
+        libgdk-pixbuf-2.0-0 \
         libgstreamer-plugins-base1.0-0 \
         libgstreamer1.0-0 \
         libharfbuzz0b \
-        libjpeg-turbo8 \
+        libjpeg62-turbo \
         libnotify4 \
         libnspr4 \
         libopengl0 \
         libwayland-client0 \
         libwayland-egl1 \
         libwayland-cursor0 \
-        libxshmfence6 \
+        libxshmfence1 \
         xdg-utils
 ###############################################################################
 
@@ -68,7 +68,7 @@ mkdir -p /tmp/pip/cache
 pip --cache-dir=/tmp/pip/cache install aider-install
 aider-install
 /root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
-/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install --with-deps chromium
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
 cd /root/.local/bin
 for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
     filename=$(basename "$f")
