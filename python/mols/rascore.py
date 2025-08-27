@@ -20,6 +20,12 @@ app = typer.Typer(
 
 @app.command()
 def rascore():
+    """
+    Calculate the Retrosynthesis Accessibility score (RAscore) for SMILES strings
+    provided via standard input.
+    Each line of input is expected to contain a SMILES string as the first token.
+    The RAscore is appended to each input line.
+    """
     xgb_scorer = RAscore_XGB.RAScorerXGB()
     for i, line in enumerate(sys.stdin):
         line = line.strip()
