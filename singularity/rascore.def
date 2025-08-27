@@ -14,7 +14,7 @@ From: conda/miniconda3:latest
     echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list
 
     # Update apt and install necessary system tools for cloning and unzipping
-    apt-get update && apt-get install -y \
+    apt-get update && apt-get install -y --allow-unauthenticated \
         git \
         wget \
         unzip \
