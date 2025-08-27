@@ -20,6 +20,7 @@ From: conda/miniconda3:latest
         unzip \
         build-essential \
         libxrender1 \
+        libxext6 \
         --no-install-recommends
 
     # Clean up apt lists to reduce the final image size
