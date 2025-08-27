@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: conda/miniconda3:python-3.7
+From: conda/miniconda3:latest
 
 %labels
     Author A-Thakkar, cthoyt, tblaschke, EBjerrum
