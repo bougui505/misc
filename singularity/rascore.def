@@ -36,6 +36,9 @@ From: conda/miniconda3:latest
     # Install RAscore in editable mode. This sets up the package and its command-line interface.
     pip install --editable .
 
+    # Install typer library.
+    pip install typer
+
     # Install specific versions of dependencies as noted in RAscore's "Known Installation Issues".
     # These versions are critical for compatibility with the pretrained models.
     pip install \
