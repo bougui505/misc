@@ -7,12 +7,11 @@ From: conda/miniconda3:latest
     Description Retrosynthetic Accessibility (RA) score learned from computer aided synthesis planning
 
 %post
-    # Update apt sources to use archive mirrors for Debian Stretch, as it's an older release.
-    # The 'latest' tag for miniconda3 often resolves to a Debian Stretch or Buster base.
-    # Remove 'stretch-updates' as it might not be consistently mirrored in archive.
-    sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
-    sed -i 's/security.debian.org/archive.debian.org\/debian-security/g' /etc/apt/sources.list
-    sed -i '/stretch-updates/d' /etc/apt/sources.list
+    set -e # Exit immediately if a command exits with a non-zero status
+
+    # Overwrite sources.list with a minimal, working set of archive repositories for Debian Stretch.
+    # This addresses the recurring 404 errors with Debian Stretch security update mirrors.
+    echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list
 
     # Update apt and install necessary system tools for cloning and unzipping
     apt-get update && apt-get install -y \
