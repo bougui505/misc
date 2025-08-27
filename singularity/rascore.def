@@ -7,14 +7,23 @@ From: conda/miniconda3:latest
     Description Retrosynthetic Accessibility (RA) score learned from computer aided synthesis planning
 
 %post
+    # Update apt sources to use archive mirrors for Debian Stretch, as it's an older release.
+    # The 'latest' tag for miniconda3 often resolves to a Debian Stretch or Buster base.
+    # Remove 'stretch-updates' as it might not be consistently mirrored in archive.
+    sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
+    sed -i 's/security.debian.org/archive.debian.org\/debian-security/g' /etc/apt/sources.list
+    sed -i '/stretch-updates/d' /etc/apt/sources.list
+
     # Update apt and install necessary system tools for cloning and unzipping
     apt-get update && apt-get install -y \
         git \
         wget \
         unzip \
         build-essential \
-        --no-install-recommends \
-        && rm -rf /var/lib/apt/lists/*
+        --no-install-recommends
+
+    # Clean up apt lists to reduce the final image size
+    rm -rf /var/lib/apt/lists/*
 
     # Install RDKit via conda, as recommended by RAscore documentation, to ensure compatibility
     conda install -c rdkit rdkit -y
