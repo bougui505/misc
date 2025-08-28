@@ -2,6 +2,7 @@
 import torch
 import torch.utils.benchmark as benchmark
 from itertools import product
+import os
 
 # Determine the device to run on (GPU if available, otherwise CPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -34,7 +35,11 @@ for b, n in product(sizes, sizes):
     # When using GPU, num_threads is usually 1 unless specific multi-threading is desired for CPU tasks,
     # but the primary computations will be on the GPU.
     # We still iterate through num_threads for CPU benchmarking cases or if device is 'cpu'.
-    for num_threads in [1, 4, 16, torch.get_num_threads()]:
+    if device == "cpu":
+        num_threads_list = torch.round(torch.linspace(1, os.cpu_count(), 4)).int()
+    else:
+        num_threads_list = [1]
+    for num_threads in num_threads_list:
         results.append(benchmark.Timer(
             stmt='batched_dot_mul_sum(x_input, x_input)',
             setup='from __main__ import batched_dot_mul_sum',
