@@ -109,12 +109,16 @@ class RecDataset(Dataset):
         self.key_mol2_1 = key_mol2_1
         self.key_mol2_2 = key_mol2_2
         self.recfilename = recfilename
-        self.data, self.fields = _local_get_data(file=recfilename, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
+        # _local_get_data now returns all fields found in the file
+        self.data, self._all_file_fields = _local_get_data(file=recfilename)
 
     def __len__(self):
-        # Use a key guaranteed to exist if there are any records, or simply the first field in self.fields
-        if self.fields:
-            return len(self.data[self.fields[0]])
+        # Use a key guaranteed to exist if there are any records, e.g., self.key1
+        # or fall back to any field if key1 is None, or to the list of all fields
+        if self.key1 and self.key1 in self.data:
+            return len(self.data[self.key1])
+        elif self._all_file_fields:
+            return len(self.data[self._all_file_fields[0]])
         return 0 # No fields, no records
 
     def __getitem__(self, i):
@@ -147,47 +151,27 @@ def _local_dict_to_rec(d):
         lines.append(f"{k}={v}")
     return "\n".join(lines) + "\n--\n"
 
-def _local_get_data(file, selected_fields=None):
+def _local_get_data(file):
     """
     Loads data from a .rec.gz file into a dictionary of lists.
-    Mimics misc.rec.get_data but for local use.
+    Always loads all fields found in the file.
     """
     data = {}
-    fields = []
-    current_record_fields = []
+    all_fields_found = set()
 
-    # Read all lines first to determine fields if not selected_fields are provided
     with gzip.open(file, "rt") as f:
         all_lines = f.readlines()
 
-    # Determine all unique fields first
+    # First pass: identify all unique fields
     for line in all_lines:
         line = line.strip()
-        if line and line != '--':
-            if '=' in line:
-                key = line.split('=', 1)[0]
-                if key not in fields:
-                    fields.append(key)
-        elif line == '--' and not fields and current_record_fields:
-            # If no fields were added yet, and we have current record fields, add them
-            fields.extend(current_record_fields)
-            current_record_fields = [] # Reset for next record
-        elif line == '--' and fields and current_record_fields:
-            # Check if any new fields appeared in this record
-            for k in current_record_fields:
-                if k not in fields:
-                    fields.append(k)
-            current_record_fields = [] # Reset for next record
+        if line and line != '--' and '=' in line:
+            key = line.split('=', 1)[0]
+            all_fields_found.add(key)
+    
+    fields_order = sorted(list(all_fields_found)) # Consistent order for fields
 
-
-    # If selected_fields are provided, use them, otherwise use all found fields
-    if selected_fields:
-        # Filter out None values from selected_fields
-        fields_to_use = [f for f in selected_fields if f is not None]
-    else:
-        fields_to_use = fields
-
-    for field in fields_to_use:
+    for field in fields_order:
         data[field] = []
 
     current_record = {}
@@ -198,17 +182,17 @@ def _local_get_data(file, selected_fields=None):
                 key, value = line.split('=', 1)
                 current_record[key] = value
         elif line == '--':
-            # End of record, append values
-            for field in fields_to_use:
-                data[field].append(current_record.get(field, None)) # Use None for missing fields
+            # End of record, append values for all fields identified in the first pass
+            for field in fields_order:
+                data[field].append(current_record.get(field, None)) # Use None for missing fields in this specific record
             current_record = {} # Reset for next record
     
-    # If the last record was not terminated by '--'
+    # Handle case where the last record might not be terminated by '--'
     if current_record:
-        for field in fields_to_use:
+        for field in fields_order:
             data[field].append(current_record.get(field, None))
             
-    return data, fields_to_use
+    return data, fields_order
 
 
 def _compute_single_record_sim(args):
@@ -250,7 +234,7 @@ def _compute_single_record_sim(args):
 
 def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None):
     # Load all data from the rec file once in the main process using the local function
-    full_data, fields = _local_get_data(file=recfile, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
+    full_data, fields = _local_get_data(file=recfile) # 'fields' will now contain ALL original fields
     num_records = len(full_data[fields[0]]) if fields else 0
 
     # Prepare arguments for multiprocessing pool
