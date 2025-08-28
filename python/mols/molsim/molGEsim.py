@@ -45,6 +45,13 @@ def gesim_sim(smi1=None, smi2=None, mol1=None, mol2=None):
         if mol1.GetNumHeavyAtoms() < 2 or mol2.GetNumHeavyAtoms() < 2:
             return float('nan')
 
+        # Check for disconnected single-atom components that might cause segfaults
+        # (e.g., C.C.C)
+        for mol_check in [mol1, mol2]:
+            frags = Chem.GetMolFrags(mol_check, asMols=True)
+            if len(frags) > 1 and all(f.GetNumHeavyAtoms() == 1 for f in frags):
+                return float('nan')
+
         sim = gesim.graph_entropy_similarity(mol1, mol2)
         return sim
     except Exception:
