@@ -15,6 +15,11 @@ apt-get update
 # apt-get install -y python3-pip
 ###############################################################################
 
+cd /opt
+pip3 install git+https://github.com/pvnieo/diffusion-net-plus.git
+cd diffusion-net-plus
+pip3 install -r requirements.txt
+
 # %runscript
 # cmd $@
 
