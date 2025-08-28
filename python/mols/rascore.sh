@@ -18,4 +18,4 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 RASCORESIF="$DIRSCRIPT/../../singularity/rascore.sif"
-apptainer exec $RASCORESIF ./rascore.py "$@"
+apptainer exec $RASCORESIF $DIRSCRIPT/rascore.py "$@"

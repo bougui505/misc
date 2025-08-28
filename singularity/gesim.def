@@ -21,9 +21,6 @@ mkdir -p /tmp/pip/cache
 pip3 --cache-dir=/tmp/pip/cache install --upgrade git+https://github.com/LazyShion/GESim.git
 ###############################################################################
 
-# %runscript
-# cmd $@
-
 %test
     python3 << EOF
 from rdkit import Chem
@@ -50,3 +47,5 @@ print(f"Batch similarity test passed: {batch_sim}")
 
 EOF
 
+# %runscript
+# cmd $@
