@@ -205,78 +205,22 @@ def _compute_single_record_sim(args):
     # gesim_sim itself handles if mol1 or mol2 are None and any further Python exceptions.
     return gesim_sim(mol1=mol1, mol2=mol2, smi1=smi1, smi2=smi2) # Pass mol objects and original smiles
 
-def get_len(recfilename):
-    """
-    >>> get_len(recfilename='molsim_test.rec.gz')
-    1000
-    """
-    n = 0
-    with gzip.open(recfilename, "rt") as recfile:
-        for line in tqdm(recfile, desc="computing length"):
-            line = line.strip()
-            if line == '--':
-                n += 1
-    return n
-
-class RecordsDataset(Dataset):
-    """
-    >>> import torch
-    >>> similarities = torch.ones(1000) * 0.8
-    >>> recordsdataset = RecordsDataset(recfilename='molsim_test.rec.gz', similarities=similarities)
-    >>> record = recordsdataset[3]
-    >>> print(record)
-    smi_ref='O=C(O)C1CCN(C(=O)C=Cc2ccc(Sc3ccc4c(c3)OCCO4)c(C(F)(F)F)c2C(F)(F)F)CC1'
-    sel='resn_LIG_and_chain_L_and_resi_1'
-    pdb='/c7/scratch2/ablondel/GeneMolAI/mkDUDE/all/ital/reclig.pdb'
-    smi_gen='CC(=O)N1C(=O)N(c2ccc(Cl)cc2)c2ccccc2C(=O)N(Cc2ccccc2Cl)CC1=O'
-    epoch=0
-    valid_greedy=0
-    label='train'
-    valid=1
-    smi_gen_greedy='C=C(C)CC1=C(C)C(=O)C(=O)N(Cc1ccccc1)C(=O)NC(Cc1ccc(O)c(O)c1)=NO'
-    sim=0.8
-    --
-    <BLANKLINE>
-    """
-    def __init__(self, recfilename, similarities) -> None:
-        super().__init__()
-        self.recfilename = recfilename
-        self.recfile = gzip.open(self.recfilename, "rt")
-        self.length = get_len(self.recfilename)
-        self.similarities = similarities
-
-    def __len__(self):
-        return self.length
-
-    def __getitem__(self, i):
-        record = ""
-        for line in self.recfile:
-            line = line.strip()
-            if line == '--':
-                sim = self.similarities[i]
-                record += f"sim={sim}\n"
-                record += f"--\n"
-                return record
-            else:
-                record += line + '\n'
-
 
 def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None):
-    recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2)
-    outfilename = os.path.splitext(recfile)[0] + "_gesim" + ".rec.gz"
-    # Initialize RecDataset to load data once in the main process
-    dataset_for_data_extraction = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2)
+    # Load all data from the rec file once in the main process
+    full_data, fields = rec.get_data(file=recfile, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
+    num_records = len(full_data[fields[0]]) if fields else 0
 
     # Prepare arguments for multiprocessing pool
     task_args = []
-    for i in range(len(dataset_for_data_extraction)):
-        smi1 = dataset_for_data_extraction.data[key1][i].replace("'", "") if key1 else None
-        smi2 = dataset_for_data_extraction.data[key2][i].replace("'", "") if key2 else None
-        mol2_1_path = dataset_for_data_extraction.data[key_mol2_1][i].replace("'", "") if key_mol2_1 else None
-        mol2_2_path = dataset_for_data_extraction.data[key_mol2_2][i].replace("'", "") if key_mol2_2 else None
+    for i in range(num_records):
+        smi1 = full_data[key1][i].replace("'", "") if key1 else None
+        smi2 = full_data[key2][i].replace("'", "") if key2 else None
+        mol2_1_path = full_data[key_mol2_1][i].replace("'", "") if key_mol2_1 else None
+        mol2_2_path = full_data[key_mol2_2][i].replace("'", "") if key_mol2_2 else None
         task_args.append((smi1, smi2, mol2_1_path, mol2_2_path))
     
-    similarities = [np.nan] * len(task_args) # Initialize all with NaN
+    similarities = [np.nan] * num_records # Initialize all with NaN
     async_results = []
 
     # Use multiprocessing Pool for robustness against segfaults
@@ -293,16 +237,16 @@ def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=N
 
     outfilename = os.path.splitext(recfile)[0] + "_gesim" + ".rec.gz"
     
-    # Use the RecordsDataset and DataLoader to write the output with collected similarities
-    # num_workers=1 for writing is crucial here to avoid multiprocessing issues with file I/O
-    recordsdataset = RecordsDataset(recfilename=recfile, similarities=np.array(similarities))
-    recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1) 
-
+    # Write the output file
     with gzip.open(outfilename, "wt") as outgz:
-        for batch in tqdm(recordsdataloader, desc=f"writing file: {outfilename}"):
-            records = batch
-            for record in records:
-                outgz.write(record)
+        for i in tqdm(range(num_records), desc=f"writing file: {outfilename}"):
+            # Reconstruct the current record as a dictionary
+            current_record_dict = {field: full_data[field][i] for field in fields}
+            # Add the computed similarity
+            current_record_dict['sim'] = similarities[i]
+            
+            # Format and write the record using rec.dict_to_rec
+            outgz.write(rec.dict_to_rec(current_record_dict))
 
 
 if __name__ == "__main__":
