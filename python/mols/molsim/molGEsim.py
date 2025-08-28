@@ -11,6 +11,8 @@
 
 import gzip
 import os
+import multiprocessing
+import numpy as np
 
 from misc import rec
 from rdkit import Chem, RDLogger
@@ -31,12 +33,20 @@ def gesim_sim(smi1=None, smi2=None, mol1=None, mol2=None):
     >>> sim
     0.9580227325517037
     """
-    if mol1 is None:
-        mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
-    if mol2 is None:
-        mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
-    sim = gesim.graph_entropy_similarity(mol1, mol2)
-    return sim
+    try:
+        if mol1 is None and smi1 is not None:
+            mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+        if mol2 is None and smi2 is not None:
+            mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+
+        if mol1 is None or mol2 is None:
+            return float('nan') # Return NaN if one of the molecules couldn't be parsed from smiles/mol2
+
+        sim = gesim.graph_entropy_similarity(mol1, mol2)
+        return sim
+    except Exception:
+        # Catch any other Python exceptions during similarity computation
+        return float('nan') # Return NaN on any Python exception
 
 
 class SmiDataset(Dataset):
@@ -123,16 +133,77 @@ class RecDataset(Dataset):
             mol2_2 = self.data[self.key_mol2_2][i]
             mol2_2 = mol2_2.replace("'", "")
             mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=True)  # type: ignore
-        if mol1 is None and mol2 is None:
-            return -1
-        if mol1 is None:
-            return -0.25
-        if mol2 is None:
-            return -0.5
-        sim = -1
-        if mol1 is not None and mol2 is not None:  # type: ignore
-            sim = gesim_sim(mol1=mol1, mol2=mol2)  # type: ignore
+        # Parse mol1 from smi1 or mol2_1_path
+        if self.key1 is not None:
+            smi1 = self.data[self.key1][i]
+            smi1 = smi1.replace("'", "")
+            try:
+                mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
+            except Exception:
+                pass # mol1 remains None
+        if self.key_mol2_1 is not None:
+            mol2_1_path = self.data[self.key_mol2_1][i]
+            mol2_1_path = mol2_1_path.replace("'", "")
+            try:
+                mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1_path, sanitize=True)  # type: ignore
+            except Exception:
+                pass # mol1 remains None
+
+        # Parse mol2 from smi2 or mol2_2_path
+        if self.key2 is not None:
+            smi2 = self.data[self.key2][i]
+            smi2 = smi2.replace("'", "")
+            try:
+                mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
+            except Exception:
+                pass # mol2 remains None
+        if self.key_mol2_2 is not None:
+            mol2_2_path = self.data[self.key_mol2_2][i]
+            mol2_2_path = mol2_2_path.replace("'", "")
+            try:
+                mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2_path, sanitize=True)  # type: ignore
+            except Exception:
+                pass # mol2 remains None
+        
+        # Now, use the robust gesim_sim function
+        sim = gesim_sim(mol1=mol1, mol2=mol2) # Pass parsed mols directly
         return sim
+
+def _compute_single_record_sim(args):
+    """
+    Helper function to compute similarity for a single record.
+    This function runs in a separate process.
+    """
+    smi1, smi2, mol2_1_path, mol2_2_path = args
+    mol1, mol2 = None, None
+
+    # Parse mol1 from smi1 or mol2_1_path
+    if smi1 is not None:
+        try:
+            mol1 = Chem.MolFromSmiles(smi1)
+        except Exception:
+            pass
+    elif mol2_1_path is not None:
+        try:
+            mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1_path, sanitize=True)
+        except Exception:
+            pass
+
+    # Parse mol2 from smi2 or mol2_2_path
+    if smi2 is not None:
+        try:
+            mol2 = Chem.MolFromSmiles(smi2)
+        except Exception:
+            pass
+    elif mol2_2_path is not None:
+        try:
+            mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2_path, sanitize=True)
+        except Exception:
+            pass
+
+    # Call the robust gesim_sim
+    # gesim_sim itself handles if mol1 or mol2 are None and any further Python exceptions.
+    return gesim_sim(mol1=mol1, mol2=mol2, smi1=smi1, smi2=smi2) # Pass mol objects and original smiles
 
 def get_len(recfilename):
     """
@@ -193,12 +264,40 @@ class RecordsDataset(Dataset):
 def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None):
     recdataset = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2)
     outfilename = os.path.splitext(recfile)[0] + "_gesim" + ".rec.gz"
-    recdataloader = DataLoader(recdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=os.cpu_count())  # type: ignore
-    similarities = list()
-    for sim_batch in tqdm(recdataloader, desc="computing similarities"):
-        similarities.extend(list(sim_batch.numpy()))
-    recordsdataset = RecordsDataset(recfilename=recfile, similarities=similarities)
-    recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1)
+    # Initialize RecDataset to load data once in the main process
+    dataset_for_data_extraction = RecDataset(recfilename=recfile, key1=key1, key2=key2, key_mol2_1=key_mol2_1, key_mol2_2=key_mol2_2)
+
+    # Prepare arguments for multiprocessing pool
+    task_args = []
+    for i in range(len(dataset_for_data_extraction)):
+        smi1 = dataset_for_data_extraction.data[key1][i].replace("'", "") if key1 else None
+        smi2 = dataset_for_data_extraction.data[key2][i].replace("'", "") if key2 else None
+        mol2_1_path = dataset_for_data_extraction.data[key_mol2_1][i].replace("'", "") if key_mol2_1 else None
+        mol2_2_path = dataset_for_data_extraction.data[key_mol2_2][i].replace("'", "") if key_mol2_2 else None
+        task_args.append((smi1, smi2, mol2_1_path, mol2_2_path))
+    
+    similarities = [np.nan] * len(task_args) # Initialize all with NaN
+    async_results = []
+
+    # Use multiprocessing Pool for robustness against segfaults
+    with multiprocessing.Pool(processes=os.cpu_count()) as pool: # type: ignore
+        for args in task_args:
+            async_results.append(pool.apply_async(_compute_single_record_sim, (args,)))
+
+        for i, res in enumerate(tqdm(async_results, desc="computing similarities (multiprocess)")):
+            try:
+                similarities[i] = res.get() # Retrieve result for this specific task
+            except BaseException: # Catch BaseException for potential segfaults or other worker crashes
+                # similarities[i] is already np.nan from initialization
+                pass
+
+    outfilename = os.path.splitext(recfile)[0] + "_gesim" + ".rec.gz"
+    
+    # Use the RecordsDataset and DataLoader to write the output with collected similarities
+    # num_workers=1 for writing is crucial here to avoid multiprocessing issues with file I/O
+    recordsdataset = RecordsDataset(recfilename=recfile, similarities=np.array(similarities))
+    recordsdataloader = DataLoader(recordsdataset, batch_size=os.cpu_count(), shuffle=False, num_workers=1) 
+
     with gzip.open(outfilename, "wt") as outgz:
         for batch in tqdm(recordsdataloader, desc=f"writing file: {outfilename}"):
             records = batch
