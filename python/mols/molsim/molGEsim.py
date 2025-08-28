@@ -91,10 +91,6 @@ def isvalid(smi):
             valid = True
         else:
             valid = False
-    else:
-        valid = False
-    return valid
-
 class RecDataset(Dataset):
     """
     >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref')
