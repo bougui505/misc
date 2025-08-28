@@ -3,6 +3,9 @@ import torch
 import torch.utils.benchmark as benchmark
 from itertools import product
 
+# Determine the device to run on (GPU if available, otherwise CPU)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def batched_dot_mul_sum(a, b):
     '''Computes batched dot by multiplying and summing'''
     return a.mul(b).sum(-1)
@@ -14,7 +17,7 @@ def batched_dot_bmm(a, b):
     return torch.bmm(a, b).flatten(-3)
 
 # Input for benchmarking to ensure correctness
-x = torch.randn(10000, 64)
+x = torch.randn(10000, 64, device=device)
 assert batched_dot_mul_sum(x, x).allclose(batched_dot_bmm(x, x))
 
 # Compare takes a list of measurements which we'll save in results.
@@ -27,8 +30,11 @@ for b, n in product(sizes, sizes):
     label = 'Batched dot'
     sub_label = f'[{b}, {n}]'
     # Use torch.ones for consistent input data during comparison
-    x_input = torch.ones((b, n))
-    for num_threads in [1, 4, 16, torch.get_num_threads()]: # Use actual max threads if available
+    x_input = torch.ones((b, n), device=device)
+    # When using GPU, num_threads is usually 1 unless specific multi-threading is desired for CPU tasks,
+    # but the primary computations will be on the GPU.
+    # We still iterate through num_threads for CPU benchmarking cases or if device is 'cpu'.
+    for num_threads in [1, 4, 16, torch.get_num_threads()]:
         results.append(benchmark.Timer(
             stmt='batched_dot_mul_sum(x_input, x_input)',
             setup='from __main__ import batched_dot_mul_sum',
