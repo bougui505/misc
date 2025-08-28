@@ -24,3 +24,29 @@ pip3 --cache-dir=/tmp/pip/cache install --upgrade git+https://github.com/LazyShi
 # %runscript
 # cmd $@
 
+%test
+    python3 << EOF
+from rdkit import Chem
+from gesim import gesim
+
+mol1 = Chem.MolFromSmiles('Cc1nn(C2CCN(Cc3cccc(C#N)c3)CC2)cc1-c1ccccc1')
+mol2 = Chem.MolFromSmiles('Cc1nn(C2CCN(Cc3cccc(Cl)c3)CC2)cc1-c1ccccc1')
+mol3 = Chem.MolFromSmiles('c1ccc(CN2CCC(n3nccc3-c3ccccc3)CC2)cc1')
+mols = [mol1, mol2, mol3]
+
+# Test single similarity
+sim12 = gesim.graph_entropy_similarity(mol1, mol2)
+expected_sim12 = 0.9580227325517037
+assert abs(sim12 - expected_sim12) < 1e-9, f"Single similarity test failed: Expected {expected_sim12}, got {sim12}"
+print(f"Single similarity test passed: {sim12}")
+
+# Test batch similarity
+batch_sim = gesim.graph_entropy_similarity_batch(mol1, mols)
+expected_batch_sim = [1.0, 0.9580227325517037, 0.7766178810633495]
+
+for i, (actual, expected) in enumerate(zip(batch_sim, expected_batch_sim)):
+    assert abs(actual - expected) < 1e-9, f"Batch similarity test failed at index {i}: Expected {expected}, got {actual}"
+print(f"Batch similarity test passed: {batch_sim}")
+
+EOF
+
