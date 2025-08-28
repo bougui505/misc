@@ -195,7 +195,7 @@ def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=N
         for i, res in enumerate(tqdm(async_results, desc="computing similarities (multiprocess)")):
             try:
                 # Retrieve result for this specific task with a timeout of 30 seconds
-                similarities[i] = res.get(timeout=30) 
+                similarities[i] = res.get(timeout=5) 
             except multiprocessing.TimeoutError:
                 # If a worker hangs due to timeout, mark as NaN
                 # similarities[i] is already np.nan from initialization
