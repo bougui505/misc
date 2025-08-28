@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import torch
 import torch.utils.benchmark as benchmark
 from itertools import product
