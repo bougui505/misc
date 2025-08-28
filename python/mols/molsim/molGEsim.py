@@ -41,6 +41,10 @@ def gesim_sim(smi1=None, smi2=None, mol1=None, mol2=None):
         if mol1 is None or mol2 is None:
             return float('nan') # Return NaN if one of the molecules couldn't be parsed from smiles/mol2
 
+        # Check if molecules have enough atoms for similarity computation to prevent segfaults
+        if mol1.GetNumHeavyAtoms() < 2 or mol2.GetNumHeavyAtoms() < 2:
+            return float('nan')
+
         sim = gesim.graph_entropy_similarity(mol1, mol2)
         return sim
     except Exception:
