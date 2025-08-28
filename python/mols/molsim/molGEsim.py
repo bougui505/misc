@@ -84,13 +84,6 @@ def process_smifile(filename):
                 e = [str(_) for _ in e]
                 outfile.write(" ".join(e) + "\n")
 
-def isvalid(smi):
-    if smi is not None and len(smi) > 0:
-        mol = Chem.MolFromSmiles(smi)  # type: ignore
-        if mol is not None:
-            valid = True
-        else:
-            valid = False
 class RecDataset(Dataset):
     """
     >>> recdataset = RecDataset(recfilename='molsim_test.rec.gz', key1='smi_gen', key2='smi_ref')
