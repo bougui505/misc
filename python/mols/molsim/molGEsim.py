@@ -116,57 +116,21 @@ class RecDataset(Dataset):
         return len(self.data[self.key1])
 
     def __getitem__(self, i):
-        mol1, mol2 = None, None
-        if self.key1 is not None:
-            smi1 = self.data[self.key1][i]
-            smi1 = smi1.replace("'", "")
-            mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
-        if self.key2 is not None:
-            smi2 = self.data[self.key2][i]
-            smi2 = smi2.replace("'", "")
-            mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
-        if self.key_mol2_1 is not None:
-            mol2_1 = self.data[self.key_mol2_1][i]
-            mol2_1 = mol2_1.replace("'", "")
-            mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1, sanitize=True)  # type: ignore
-        if self.key_mol2_2 is not None:
-            mol2_2 = self.data[self.key_mol2_2][i]
-            mol2_2 = mol2_2.replace("'", "")
-            mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2, sanitize=True)  # type: ignore
-        # Parse mol1 from smi1 or mol2_1_path
-        if self.key1 is not None:
-            smi1 = self.data[self.key1][i]
-            smi1 = smi1.replace("'", "")
-            try:
-                mol1 = Chem.MolFromSmiles(smi1)  # type: ignore
-            except Exception:
-                pass # mol1 remains None
-        if self.key_mol2_1 is not None:
-            mol2_1_path = self.data[self.key_mol2_1][i]
-            mol2_1_path = mol2_1_path.replace("'", "")
-            try:
-                mol1 = Chem.rdmolfiles.MolFromMol2File(mol2_1_path, sanitize=True)  # type: ignore
-            except Exception:
-                pass # mol1 remains None
+        smi1_val, smi2_val = None, None
+        mol2_1_path_val, mol2_2_path_val = None, None
 
-        # Parse mol2 from smi2 or mol2_2_path
+        # Extract raw string values for smiles and mol2 paths
+        if self.key1 is not None:
+            smi1_val = self.data[self.key1][i].replace("'", "")
         if self.key2 is not None:
-            smi2 = self.data[self.key2][i]
-            smi2 = smi2.replace("'", "")
-            try:
-                mol2 = Chem.MolFromSmiles(smi2)  # type: ignore
-            except Exception:
-                pass # mol2 remains None
+            smi2_val = self.data[self.key2][i].replace("'", "")
+        if self.key_mol2_1 is not None:
+            mol2_1_path_val = self.data[self.key_mol2_1][i].replace("'", "")
         if self.key_mol2_2 is not None:
-            mol2_2_path = self.data[self.key_mol2_2][i]
-            mol2_2_path = mol2_2_path.replace("'", "")
-            try:
-                mol2 = Chem.rdmolfiles.MolFromMol2File(mol2_2_path, sanitize=True)  # type: ignore
-            except Exception:
-                pass # mol2 remains None
-        
-        # Now, use the robust gesim_sim function
-        sim = gesim_sim(mol1=mol1, mol2=mol2) # Pass parsed mols directly
+            mol2_2_path_val = self.data[self.key_mol2_2][i].replace("'", "")
+
+        # Use _compute_single_record_sim's logic for parsing and robustness
+        sim = _compute_single_record_sim((smi1_val, smi2_val, mol2_1_path_val, mol2_2_path_val))
         return sim
 
 def _compute_single_record_sim(args):
@@ -230,8 +194,13 @@ def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=N
 
         for i, res in enumerate(tqdm(async_results, desc="computing similarities (multiprocess)")):
             try:
-                similarities[i] = res.get() # Retrieve result for this specific task
-            except BaseException: # Catch BaseException for potential segfaults or other worker crashes
+                # Retrieve result for this specific task with a timeout of 5 minutes
+                similarities[i] = res.get(timeout=300) 
+            except multiprocessing.TimeoutError:
+                # If a worker hangs due to timeout, mark as NaN
+                # similarities[i] is already np.nan from initialization
+                pass
+            except BaseException: # Catch other BaseExceptions (e.g., segfaults leading to broken pipe)
                 # similarities[i] is already np.nan from initialization
                 pass
 
