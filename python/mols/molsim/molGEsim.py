@@ -14,7 +14,6 @@ import os
 import multiprocessing
 import numpy as np
 
-from misc import rec
 from rdkit import Chem, RDLogger
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -110,10 +109,13 @@ class RecDataset(Dataset):
         self.key_mol2_1 = key_mol2_1
         self.key_mol2_2 = key_mol2_2
         self.recfilename = recfilename
-        self.data, self.fields = rec.get_data(file=recfilename, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
+        self.data, self.fields = _local_get_data(file=recfilename, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
 
     def __len__(self):
-        return len(self.data[self.key1])
+        # Use a key guaranteed to exist if there are any records, or simply the first field in self.fields
+        if self.fields:
+            return len(self.data[self.fields[0]])
+        return 0 # No fields, no records
 
     def __getitem__(self, i):
         smi1_val, smi2_val = None, None
@@ -132,6 +134,82 @@ class RecDataset(Dataset):
         # Use _compute_single_record_sim's logic for parsing and robustness
         sim = _compute_single_record_sim((smi1_val, smi2_val, mol2_1_path_val, mol2_2_path_val))
         return sim
+
+def _local_dict_to_rec(d):
+    """
+    Converts a dictionary representing a single record to a REC file format string.
+    Each key-value pair is written on a new line, followed by '--'.
+    >>> _local_dict_to_rec({'key1': 'value1', 'key2': 123, 'key3': 0.5})
+    "key1=value1\\nkey2=123\\nkey3=0.5\\n--\\n"
+    """
+    lines = []
+    for k, v in d.items():
+        lines.append(f"{k}={v}")
+    return "\n".join(lines) + "\n--\n"
+
+def _local_get_data(file, selected_fields=None):
+    """
+    Loads data from a .rec.gz file into a dictionary of lists.
+    Mimics misc.rec.get_data but for local use.
+    """
+    data = {}
+    fields = []
+    current_record_fields = []
+
+    # Read all lines first to determine fields if not selected_fields are provided
+    with gzip.open(file, "rt") as f:
+        all_lines = f.readlines()
+
+    # Determine all unique fields first
+    for line in all_lines:
+        line = line.strip()
+        if line and line != '--':
+            if '=' in line:
+                key = line.split('=', 1)[0]
+                if key not in fields:
+                    fields.append(key)
+        elif line == '--' and not fields and current_record_fields:
+            # If no fields were added yet, and we have current record fields, add them
+            fields.extend(current_record_fields)
+            current_record_fields = [] # Reset for next record
+        elif line == '--' and fields and current_record_fields:
+            # Check if any new fields appeared in this record
+            for k in current_record_fields:
+                if k not in fields:
+                    fields.append(k)
+            current_record_fields = [] # Reset for next record
+
+
+    # If selected_fields are provided, use them, otherwise use all found fields
+    if selected_fields:
+        # Filter out None values from selected_fields
+        fields_to_use = [f for f in selected_fields if f is not None]
+    else:
+        fields_to_use = fields
+
+    for field in fields_to_use:
+        data[field] = []
+
+    current_record = {}
+    for line in tqdm(all_lines, desc=f"reading file: {file}"):
+        line = line.strip()
+        if line and line != '--':
+            if '=' in line:
+                key, value = line.split('=', 1)
+                current_record[key] = value
+        elif line == '--':
+            # End of record, append values
+            for field in fields_to_use:
+                data[field].append(current_record.get(field, None)) # Use None for missing fields
+            current_record = {} # Reset for next record
+    
+    # If the last record was not terminated by '--'
+    if current_record:
+        for field in fields_to_use:
+            data[field].append(current_record.get(field, None))
+            
+    return data, fields_to_use
+
 
 def _compute_single_record_sim(args):
     """
@@ -171,8 +249,8 @@ def _compute_single_record_sim(args):
 
 
 def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=None):
-    # Load all data from the rec file once in the main process
-    full_data, fields = rec.get_data(file=recfile, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
+    # Load all data from the rec file once in the main process using the local function
+    full_data, fields = _local_get_data(file=recfile, selected_fields=[key1, key2, key_mol2_1, key_mol2_2])
     num_records = len(full_data[fields[0]]) if fields else 0
 
     # Prepare arguments for multiprocessing pool
@@ -214,8 +292,8 @@ def process_recfile(recfile, key1=None, key2=None, key_mol2_1=None, key_mol2_2=N
             # Add the computed similarity
             current_record_dict['sim'] = similarities[i]
             
-            # Format and write the record using rec.dict_to_rec
-            outgz.write(rec.dict_to_rec(current_record_dict))
+            # Format and write the record using the local _local_dict_to_rec function
+            outgz.write(_local_dict_to_rec(current_record_dict))
 
 
 if __name__ == "__main__":
