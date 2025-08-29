@@ -76,6 +76,7 @@ apt-get install -y libnss3 \
         libwayland-cursor0 \
         libxshmfence1 \
         xdg-utils
+apt-get install -y python3-libtmux  # for: https://github.com/ofirgall/tmux-window-name?tab=readme-ov-file#automatic-rename-after-launching-neovim
 ###############################################################################
 
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
