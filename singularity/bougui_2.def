@@ -24,7 +24,7 @@ apt-get install -y python3-open3d
 cd /opt
 git clone https://github.com/Vincentx15/atomsurf.git
 cd atomsurf
-# Remove open3d from requirements.txt as it's installed via apt-get
+# Remove open3d from requirements.txt as it s installed via apt-get
 sed -i '/open3d/d' requirements.txt
 # Update pandas version for compatibility with Python 3.12
 sed -i 's/^pandas==1.1.3/pandas==2.2.0/' requirements.txt
