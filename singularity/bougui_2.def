@@ -16,7 +16,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-open3d
+apt-get install -y python3-open3d python3.12 python3.12-pip
 # apt-get install -y python3-pip
 ###############################################################################
 
@@ -24,13 +24,13 @@ apt-get install -y python3-open3d
 cd /opt
 git clone https://github.com/Vincentx15/atomsurf.git
 cd atomsurf
-# Remove open3d from requirements.txt as it s installed via apt-get
+# Remove open3d from requirements.txt as it's installed via apt-get
 sed -i '/open3d/d' requirements.txt
 # Update pandas version for compatibility with Python 3.12
 sed -i 's/^pandas==1.1.3/pandas==2.2.0/' requirements.txt
-# Install diffusion-net-plus and atomsurf requirements as per its README
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
+# Install diffusion-net-plus and atomsurf requirements using python3.12
+python3.12 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
+python3.12 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
 ############################################################################
 
 # %runscript
