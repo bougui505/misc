@@ -24,7 +24,7 @@ apt-get install -y python3-open3d
 cd /opt
 git clone https://github.com/Vincentx15/atomsurf.git
 cd atomsurf
-# Remove open3d from requirements.txt as it's installed via apt-get
+# Remove open3d from requirements.txt as it s installed via apt-get
 sed -i '/open3d/d' requirements.txt
 # Install diffusion-net-plus and atomsurf requirements as per its README
 pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
