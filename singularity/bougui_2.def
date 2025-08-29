@@ -4,6 +4,10 @@ FROM: bougui.sif
 %files
 
 %post
+export PIP_CACHE_DIR="/tmp/pip/cache"
+mkdir -p "$PIP_CACHE_DIR"
+python3 -m pip config set global.break-system-packages true # See: https://stackoverflow.com/a/75722775/1679629
+
 ################################# APT INSTALL #################################
 export DEBIAN_FRONTEND=noninteractive
 mkdir -p /tmp/apt/cache
@@ -15,10 +19,14 @@ apt-get update
 # apt-get install -y python3-pip
 ###############################################################################
 
+################################# ATOMSURF #################################
 cd /opt
-pip3 install git+https://github.com/pvnieo/diffusion-net-plus.git
-cd diffusion-net-plus
-pip3 install -r requirements.txt
+git clone https://github.com/Vincentx15/atomsurf.git
+cd atomsurf
+# Install diffusion-net-plus and atomsurf requirements as per its README
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
+############################################################################
 
 # %runscript
 # cmd $@
