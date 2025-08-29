@@ -16,6 +16,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
+apt-get install -y python3-open3d
 # apt-get install -y python3-pip
 ###############################################################################
 
