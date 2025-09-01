@@ -16,6 +16,7 @@ apt-get install -y python3-pip # git
 python3 -m pip config set global.break-system-packages true
 mkdir -p /tmp/pip/cache
 pip --cache-dir=/tmp/pip/cache install boltz -U
+touch /opt/boltz_data/mols.tar  # required (bug of boltz)
 
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
