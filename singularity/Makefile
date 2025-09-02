@@ -6,6 +6,8 @@
 #
 # creation_date: Wed Aug 21 16:34:41 2024
 
+# Defines the temporary directory for Singularity/Apptainer builds,
+# using a path relative to the Makefile's location.
 SINGULARITY_TMP_DIR := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))/tmp
 
 SHELL := zsh
