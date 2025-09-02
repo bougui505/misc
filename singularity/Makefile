@@ -6,7 +6,7 @@
 #
 # creation_date: Wed Aug 21 16:34:41 2024
 
-SINGULARITY_TMP_DIR := /home/bougui/source/misc/singularity/tmp
+SINGULARITY_TMP_DIR := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))/tmp
 
 SHELL := zsh
 .ONESHELL:
