@@ -19,6 +19,7 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 bougui.sif: bougui.def
+	mkdir -p $(SINGULARITY_TMP_DIR)
 	APPTAINER_TMPDIR=$(SINGULARITY_TMP_DIR) apptainer build --force bougui.sif bougui.def
 
 bougui_2.sif: bougui_2.def
