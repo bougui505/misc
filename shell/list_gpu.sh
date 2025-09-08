@@ -19,9 +19,9 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Help message
+List the GPU available on slurm on the given host.
     -h, --help print this help message and exit
-    --host HOSTNAME specify the host to connect to
+    --host HOSTNAME specify the host to connect to (default: maestro)
 EOF
 }
 
@@ -37,3 +37,8 @@ while [ "$#" -gt 0 ]; do
 done
 
 ssh $HOST 'module load slurm;sinfo --format="%30N|%.22f|%.20G|%.10A|%.15E"'
+echo ""
+echo "To specify a gpu in slurm use (e.g.):"
+echo "#SBATCH --gres=gpu:<gpu-name>:1"
+echo "for example:"
+echo "#SBATCH --gres=gpu:l40s:1"
