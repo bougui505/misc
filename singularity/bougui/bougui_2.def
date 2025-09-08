@@ -1,5 +1,5 @@
 BOOTSTRAP: localimage
-FROM: bougui.sif
+FROM: bougui_1.sif
 
 %files
 

@@ -6,10 +6,6 @@
 #
 # creation_date: Wed Aug 21 16:34:41 2024
 
-# Defines the temporary directory for Singularity/Apptainer builds,
-# using a path relative to the Makefile's location.
-SINGULARITY_TMP_DIR := $(patsubst %/,%,$(dir $(realpath $(firstword $(MAKEFILE_LIST)))))/tmp
-
 SHELL := zsh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
@@ -19,13 +15,6 @@ SHELL := zsh
 help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
-
-bougui.sif: bougui.def
-	mkdir -p $(SINGULARITY_TMP_DIR)
-	APPTAINER_TMPDIR=$(SINGULARITY_TMP_DIR) apptainer build --force bougui.sif bougui.def
-
-bougui_2.sif: bougui_2.def
-	APPTAINER_TMPDIR=$(SINGULARITY_TMP_DIR) apptainer build --force bougui_2.{sif,def}
 
 bougui.sif-maestro:
 	rsync -a --update -P -h chimera maestro:/pasteur/appa/homes/bougui/source/misc/singularity/
