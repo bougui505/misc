@@ -36,15 +36,12 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-# sinfo format:
-# %30N: Hostname
-# %.22f: Available features
-# %.20G: GPUs available
-# %.10A: Available GPUs
-# %.15E: GPUs in use
 ssh $HOST 'module load slurm;sinfo --format="%30N|%.22f|%.20G|%.10A|%.15E"'
 echo ""
-echo "To specify a gpu in slurm use (e.g.):"
+echo "To specify a gpu in slurm use:"
 echo "#SBATCH --gres=gpu:<gpu-name>:1"
 echo "for example:"
-echo "#SBATCH --gres=gpu:l40s:1"
+echo "#SBATCH --gres=gpu:A100:1"
+echo ""
+echo "GPU memory can be enforce using:"
+echo "#SBATCH --gpu-memory=80G"
