@@ -21,6 +21,7 @@ function usage () {
     cat << EOF
 Help message
     -h, --help print this help message and exit
+    --host HOSTNAME specify the host to connect to
 EOF
 }
 
