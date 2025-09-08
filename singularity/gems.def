@@ -1,5 +1,5 @@
 BOOTSTRAP: docker
-FROM: debian:12.1
+FROM: debian:13.0
 
 %files
 
@@ -23,7 +23,7 @@ pip3 --cache-dir=/tmp/pip/cache install numpy \
                                         huggingface transformers \
                                         ankh \
                                         biopython \
-                                        pytorch==2.0.1 pytorch-cuda==11.7 \
+                                        torch \
                                         torch_geometric
 
 ###############################################################################
