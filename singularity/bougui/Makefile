@@ -30,7 +30,9 @@ bougui_1.sif: bougui_1.def
 bougui_2.sif: bougui_2.def bougui_1.sif
 	mkdir -p $(SINGULARITY_TMP_DIR)
 	APPTAINER_TMPDIR=$(SINGULARITY_TMP_DIR) apptainer build --force $@ $<
+	rm -v $(LAST_PREREQUISITE)
+
+bougui.sif: bougui_2.sif
 	cd ..
-	[[ -h bougui.sif ]] && rm -v bougui.sif
-	ln -s bougui/$@ bougui.sif
-	rm -v bougui_1.sif
+	[[ -h $@ ]] && rm -v $@
+	ln -vs bougui/$< $@
