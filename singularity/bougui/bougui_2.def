@@ -1,6 +1,9 @@
 BOOTSTRAP: localimage
 FROM: bougui_1.sif
 
+# Everything there is to install atomsurf
+# see: https://github.com/Vincentx15/atomsurf
+
 %files
 
 %post
@@ -17,9 +20,31 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-open3d python3-pip libeigen3-dev
+apt-get install -y python3-open3d python3-pip libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev
 # apt-get install -y python3-pip
 ###############################################################################
+
+# Manually build libigl
+cd /opt
+git clone https://github.com/libigl/libigl.git
+cd libigl
+git checkout v2.5.0
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DIGL_USE_SYSTEM_BOOST=ON ..
+make -j
+make install
+
+# Build and install Python bindings
+cd ../..
+git clone https://github.com/libigl/libigl-python-bindings.git
+cd libigl-python-bindings
+git checkout v2.5.0
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DIGL_USE_SYSTEM_BOOST=ON -DLIBIGL_DIR=/opt/libigl/build -DCMAKE_INSTALL_PREFIX=/usr/local ..
+make -j
+make install
 
 ################################# ATOMSURF #################################
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
