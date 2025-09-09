@@ -21,6 +21,9 @@ if [ ! -f libtorch-cxx11-abi-shared-with-deps-1.13.0%2Bcu117.zip ]; then
 fi
 unzip libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip -d /usr/local/
 export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
+export PATH=/usr/local/libtorch/bin:$PATH
+export PYTHONPATH=/usr/local/libtorch/lib/python3.8/site-packages:$PYTHONPATH
+export TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6"
 
 ################################# CONDA #######################################
 mkdir -p /tmp/conda/cache
