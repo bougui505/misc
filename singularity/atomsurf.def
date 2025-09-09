@@ -1,5 +1,5 @@
 BOOTSTRAP: docker
-FROM: continuumio/anaconda3
+FROM: debian:13
 
 %files
 
@@ -15,26 +15,6 @@ apt-get update
 apt-get install -y python3-pip git unzip
 ###############################################################################
 
-cd /tmp
-if [ ! -f "libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip" ]; then
-  wget "https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip"
-fi
-unzip libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip -d /usr/local/
-export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
-export PATH=/usr/local/libtorch/bin:$PATH
-export PYTHONPATH=/usr/local/libtorch/lib/python3.8/site-packages:$PYTHONPATH
-export TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6"
-
-################################# CONDA #######################################
-mkdir -p /tmp/conda/cache
-export CONDA_PKGS_DIRS=/tmp/conda/cache
-conda info
-# conda install python=3.8
-# conda install cudatoolkit=11.7 -c nvidia
-# conda install pytorch=1.13 pytorch-cuda=11.7 -c pytorch -c nvidia
-# conda install pyg=2.3.0 pytorch-scatter pytorch-sparse pytorch-spline-conv pytorch-cluster -c pyg
-###############################################################################
-
 cd /opt
 git clone --depth 1 https://github.com/Vincentx15/atomsurf.git
 cd atomsurf
@@ -43,17 +23,11 @@ rm -rf .git
 ################################# PIP INSTALL #################################
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
 mkdir -p /tmp/pip/cache
-pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
-pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 pip3 --cache-dir=/tmp/pip/cache install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0 --index-url https://download.pytorch.org/whl/cu117
 pip3 --cache-dir=/tmp/pip/cache install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
+pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 ###############################################################################
-
-%environment
-export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
-export PATH=/usr/local/libtorch/bin:$PATH
-export PYTHONPATH=/usr/local/libtorch/lib/python3.8/site-packages:$PYTHONPATH
-export TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6"
 
 %test
 python3 -c "from torch_geometric.data import Data"
