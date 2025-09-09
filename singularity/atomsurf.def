@@ -22,11 +22,11 @@ rm -rf .git
 
 ################################# PIP INSTALL #################################
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
-mkdir -p /tmp/pip/cache
-pip3 --cache-dir=/tmp/pip/cache install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --index-url https://download.pytorch.org/whl/cu117
-pip3 --cache-dir=/tmp/pip/cache install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.1+cu117.html
-pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
-pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
+# mkdir -p /tmp/pip/cache
+pip3 --no-cache-dir install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --index-url https://download.pytorch.org/whl/cu117
+pip3 --no-cache-dir install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.1+cu117.html
+pip3 --no-cache-dir install git+https://github.com/pvnieo/diffusion-net-plus.git
+pip3 --no-cache-dir install -r requirements.txt
 ###############################################################################
 
 %test
