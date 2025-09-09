@@ -20,7 +20,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-open3d python3-pip libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev
+apt-get install -y python3-open3d libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev
 # apt-get install -y python3-pip
 ###############################################################################
 
