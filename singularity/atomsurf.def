@@ -16,8 +16,8 @@ apt-get install -y python3-pip git unzip
 ###############################################################################
 
 cd /tmp
-if [ ! -f libtorch-cxx11-abi-shared-with-deps-1.13.0%2Bcu117.zip ]; then
-  wget https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.0%2Bcu117.zip
+if [ ! -f "libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip" ]; then
+  wget "https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip"
 fi
 unzip libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip -d /usr/local/
 export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
