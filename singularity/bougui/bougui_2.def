@@ -25,8 +25,9 @@ apt-get install -y python3-open3d python3-pip libeigen3-dev
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
 pip install pyg-lib -f https://data.pyg.org/whl/torch-2.8.0+cu128.html
 cd /opt
-git clone https://github.com/Vincentx15/atomsurf.git
+git clone --depth 1 https://github.com/Vincentx15/atomsurf.git
 cd atomsurf
+rm -rf .git
 # Remove open3d from requirements.txt as it is installed via apt-get
 sed -i '/open3d/d' requirements.txt
 # Pandas is already installed
@@ -36,8 +37,9 @@ sed 's/^deltaconv==1.0.2/deltaconv/' requirements.txt
 # Install diffusion-net-plus and atomsurf requirements using python3 (which is Python 3.12 in Trixie)
 python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
 python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
-cd /usr/local/lib/python3.13/dist-packages
-ln -s /opt/atomsurf/atomsurf .
+# Link repository to system python libraries
+# cd /usr/local/lib/python3.13/dist-packages
+# ln -s /opt/atomsurf/atomsurf .
 ############################################################################
 
 # %runscript
