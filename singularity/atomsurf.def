@@ -50,6 +50,9 @@ pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 
 %environment
 export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
+export PATH=/usr/local/libtorch/bin:$PATH
+export PYTHONPATH=/usr/local/libtorch/lib/python3.8/site-packages:$PYTHONPATH
+export TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6"
 
 %test
 python3 -c "from torch_geometric.data import Data"
