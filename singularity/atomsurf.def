@@ -48,9 +48,8 @@ pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-
 pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 ###############################################################################
 
+%environment
+export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
+
 %test
 python3 -c "from torch_geometric.data import Data"
-
-%runscript
-export LD_LIBRARY_PATH=/usr/local/libtorch/lib:$LD_LIBRARY_PATH
-# cmd $@
