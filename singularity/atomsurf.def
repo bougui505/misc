@@ -1,0 +1,43 @@
+BOOTSTRAP: docker
+FROM: continuumio/anaconda3
+
+%files
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip git
+###############################################################################
+
+################################# CONDA #######################################
+mkdir -p /tmp/conda/cache
+export CONDA_PKGS_DIRS=/tmp/conda/cache
+conda info
+conda install python=3.8
+conda install cudatoolkit=11.7 -c nvidia
+conda install pytorch=1.13 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pyg=2.3.0 pytorch-scatter pytorch-sparse pytorch-spline-conv pytorch-cluster -c pyg
+pip install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+###############################################################################
+
+cd /opt
+git clone --depth 1 https://github.com/Vincentx15/atomsurf.git
+cd atomsurf
+rm -rf .git
+
+################################# PIP INSTALL #################################
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+mkdir -p /tmp/pip/cache
+pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
+pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
+###############################################################################
+
+# %runscript
+# cmd $@
+
