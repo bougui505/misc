@@ -13,10 +13,20 @@ FROM: debian:12.1
     sed -i 's/^deltaconv==1.0.2$/deltaconv/' atomsurf/requirements.txt
     # For testing
     mkdir -p atomsurf/example_data/pdb
-    wget https://files.rcsb.org/view/1YCR.pdb -O atomsurf/example_data/pdb/1ycr.pdb
+    if [ ! -f atomsurf/example_data/pdb/1ycr.pdb ]; then
+        wget https://files.rcsb.org/view/1YCR.pdb -O atomsurf/example_data/pdb/1ycr.pdb
+    fi
+    if [ ! -f esm2_t33_650M_UR50D.pt ]; then
+        wget https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt
+    fi
+    if [ ! -f esm2_t33_650M_UR50D-contact-regression.pt ]; then
+        wget https://dl.fbaipublicfiles.com/fair-esm/regression/esm2_t33_650M_UR50D-contact-regression.pt
+    fi
 
 %files
     atomsurf /opt/atomsurf
+    esm2_t33_650M_UR50D.pt /root/.cache/torch/hub/checkpoints/
+    esm2_t33_650M_UR50D-contact-regression.pt /root/.cache/torch/hub/checkpoints/
 
 %post
 ################################# APT INSTALL #################################
@@ -58,8 +68,9 @@ pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 
 echo "####################### TESTING atomsurf #######################"
 cd /opt/atomsurf
-python3 example.py
-echo "################################################################"
+python3 example.py \
+    || { echo "!!!!!!!!! TESTING FAILED !!!!!!!!!"; exit 1; }
+echo "########################   TESTING OK    #######################"
 
 # %runscript
 # cmd $@
