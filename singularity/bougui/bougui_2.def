@@ -24,6 +24,13 @@ apt-get install -y python3-open3d libeigen3-dev libboost-all-dev libglfw3-dev li
 # apt-get install -y python3-pip
 ###############################################################################
 
+python3 -m pip install cmake && export PATH="/usr/local/bin:$PATH"  # recent cmake needed to build libigl
+# Install libigl Python bindings manually
+cd /opt
+git clone --depth 1 --branch 2.4.1 https://github.com/libigl/libigl-python-bindings.git
+cd libigl-python-bindings
+python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
+
 ################################# ATOMSURF #################################
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
 pip install pyg-lib -f https://data.pyg.org/whl/torch-2.8.0+cu128.html
@@ -37,6 +44,7 @@ sed -i '/open3d/d' requirements.txt
 sed -i '/pandas==1.1.3/d' requirements.txt
 sed -i '/biopython==1.81/d' requirements.txt
 sed 's/^deltaconv==1.0.2/deltaconv/' requirements.txt
+sed -i '/libigl/d' requirements.txt # <--- REMOVE libigl here
 # Install diffusion-net-plus and atomsurf requirements using python3 (which is Python 3.12 in Trixie)
 python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
 python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
