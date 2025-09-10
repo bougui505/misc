@@ -2,7 +2,9 @@ Bootstrap: docker
 From: continuumio/miniconda3:latest
 
 %setup
-    git clone https://github.com/Vincentx15/atomsurf.git
+    if [ ! -d atomsurf ];then
+        git clone https://github.com/Vincentx15/atomsurf.git
+    fi
 
 %files
     atomsurf /opt/atomsurf
