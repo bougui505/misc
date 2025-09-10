@@ -20,7 +20,8 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip \
+apt-get install -y --no-install-recommends \
+                   python3-pip \
                    git \
                    build-essential \
                    python3-dev \
@@ -39,7 +40,7 @@ python3 -m pip config set global.cache-dir /tmp/pip/cache
 pip3 install torch==${TORCH} --index-url https://download.pytorch.org/whl/${CUDA} --extra-index-url https://pypi.org/simple
 pip3 install torch_scatter torch_sparse torch_spline_conv torch_cluster -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
 pip3 install pyg-lib -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
-pip3 install torch_geometric
+pip3 install torch_geometric==2.3.0 -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
 ###############################################################################
 
 cd /opt/atomsurf
