@@ -37,35 +37,14 @@ cd libigl-python-bindings
 # Initialize and update submodules, which includes numpyeigen
 git submodule update --init --recursive
 
-# List files
-tree
+# Patch the main CMakeLists.txt of libigl-python-bindings to fix the "Compatibility with CMake < 3.5 has been removed" error.
+# The `cmake_minimum_required` in the main CMakeLists.txt is the root cause.
+sed -i 's/^cmake_minimum_required(VERSION [0-9.]\+)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
 
-# The previous 'sed' command failed because numpyeigen is fetched by CMake's FetchContent
-# *during* the configure step, not present in the source tree initially.
-# To patch numpyeigen.cmake, we must perform a multi-stage CMake build:
-# 1. Configure to allow FetchContent to download dependencies.
-# 2. Patch the downloaded numpyeigen.cmake file within the build directory.
-# 3. Re-configure (if necessary, though patch is likely picked up automatically) and build/install.
-
-# Create a build directory
-mkdir build
-
-# Configure libigl-python-bindings. This will download libigl, which in turn downloads numpyeigen.
-# We allow this initial configure step to potentially fail due to numpyeigen's old CMake version,
-# so we can then patch it.
-cmake -S . -B build \
-    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DPYTHON_EXECUTABLE="$(which python3)" \
-    -DCMAKE_INSTALL_PREFIX="/usr/local" || true
-
-# Patch numpyeigen's CMakeLists.txt within the build tree.
-# The path reflects the nested FetchContent structure:
-# libigl-python-bindings's build directory -> libigl source -> numpyeigen source
-sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' "build/_deps/libigl-src/_deps/numpyeigen-src/cmake/numpyeigen.cmake"
-
-# Now, build and install. The `install` target for scikit-build/pybind11 projects
-# typically places the generated Python package into the system's site-packages.
-cmake --build build --target install --config Release
+# Install libigl Python bindings using pip, passing CMAKE_ARGS to ensure correct policy version.
+# This approach uses scikit-build to handle the CMake configure/build/install steps,
+# and the CMAKE_POLICY_VERSION_MINIMUM should propagate to sub-projects like numpyeigen.
+CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
 
 ################################# ATOMSURF #################################
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
