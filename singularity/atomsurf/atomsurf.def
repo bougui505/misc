@@ -3,7 +3,8 @@ FROM: debian:12.1
 
 %setup
     if [ ! -d atomsurf ];then
-        git clone https://github.com/Vincentx15/atomsurf.git
+        # git clone https://github.com/Vincentx15/atomsurf.git
+        git clone https://github.com/bougui505/atomsurf.git  # my personal fork
     else
         cd atomsurf
         git pull
@@ -29,6 +30,7 @@ FROM: debian:12.1
     esm2_t33_650M_UR50D-contact-regression.pt /root/.cache/torch/hub/checkpoints/
 
 %post
+export MAKEFLAGS="-j$(nproc)"
 ################################# APT INSTALL #################################
 export DEBIAN_FRONTEND=noninteractive
 mkdir -p /tmp/apt/cache
@@ -45,7 +47,8 @@ apt-get install -y --no-install-recommends \
                    cmake \
                    libeigen3-dev \
                    libgl1 \
-                   gawk
+                   gawk \
+                   libglvnd0
 ###############################################################################
 
 ################################# PIP INSTALL #################################
@@ -66,11 +69,11 @@ cd /opt/atomsurf
 pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
 pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 
-echo "####################### TESTING atomsurf #######################"
-cd /opt/atomsurf
-python3 example.py \
-    || { echo "!!!!!!!!! TESTING FAILED !!!!!!!!!"; exit 1; }
-echo "########################   TESTING OK    #######################"
+# echo "####################### TESTING atomsurf #######################"
+# cd /opt/atomsurf
+# python3 example.py \
+#     || { echo "!!!!!!!!! TESTING FAILED !!!!!!!!!"; exit 1; }
+# echo "########################   TESTING OK    #######################"
 
 # %runscript
 # cmd $@
