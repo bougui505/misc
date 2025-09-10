@@ -42,6 +42,10 @@ From: continuumio/miniconda3:latest
     conda install -c conda-forge compilers -y
     conda clean --all -y # Clean up compiler cache
 
+    echo "Installing system-level development headers for crypt.h..."
+    apt-get update && apt-get install -y libxcrypt-dev
+    rm -rf /var/lib/apt/lists/* # Clean up apt caches
+
     # Install pyg-lib using pip, ensuring it targets the correct PyTorch/CUDA version
     pip install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
 
