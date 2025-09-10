@@ -22,5 +22,6 @@ atomsurf.sif: atomsurf.def
 	APPTMP=$$(realpath tmp)
 	APPTAINER_TMPDIR=$$APPTMP apptainer build --force $@ $< 2>&1 | tee atomsurf.log
 	rm -rf atomsurf  # remove the git repo
-	rm -rf /tmp/apptainer/atomsurf
+	rm -rf $$APPTMP
 	rm atomsurf.log
+	[[ -d /tmp/conda_cache ]] && rm -rf /tmp/conda_cache

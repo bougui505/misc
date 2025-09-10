@@ -36,7 +36,7 @@ From: continuumio/miniconda3:latest
 
     # Set CONDA_PKGS_DIRS to use a bind-mounted cache directory
     # The /opt/conda_cache directory will be bind-mounted from the host during `apptainer build`
-    export CONDA_PKGS_DIRS="/opt/conda_cache"
+    export CONDA_PKGS_DIRS="/tmp/conda_cache"
     mkdir -p "$CONDA_PKGS_DIRS" # Create directory inside container
 
     echo "Installing PyTorch 1.13 with CUDA 11.7 and PyG 2.3.0 dependencies..."
