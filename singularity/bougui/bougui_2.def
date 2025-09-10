@@ -38,7 +38,8 @@ cd libigl-python-bindings
 git submodule update --init --recursive
 
 # Fix: Update cmake_minimum_required in numpyeigen.cmake submodule to be compatible with newer CMake (>=3.5)
-sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' numpyeigen/cmake/numpyeigen.cmake
+# Fix: Update cmake_minimum_required in numpyeigen.cmake submodule (located in third_party) to be compatible with newer CMake (>=3.5)
+sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' third_party/numpyeigen/cmake/numpyeigen.cmake
 
 # Set CMAKE_POLICY_VERSION_MINIMUM for the main project build
 CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
