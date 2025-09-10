@@ -29,7 +29,7 @@ python3 -m pip install cmake && export PATH="/usr/local/bin:$PATH"  # recent cma
 cd /opt
 git clone --depth 1 --branch 2.4.1 https://github.com/libigl/libigl-python-bindings.git
 cd libigl-python-bindings
-python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
+CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.10" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
 
 ################################# ATOMSURF #################################
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
