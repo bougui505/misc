@@ -27,10 +27,13 @@ From: continuumio/miniconda3:latest
     # Source the conda initialization script to make 'conda activate' available
     . /opt/conda/etc/profile.d/conda.sh
     conda activate atomsurf
+    conda clean --all -y # Clean up after initial conda environment creation
 
     echo "Installing PyTorch 1.13 with CUDA 11.7 and PyG 2.3.0 dependencies..."
     conda install cudatoolkit=11.7 -c nvidia -y
+    conda clean --all -y # Clean up cudatoolkit cache
     conda install pytorch=1.13 pytorch-cuda=11.7 -c pytorch -c nvidia -y
+    conda clean --all -y # Clean up pytorch cache
     conda install pyg=2.3.0 pytorch-scatter pytorch-sparse pytorch-spline-conv pytorch-cluster -c pyg -y
 
     # Install pyg-lib using pip, ensuring it targets the correct PyTorch/CUDA version
@@ -42,6 +45,7 @@ From: continuumio/miniconda3:latest
     echo "Installing other dependencies from requirements.txt..."
     # Change to the application directory to find requirements.txt
     (cd /opt/atomsurf && pip install -r requirements.txt)
+    pip cache purge # Clean up pip cache after all pip installations
 
     echo "Verifying AtomSurf installation by running the example script (this may generate output files)..."
     # Change to the application directory and ensure PYTHONPATH is set for the example script
