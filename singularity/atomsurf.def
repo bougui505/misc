@@ -60,7 +60,7 @@ From: continuumio/miniconda3:latest
     # Change to the application directory where example.py expects to run
     cd /opt/atomsurf
     # Source conda init script and activate environment
-    source /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh
     conda activate atomsurf
     # PYTHONPATH is already set in %environment, but re-exporting here for clarity and robustness
     export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
