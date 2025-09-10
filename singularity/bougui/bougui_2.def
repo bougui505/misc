@@ -20,7 +20,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-open3d libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev
+apt-get install -y python3-open3d libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev tree
 # apt-get install -y python3-pip
 ###############################################################################
 
@@ -36,6 +36,9 @@ cd libigl-python-bindings
 
 # Initialize and update submodules, which includes numpyeigen
 git submodule update --init --recursive
+
+# List files
+tree
 
 # Fix: Update cmake_minimum_required in numpyeigen.cmake submodule to be compatible with newer CMake (>=3.5)
 # Fix: Update cmake_minimum_required in numpyeigen.cmake submodule (located in third_party) to be compatible with newer CMake (>=3.5)
