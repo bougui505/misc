@@ -4,9 +4,16 @@ FROM: debian:12.1
 %setup
     if [ ! -d atomsurf ];then
         git clone https://github.com/Vincentx15/atomsurf.git
+    else
+        cd atomsurf
+        git pull
+        cd ..
     fi
     sed -i 's/^pandas==1.1.3$/pandas/' atomsurf/requirements.txt
     sed -i 's/^deltaconv==1.0.2$/deltaconv/' atomsurf/requirements.txt
+    # For testing
+    mkdir -p atomsurf/example_data/pdb
+    wget https://files.rcsb.org/view/1YCR.pdb -O atomsurf/example_data/pdb/1ycr.pdb
 
 %files
     atomsurf /opt/atomsurf
@@ -37,6 +44,8 @@ CUDA="cu124"
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
 mkdir -p /tmp/pip/cache
 python3 -m pip config set global.cache-dir /tmp/pip/cache
+
+pip3 install numpy==2.2.6
 pip3 install torch==${TORCH} --index-url https://download.pytorch.org/whl/${CUDA} --extra-index-url https://pypi.org/simple
 pip3 install torch_scatter torch_sparse torch_spline_conv torch_cluster -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
 pip3 install pyg-lib -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
@@ -46,6 +55,11 @@ pip3 install torch_geometric==2.3.0 -f https://data.pyg.org/whl/torch-${TORCH}+$
 cd /opt/atomsurf
 pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
 pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
+
+echo "####################### TESTING atomsurf #######################"
+cd /opt/atomsurf
+python3 example.py
+echo "################################################################"
 
 # %runscript
 # cmd $@
