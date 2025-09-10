@@ -23,7 +23,7 @@ From: continuumio/miniconda3:latest
 
     echo "Activating conda environment for installations..."
     # Source the conda initialization script to make 'conda activate' available
-    source /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh
     conda activate atomsurf
 
     echo "Installing PyTorch 1.13 with CUDA 11.7 and PyG 2.3.0 dependencies..."
@@ -71,7 +71,7 @@ From: continuumio/miniconda3:latest
     echo "Starting a shell with the AtomSurf conda environment activated."
     # Change to the application directory
     cd /opt/atomsurf
-    source /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh
     conda activate atomsurf
     export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
     exec "$@"
