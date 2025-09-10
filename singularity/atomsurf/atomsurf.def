@@ -72,18 +72,6 @@ From: continuumio/miniconda3:latest
     Description AtomSurf: Learnable protein structure encoder jointly encoding graphs and surfaces.
     Homepage https://github.com/Vincentx15/atomsurf
 
-%runscript
-    echo "Running the AtomSurf example.py script. Any arguments will be passed to it."
-    # Change to the application directory where example.py expects to run
-    cd /opt/atomsurf
-    # Source conda init script and activate environment
-    . /opt/conda/etc/profile.d/conda.sh
-    conda activate atomsurf
-    # PYTHONPATH is already set in %environment, but re-exporting here for clarity and robustness
-    export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
-    # Execute the example script
-    exec python example.py "$@"
-
 %startscript
     echo "Starting a shell with the AtomSurf conda environment activated."
     # Change to the application directory
@@ -97,10 +85,6 @@ From: continuumio/miniconda3:latest
     This Apptainer container provides the AtomSurf environment for protein structure encoding.
 
     Usage:
-        apptainer run <image_name> [args]
-            Runs the default example.py script from the /opt/atomsurf directory.
-            Arguments are passed to example.py.
-
         apptainer shell <image_name>
             Spawns an interactive shell inside the container, starting in /opt/atomsurf,
             with the atomsurf conda environment activated.
