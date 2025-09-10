@@ -18,8 +18,9 @@ help:
 	@grep '^[[:alnum:]].*:' Makefile
 
 atomsurf.sif: atomsurf.def
-	mkdir -p /tmp/apptainer/atomsurf
-	APPTAINER_TMPDIR=/tmp/apptainer/atomsurf apptainer build --force $@ $< 2>&1 | tee atomsurf.log
+	mkdir -p tmp
+	APPTMP=$$(realpath tmp)
+	APPTAINER_TMPDIR=$$APPTMP apptainer build --force $@ $< 2>&1 | tee atomsurf.log
 	rm -rf atomsurf  # remove the git repo
 	rm -rf /tmp/apptainer/atomsurf
 	rm atomsurf.log
