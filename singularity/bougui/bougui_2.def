@@ -33,7 +33,9 @@ git clone --depth 1 --branch 2.4.1 https://github.com/libigl/libigl-python-bindi
 cd libigl-python-bindings
 # Fix: Update cmake_minimum_required in Warnings.cmake to be compatible with newer CMake.
 # The original error indicates that cmake_minimum_required(VERSION X.Y) where X.Y < 3.5 is the issue.
-sed -i 's/^cmake_minimum_required(VERSION [0-9]\+\.[0-9]\+)/cmake_minimum_required(VERSION 3.5)/' cmake/Warnings.cmake
+# Fix: Update cmake_minimum_required in Warnings.cmake to be compatible with newer CMake.
+# Make the sed command more robust to match any version format and ensure it's applied.
+sed -i '/cmake_minimum_required(VERSION/s/VERSION [0-9.]\+/VERSION 3.5/' cmake/Warnings.cmake
 CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
 
 ################################# ATOMSURF #################################
