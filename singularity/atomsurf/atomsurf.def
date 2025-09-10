@@ -6,6 +6,7 @@ FROM: debian:12.1
         git clone https://github.com/Vincentx15/atomsurf.git
     fi
     sed -i 's/^pandas==1.1.3$/pandas/' atomsurf/requirements.txt
+    sed -i 's/^deltaconv==1.0.2$/deltaconv/' atomsurf/requirements.txt
 
 %files
     atomsurf /opt/atomsurf
@@ -19,7 +20,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip git build-essential python3-dev
+apt-get install -y python3-pip git build-essential python3-dev cmake
 ###############################################################################
 
 ################################# PIP INSTALL #################################
