@@ -28,15 +28,20 @@ python3 -m pip install cmake && export PATH="/usr/local/bin:$PATH"  # recent cma
 which cmake
 cmake --version
 # Install libigl Python bindings manually
+
+# First, clone and patch numpyeigen, as it has an outdated cmake_minimum_required version (3.0.0)
 cd /opt
+git clone --depth 1 https://github.com/libigl/numpyeigen.git
+cd numpyeigen
+# Fix: Update cmake_minimum_required in numpyeigen.cmake to be compatible with newer CMake (>=3.5)
+sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' cmake/numpyeigen.cmake
+cd /opt
+
 git clone --depth 1 --branch 2.4.1 https://github.com/libigl/libigl-python-bindings.git
 cd libigl-python-bindings
-# Fix: Update cmake_minimum_required in Warnings.cmake to be compatible with newer CMake.
-# The original error indicates that cmake_minimum_required(VERSION X.Y) where X.Y < 3.5 is the issue.
-# Fix: Update cmake_minimum_required in Warnings.cmake to be compatible with newer CMake.
-# Make the sed command more robust to match any version format and ensure it's applied.
-sed -i '/cmake_minimum_required(VERSION/s/VERSION [0-9.]\+/VERSION 3.5/' cmake/Warnings.cmake
-CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
+# The Warnings.cmake deprecation (for < 3.10) is a minor warning, and CMAKE_POLICY_VERSION_MINIMUM=3.5 should suffice for it.
+# Set numpyeigen_SOURCE_DIR to use our patched local version, and ensure CMAKE_POLICY_VERSION_MINIMUM is set for the main project.
+CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dnumpyeigen_SOURCE_DIR=/opt/numpyeigen" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
 
 ################################# ATOMSURF #################################
 pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
