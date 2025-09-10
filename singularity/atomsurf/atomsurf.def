@@ -35,6 +35,12 @@ From: continuumio/miniconda3:latest
     conda install pytorch=1.13 pytorch-cuda=11.7 -c pytorch -c nvidia -y
     conda clean --all -y # Clean up pytorch cache
     conda install pyg=2.3.0 pytorch-scatter pytorch-sparse pytorch-spline-conv pytorch-cluster -c pyg -y
+    conda clean --all -y # Clean up pyg cache
+
+    # Install build tools, as some pip packages might compile C extensions
+    echo "Installing compilers and build tools..."
+    conda install -c conda-forge compilers -y
+    conda clean --all -y # Clean up compiler cache
 
     # Install pyg-lib using pip, ensuring it targets the correct PyTorch/CUDA version
     pip install pyg-lib==0.4.0 -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
