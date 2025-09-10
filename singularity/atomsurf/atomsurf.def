@@ -5,6 +5,7 @@ FROM: debian:12.1
     if [ ! -d atomsurf ];then
         git clone https://github.com/Vincentx15/atomsurf.git
     fi
+    sed -i 's/^pandas==1.1.3$/pandas/' atomsurf/requirements.txt
 
 %files
     atomsurf /opt/atomsurf
@@ -26,9 +27,8 @@ TORCH="2.6.0"
 CUDA="cu124"
 python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
 mkdir -p /tmp/pip/cache
-pip config set global cache-dir /tmp/pip/cache
+python3 -m pip config set global.cache-dir /tmp/pip/cache
 pip3 install torch==${TORCH} --index-url https://download.pytorch.org/whl/${CUDA} --extra-index-url https://pypi.org/simple
-pip3 install numpy
 pip3 install torch_scatter torch_sparse torch_spline_conv torch_cluster
 pip3 install pyg-lib -f https://data.pyg.org/whl/torch-${TORCH}+${CUDA}.html
 pip3 install torch_geometric
