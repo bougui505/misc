@@ -42,7 +42,9 @@ tree
 
 # Fix: Update cmake_minimum_required in numpyeigen.cmake submodule to be compatible with newer CMake (>=3.5)
 # Fix: Update cmake_minimum_required in numpyeigen.cmake submodule (located in third_party) to be compatible with newer CMake (>=3.5)
-sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' third_party/numpyeigen/cmake/numpyeigen.cmake
+# Patch numpyeigen's CMake file to update the minimum required version using an absolute path,
+# as relative path resolution for sed seems to be problematic despite tree showing the file.
+sed -i 's/cmake_minimum_required(VERSION 3.0.0)/cmake_minimum_required(VERSION 3.5)/' "/opt/libigl-python-bindings/third_party/numpyeigen/cmake/numpyeigen.cmake"
 
 # Set CMAKE_POLICY_VERSION_MINIMUM for the main project build
 CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
