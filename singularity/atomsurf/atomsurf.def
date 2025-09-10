@@ -20,7 +20,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip git build-essential python3-dev cmake
+apt-get install -y python3-pip git build-essential python3-dev cmake libeigen3-dev
 ###############################################################################
 
 ################################# PIP INSTALL #################################
