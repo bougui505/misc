@@ -17,11 +17,15 @@ help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
-atomsurf.sif: atomsurf.def
+tmp:
 	mkdir -p tmp
+
+atomsurf.sif: atomsurf.def tmp
 	APPTMP=$$(realpath tmp)
 	APPTAINER_TMPDIR=$$APPTMP apptainer build --force $@ $< 2>&1 | tee atomsurf.log
+
+clean: tmp
+	[[ -d /tmp/conda_cache ]] && rm -rf /tmp/conda_cache
 	rm -rf atomsurf  # remove the git repo
 	rm -rf $$APPTMP
 	rm atomsurf.log
-	[[ -d /tmp/conda_cache ]] && rm -rf /tmp/conda_cache

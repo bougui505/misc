@@ -1,12 +1,6 @@
 Bootstrap: docker
 From: continuumio/miniconda3:latest
 
-%post
-    # Create a persistent cache directory on the host if it doesn't exist.
-    # This directory will be bind-mounted into the container to store conda packages.
-    # The path is hardcoded for simplicity, but could be made configurable.
-    mkdir -p /tmp/singularity-conda-cache
-
 %setup
     if [ ! -d atomsurf ];then
         git clone https://github.com/Vincentx15/atomsurf.git
@@ -26,6 +20,11 @@ From: continuumio/miniconda3:latest
     export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
 
 %post
+    # Create a persistent cache directory on the host if it doesn't exist.
+    # This directory will be bind-mounted into the container to store conda packages.
+    # The path is hardcoded for simplicity, but could be made configurable.
+    mkdir -p /tmp/singularity-conda-cache
+
     echo "Creating conda environment 'atomsurf' with Python 3.8..."
     conda create -n atomsurf python=3.8 -y
 
@@ -73,24 +72,12 @@ From: continuumio/miniconda3:latest
     # echo "Verifying CUDA availability (requires NVIDIA drivers on host to return True)..."
     # python -c "import torch; print(torch.cuda.is_available())"
 
-%runscript
-    # Bind the host cache directory to the container's cache directory
-    # The /tmp/singularity-conda-cache on the host will be available as /opt/conda_cache inside the container during build.
-    # This also allows the user to specify a custom cache location during `apptainer run` or `apptainer shell`
-    # by using --bind /my/custom/cache:/opt/conda_cache
-    if [ ! -d /tmp/singularity-conda-cache ]; then
-        mkdir -p /tmp/singularity-conda-cache
-    fi
-    exec apptainer shell --bind /tmp/singularity-conda-cache:/opt/conda_cache "$@"
-
 %labels
     Description AtomSurf: Learnable protein structure encoder jointly encoding graphs and surfaces.
     Homepage https://github.com/Vincentx15/atomsurf
 
-%startscript
+%runscript
     echo "Starting a shell with the AtomSurf conda environment activated."
-    # Change to the application directory
-    cd /opt/atomsurf
     . /opt/conda/etc/profile.d/conda.sh
     conda activate atomsurf
     export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
