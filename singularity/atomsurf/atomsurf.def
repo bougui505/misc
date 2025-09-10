@@ -15,16 +15,11 @@ From: continuumio/miniconda3:latest
     # Add the conda environment's bin directory to PATH
     export PATH="/opt/conda/envs/atomsurf/bin:$PATH"
     # Essential for CUDA applications to find libraries, especially when running on a host with NVIDIA GPUs
-    export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH"
+    # export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH"
     # Set the Python path to include the atomsurf package for proper imports
     export PYTHONPATH="/opt/atomsurf:$PYTHONPATH"
 
 %post
-    # Create a persistent cache directory on the host if it doesn't exist.
-    # This directory will be bind-mounted into the container to store conda packages.
-    # The path is hardcoded for simplicity, but could be made configurable.
-    mkdir -p /tmp/singularity-conda-cache
-
     echo "Creating conda environment 'atomsurf' with Python 3.8..."
     conda create -n atomsurf python=3.8 -y
 
@@ -36,7 +31,7 @@ From: continuumio/miniconda3:latest
     # Set CONDA_PKGS_DIRS to use a bind-mounted cache directory
     # The /opt/conda_cache directory will be bind-mounted from the host during `apptainer build`
     export CONDA_PKGS_DIRS="/tmp/conda_cache"
-    mkdir -p "$CONDA_PKGS_DIRS" # Create directory inside container
+    mkdir -p "$CONDA_PKGS_DIRS" # Create directory
 
     echo "Installing PyTorch 1.13 with CUDA 11.7 and PyG 2.3.0 dependencies..."
     conda install cudatoolkit=11.7 -c nvidia -y
