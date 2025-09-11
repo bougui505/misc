@@ -69,11 +69,11 @@ cd /opt/atomsurf
 pip3 --cache-dir=/tmp/pip/cache install git+https://github.com/pvnieo/diffusion-net-plus.git
 pip3 --cache-dir=/tmp/pip/cache install -r requirements.txt
 
-# echo "####################### TESTING atomsurf #######################"
-# cd /opt/atomsurf
-# python3 example.py \
-#     || { echo "!!!!!!!!! TESTING FAILED !!!!!!!!!"; exit 1; }
-# echo "########################   TESTING OK    #######################"
+echo "####################### TESTING atomsurf #######################"
+cd /opt/atomsurf
+python3 example.py \
+    || { echo "!!!!!!!!! TESTING FAILED !!!!!!!!!"; exit 1; }
+echo "########################   TESTING OK    #######################"
 
 # %runscript
 # cmd $@
