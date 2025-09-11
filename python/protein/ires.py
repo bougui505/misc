@@ -40,11 +40,12 @@ def get_interface(
         chains.sort()
         print(f"{chains=}")
     chain_models = []
-    for chain in chains:
-        with PyMOL() as pml:
-            loader(pdb, pml, selection=f"chain {chain}")
-            pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
-            chain_models.append(pml.cmd.get_model())
+    with typer.progressbar(chains, label="Processing chains") as progress_chains:
+        for chain in progress_chains:
+            with PyMOL() as pml:
+                loader(pdb, pml, selection=f"chain {chain}")
+                pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
+                chain_models.append(pml.cmd.get_model())
 
 
 if __name__ == "__main__":
