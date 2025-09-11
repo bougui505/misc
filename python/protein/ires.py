@@ -59,19 +59,18 @@ def get_interface(
         chain_models_ref = dict()
         for chain in chains:
             chain_models_ref[chain] = pml.cmd.get_model(f"chain {chain}")
-    with typer.progressbar(chains, label="Processing chains", file=sys.stderr) as progress_chains:
-        for chain in progress_chains:
-            with PyMOL() as pml:
-                loader(pdb, pml, selection=f"chain {chain}")
-                pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
-                chain_model = pml.cmd.get_model()
-                chain_model_ref = chain_models_ref[chain]
-                # compute the difference of rSASA between chain_model and model
-                # positive values should be at the interface between the current chain and the other ones.
-                sasa = np.asarray([atom.b for atom in chain_model.atom])
-                sasa_ref = np.asarray([atom.b for atom in chain_model_ref.atom])
-                delta_sasa = sasa - sasa_ref
-                print_sasa(chain_model_ref, delta_sasa)
+    for chain in chains:
+        with PyMOL() as pml:
+            loader(pdb, pml, selection=f"chain {chain}")
+            pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
+            chain_model = pml.cmd.get_model()
+            chain_model_ref = chain_models_ref[chain]
+            # compute the difference of rSASA between chain_model and model
+            # positive values should be at the interface between the current chain and the other ones.
+            sasa = np.asarray([atom.b for atom in chain_model.atom])
+            sasa_ref = np.asarray([atom.b for atom in chain_model_ref.atom])
+            delta_sasa = sasa - sasa_ref
+            print_sasa(chain_model_ref, delta_sasa)
 
 
 if __name__ == "__main__":
