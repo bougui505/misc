@@ -11,6 +11,8 @@ import typer
 import os
 from pymol2 import PyMOL
 
+PDB_DIR = os.path.expanduser("~/pdb")
+
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
 app = typer.Typer(
@@ -27,7 +29,7 @@ def get_interface(
         if os.path.isfile(pdb):
             pml.cmd.load(pdb)
         else:
-            pml.cmd.fetch(pdb)
+            pml.cmd.fetch(pdb, path=PDB_DIR)
 
 if __name__ == "__main__":
     app()
