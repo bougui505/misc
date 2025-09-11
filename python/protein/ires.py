@@ -24,6 +24,10 @@ app = typer.Typer(
 )
 
 def loader(pdb, pml, selection=None):
+    """
+    Loads a PDB file or fetches it from the PDB database.
+    Optionally removes atoms not matching the selection.
+    """
     if os.path.isfile(pdb):
         pml.cmd.load(pdb)
     else:
@@ -32,6 +36,9 @@ def loader(pdb, pml, selection=None):
         pml.cmd.remove(f"not {selection}")
 
 def print_deltasasa(model, sasas, filter_sasa=True):
+    """
+    Prints residues with positive delta SASA values.
+    """
     assert len(model.atom) == len(sasas)
     for i, atom in enumerate(model.atom):
         delta_sasa = sasas[i]
@@ -55,9 +62,17 @@ def print_deltasasa(model, sasas, filter_sasa=True):
 
 @app.command()
 def get_interface(
-    pdb:str,
-    filter_sasa:bool=True,
-    ):
+    pdb: str = typer.Argument(..., help="PDB ID or path to a PDB file."),
+    filter_sasa: bool = typer.Option(True, help="Only print residues with positive delta SASA values."),
+):
+    """
+    Computes and prints the interface residues of a protein.
+
+    For each chain, the relative SASA (rSASA) is computed for the entire protein
+    and then for the isolated chain. The difference (delta SASA) indicates
+    residues that become more exposed when other chains are removed,
+    suggesting they are part of the interface.
+    """
     with PyMOL() as pml:
         loader(pdb, pml)
         pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor (value between 0.0 (fully buried) and 1.0 (fully exposed))
