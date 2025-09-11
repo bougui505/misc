@@ -21,18 +21,31 @@ app = typer.Typer(
     add_completion=False,
 )
 
+def loader(pdb, pml, selection=None):
+    if os.path.isfile(pdb):
+        pml.cmd.load(pdb)
+    else:
+        pml.cmd.fetch(pdb, path=PDB_DIR)
+    if selection is not None:
+        pml.cmd.remove(f"not {selection}")
+
 @app.command()
 def get_interface(
     pdb:str
     ):
     with PyMOL() as pml:
-        if os.path.isfile(pdb):
-            pml.cmd.load(pdb)
-        else:
-            pml.cmd.fetch(pdb, path=PDB_DIR)
+        loader(pdb, pml)
         model = pml.cmd.get_model()
-        chains = set(atom.chain for atom in model.atom)
-        print(f"Chains in the model: {sorted(list(chains))}")
+        chains = list(set(atom.chain for atom in model.atom))
+        chains.sort()
+        print(f"{chains=}")
+    chain_models = []
+    for chain in chains:
+        with PyMOL() as pml:
+            loader(pdb, pml, selection=f"chain {chain}")
+            pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
+            chain_models.append(pml.cmd.get_model())
+
 
 if __name__ == "__main__":
     app()
