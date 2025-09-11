@@ -11,10 +11,11 @@ import typer
 import os
 import sys
 from pymol2 import PyMOL
+import numpy as np
 
 PDB_DIR = os.path.expanduser("~/pdb")
 
-# import IPython  # you can use IPython.embed() to explore variables and explore where it's called
+import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -30,23 +31,47 @@ def loader(pdb, pml, selection=None):
     if selection is not None:
         pml.cmd.remove(f"not {selection}")
 
+def print_sasa(model, sasas):
+    assert len(model.atom) == len(sasas)
+    for i, atom in enumerate(model.atom):
+        sasa = sasas[i]
+        if atom.name == "CA" and sasa > 0.0:
+            resn = atom.resn
+            resi_number = atom.resi_number
+            resi = atom.resi
+            print(f"{resn=}")
+            print(f"{resi_number=}")
+            print(f"{resi=}")
+
+
 @app.command()
 def get_interface(
     pdb:str
     ):
     with PyMOL() as pml:
         loader(pdb, pml)
-        model = pml.cmd.get_model()
-        chains = list(set(atom.chain for atom in model.atom))
+        pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor (value between 0.0 (fully buried) and 1.0 (fully exposed))
+        model_ref = pml.cmd.get_model()
+        chains = list(set(atom.chain for atom in model_ref.atom))
         chains.sort()
         print(f"{chains=}")
-    chain_models = []
+        # Get reference model individually by chain
+        chain_models_ref = dict()
+        for chain in chains:
+            chain_models_ref[chain] = pml.cmd.get_model(f"chain {chain}")
     with typer.progressbar(chains, label="Processing chains", file=sys.stderr) as progress_chains:
         for chain in progress_chains:
             with PyMOL() as pml:
                 loader(pdb, pml, selection=f"chain {chain}")
                 pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
-                chain_models.append(pml.cmd.get_model())
+                chain_model = pml.cmd.get_model()
+                chain_model_ref = chain_models_ref[chain]
+                # compute the difference of rSASA between chain_model and model
+                # positive values should be at the interface between the current chain and the other ones.
+                sasa = np.asarray([atom.b for atom in chain_model.atom])
+                sasa_ref = np.asarray([atom.b for atom in chain_model_ref.atom])
+                delta_sasa = sasa - sasa_ref
+                print_sasa(chain_model_ref, delta_sasa)
 
 
 if __name__ == "__main__":
