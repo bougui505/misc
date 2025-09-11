@@ -31,22 +31,32 @@ def loader(pdb, pml, selection=None):
     if selection is not None:
         pml.cmd.remove(f"not {selection}")
 
-def print_sasa(model, sasas):
+def print_deltasasa(model, sasas, filter_sasa=True):
     assert len(model.atom) == len(sasas)
     for i, atom in enumerate(model.atom):
-        sasa = sasas[i]
-        if atom.name == "CA" and sasa > 0.0:
-            resn = atom.resn
-            resi_number = atom.resi_number
-            resi = atom.resi
-            print(f"{resn=!s}")
-            print(f"{resi_number=!s}")
-            print(f"{resi=!s}")
+        delta_sasa = sasas[i]
+        if atom.name == "CA":
+            if filter_sasa:
+                doprint=False
+                if delta_sasa > 0.0:
+                    doprint=True
+            else:
+                doprint=True
+            if doprint:
+                resn = atom.resn
+                resi = atom.resi
+                chain = atom.chain
+                print(f"{resn=!s}")
+                print(f"{resi=!s}")
+                print(f"{chain=!s}")
+                print(f"{delta_sasa=:.4f}")
+                print("--")
 
 
 @app.command()
 def get_interface(
-    pdb:str
+    pdb:str,
+    filter_sasa:bool=True,
     ):
     with PyMOL() as pml:
         loader(pdb, pml)
@@ -70,7 +80,7 @@ def get_interface(
             sasa = np.asarray([atom.b for atom in chain_model.atom])
             sasa_ref = np.asarray([atom.b for atom in chain_model_ref.atom])
             delta_sasa = sasa - sasa_ref
-            print_sasa(chain_model_ref, delta_sasa)
+            print_deltasasa(chain_model_ref, delta_sasa, filter_sasa)
 
 
 if __name__ == "__main__":
