@@ -31,8 +31,8 @@ def get_interface(
         else:
             pml.cmd.fetch(pdb, path=PDB_DIR)
         model = pml.cmd.get_model()
-        print(dir(model))
-        print(model.get_coord_list())
+        chains = set(atom.chain for atom in model.atom)
+        print(f"Chains in the model: {sorted(list(chains))}")
 
 if __name__ == "__main__":
     app()
