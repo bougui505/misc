@@ -30,6 +30,9 @@ def get_interface(
             pml.cmd.load(pdb)
         else:
             pml.cmd.fetch(pdb, path=PDB_DIR)
+        model = pml.cmd.get_model()
+        print(dir(model))
+        print(model.get_coord_list())
 
 if __name__ == "__main__":
     app()
