@@ -9,6 +9,7 @@
 
 import typer
 import os
+import sys
 from pymol2 import PyMOL
 
 PDB_DIR = os.path.expanduser("~/pdb")
@@ -40,7 +41,7 @@ def get_interface(
         chains.sort()
         print(f"{chains=}")
     chain_models = []
-    with typer.progressbar(chains, label="Processing chains") as progress_chains:
+    with typer.progressbar(chains, label="Processing chains", file=sys.stderr) as progress_chains:
         for chain in progress_chains:
             with PyMOL() as pml:
                 loader(pdb, pml, selection=f"chain {chain}")
