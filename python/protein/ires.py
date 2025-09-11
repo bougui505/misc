@@ -39,9 +39,9 @@ def print_sasa(model, sasas):
             resn = atom.resn
             resi_number = atom.resi_number
             resi = atom.resi
-            print(f"{resn=}")
-            print(f"{resi_number=}")
-            print(f"{resi=}")
+            print(f"{resn=!s}")
+            print(f"{resi_number=!s}")
+            print(f"{resi=!s}")
 
 
 @app.command()
