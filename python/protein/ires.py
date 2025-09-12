@@ -50,16 +50,25 @@ def print_deltasasa(model, sasas, filter_sasa=True):
             else:
                 doprint=True
             if doprint:
-                # AI! convert the 3 letters-code resn to 1 letter code
+                # convert the 3 letters-code resn to 1 letter code
                 resn = atom.resn
                 resi = atom.resi
                 chain = atom.chain
-                print(f"{resn=!s}")
+                # Create a dictionary to map 3-letter codes to 1-letter codes
+                aa_dict = {
+                    'ALA': 'A', 'CYS': 'C', 'ASP': 'D', 'GLU': 'E',
+                    'PHE': 'F', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
+                    'LYS': 'K', 'LEU': 'L', 'MET': 'M', 'ASN': 'N',
+                    'PRO': 'P', 'GLN': 'Q', 'ARG': 'R', 'SER': 'S',
+                    'THR': 'T', 'VAL': 'V', 'TRP': 'W', 'TYR': 'Y'
+                }
+                # Get the 1-letter code using the dictionary
+                resn_1letter = aa_dict.get(resn, 'X')  # 'X' is used for unknown residues
+                print(f"{resn_1letter=!s}")
                 print(f"{resi=!s}")
                 print(f"{chain=!s}")
                 print(f"{delta_sasa=:.4f}")
                 print("--")
-
 
 @app.command()
 def get_interface(
@@ -98,7 +107,5 @@ def get_interface(
             delta_sasa = sasa - sasa_ref
             print_deltasasa(chain_model_ref, delta_sasa, filter_sasa)
 
-
 if __name__ == "__main__":
     app()
-
