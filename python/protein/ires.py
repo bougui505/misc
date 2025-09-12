@@ -50,6 +50,7 @@ def print_deltasasa(model, sasas, filter_sasa=True):
             else:
                 doprint=True
             if doprint:
+                # AI! convert the 3 letters-code resn to 1 letter code
                 resn = atom.resn
                 resi = atom.resi
                 chain = atom.chain
