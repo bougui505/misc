@@ -63,8 +63,8 @@ def print_deltasasa(model, sasas, filter_sasa=True):
                     'THR': 'T', 'VAL': 'V', 'TRP': 'W', 'TYR': 'Y'
                 }
                 # Get the 1-letter code using the dictionary
-                resn_1letter = aa_dict.get(resn, 'X')  # 'X' is used for unknown residues
-                print(f"{resn_1letter=!s}")
+                resn = aa_dict.get(resn, 'X')  # 'X' is used for unknown residues
+                print(f"{resn=!s}")
                 print(f"{resi=!s}")
                 print(f"{chain=!s}")
                 print(f"{delta_sasa=:.4f}")
