@@ -74,6 +74,7 @@ def print_deltasasa(model, sasas, filter_sasa=True):
 def get_interface(
     pdb: str = typer.Argument(..., help="PDB ID or path to a PDB file."),
     filter_sasa: bool = typer.Option(True, help="Only print residues with positive delta SASA values."),
+    chains: str|None = typer.Option(None, help="If empty, compute the rSASA for each individual chain. If not, give the group of chain to consider separated with a '+', separated by a comma ','. For example ('A+B,C,D'), will group chain A+B and then consider C and D individually")
 ):
     """
     Computes and prints the interface residues of a protein.
@@ -87,14 +88,17 @@ def get_interface(
         loader(pdb, pml)
         pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor (value between 0.0 (fully buried) and 1.0 (fully exposed))
         model_ref = pml.cmd.get_model()
-        chains = list(set(atom.chain for atom in model_ref.atom))
-        chains.sort()
-        print(f"{chains=}")
+        if chains is None:
+            chains_list = list(set(atom.chain for atom in model_ref.atom))
+        else:
+            chains_list = [e.strip() for e in chains.split(',')]
+        chains_list.sort()
+        print(f"{chains_list=}")
         # Get reference model individually by chain
         chain_models_ref = dict()
-        for chain in chains:
+        for chain in chains_list:
             chain_models_ref[chain] = pml.cmd.get_model(f"chain {chain}")
-    for chain in chains:
+    for chain in chains_list:
         with PyMOL() as pml:
             loader(pdb, pml, selection=f"chain {chain}")
             pml.cmd.get_sasa_relative()  # compute the relative SASA and store it in the b-factor
