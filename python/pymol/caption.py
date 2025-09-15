@@ -129,7 +129,5 @@ def main():
     labeler.label('resi 59 and name CA', "resi 59")
     labeler.label('resi 59 and name CA', "resi 59_2")
 
-main()
-
 if __name__ == "__main__":
     app()
