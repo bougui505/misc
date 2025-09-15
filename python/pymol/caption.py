@@ -18,9 +18,11 @@ app = typer.Typer()
 
 PDB_DOWNLOAD_PATH = os.path.expanduser("~/pdb")
 
-def loader(pdb):
-    """
-    Load a PDB structure into PyMOL. Fetches from PDB if not a local file.
+def loader(pdb: str):
+    """Load a PDB structure into PyMOL. Fetches from PDB if not a local file.
+
+    Args:
+        pdb: PDB ID or path to a local PDB file.
     """
     print(f"Loading {pdb}")
     if not os.path.isfile(pdb):
@@ -29,17 +31,16 @@ def loader(pdb):
         cmd.load(pdb)
     cmd.orient()
 
-def sphere(selection='all', padding=5.0, npts=100):
-    """
-    Generate points on a sphere encompassing the given selection.
+def sphere(selection: str = 'all', padding: float = 5.0, npts: int = 100) -> np.ndarray:
+    """Generate points on a sphere encompassing the given selection.
 
     Args:
-        selection (str): PyMOL selection string.
-        padding (float): Extra padding for the sphere radius.
-        npts (int): Number of points to generate on the sphere.
+        selection: PyMOL selection string.
+        padding: Extra padding for the sphere radius.
+        npts: Number of points to generate on the sphere.
 
     Returns:
-        np.ndarray: An array of shape (npts, 3) with the coordinates of the sphere points.
+        An array of shape (npts, 3) with the coordinates of the sphere points.
     """
     coords = cmd.get_coords(selection)
     
@@ -64,14 +65,13 @@ def sphere(selection='all', padding=5.0, npts=100):
     sphere_points = np.column_stack([x, y, z])
     return sphere_points
 
-def show_sphere(selection='all', padding=5.0, npts=100):
-    """
-    Visualize the encompassing sphere points as pseudoatoms in PyMOL.
+def show_sphere(selection: str = 'all', padding: float = 5.0, npts: int = 100):
+    """Visualize the encompassing sphere points as pseudoatoms in PyMOL.
 
     Args:
-        selection (str): PyMOL selection string.
-        padding (float): Extra padding for the sphere radius.
-        npts (int): Number of points to generate on the sphere.
+        selection: PyMOL selection string.
+        padding: Extra padding for the sphere radius.
+        npts: Number of points to generate on the sphere.
     """
     sphere_points = sphere(selection=selection, padding=padding, npts=npts)
     for i, coords in enumerate(sphere_points):
@@ -79,32 +79,30 @@ def show_sphere(selection='all', padding=5.0, npts=100):
     cmd.show_as("spheres", "sphere")
     cmd.orient()
 
-class Labeler():
-    """
-    A class to manage and place labels around a selection in PyMOL using a sphere of points.
-    """
-    def __init__(self, selection="all", padding=2.0, npts=100, linecolor="black"):
-        """
-        Initializes the Labeler with an encompassing sphere of points.
+class Labeler:
+    """A class to manage and place labels around a selection in PyMOL using a sphere of points."""
+    def __init__(self, selection: str = "all", padding: float = 2.0, npts: int = 100, linecolor: str = "black"):
+        """Initializes the Labeler with an encompassing sphere of points.
 
         Args:
-            selection (str): PyMOL selection string to define the sphere's center and radius.
-            padding (float): Extra padding for the sphere radius.
-            npts (int): Number of points to generate on the sphere.
+            selection: PyMOL selection string to define the sphere's center and radius.
+            padding: Extra padding for the sphere radius.
+            npts: Number of points to generate on the sphere.
+            linecolor: Color for the dashed lines connecting labels to selections.
         """
         self.sphere_points = sphere(selection=selection, padding=padding, npts=npts)
         self.labelid = 0
         cmd.set("dash_color", linecolor)  # type: ignore
 
-    def label(self, selection, labelname):
-        """
-        Places a label on the sphere closest to the given selection.
+    def label(self, selection: str, labelname: str):
+        """Places a label on the sphere closest to the given selection.
+
         Removes the chosen sphere point to avoid duplicate labels at the same location.
 
         Args:
-            selection (str): PyMOL selection string for the atom to label.
-                             Must select exactly one atom.
-            labelname (str): The text content of the label.
+            selection: PyMOL selection string for the atom to label.
+                       Must select exactly one atom.
+            labelname: The text content of the label.
         """
         coords = cmd.get_coords(selection)
         assert coords.shape[0] == 1, "Only 1 atom must be selected for labelling"
@@ -121,8 +119,8 @@ class Labeler():
 
 @app.command()
 def main():
-    """
-    Main function to demonstrate the captioning functionality.
+    """Main function to demonstrate the captioning functionality.
+
     Loads a PDB, initializes a Labeler, and adds example labels.
     """
     loader("1t4e_A")
