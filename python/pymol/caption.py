@@ -49,7 +49,13 @@ def sphere(selection='all', padding=5.0, npts=100):
     return sphere_points
 
 def show_sphere(selection='all', padding=5.0, npts=100):
-    # AI! show the points of the sphere in pymol
+    sphere_points = sphere(selection=selection, padding=padding, npts=npts)
+    obj_name = "sphere_surface_points"
+    cmd.load_coords(sphere_points, obj_name, state=1, mode='coords')
+    cmd.show('spheres', obj_name)
+    cmd.alter(obj_name, 'vdw=0.5')
+    cmd.rebuild()
+    cmd.color('red', obj_name) # Example color
 
 @app.command()
 def main():
