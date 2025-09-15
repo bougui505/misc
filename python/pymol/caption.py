@@ -83,7 +83,7 @@ class Labeler():
     """
     A class to manage and place labels around a selection in PyMOL using a sphere of points.
     """
-    def __init__(self, selection="all", padding=2.0, npts=100):
+    def __init__(self, selection="all", padding=2.0, npts=100, linecolor="black"):
         """
         Initializes the Labeler with an encompassing sphere of points.
 
@@ -94,6 +94,7 @@ class Labeler():
         """
         self.sphere_points = sphere(selection=selection, padding=padding, npts=npts)
         self.labelid = 0
+        cmd.set("dash_color", linecolor)  # type: ignore
 
     def label(self, selection, labelname):
         """
@@ -111,7 +112,8 @@ class Labeler():
         ptid = dmat.argmin()
         labelcoords = self.sphere_points[ptid]
         self.sphere_points = np.delete(self.sphere_points, (ptid), axis=0)
-        labelid = f"l_{labelname.replace(" ", "_")}"
+        labelid = f"l_{labelname.replace(" ", "_")}_{self.labelid}"
+        self.labelid += 1
         cmd.pseudoatom(object=labelid, pos=list(labelcoords))
         cmd.label(labelid, f"'{labelname}'")
         cmd.distance(f"d_{labelid}", selection, labelid)
