@@ -11,7 +11,6 @@ from pymol import cmd
 import os
 
 PDB_DOWNLOAD_PATH = os.path.expanduser("~/pdb")
-# AI! when using cmd.fetch, the pdb must be downloaded in PDB_DOWNLOAD_PATH
 
 def loader(pdb):
-    pass
+    cmd.fetch(pdb, path=PDB_DOWNLOAD_PATH)
