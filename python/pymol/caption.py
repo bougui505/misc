@@ -13,4 +13,10 @@ import os
 PDB_DOWNLOAD_PATH = os.path.expanduser("~/pdb")
 
 def loader(pdb):
-    cmd.fetch(pdb, path=PDB_DOWNLOAD_PATH)
+    if not os.path.isfile(pdb):
+        cmd.fetch(pdb, path=PDB_DOWNLOAD_PATH)
+    else:
+        cmd.load(pdb)
+
+def sphere(selection='all', padding=5.0, npts=100):
+    # AI! define npts points equally spaced on a sphere that encompass the protein + padding
