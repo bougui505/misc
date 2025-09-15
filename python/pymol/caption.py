@@ -11,9 +11,14 @@ from pymol import cmd
 import os
 import numpy as np
 
+import typer
+
+app = typer.Typer()
+
 PDB_DOWNLOAD_PATH = os.path.expanduser("~/pdb")
 
 def loader(pdb):
+    print(f"Loading {pdb}")
     if not os.path.isfile(pdb):
         cmd.fetch(pdb, path=PDB_DOWNLOAD_PATH)
     else:
@@ -42,3 +47,16 @@ def sphere(selection='all', padding=5.0, npts=100):
     
     sphere_points = np.column_stack([x, y, z])
     return sphere_points
+
+def show_sphere(selection='all', padding=5.0, npts=100):
+    # AI! show the points of the sphere in pymol
+
+@app.command()
+def main():
+    loader("1t4e_A")
+    sphere()
+
+main()
+
+if __name__ == "__main__":
+    app()
