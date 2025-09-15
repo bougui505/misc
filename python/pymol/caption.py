@@ -10,6 +10,7 @@
 from pymol import cmd
 import os
 import numpy as np
+import scipy.spatial.distance as scidist
 
 import typer
 
@@ -23,6 +24,7 @@ def loader(pdb):
         cmd.fetch(pdb, path=PDB_DOWNLOAD_PATH)
     else:
         cmd.load(pdb)
+    cmd.orient()
 
 def sphere(selection='all', padding=5.0, npts=100):
     coords = cmd.get_coords(selection)
@@ -50,17 +52,36 @@ def sphere(selection='all', padding=5.0, npts=100):
 
 def show_sphere(selection='all', padding=5.0, npts=100):
     sphere_points = sphere(selection=selection, padding=padding, npts=npts)
-    obj_name = "sphere_surface_points"
-    cmd.load_coords(sphere_points, obj_name, state=1, mode='coords')
-    cmd.show('spheres', obj_name)
-    cmd.alter(obj_name, 'vdw=0.5')
-    cmd.rebuild()
-    cmd.color('red', obj_name) # Example color
+    for i, coords in enumerate(sphere_points):
+        cmd.pseudoatom(object="sphere", pos=list(coords))
+    cmd.show_as("spheres", "sphere")
+    cmd.orient()
+
+class Labeler():
+    def __init__(self, selection="all", padding=2.0, npts=100):
+        self.sphere_points = sphere(selection=selection, padding=padding, npts=npts)
+        self.labelid = 0
+
+    def label(self, selection, labelname):
+        coords = cmd.get_coords(selection)
+        assert coords.shape[0] == 1, "Only 1 atom must be selected for labelling"
+        dmat = scidist.cdist(coords, self.sphere_points).squeeze()  # shape (npts,)
+        ptid = dmat.argmin()
+        labelcoords = self.sphere_points[ptid]
+        self.sphere_points = np.delete(self.sphere_points, (ptid), axis=0)
+        labelid = f"l_{labelname.replace(" ", "_")}"
+        cmd.pseudoatom(object=labelid, pos=list(labelcoords))
+        cmd.label(labelid, f"'{labelname}'")
+        cmd.distance(f"d_{labelid}", selection, labelid)
+        cmd.hide("labels", f"d_{labelid}")
 
 @app.command()
 def main():
     loader("1t4e_A")
-    sphere()
+    # show_sphere()
+    labeler = Labeler()
+    labeler.label('resi 59 and name CA', "resi 59")
+    labeler.label('resi 59 and name CA', "resi 59_2")
 
 main()
 
