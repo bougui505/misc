@@ -10,7 +10,7 @@
 from pymol import cmd
 import os
 
-# AI! define the pdb download path to ~/pdb
+PDB_DOWNLOAD_PATH = os.path.expanduser("~/pdb")
 
 def loader(pdb):
     pass
