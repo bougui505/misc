@@ -24,12 +24,29 @@ app = typer.Typer(
 )
 
 def loader(pdb):
+    """
+    Load a PDB file into PyMOL. Fetches from PDB if not a local file.
+
+    Args:
+        pdb (str): Path to PDB file or PDB ID.
+    """
     if os.path.isfile(pdb):
         cmd.load(pdb)
     else:
         cmd.fetch(pdb, path=os.path.expanduser("~/pdb"))
 
 def delineate(selection, linewidth=3, color=[0, 255, 0]):
+    """
+    Delineate the contour of a selected molecular surface in PyMOL.
+
+    Args:
+        selection (str): PyMOL selection string for the interface.
+        linewidth (int): Width of the contour line in pixels.
+        color (list): RGB color list for the contour (e.g., [0, 255, 0] for green).
+
+    Returns:
+        Image.Image: PIL Image object of the contour.
+    """
     cmd.create("interface", selection)
     set_view(VIEW)
     cmd.hide("everything")
@@ -58,6 +75,12 @@ def delineate(selection, linewidth=3, color=[0, 255, 0]):
     # surface_img.save("figures/footprints.png")
 
 def set_view(view):
+    """
+    Set the PyMOL camera view using a view matrix string.
+
+    Args:
+        view (str or None): Comma-separated string of view matrix values.
+    """
     if view is not None:
         view_mat = view.strip().split(",")
         cmd.set_view(view_mat)
@@ -73,7 +96,21 @@ def main(
         height:int=1920,
         tmpdir:str="tmp",
     ):
-    """"""
+    """
+    Delineate an interface on a protein surface and save the resulting image.
+
+    Args:
+        pdb (str): Path to the PDB file or PDB ID of the main structure.
+        ref (str): PyMOL selection string for the reference structure (e.g., the whole protein).
+        sel (str): PyMOL selection string for the interface to delineate.
+        view (str, optional): Comma-separated string of view matrix values for PyMOL camera.
+                                Defaults to None.
+        debug (bool): If True, enable debug mode (shows local variables on exceptions).
+                      Defaults to False.
+        width (int): Width of the output image in pixels. Defaults to 2560.
+        height (int): Height of the output image in pixels. Defaults to 1920.
+        tmpdir (str): Directory to store temporary files. Defaults to "tmp".
+    """
     global DEBUG
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
