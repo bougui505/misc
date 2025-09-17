@@ -21,6 +21,7 @@ app = typer.Typer(
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,  # do not show local variable
     add_completion=False,
+    help="Delineate protein interfaces and visualize them on a surface."
 )
 
 def loader(pdb):
@@ -87,14 +88,14 @@ def set_view(view):
 
 @app.command()
 def main(
-        pdb:str,
-        ref:str,
-        sel:str,
-        view:str|None=None,
-        debug:bool=False,
-        width:int=2560,
-        height:int=1920,
-        tmpdir:str="tmp",
+        pdb:str = typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
+        ref:str = typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
+        sel:str = typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
+        view:str|None=typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera."),
+        debug:bool=typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
+        width:int=typer.Option(2560, help="Width of the output image in pixels."),
+        height:int=typer.Option(1920, help="Height of the output image in pixels."),
+        tmpdir:str=typer.Option("tmp", help="Directory to store temporary files."),
     ):
     """
     Delineate an interface on a protein surface and save the resulting image.
