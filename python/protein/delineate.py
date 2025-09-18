@@ -100,6 +100,7 @@ def main(
         ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
         sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
         color: str = typer.Option('255,0,0', help="RGB color for the contour line, e.g., '255,0,0' for red."),
+        linewidth: int = 3,
         fill: str | None = typer.Option(None, help="RGB color for filling the delineated interface, e.g., '0,0,255' for blue."),
         view: str | None = typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1')."),
         debug: bool = typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
@@ -126,7 +127,7 @@ def main(
         fill_rgb = [int(_.strip()) for _ in fill.split(",")]
     else:
         fill_rgb = None
-    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb)
+    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb, linewidth=linewidth)
     # get a list of all the chains in ref selection
     cmd.create("ref", ref)
     chains_ref = cmd.get_chains("ref")
