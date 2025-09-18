@@ -94,22 +94,57 @@ def set_view(view):
         view_mat = view.strip().split(",")
         cmd.set_view(view_mat)
 
-@app.command(help="Delineate a protein interface and visualize it on a surface.")
+@app.command(
+    help="Delineate a protein interface and visualize it on a surface. "
+         "Loads a PDB, delineates a specified interface with a contour and optional fill, "
+         "and renders it onto the surface of a reference selection. "
+         "The reference selection chains are colored with a grayscale gradient."
+)
 def main(
-        pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
-        ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
-        sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
-        color: str = typer.Option('255,0,0', help="RGB color for the contour line, e.g., '255,0,0' for red."),
-        linewidth: int = 3,
-        fill: str | None = typer.Option(None, help="RGB color for filling the delineated interface, e.g., '0,0,255' for blue."),
-        view: str | None = typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1')."),
-        debug: bool = typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
+        pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID to load."),
+        ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure to be shown with a grayscale gradient by chain (e.g., 'chain A or chain B')."),
+        sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate (e.g., 'chain A and around 5 of chain B')."),
+        color: str = typer.Option('255,0,0', help="RGB color (comma-separated) for the contour line, e.g., '255,0,0' for red."),
+        linewidth: int = typer.Option(3, help="Width of the contour line in pixels."),
+        fill: str | None = typer.Option(None, help="RGB color (comma-separated) for filling the delineated interface, e.g., '0,0,255' for blue. If None, no fill is applied."),
+        view: str | None = typer.Option(None, help="Comma-separated string of 16 view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1'). If None, PyMOL's default view is used."),
+        debug: bool = typer.Option(False, help="If True, enables debug mode (shows local variables on exceptions)."),
         width: int = typer.Option(2560, help="Width of the output image in pixels."),
         height: int = typer.Option(1920, help="Height of the output image in pixels."),
-        tmpdir: str = typer.Option("tmp", help="Directory to store temporary files."),
+        tmpdir: str = typer.Option("tmp", help="Directory to store temporary files and the final output image."),
     ):
     """
     Delineate a protein interface and visualize it on a surface.
+
+    This command loads a PDB structure, defines a reference surface (e.g., the whole protein),
+    and a specific interface area. It then calculates and draws a contour line
+    around the interface on the reference surface. The output is an image
+    showing the contoured interface.
+
+    Args:
+        pdb (str): Path to the PDB file or PDB ID to load into PyMOL.
+        ref (str): PyMOL selection string for the reference structure whose surface
+                   will be displayed. Chains in this selection will be colored
+                   with a grayscale gradient.
+        sel (str): PyMOL selection string for the interface region to be delineated.
+                   This selection defines the area on the surface where the contour
+                   will be drawn.
+        color (str): Comma-separated RGB values (0-255) for the contour line color.
+                     Example: '255,0,0' for red.
+        linewidth (int): The thickness of the contour line in pixels in the output image.
+        fill (str | None): Comma-separated RGB values (0-255) for filling the delineated
+                           interface region. Example: '0,0,255' for blue. If not provided,
+                           only the contour line will be drawn.
+        view (str | None): A string containing 16 comma-separated floats representing
+                           the PyMOL view matrix. This allows for precise camera positioning.
+                           If not specified, PyMOL's current view will be used.
+        debug (bool): If True, enables debug mode which provides more detailed
+                      error messages by showing local variables on exceptions.
+        width (int): The width of the generated output image in pixels.
+        height (int): The height of the generated output image in pixels.
+        tmpdir (str): The directory where temporary PyMOL PNGs and the final
+                      'footprints.png' image will be saved. The directory will be
+                      created if it doesn't exist.
     """
     global DEBUG, WIDTH, HEIGHT, VIEW
 
