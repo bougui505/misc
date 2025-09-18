@@ -36,7 +36,7 @@ def loader(pdb):
     else:
         cmd.fetch(pdb, path=os.path.expanduser("~/pdb"))
 
-def delineate(selection, linewidth=3, color=[0, 255, 0]):
+def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
     """
     Delineate the contour of a selected molecular surface in PyMOL.
 
@@ -65,6 +65,9 @@ def delineate(selection, linewidth=3, color=[0, 255, 0]):
     # plt.matshow(contour)
     # plt.show()
     contour_rgb = np.stack([contour]*3, axis=-1) * np.asarray(color)  # save it in green (RGB mode)
+    if fill is not None:
+        filling = np.stack([np.int_(sel)]*3, axis=-1) * np.asarray(fill)
+        contour_rgb += filling
     contour_img = Image.fromarray(np.uint8(contour_rgb), 'RGB')
     contour_img.putalpha(Image.fromarray(np.uint8(contour * 255)))
     contour_img.save("tmp/contour.png")
@@ -88,9 +91,10 @@ def set_view(view):
 
 @app.command()
 def main(
-        pdb:str = typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
-        ref:str = typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
-        sel:str = typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
+        pdb:str=typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
+        ref:str=typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
+        sel:str=typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
+        color:str='255,0,0',
         view:str|None=typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera."),
         debug:bool=typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
         width:int=typer.Option(2560, help="Width of the output image in pixels."),
@@ -124,7 +128,8 @@ def main(
     global VIEW
     VIEW = view
     set_view(VIEW)
-    contour_img =  delineate(sel)
+    color_rgb = [int(_.strip()) for _ in color.split(",")]
+    contour_img =  delineate(sel, color=color_rgb)
     # get a list of all the chains in ref selection
     cmd.create("ref", ref)
     chains_ref = cmd.get_chains("ref")
