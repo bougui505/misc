@@ -66,10 +66,11 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
     # plt.show()
     contour_rgb = np.stack([contour]*3, axis=-1) * np.asarray(color)  # save it in green (RGB mode)
     if fill is not None:
+        print(f"Filling with color: {fill}")
         filling = np.stack([np.int_(sel)]*3, axis=-1) * np.asarray(fill)
         contour_rgb += filling
     contour_img = Image.fromarray(np.uint8(contour_rgb), 'RGB')
-    contour_img.putalpha(Image.fromarray(np.uint8(contour * 255)))
+    contour_img.putalpha(Image.fromarray(np.uint8(np.int_(contour_rgb.sum(axis=-1)!=0) * 255)))
     contour_img.save("tmp/contour.png")
     cmd.disable("interface")
     return contour_img
@@ -95,6 +96,7 @@ def main(
         ref:str=typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
         sel:str=typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
         color:str=typer.Option('255,0,0', help="RGB color for the contour line, e.g., '255,0,0' for red."),
+        fill:str|None=None,
         view:str|None=typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera."),
         debug:bool=typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
         width:int=typer.Option(2560, help="Width of the output image in pixels."),
@@ -130,7 +132,11 @@ def main(
     VIEW = view
     set_view(VIEW)
     color_rgb = [int(_.strip()) for _ in color.split(",")]
-    contour_img =  delineate(sel, color=color_rgb)
+    if fill is not None:
+        fill_rgb = [int(_.strip()) for _ in fill.split(",")]
+    else:
+        fill_rgb = None
+    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb)
     # get a list of all the chains in ref selection
     cmd.create("ref", ref)
     chains_ref = cmd.get_chains("ref")
