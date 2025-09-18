@@ -100,6 +100,7 @@ def main(
         pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID to load."),
         ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure to be shown with a grayscale gradient by chain (e.g., 'chain A or chain B')."),
         sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate (e.g., 'chain A and around 5 of chain B')."),
+        outfile: str = typer.Argument(..., help="Output png filename"),
         color: str = typer.Option('255,0,0', help="RGB color (comma-separated) for the contour line, e.g., '255,0,0' for red."),
         linewidth: int = typer.Option(3, help="Width of the contour line in pixels."),
         fill: str | None = typer.Option(None, help="RGB color (comma-separated) for filling the delineated interface, e.g., '0,0,255' for blue. If None, no fill is applied."),
@@ -175,7 +176,7 @@ def main(
     # stack tmp/contour.png on top of the surface
     surface_img = Image.open(f"{tmpdir}/surface.png")
     surface_img.paste(contour_img, (0, 0), contour_img)
-    surface_img.save(f"{tmpdir}/footprints.png")
+    surface_img.save(outfile)
 
 if __name__ == "__main__":
     import doctest
