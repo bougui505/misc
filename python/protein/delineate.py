@@ -72,16 +72,12 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
     else:
         filling = None
     contour_img = Image.fromarray(np.uint8(contour_rgb), 'RGB')
-    contour_img.putalpha(Image.fromarray(np.uint8(np.int_(contour_rgb.sum(axis=-1)!=0) * 255)))
+    alpha = np.int_(contour_rgb.sum(axis=-1)!=0) * 255
     if filling is not None:
-        contour_img.putalpha(Image.fromarray(np.uint8(np.int_(filling.sum(axis=-1)!=0) * 125)))
-    contour_img.save("tmp/contour.png")
+        alpha += np.int_(filling.sum(axis=-1)!=0) * 125
+    contour_img.putalpha(Image.fromarray(np.uint8(alpha)))
     cmd.disable("interface")
     return contour_img
-    # stack tmp/contour.png on top of figures/footprints.png
-    # surface_img = Image.open("figures/footprints.png")
-    # surface_img.paste(contour_img, (0, 0), contour_img)
-    # surface_img.save("figures/footprints.png")
 
 def set_view(view):
     """
