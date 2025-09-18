@@ -90,40 +90,26 @@ def set_view(view):
         view_mat = view.strip().split(",")
         cmd.set_view(view_mat)
 
-@app.command(help="Delineate an interface on a protein surface and save the resulting image.")
+@app.command(help="Delineate a protein interface and visualize it on a surface.")
 def main(
-        pdb:str=typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
-        ref:str=typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
-        sel:str=typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
-        color:str=typer.Option('255,0,0', help="RGB color for the contour line, e.g., '255,0,0' for red."),
-        fill:str|None=None,
-        view:str|None=typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera."),
-        debug:bool=typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
-        width:int=typer.Option(2560, help="Width of the output image in pixels."),
-        height:int=typer.Option(1920, help="Height of the output image in pixels."),
-        tmpdir:str=typer.Option("tmp", help="Directory to store temporary files."),
+        pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID of the main structure."),
+        ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure (e.g., the whole protein)."),
+        sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate."),
+        color: str = typer.Option('255,0,0', help="RGB color for the contour line, e.g., '255,0,0' for red."),
+        fill: str | None = typer.Option(None, help="RGB color for filling the delineated interface, e.g., '0,0,255' for blue."),
+        view: str | None = typer.Option(None, help="Comma-separated string of view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1')."),
+        debug: bool = typer.Option(False, help="If True, enable debug mode (shows local variables on exceptions)."),
+        width: int = typer.Option(2560, help="Width of the output image in pixels."),
+        height: int = typer.Option(1920, help="Height of the output image in pixels."),
+        tmpdir: str = typer.Option("tmp", help="Directory to store temporary files."),
     ):
     """
-    Delineate an interface on a protein surface and save the resulting image.
-
-    Args:
-        pdb (str): Path to the PDB file or PDB ID of the main structure.
-        ref (str): PyMOL selection string for the reference structure (e.g., the whole protein).
-        sel (str): PyMOL selection string for the interface to delineate.
-        color (str): RGB color for the contour line, e.g., '255,0,0' for red. Defaults to '255,0,0'.
-        view (str, optional): Comma-separated string of view matrix values for PyMOL camera.
-                                Defaults to None.
-        debug (bool): If True, enable debug mode (shows local variables on exceptions).
-                      Defaults to False.
-        width (int): Width of the output image in pixels. Defaults to 2560.
-        height (int): Height of the output image in pixels. Defaults to 1920.
-        tmpdir (str): Directory to store temporary files. Defaults to "tmp".
+    Delineate a protein interface and visualize it on a surface.
     """
-    global DEBUG
+    global DEBUG, WIDTH, HEIGHT, VIEW
+
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
-    global WIDTH
-    global HEIGHT
     WIDTH = width
     HEIGHT = height
     os.makedirs(tmpdir, exist_ok=True)
