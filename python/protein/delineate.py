@@ -69,8 +69,12 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
         print(f"Filling with color: {fill}")
         filling = np.stack([np.int_(sel)]*3, axis=-1) * np.asarray(fill)
         contour_rgb += filling
+    else:
+        filling = None
     contour_img = Image.fromarray(np.uint8(contour_rgb), 'RGB')
     contour_img.putalpha(Image.fromarray(np.uint8(np.int_(contour_rgb.sum(axis=-1)!=0) * 255)))
+    if filling is not None:
+        contour_img.putalpha(Image.fromarray(np.uint8(np.int_(filling.sum(axis=-1)!=0) * 125)))
     contour_img.save("tmp/contour.png")
     cmd.disable("interface")
     return contour_img
