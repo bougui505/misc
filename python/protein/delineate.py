@@ -49,10 +49,10 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
         Image.Image: PIL Image object of the contour.
     """
     cmd.create("interface", selection)
-    set_view(VIEW)
     cmd.hide("everything")
     cmd.show_as("surface", "interface")
     cmd.color("black")
+    set_view(VIEW)
     cmd.png("tmp/interface.png", width=WIDTH, height=HEIGHT)
     img = np.array(Image.open("tmp/interface.png"))  # (480, 640, 4)
     img = img.sum(axis=2)
@@ -153,7 +153,6 @@ def main(
     loader(pdb)
     global VIEW
     VIEW = view
-    set_view(VIEW)
     color_rgb = [int(_.strip()) for _ in color.split(",")]
     if fill is not None:
         fill_rgb = [int(_.strip()) for _ in fill.split(",")]
@@ -172,6 +171,7 @@ def main(
         cmd.set_color(color_name, [gray_value*255, gray_value*255, gray_value*255])
         cmd.color(color_name, f"chain {chain_id} and ref")
     cmd.show_as("surface", "ref")
+    set_view(VIEW)
     cmd.png(f"{tmpdir}/surface.png", width=WIDTH, height=HEIGHT)
     # stack tmp/contour.png on top of the surface
     surface_img = Image.open(f"{tmpdir}/surface.png")
