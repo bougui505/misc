@@ -36,7 +36,7 @@ def loader(pdb):
     else:
         cmd.fetch(pdb, path=os.path.expanduser("~/pdb"))
 
-def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
+def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None, alpha=0.5):
     """
     Delineate the contour of a selected molecular surface in PyMOL.
 
@@ -72,10 +72,10 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None):
     else:
         filling = None
     contour_img = Image.fromarray(np.uint8(contour_rgb), 'RGB')
-    alpha = np.int_(contour_rgb.sum(axis=-1)!=0) * 255
+    alpha_arr = np.int_(contour_rgb.sum(axis=-1)!=0) * 255
     if filling is not None:
-        alpha += np.int_(filling.sum(axis=-1)!=0) * 125
-    contour_img.putalpha(Image.fromarray(np.uint8(alpha)))
+        alpha_arr += np.int_(filling.sum(axis=-1)!=0) * int(255*alpha)
+    contour_img.putalpha(Image.fromarray(np.uint8(alpha_arr)))
     cmd.disable("interface")
     return contour_img
 
@@ -104,6 +104,7 @@ def main(
         color: str = typer.Option('255,0,0', help="RGB color (comma-separated) for the contour line, e.g., '255,0,0' for red."),
         linewidth: int = typer.Option(3, help="Width of the contour line in pixels."),
         fill: str | None = typer.Option(None, help="RGB color (comma-separated) for filling the delineated interface, e.g., '0,0,255' for blue. If None, no fill is applied."),
+        alpha: float = 0.5,
         view: str | None = typer.Option(None, help="Comma-separated string of 16 view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1'). If None, PyMOL's default view is used."),
         debug: bool = typer.Option(False, help="If True, enables debug mode (shows local variables on exceptions)."),
         width: int = typer.Option(2560, help="Width of the output image in pixels."),
@@ -158,7 +159,7 @@ def main(
         fill_rgb = [int(_.strip()) for _ in fill.split(",")]
     else:
         fill_rgb = None
-    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb, linewidth=linewidth)
+    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb, linewidth=linewidth, alpha=alpha)
     # get a list of all the chains in ref selection
     cmd.create("ref", ref)
     chains_ref = cmd.get_chains("ref")
