@@ -44,6 +44,9 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None, alpha=0.5):
         selection (str): PyMOL selection string for the interface.
         linewidth (int): Width of the contour line in pixels.
         color (list): RGB color list for the contour (e.g., [0, 255, 0] for green).
+        fill (list | None): RGB color list for filling the delineated interface (e.g., [0, 0, 255] for blue).
+                            If None, no fill is applied.
+        alpha (float): Transparency of the filled area, between 0.0 (fully transparent) and 1.0 (fully opaque).
 
     Returns:
         Image.Image: PIL Image object of the contour.
@@ -84,7 +87,9 @@ def set_view(view):
     Set the PyMOL camera view using a view matrix string.
 
     Args:
-        view (str or None): Comma-separated string of view matrix values.
+        view (str or None): Comma-separated string of 16 view matrix values representing
+                            the PyMOL camera orientation and position (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1').
+                            If None, PyMOL's current default view is used.
     """
     if view is not None:
         view_mat = view.strip().split(",")
@@ -97,19 +102,19 @@ def set_view(view):
          "The reference selection chains are colored with a grayscale gradient."
 )
 def main(
-        pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID to load."),
-        ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure to be shown with a grayscale gradient by chain (e.g., 'chain A or chain B')."),
-        sel: str = typer.Argument(..., help="PyMOL selection string for the interface to delineate (e.g., 'chain A and around 5 of chain B')."),
-        outfile: str = typer.Argument(..., help="Output png filename"),
-        color: str = typer.Option('255,0,0', help="RGB color (comma-separated) for the contour line, e.g., '255,0,0' for red."),
-        linewidth: int = typer.Option(3, help="Width of the contour line in pixels."),
-        fill: str | None = typer.Option(None, help="RGB color (comma-separated) for filling the delineated interface, e.g., '0,0,255' for blue. If None, no fill is applied."),
-        alpha: float = 0.5,
+        pdb: str = typer.Argument(..., help="Path to the PDB file or PDB ID to load into PyMOL."),
+        ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure whose surface will be displayed. Chains in this selection will be colored with a grayscale gradient (e.g., 'chain A or chain B')."),
+        sel: str = typer.Argument(..., help="PyMOL selection string for the interface region to be delineated. This selection defines the area on the surface where the contour will be drawn (e.g., 'chain A and around 5 of chain B')."),
+        outfile: str = typer.Argument(..., help="Output filename for the generated image (e.g., 'interface.png')."),
+        color: str = typer.Option('255,0,0', help="RGB color (comma-separated, 0-255) for the contour line. Example: '255,0,0' for red."),
+        linewidth: int = typer.Option(3, min=1, help="Width of the contour line in pixels."),
+        fill: str | None = typer.Option(None, help="RGB color (comma-separated, 0-255) for filling the delineated interface region. Example: '0,0,255' for blue. If None, only the contour line will be drawn."),
+        alpha: float = typer.Option(0.5, min=0.0, max=1.0, help="Transparency of the filled area, between 0.0 (fully transparent) and 1.0 (fully opaque)."),
         view: str | None = typer.Option(None, help="Comma-separated string of 16 view matrix values for PyMOL camera (e.g., '1,0,0,0,0,1,0,0,0,0,1,0,100,200,300,1'). If None, PyMOL's default view is used."),
-        debug: bool = typer.Option(False, help="If True, enables debug mode (shows local variables on exceptions)."),
-        width: int = typer.Option(2560, help="Width of the output image in pixels."),
-        height: int = typer.Option(1920, help="Height of the output image in pixels."),
-        tmpdir: str = typer.Option("tmp", help="Directory to store temporary files and the final output image."),
+        debug: bool = typer.Option(False, help="If True, enables debug mode which provides more detailed error messages by showing local variables on exceptions."),
+        width: int = typer.Option(2560, min=1, help="Width of the generated output image in pixels."),
+        height: int = typer.Option(1920, min=1, help="Height of the generated output image in pixels."),
+        tmpdir: str = typer.Option("tmp", help="Directory to store temporary PyMOL PNGs and other intermediate files. The directory will be created if it doesn't exist."),
     ):
     """
     Delineate a protein interface and visualize it on a surface.
@@ -127,12 +132,15 @@ def main(
         sel (str): PyMOL selection string for the interface region to be delineated.
                    This selection defines the area on the surface where the contour
                    will be drawn.
+        outfile (str): Output filename for the generated image.
         color (str): Comma-separated RGB values (0-255) for the contour line color.
                      Example: '255,0,0' for red.
         linewidth (int): The thickness of the contour line in pixels in the output image.
         fill (str | None): Comma-separated RGB values (0-255) for filling the delineated
                            interface region. Example: '0,0,255' for blue. If not provided,
                            only the contour line will be drawn.
+        alpha (float): Transparency of the filled area, between 0.0 (fully transparent)
+                       and 1.0 (fully opaque).
         view (str | None): A string containing 16 comma-separated floats representing
                            the PyMOL view matrix. This allows for precise camera positioning.
                            If not specified, PyMOL's current view will be used.
@@ -141,8 +149,7 @@ def main(
         width (int): The width of the generated output image in pixels.
         height (int): The height of the generated output image in pixels.
         tmpdir (str): The directory where temporary PyMOL PNGs and the final
-                      'footprints.png' image will be saved. The directory will be
-                      created if it doesn't exist.
+                      image will be saved. The directory will be created if it doesn't exist.
     """
     global DEBUG, WIDTH, HEIGHT, VIEW
 
