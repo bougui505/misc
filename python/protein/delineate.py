@@ -106,7 +106,7 @@ def main(
         ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure whose surface will be displayed. Chains in this selection will be colored with a grayscale gradient (e.g., 'chain A or chain B')."),
         sel: str = typer.Argument(..., help="PyMOL selection string for the interface region to be delineated. This selection defines the area on the surface where the contour will be drawn (e.g., 'chain A and around 5 of chain B')."),
         outfile: str = typer.Argument(..., help="Output filename for the generated image (e.g., 'interface.png')."),
-        infile: str|None = None,
+        infile: str|None = typer.Option(None, help="Optional: Input filename for a pre-rendered surface image. If provided, the delineated contour will be overlaid on this image instead of rendering a new surface from PyMOL. (e.g., 'pre_rendered_surface.png')"),
         color: str = typer.Option('255,0,0', help="RGB color (comma-separated, 0-255) for the contour line. Example: '255,0,0' for red."),
         linewidth: int = typer.Option(3, min=1, help="Width of the contour line in pixels."),
         fill: str | None = typer.Option(None, help="RGB color (comma-separated, 0-255) for filling the delineated interface region. Example: '0,0,255' for blue. If None, only the contour line will be drawn."),
@@ -134,6 +134,9 @@ def main(
                    This selection defines the area on the surface where the contour
                    will be drawn.
         outfile (str): Output filename for the generated image.
+        infile (str | None): Optional: Input filename for a pre-rendered surface image.
+                             If provided, the delineated contour will be overlaid on this
+                             image instead of rendering a new surface from PyMOL.
         color (str): Comma-separated RGB values (0-255) for the contour line color.
                      Example: '255,0,0' for red.
         linewidth (int): The thickness of the contour line in pixels in the output image.
