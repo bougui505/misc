@@ -36,7 +36,7 @@ def loader(pdb):
     else:
         cmd.fetch(pdb, path=os.path.expanduser("~/pdb"))
 
-def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None, alpha=0.5):
+def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None, alpha=0.5, filter_patch=True):
     """
     Delineate the contour of a selected molecular surface in PyMOL.
 
@@ -59,10 +59,12 @@ def delineate(selection, linewidth=3, color=[0, 255, 0], fill=None, alpha=0.5):
     cmd.png("tmp/interface.png", width=WIDTH, height=HEIGHT)
     img = np.array(Image.open("tmp/interface.png"))  # (480, 640, 4)
     img = img.sum(axis=2)
-    labeled_img, num_features = ndimage.label(img)  # type: ignore
-    largest_label = np.argmax([(labeled_img==l).sum() for l in range(1, num_features+1)]) + 1
-    sel = (labeled_img == largest_label)
-    # sel = (img != 0)
+    if filter_patch:
+        labeled_img, num_features = ndimage.label(img)  # type: ignore
+        largest_label = np.argmax([(labeled_img==l).sum() for l in range(1, num_features+1)]) + 1
+        sel = (labeled_img == largest_label)
+    else:
+        sel = (img != 0)
     sel_dil = ndimage.binary_dilation(sel, iterations=linewidth)
     contour = np.int_(sel_dil) - np.int_(sel)
     # plt.matshow(contour)
