@@ -118,6 +118,7 @@ def main(
         width: int = typer.Option(2560, min=1, help="Width of the generated output image in pixels."),
         height: int = typer.Option(1920, min=1, help="Height of the generated output image in pixels."),
         tmpdir: str = typer.Option("tmp", help="Directory to store temporary PyMOL PNGs and other intermediate files. The directory will be created if it doesn't exist."),
+        filter_patch: bool = typer.Option(True, help="If True, only the largest connected component of the delineated interface will be kept (removes small patches)."),
     ):
     """
     Delineate a protein interface and visualize it on a surface.
@@ -156,6 +157,8 @@ def main(
         height (int): The height of the generated output image in pixels.
         tmpdir (str): The directory where temporary PyMOL PNGs and the final
                       image will be saved. The directory will be created if it doesn't exist.
+        filter_patch (bool): If True, only the largest connected component of the
+                             delineated interface will be kept (removes small patches).
     """
     global DEBUG, WIDTH, HEIGHT, VIEW
 
@@ -172,7 +175,7 @@ def main(
         fill_rgb = [int(_.strip()) for _ in fill.split(",")]
     else:
         fill_rgb = None
-    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb, linewidth=linewidth, alpha=alpha)
+    contour_img =  delineate(sel, color=color_rgb, fill=fill_rgb, linewidth=linewidth, alpha=alpha, filter_patch=filter_patch)
     # get a list of all the chains in ref selection
     cmd.create("ref", ref)
     chains_ref = cmd.get_chains("ref")
