@@ -106,6 +106,7 @@ def main(
         ref: str = typer.Argument(..., help="PyMOL selection string for the reference structure whose surface will be displayed. Chains in this selection will be colored with a grayscale gradient (e.g., 'chain A or chain B')."),
         sel: str = typer.Argument(..., help="PyMOL selection string for the interface region to be delineated. This selection defines the area on the surface where the contour will be drawn (e.g., 'chain A and around 5 of chain B')."),
         outfile: str = typer.Argument(..., help="Output filename for the generated image (e.g., 'interface.png')."),
+        infile: str|None = None,
         color: str = typer.Option('255,0,0', help="RGB color (comma-separated, 0-255) for the contour line. Example: '255,0,0' for red."),
         linewidth: int = typer.Option(3, min=1, help="Width of the contour line in pixels."),
         fill: str | None = typer.Option(None, help="RGB color (comma-separated, 0-255) for filling the delineated interface region. Example: '0,0,255' for blue. If None, only the contour line will be drawn."),
@@ -180,9 +181,12 @@ def main(
         cmd.color(color_name, f"chain {chain_id} and ref")
     cmd.show_as("surface", "ref")
     set_view(VIEW)
-    cmd.png(f"{tmpdir}/surface.png", width=WIDTH, height=HEIGHT)
+    if infile is None:
+        cmd.png(f"{tmpdir}/surface.png", width=WIDTH, height=HEIGHT)
+        surface_img = Image.open(f"{tmpdir}/surface.png")
+    else:
+        surface_img = Image.open(infile)
     # stack tmp/contour.png on top of the surface
-    surface_img = Image.open(f"{tmpdir}/surface.png")
     surface_img.paste(contour_img, (0, 0), contour_img)
     surface_img.save(outfile)
 
