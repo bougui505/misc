@@ -18,7 +18,19 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip python3-openbabel openbabel
+apt-get install -y python3-pip build-essential cmake libxml2-dev zlib1g-dev python3-dev git
+###############################################################################
+
+############################# OPENBABEL FROM SOURCE ###########################
+mkdir -p /opt/openbabel_src
+cd /opt/openbabel_src
+git clone --branch OpenBabel-3-1-1 --depth 1 https://github.com/openbabel/openbabel .
+mkdir build
+cd build
+cmake -DPYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
+make -j$(nproc)
+make install
+ldconfig
 ###############################################################################
 
 ################################# PIP INSTALL #################################
@@ -47,7 +59,7 @@ joblib
 ###############################################################################
 
 %environment
-    export BABEL_LIBDIR="/usr/lib/x86_64-linux-gnu/openbabel/3.1.1"
+    export BABEL_LIBDIR="/usr/local/lib/openbabel-3.1.1"
 # %runscript
 # cmd $@
 
