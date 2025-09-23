@@ -40,7 +40,7 @@ rdkit \
 scikit-learn \
 scipy \
 seaborn \
-numpy<2.3.0 \
+numpy\<2.3.0 \
 pandas \
 matplotlib \
 joblib
