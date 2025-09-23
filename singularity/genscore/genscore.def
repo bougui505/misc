@@ -1,0 +1,49 @@
+BOOTSTRAP: docker
+FROM: debian:12.1
+
+%setup
+if [ ! -d GenScore ]; then
+  git clone --depth 1 https://github.com/sc8668/GenScore.git
+fi
+
+%files
+GenScore /opt
+
+%post
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip python3-openbabel
+###############################################################################
+
+################################# PIP INSTALL #################################
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+mkdir -p /tmp/pip/cache
+python3 -m pip config set global.cache-dir /tmp/pip/cache
+cd /opt
+pip3 install \
+mdanalysis \
+prody \
+torch
+
+pip3 install \
+torch-geometric \
+torch-scatter \
+rdkit \
+scikit-learn \
+scipy \
+seaborn \
+numpy \
+pandas \
+matplotlib \
+joblib
+###############################################################################
+
+# %runscript
+# cmd $@
+
