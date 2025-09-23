@@ -18,7 +18,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip python3-openbabel
+apt-get install -y python3-pip python3-openbabel openbabel
 ###############################################################################
 
 ################################# PIP INSTALL #################################
@@ -29,7 +29,9 @@ cd /opt
 pip3 install \
 mdanalysis \
 prody \
-torch
+torch \
+yacs \
+pytorch_lightning
 
 pip3 install \
 torch-geometric \
@@ -38,7 +40,7 @@ rdkit \
 scikit-learn \
 scipy \
 seaborn \
-numpy \
+numpy<2.3.0 \
 pandas \
 matplotlib \
 joblib
