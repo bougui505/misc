@@ -24,7 +24,7 @@ apt-get install -y python3-pip build-essential cmake libxml2-dev zlib1g-dev pyth
 ############################# OPENBABEL FROM SOURCE ###########################
 mkdir -p /opt/openbabel_src
 cd /opt/openbabel_src
-git clone --branch OpenBabel-3-1-1 --depth 1 https://github.com/openbabel/openbabel .
+git clone --depth 1 https://github.com/openbabel/openbabel .
 mkdir build
 cd build
 cmake -DPYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
@@ -59,7 +59,7 @@ joblib
 ###############################################################################
 
 %environment
-    export BABEL_LIBDIR="/usr/local/lib/openbabel-3.1.1"
+#    export BABEL_LIBDIR="/usr/local/lib/openbabel-3.1.1"
 # %runscript
 # cmd $@
 
