@@ -44,6 +44,8 @@ matplotlib \
 joblib
 ###############################################################################
 
+%environment
+    export BABEL_LIBDIR="/usr/lib/x86_64-linux-gnu/openbabel/3.1.1"
 # %runscript
 # cmd $@
 
