@@ -1,9 +1,9 @@
 BOOTSTRAP: docker
-FROM: debian:12.1
+FROM: debian:13
 
 %setup
 if [ ! -d GenScore ]; then
-  git clone --depth 1 https://github.com/sc8668/GenScore.git
+  git clone --depth 1 https://github.com/bougui505/GenScore.git   # My fork
 fi
 
 %files
@@ -18,19 +18,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
-apt-get install -y python3-pip build-essential cmake libxml2-dev zlib1g-dev python3-dev git
-###############################################################################
-
-############################# OPENBABEL FROM SOURCE ###########################
-mkdir -p /opt/openbabel_src
-cd /opt/openbabel_src
-git clone --depth 1 https://github.com/openbabel/openbabel .
-mkdir build
-cd build
-cmake -DPYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
-make -j$(nproc)
-make install
-ldconfig
+apt-get install -y python3-pip build-essential cmake libxml2-dev zlib1g-dev python3-dev git openbabel python3-openbabel
 ###############################################################################
 
 ################################# PIP INSTALL #################################
