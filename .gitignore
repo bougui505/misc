@@ -1133,3 +1133,5 @@ NOTES
 *.pt
 atomsurf/
 singularity/genscore/GenScore/
+singularity/colabfold/data/
+singularity/colabfold/out_dir/
