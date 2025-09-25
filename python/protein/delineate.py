@@ -181,16 +181,18 @@ def main(
     chains_ref = cmd.get_chains("ref")
     print(f"{chains_ref=}")
     num_chains = len(chains_ref)
-    for i, chain_id in enumerate(chains_ref):
+    for i, chain_id in enumerate(chains_ref[::-1]):
         # Calculate a grayscale value (from 0 for black to 1 for white)
         gray_value = i+1 / (num_chains - 1) if num_chains > 1 else 0.5
         color_name = f"gray_chain_{chain_id}"
-        cmd.set_color(color_name, [gray_value*255, gray_value*255, gray_value*255])
+        cmd.set_color(color_name, [gray_value*220, gray_value*220, gray_value*220])
         cmd.color(color_name, f"chain {chain_id} and ref")
     cmd.show_as("surface", "ref")
     set_view(VIEW)
     if infile is None:
-        cmd.png(f"{tmpdir}/surface.png", width=WIDTH, height=HEIGHT)
+        cmd.set("ray_trace_mode", 1)
+        cmd.set("ray_trace_color", "black")
+        cmd.png(f"{tmpdir}/surface.png", width=WIDTH, height=HEIGHT, ray=1)
         surface_img = Image.open(f"{tmpdir}/surface.png")
     else:
         surface_img = Image.open(infile)
