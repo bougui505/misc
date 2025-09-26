@@ -2,8 +2,17 @@
 
 This README provides a quick overview of the files within this repository.
 
+## python/C/logit/setup.py
+This file contains a `configuration` function, suggesting it's used for setting up and building a Python package, possibly with C extensions, related to logit functions.
+
 ## python/C/logit/test.py
 This file appears to be a test script or a script performing numerical operations, possibly related to logit functions, given the use of `numpy.linspace`.
+
+## python/C/sum/main.py
+This file contains a `py_sum` function, suggesting it's a main entry point for a Python script that performs summation operations, possibly with C extensions, on a matrix.
+
+## python/C/sum/py_sum.py
+This file also defines a `py_sum` function, indicating it's a Python module providing a summation function for matrices, likely part of a C-accelerated sum package.
 
 ## python/Grid3/adjmat.py
 Contains functions for handling adjacency matrices, grid movement, and finding the shortest path, likely within a 3D grid context.
@@ -29,11 +38,23 @@ Defines a `Timer` class for measuring execution time, providing `stop` and `rese
 ## python/annoy/NNindex.py
 Contains `NNindex` and `Mapping` classes, providing functionality for approximate nearest neighbor indexing using Annoy, along with mapping between data indices and names.
 
+## python/data/test_rec_run.py
+This file appears to be a test script for record-based data, processing an input float from command line arguments.
+
+## python/data/test_rec_run_2.py
+Similar to `test_rec_run.py`, this file also seems to be a test script for record-based data, processing an input float from command line arguments.
+
 ## python/debug.py
 Defines a `Debugger` class, indicating it serves as a utility for debugging purposes. It includes a main block for testing.
 
 ## python/eta.py
 Implements an `ETA` (Estimated Time of Arrival) class, which can be used to track progress and estimate remaining time for iterative processes.
+
+## python/getsourcefunc.py
+Contains `print_source` and `print_attributes` functions, indicating it's a utility for inspecting and printing source code or attributes of Python modules and functions.
+
+## python/graphein/protein.py
+This file contains a `format_convertor` instance for converting graph formats, specifically from NetworkX to PyTorch Geometric, in the context of protein data.
 
 ## python/gym/loader.py
 A utility `Loader` class for saving and loading OpenAI Gym environments, particularly useful for integrating with libraries like Stable Baselines.
@@ -49,6 +70,9 @@ Sets up and runs a HoloViews/Panel application server, suggesting interactive da
 
 ## python/interpolation.py
 Provides utility functions `format_line` and `format_output` for formatting text lines and output, potentially used in data processing or displaying interpolation results.
+
+## python/kde.py
+Defines the `KDE` class, which provides Kernel Density Estimation functionality for fitting and transforming data distributions.
 
 ## python/list_utils.py
 Contains a `flatten` function, a common utility for converting a list of lists into a single flat list.
@@ -71,6 +95,9 @@ Another file with a `get_coords` function, likely for extracting coordinates fro
 ## python/muller_potential.py
 Defines functions `muller_potential` and `muller_mat` for calculating and representing the Muller potential energy surface.
 
+## python/multiprocessing_lock_file.py
+This file defines a `parallel_run` function, suggesting it handles parallel execution using multiprocessing, possibly involving file locking mechanisms.
+
 ## python/netCDF4/netcdf4set.py
 Provides an `N4set` class for managing NetCDF4 datasets, including methods for adding single data items or batches, and retrieving random keys.
 
@@ -83,8 +110,14 @@ Contains functions `add_plumed_forces` and `run`, suggesting its role in setting
 ## python/openmm/topology.py
 Defines the `MetaSystem` class, which extends OpenMM's topology functionalities to build and manipulate molecular systems, particularly for proteins by adding residues like GLY and OXT.
 
+## python/projection.py
+Defines the `Miller` class, which likely implements a Miller projection method, potentially for structural biology or visualization, based on a research paper reference.
+
 ## python/protein/VAE/utils.py
-Contains utility functions `get_dmat`, `compute_pad`, and `pad`, likely used in the context of Variational Autoencoders (VAEs) for protein data, potentially involving distance matrix calculations.
+Contains utility functions `compute_pad`, likely used in the context of Variational Autoencoders (VAEs) for protein data, potentially involving distance matrix calculations.
+
+## python/protein/cmapfit/cmapfit.py
+This file contains a `get_dmat` function, suggesting it calculates distance matrices, possibly for fitting conformational maps in protein analysis.
 
 ## python/protein/coords_loader.py
 Provides a `get_coords` function for loading protein coordinates from PDB files, offering various selection, splitting, and transformation options.
@@ -108,13 +141,19 @@ Defines the `Internal` class to calculate and store internal spherical coordinat
 Implements a `PDBdataset` class as a PyTorch Dataset for PDB structures, probably used for protein secondary structure classification (SSCL) or self-supervised learning, potentially leveraging BLAST data.
 
 ## python/protein/sscl/utils.py
-Contains utility functions `get_coords`, `compute_pad`, and `pad` for protein secondary structure classification (SSCL), including coordinate extraction and padding operations.
+Contains utility functions `get_coords` and `compute_pad` for protein secondary structure classification (SSCL), including coordinate extraction and padding operations.
 
 ## python/protein/sscl_geometric/BLASTloader.py
 Similar to `python/protein/sscl/BLASTloader.py`, this file also defines a `PDBdataset` as a PyTorch Dataset but is tailored for graph-based protein representations using `torch_geometric.data.Data` objects.
 
 ## python/pyawk.py
 Provides a `format_line` function, suggesting it's a Python utility for line processing and formatting, potentially inspired by the AWK command-line tool.
+
+## python/pymol/connect_consecutive.py
+This file contains a `connect_all` function, suggesting it's a PyMOL script for connecting consecutive residues or atoms within a selection.
+
+## python/pymol/findSurfaceResidues.py
+This file defines a `findSurfaceAtoms` function, indicating it's a PyMOL script used to identify surface-exposed atoms within a given selection based on a cutoff.
 
 ## python/pytorch/Dataset_gz.py
 Implements a `Dataset` class as a PyTorch Dataset for handling gzipped text files, enabling efficient data loading for machine learning models.
@@ -131,6 +170,9 @@ A comprehensive utility for record-based data manipulation, including functions 
 ## python/recutils.py
 Provides utilities for loading and manipulating data in a record-like format, including `get_item`, `add_item`, and `load` functions.
 
+## python/sequences/sequence_identity/get_sequence.py
+This file provides a `get_sequence` function, used for retrieving a protein sequence given a PDB code, index, and optional chain identifier.
+
 ## python/shelve/shelveset.py
 Defines a `Shelveset` class for managing Python `shelve` databases, allowing the storage and retrieval of arbitrary Python objects with random keys.
 
@@ -142,6 +184,9 @@ Contains a `split` function, a utility for dividing time series data into specif
 
 ## python/toymodels/montecarlo.py
 Provides functions for implementing Monte Carlo simulations, including defining potential energy functions, performing moves, and plotting potential energy landscapes and distributions.
+
+## python/xonsh/events.py
+This file defines a `helloworld` function decorated with `@events.on_pre_prompt`, indicating it's a Xonsh shell script that runs before the prompt is displayed.
 
 ## shell/tmscore/np.py
 A utility script, likely used within a shell environment related to TMscore, containing a `format_line` function for formatting NumPy array outputs.
