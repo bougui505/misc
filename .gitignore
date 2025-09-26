@@ -1135,3 +1135,4 @@ atomsurf/
 singularity/genscore/GenScore/
 singularity/colabfold/data/
 singularity/colabfold/out_dir/
+singularity/colabfold/colabfold_1.5.5-cuda12.2.2.def
