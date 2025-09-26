@@ -1,0 +1,307 @@
+# Table of Contents
+
+*   [LaTeX TikZ Tips](#latex-tikz-tips)
+    *   [TikZ document with positioning](#tikz-document-with-positioning)
+    *   [Minimal TikZ Picture Example Cropped](#minimal-tikz-picture-example-cropped)
+    *   [TikZ nodes relative positioning](#tikz-nodes-relative-positioning)
+    *   [Define a custom color](#define-a-custom-color)
+    *   [Underlining Text with the soul package](#underlining-text-with-the-soul-package)
+*   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
+    *   [Header](#header)
+    *   [Sections](#sections)
+    *   [Extracting the Definition File from a SIF image](#extracting-the-definition-file-from-a-sif-image)
+*   [Python Pip Requirements File](#python-pip-requirements-file)
+    *   [Requirements File Syntax](#requirements-file-syntax)
+    *   [Generating a `requirements.txt` file](#generating-a-requirementstxt-file)
+    *   [Installing packages from a `requirements.txt` file](#installing-packages-from-a-requirementstxt-file)
+*   [Linux Shell Tricks](#linux-shell-tricks)
+    *   [Add a line with given content at a given line number](#add-a-line-with-given-content-at-a-given-line-number)
+    *   [Print lines between two patterns](#print-lines-between-two-patterns)
+*   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
+
+    # LaTeX TikZ Tips
+
+    ## TikZ document with positioning
+
+    To create a LaTeX document that uses the `tikz` library and its `positioning` capabilities, you can use the following header:
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+    \usetikzlibrary{positioning}
+
+    \begin{document}
+
+    % Your TikZ diagrams and document content go here
+
+    \end{document}
+    ```
+
+    ## Minimal TikZ Picture Example Cropped
+
+    To create a minimal TikZ picture that is automatically cropped to its content, useful for embedding into other documents or generating standalone graphics, you can use the `standalone` document class with `tikz` as an option.
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \begin{document}
+    \begin{tikzpicture}
+        \draw (0,0) circle (1cm);
+        \node at (0,0) {Hello};
+    \end{tikzpicture}
+    \end{document}
+    ```
+
+    ## TikZ nodes relative positioning
+
+    This example demonstrates how to create nodes and position them relative to each other using the `positioning` library.
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+    \usetikzlibrary{positioning}
+
+    \begin{document}
+
+    \begin{tikzpicture}
+        % Define the first node
+        \node (A) {Node A};
+        % Define a second node to the right of Node A, with a specified distance
+        \node (B) [right=of A] {Node B};
+        % Define a third node below Node A, with a specified distance
+        \node (C) [below=of A] {Node C};
+        % Define a fourth node below Node B, implicitly using the same distance as previous relative placements
+        \node (D) [below=of B] {Node D};
+
+        % Draw some connecting lines/arrows
+        \draw[->] (A) -- (B);
+        \draw[->] (A) -- (C);
+        \draw[->] (B) -- (D);
+        \draw[->] (C) -- (D);
+    \end{tikzpicture}
+
+    \end{document}
+    ```
+
+    ### Define a custom color
+
+    You can define custom colors in LaTeX using the `xcolor` package, which TikZ can then use. This is useful for maintaining a consistent color palette across your diagrams.
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+    \usepackage{xcolor} % Required for \definecolor
+
+    \definecolor{mygreen}{RGB}{34,139,34} % Define 'mygreen' using RGB values
+
+    \begin{document}
+
+    \begin{tikzpicture}
+        % Draw a rectangle filled with the custom color
+        \fill[mygreen] (0,0) rectangle (2,1);
+        \node at (1,0.5) {Custom Color};
+
+        % Draw a circle with a border in the custom color
+        \draw[thick, mygreen] (3,0.5) circle (0.8cm);
+    \end{tikzpicture}
+
+    \end{document}
+    ```
+
+    ### Underlining Text with the soul package
+
+    The `soul` package provides advanced text effects, including a robust `\ul` command for underlining. Unlike `\underline` from `ulem` or the standard LaTeX `\underline`, `\ul` from `soul` handles line breaks and kerning more gracefully, making it suitable for underlining across multiple lines of text.
+
+    To use it, first load the package:
+
+    ```latex
+    \usepackage{soul}
+    ```
+
+    Then, you can underline text using the `\ul` command:
+
+    ```latex
+    \documentclass{article}
+    \usepackage{soul} % Required for \ul command
+
+    \begin{document}
+
+    Here is some \ul{underlined text}.
+
+    This is a longer paragraph where text will be \ul{underlined, and the underlining
+    will correctly break across multiple lines, demonstrating the advanced capabilities
+    of the soul package in handling complex text layouts}.
+
+    \end{document}
+    ```
+
+# Apptainer Definition File Sections
+
+Apptainer definition files are composed of two primary parts: a Header and a series of Sections.
+
+## Header
+
+The Header describes the base OS for the container. It contains essential metadata such as the operating system to build from and the version of Apptainer that will be used.
+
+For example:
+
+```
+BOOTSTRAP: docker
+FROM: debian:13
+```
+
+## Sections
+
+Sections are the main body of the definition file, each denoted by a `%` prefix. Here's a list of all possible sections:
+
+*   **%setup**: This section is executed on the host system *outside* of the container, before the container image is built. It's typically used for preparing files or directories that will be copied into the container.
+*   **%files**: This section lists files and directories from the host that should be copied into the container during the build process.
+*   **%environment**: Variables defined here will be set at runtime inside the container.
+*   **%post**: This section contains commands that are executed *inside* the container after the base OS has been set up. This is where you typically install software, set up configurations, and perform other build-time actions.
+*   **%test**: Commands in this section are executed during the build process to verify the container's functionality. It also defines the default `apptainer test` command.
+*   **%run**: This section defines the default command executed when the container is run with `apptainer run <image>`.
+*   **%startscript**: This section defines the command executed when the container is run as an instance with `apptainer instance start <image> <instance_name>`.
+*   **%labels**: This section allows you to define custom metadata labels (key-value pairs) for the container.
+*   **%help**: This section contains markdown-formatted text that provides usage instructions or general information about the container. It's displayed when `apptainer help <image>` is run.
+*   **%appinstall <app_name>**: Similar to `%post` but scoped to a specific application definition within the container.
+*   **%applabels <app_name>**: Similar to `%labels` but scoped to a specific application definition.
+*   **%apprun <app_name>**: Similar to `%run` but scoped to a specific application definition.
+*   **%apptest <app_name>**: Similar to `%test` but scoped to a specific application definition.
+
+## Extracting the Definition File from a SIF image
+
+You can extract the definition file (the `.def` file) that was used to build a Apptainer/Singularity Image Format (SIF) file using the `apptainer inspect` command with the `--deffile` option. This is useful for reviewing how an existing image was constructed.
+
+```bash
+apptainer inspect --deffile <sif_file_path>
+```
+
+For example, to view the definition file of `my_image.sif`:
+
+```bash
+apptainer inspect --deffile my_image.sif
+```
+
+To save the definition file to a new file, you can redirect the output:
+
+```bash
+apptainer inspect --deffile my_image.sif > my_image.def
+```
+
+# Python Pip Requirements File
+
+A `requirements.txt` file lists Python packages and their versions that a project depends on. This file ensures that everyone working on the project, and the deployment environment, uses the exact same versions of dependencies, preventing compatibility issues.
+
+## Requirements File Syntax
+
+Each line in a `requirements.txt` file typically specifies a single package and optionally its version.
+
+Common formats include:
+
+*   **Exact version**: `package_name==1.2.3`
+    This specifies that exactly version `1.2.3` of `package_name` should be installed.
+
+*   **Minimum version**: `package_name>=1.2.3`
+    This specifies that version `1.2.3` or any newer version should be installed.
+
+*   **Compatible release**: `package_name~=1.2.3`
+    This specifies a version that is compatible with `1.2.3`, typically meaning `1.2.3`, `1.2.4`, but not `1.3.0` or `2.0.0`.
+
+*   **Strictly less than version**: `package_name<1.2.3`
+    This specifies that any version strictly less than `1.2.3` should be installed.
+
+*   **Any version**: `package_name`
+    If no version is specified, `pip` will install the latest available version.
+
+*   **From a URL**: `package_name @ git+https://github.com/user/repo.git@branch_or_tag#egg=package_name`
+    This allows installing a package directly from a version control system repository or a specific URL.
+
+Comments can be added using the `#` symbol.
+
+## Generating a `requirements.txt` file
+
+To create a `requirements.txt` file from your current Python environment, use the `pip freeze` command:
+
+```bash
+pip freeze > requirements.txt
+```
+
+This command outputs all installed packages and their versions to standard output, which is then redirected into a file named `requirements.txt`.
+
+## Installing packages from a `requirements.txt` file
+
+To install all packages listed in a `requirements.txt` file into your current Python environment, use the `pip install` command with the `-r` (or `--requirement`) flag:
+
+```bash
+pip install -r requirements.txt
+```
+
+This command will read the specified file and install all packages listed within it.
+
+# Linux Shell Tricks
+
+## Add a line with given content at a given line number
+
+To insert a new line with specific content at a particular line number within a file, you can use `sed`. This is useful for modifying configuration files or scripts non-interactively.
+
+The `sed` command below inserts `YOUR_CONTENT` at `LINE_NUMBER` in `FILENAME`.
+
+```bash
+sed -i 'LINE_NUMBERi\YOUR_CONTENT' FILENAME
+```
+
+*   `-i`: This option edits the file in place. Without it, `sed` would print the result to standard output.
+*   `LINE_NUMBERi\YOUR_CONTENT`: This is the `sed` command.
+    *   `LINE_NUMBER`: The line number before which the new content will be inserted.
+    *   `i`: The "insert" command.
+    *   `\YOUR_CONTENT`: The actual content to be inserted. Note the backslash before the content, which is required. If `YOUR_CONTENT` contains slashes or other special `sed` characters, they may need to be escaped, or a different delimiter can be used (e.g., `'LINE_NUMBERi#YOUR_CONTENT#'`).
+
+**Example:** To insert the line `Hello World` at line 3 of `myfile.txt`:
+
+```bash
+sed -i '3i\Hello World' myfile.txt
+```
+
+## Print lines between two patterns
+
+To extract and print lines from a file that fall between two specific patterns (inclusive of the patterns themselves), you can use `sed` or `awk`.
+
+**Using `sed`:**
+
+The `sed` command below prints all lines from `FILENAME` starting from the line matching `PATTERN1` up to and including the line matching `PATTERN2`.
+
+```bash
+sed -n '/PATTERN1/,/PATTERN2/p' FILENAME
+```
+
+*   `-n`: Suppresses automatic printing of each line.
+*   `/PATTERN1/,/PATTERN2/`: Specifies a range of lines from `PATTERN1` to `PATTERN2`.
+*   `p`: Prints the lines within the specified range.
+
+**Using `awk`:**
+
+The `awk` command below achieves the same result, often providing more flexibility for complex logic.
+
+```bash
+awk '/PATTERN1/,/PATTERN2/' FILENAME
+```
+
+This simplified `awk` command works because when a range is specified (`/PATTERN1/,/PATTERN2/`), `awk` performs the default action (which is to print the line) for all lines within that range.
+
+# Makefile Built-in Variables List
+
+Make provides several automatic variables that are useful in recipes to refer to the target and prerequisites of the rule. These variables change their values for each rule.
+
+Here are some commonly used built-in variables:
+
+*   **`$@`**: The file name of the target of the rule. If the target is an archive member, then `$@` is the name of the archive file.
+*   **`$<`**: The name of the first prerequisite. If the prerequisite is an archive member, then `$<` is the name of the member.
+*   **`$^`**: The names of all the prerequisites, with spaces in between. For rules with pattern-specific prerequisites, this list does not contain any of the pattern-specific prerequisites.
+*   **`$+`**: Similar to `$^`, but prerequisites listed more than once are duplicated in the list.
+*   **`$?`**: The names of all the prerequisites that are newer than the target, with spaces in between. This variable is useful for rules that add dependencies to a list without rebuilding everything.
+*   **`$*`**: The stem with which an implicit rule matches. If the target is `dir/a.foo.b`, and the target pattern is `dir/%.foo`, then the stem is `a.b`. The stem is useful for constructing the names of related files.
+*   **`$(@D)`**: The directory part of `$@`. If `$@` is `dir/foo.o`, then `$(@D)` is `dir`. If `$@` does not contain a slash, `$(@D)` is `.`.
+*   **`$(@F)`**: The file part of `$@`. If `$@` is `dir/foo.o`, then `$(@F)` is `foo.o`. `$(@F)` is equivalent to `$(notdir $@)`.
+*   **`$(<D)`**: The directory part of `$<`. Similar to `$(@D)`.
+*   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
+*   **`$(basename $@)`**: The file name of the target without its extension. For example, if `$@` is `foo.txt`, then `$(basename $@)` is `foo`. If `$@` is `dir/bar.c`, then `$(basename $@)` is `dir/bar`.
+*   **`$(basename $<)`**: The file name of the first prerequisite without its extension. Similar to `$(basename $@)`.
