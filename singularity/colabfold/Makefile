@@ -30,3 +30,13 @@ push_colabfold_1.5.5-cuda12.2.2.sif: colabfold_1.5.5-cuda12.2.2.sif
 		mkdir -p ${HORACEDIR}
 	EOF
 	rsync -a --update -P -h $< horace:${HORACEDIR}/.
+
+setup_db:
+	ssh horace << EOF
+		mkdir -p ${HORACEDIR}
+		cd ${HORACEDIR}
+		[ ! -f setup_databases.sh ] && wget https://raw.githubusercontent.com/sokrypton/ColabFold/refs/heads/main/setup_databases.sh && sed -i '2i\MMSEQS_NO_INDEX=1' setup_databases.sh
+		chmod u+x setup_databases.sh
+		mkdir -p DB \
+			&& tsp ./colabfold_1.5.5-cuda12.2.2.sif ./setup_databases.sh ${HORACEDIR}/DB
+	EOF
