@@ -47,3 +47,10 @@ setup_db:
 		mkdir -p DB \
 			&& tsp ./colabfold_1.5.5-cuda12.2.2.sif ./setup_databases.sh ${HORACEDIR}/DB
 	EOF
+
+test-msa-local:
+	rsync -a --update -P -h data horace:${HORACEDIR}
+	ssh horace << EOF
+		cd ${HORACEDIR}
+		./colabfold_1.5.5-cuda12.2.2.sif colabfold_search data/1ycr_A.fa ${HORACEDIR}/DB msas
+	EOF
