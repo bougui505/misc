@@ -45,7 +45,7 @@ setup_db:
 		[ ! -f setup_databases.sh ] && wget https://raw.githubusercontent.com/sokrypton/ColabFold/refs/heads/main/setup_databases.sh && sed -i '2i\MMSEQS_NO_INDEX=1' setup_databases.sh
 		chmod u+x setup_databases.sh
 		mkdir -p DB \
-			&& tsp ./colabfold_1.5.5-cuda12.2.2.sif ./setup_databases.sh ${HORACEDIR}/DB
+			&& FAST_PREBUILT_DATABASES=0 tsp ./colabfold_1.5.5-cuda12.2.2.sif ./setup_databases.sh ${HORACEDIR}/DB
 	EOF
 
 test-msa-local:
