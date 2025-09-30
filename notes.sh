@@ -19,7 +19,7 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Open the NOTES.md file in the current directory as an html file in google-chrome.
+Open the NOTES.md file as an html file in google-chrome.
 
 Usage:
     notes.sh
