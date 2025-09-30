@@ -1,11 +1,12 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     line-height: 1.5;
-    margin: 2em auto;
+    margin: 0 auto;
     max-width: 980px;
-    padding: 45px;
+    padding: 30px; /* Reduced padding */
     color: #24292e;
     background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Added subtle shadow */
 }
 
 * {
@@ -22,18 +23,21 @@ h6 {
     margin-bottom: 16px;
     font-weight: 600;
     line-height: 1.25;
+    color: #0366d6; /* Changed heading color for better visibility */
 }
 
 h1 {
     padding-bottom: 0.3em;
     font-size: 2em;
     border-bottom: 1px solid #eaecef;
+    color: #24292e; /* Revert H1 color to dark for contrast with border */
 }
 
 h2 {
     padding-bottom: 0.3em;
     font-size: 1.5em;
     border-bottom: 1px solid #eaecef;
+    color: #24292e; /* Revert H2 color to dark for contrast with border */
 }
 
 h3 {
@@ -57,11 +61,16 @@ h6 {
 p {
     margin-top: 0;
     margin-bottom: 16px;
+    color: #24292e; /* Ensure paragraph text is the standard dark color */
 }
 
 a {
     color: #0366d6;
     text-decoration: none;
+}
+
+a:focus {
+    outline: thin dotted;
 }
 
 a:hover {
@@ -93,15 +102,17 @@ blockquote {
     border-left: 0.25em solid #dfe2e5;
     margin-left: 0;
     margin-bottom: 16px;
+    background-color: #f6f8fa; /* Added background to blockquote */
 }
 
 pre,
 code {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
     font-size: 85%;
-    background-color: rgba(27,31,35,.05);
+    background-color: rgba(27,31,35,.05); /* Lighter background for inline code */
     border-radius: 3px;
     padding: 0.2em 0.4em;
+    color: #24292e;
 }
 
 pre {
@@ -111,6 +122,7 @@ pre {
     background-color: #f6f8fa;
     border-radius: 3px;
     margin-bottom: 16px;
+    border: 1px solid #eaecef; /* Added subtle border to code blocks */
 }
 
 pre > code {
@@ -134,11 +146,12 @@ table {
 th {
     font-weight: 600;
     background-color: #f6f8fa;
+    color: #24292e;
 }
 
 th,
 td {
-    padding: 6px 13px;
+    padding: 8px 13px; /* Slightly more padding */
     border: 1px solid #dfe2e5;
 }
 
