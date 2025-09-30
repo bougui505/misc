@@ -18,6 +18,8 @@
     *   [Add a line with given content at a given line number](#add-a-line-with-given-content-at-a-given-line-number)
     *   [Print lines between two patterns](#print-lines-between-two-patterns)
 *   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
+*   [Git Tips](#git-tips)
+    *   [Clone a Specific Commit](#clone-a-specific-commit)
 
     # LaTeX TikZ Tips
 
