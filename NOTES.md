@@ -333,6 +333,21 @@ Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the p
 ```
 therefore, -C should be use with caution...
 
+### Neomutt: Saving Read Messages
+
+Neomutt is a powerful, text-based email client known for its flexibility and extensive customization options. When managing emails, it's often useful to save messages that have already been read into a specific folder, for archiving or further processing.
+
+To save all read messages in the current folder (e.g., your inbox) to another mailbox in Neomutt, you can use the following command while in the index view:
+
+```
+s~R
+```
+
+*   `s`: This is the command to save messages.
+*   `~R`: This is a pattern that matches all messages that have been read.
+
+After typing `s~R`, Neomutt will prompt you for the mailbox name to which the messages should be saved. For example, to save them to an `archive` folder, you would type `s~R` followed by `archive` and press Enter.
+
 # Makefile Built-in Variables List
 
 Make provides several automatic variables that are useful in recipes to refer to the target and prerequisites of the rule. These variables change their values for each rule.
