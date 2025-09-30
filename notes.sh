@@ -36,12 +36,17 @@ function display () {
     google-chrome $DIRSCRIPT/notes.html
 }
 
+function edit () {
+    vim $DIRSCRIPT/NOTES.md
+}
+
 # N=1  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
         # -n|--number) N="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
         -d|--display) display; exit 0 ;;
+        -e|--edit) edit; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
