@@ -41,5 +41,5 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-pandoc -f markdown -t html $DIRSCRIPT/NOTES.md > $DIRSCRIPT/notes.html
+pandoc -f markdown -t html --css $DIRSCRIPT/notes.css $DIRSCRIPT/NOTES.md > $DIRSCRIPT/notes.html
 google-chrome --new-window $DIRSCRIPT/notes.html
