@@ -341,8 +341,7 @@ To save all read messages in the current folder (e.g., your inbox) to another ma
 
 1.  Press `T` (Tag) to enter tagging mode.
 2.  Type `~R` to select all messages that have been read. This uses a pattern (`~R`) to match messages based on their read status.
-3.  Press `;` (semicolon) to apply a command to the tagged messages.
-4.  Press `s` (save) to initiate the save action.
+3.  Press `;s` (semicolon) to apply a command to the tagged messages and `s` (save) to initiate the save action.
 
 After pressing `s`, Neomutt will prompt you at the bottom of the screen to enter the name of the mailbox where the messages should be saved. For example, to save them to an `archive` folder, you would then type `archive` and press `Enter`.
 

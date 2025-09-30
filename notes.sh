@@ -55,6 +55,10 @@ function aider_edit () {
     display
 }
 
+function aider_commit () {
+    aider --commit $DIRSCRIPT/NOTES.md
+}
+
 # N=1  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
@@ -63,6 +67,7 @@ while [ "$#" -gt 0 ]; do
         -d|--display) display; exit 0 ;;
         -e|--edit) edit; exit 0 ;;
         -a|--aider) aider_edit; exit 0 ;;
+        -c|--commit) aider_commit; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
