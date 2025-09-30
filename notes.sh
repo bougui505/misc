@@ -52,6 +52,7 @@ function edit () {
 function aider_edit () {
     display
     aider $DIRSCRIPT/NOTES.md
+    display
 }
 
 # N=1  # Default value
