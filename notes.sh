@@ -23,11 +23,13 @@ Open the NOTES.md file as an html file in google-chrome.
 
 Usage:
     notes.sh -d
+    notes.sh -e
     notes.sh -h | --help
 
 Options:
     -h, --help    Print this help message and exit.
     -d, --display Open the NOTES.md file as an html file in google-chrome.
+    -e, --edit    Open the NOTES.md file in vim to edit.
 EOF
 }
 
