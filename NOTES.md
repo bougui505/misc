@@ -326,6 +326,13 @@ tar -xzf data.tar.gz docs/reports/2023/report.txt --strip-components=3 -C output
 
 Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the path, leaving just `report.txt`.
 
+**REMARKS**: according the tar man page:
+```
+       -C, --directory=DIR
+              Change to DIR before performing any operations.  This option is order-sensitive, i.e. it affects all options that follow.
+```
+therefore, -C should be use with caution...
+
 # Makefile Built-in Variables List
 
 Make provides several automatic variables that are useful in recipes to refer to the target and prerequisites of the rule. These variables change their values for each rule.
