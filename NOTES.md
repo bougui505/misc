@@ -337,18 +337,14 @@ therefore, -C should be use with caution...
 
 Neomutt is a powerful, text-based email client known for its flexibility and extensive customization options. When managing emails, it's often useful to save messages that have already been read into a specific folder, for archiving or further processing.
 
-To save all read messages in the current folder (e.g., your inbox) to another mailbox in Neomutt, you can use the following command while in the index view:
+To save all read messages in the current folder (e.g., your inbox) to another mailbox in Neomutt, you can use the following key sequence while in the index view:
 
-```
-T~R
-;s
-```
+1.  Press `T` (Tag) to enter tagging mode.
+2.  Type `~R` to select all messages that have been read. This uses a pattern (`~R`) to match messages based on their read status.
+3.  Press `;` (semicolon) to apply a command to the tagged messages.
+4.  Press `s` (save) to initiate the save action.
 
-*   `T`: Tag the messages
-*   `~R`: This is a pattern that matches all messages that have been read.
-*   `s`: This is the command to save messages.
-
-After typing `s~R`, Neomutt will prompt you for the mailbox name to which the messages should be saved. For example, to save them to an `archive` folder, you would type `s~R` followed by `archive` and press Enter.
+After pressing `s`, Neomutt will prompt you at the bottom of the screen to enter the name of the mailbox where the messages should be saved. For example, to save them to an `archive` folder, you would then type `archive` and press `Enter`.
 
 # Makefile Built-in Variables List
 
