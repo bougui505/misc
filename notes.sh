@@ -31,7 +31,7 @@ Options:
     -h, --help    Print this help message and exit.
     -d, --display Open the NOTES.md file as an html file in google-chrome.
     -e, --edit    Open the NOTES.md file in vim to edit.
-    -a, --aider   Open the notes.sh file in aider.
+    -a, --aider   Open the NOTES.md file in aider.
 EOF
 }
 
@@ -51,7 +51,7 @@ function edit () {
 
 function aider_edit () {
     display
-    aider $DIRSCRIPT/notes.sh
+    aider $DIRSCRIPT/NOTES.md
 }
 
 # N=1  # Default value

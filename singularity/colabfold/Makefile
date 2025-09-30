@@ -19,15 +19,15 @@ help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
-colabfold_1.5.5-cuda12.2.2.sif:
-	singularity pull docker://ghcr.io/sokrypton/colabfold:1.5.5-cuda12.2.2
-	apptainer inspect --deffile colabfold_1.5.5-cuda12.2.2.sif > $(basename $@).def
-	cat << EOF >> $(basename $@).def
-	%post
-	apt-get update
-	apt-get install -y rsync  # needed by setup_databases.sh
-	EOF
-	apptainer build --force $@ $(basename $@).def
+colabfold_1.5.5-cuda12.2.2.sif: colabfold_1.5.5-cuda12.2.2.def
+	# singularity pull docker://ghcr.io/sokrypton/colabfold:1.5.5-cuda12.2.2
+	# apptainer inspect --deffile colabfold_1.5.5-cuda12.2.2.sif > $(basename $@).def
+	# cat << EOF >> $(basename $@).def
+	# %post
+	# apt-get update
+	# apt-get install -y rsync  # needed by setup_databases.sh
+	# EOF
+	apptainer build --force $@ $<
 
 test-msa: colabfold_1.5.5-cuda12.2.2.sif
 	./colabfold_1.5.5-cuda12.2.2.sif colabfold_batch data/1ycr_A.fa out_dir --msa-only
