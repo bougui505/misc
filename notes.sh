@@ -21,13 +21,6 @@ function usage () {
     cat << EOF
 Open the NOTES.md file as an html file in google-chrome.
 
-Usage:
-    notes.sh -d
-    notes.sh -e
-    notes.sh -a
-    notes.sh -c
-    notes.sh -h | --help
-
 Options:
     -h, --help    Print this help message and exit.
     -d, --display Open the NOTES.md file as an html file in google-chrome.
