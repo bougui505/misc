@@ -5,6 +5,7 @@ body {
     max-width: 800px;
     padding: 0 1em;
     color: #333;
+    background-color: lightblue; /* Added for testing */
 }
 
 h1, h2, h3, h4, h5, h6 {
