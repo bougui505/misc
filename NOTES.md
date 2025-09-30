@@ -268,6 +268,28 @@ sed -i '3i\Hello World' myfile.txt
 
 To extract and print lines from a file that fall between two specific patterns (inclusive of the patterns themselves), you can use `sed` or `awk`.
 
+**Using `sed`:**
+
+The `sed` command below prints all lines from `FILENAME` starting from the line matching `PATTERN1` up to and including the line matching `PATTERN2`.
+
+```bash
+sed -n '/PATTERN1/,/PATTERN2/p' FILENAME
+```
+
+*   `-n`: Suppresses automatic printing of each line.
+*   `/PATTERN1/,/PATTERN2/`: Specifies a range of lines from `PATTERN1` to `PATTERN2`.
+*   `p`: Prints the lines within the specified range.
+
+**Using `awk`:**
+
+The `awk` command below achieves the same result, often providing more flexibility for complex logic.
+
+```bash
+awk '/PATTERN1/,/PATTERN2/' FILENAME
+```
+
+This simplified `awk` command works because when a range is specified (`/PATTERN1/,/PATTERN2/`), `awk` performs the default action (which is to print the line) for all lines within that range.
+
 ## Extract only one file from a tar.gz archive
 
 To extract a single specific file from a `.tar.gz` (or `.tgz`) archive without extracting the entire contents, you can use the `tar` command with the `-x` (extract), `-z` (gzip), `-f` (file), and the path to the specific file.
@@ -292,28 +314,6 @@ If you want to extract the file to a different location or rename it during extr
 mkdir extracted_files
 tar -xzf data.tar.gz -C extracted_files docs/report.txt
 ```
-
-**Using `sed`:**
-
-The `sed` command below prints all lines from `FILENAME` starting from the line matching `PATTERN1` up to and including the line matching `PATTERN2`.
-
-```bash
-sed -n '/PATTERN1/,/PATTERN2/p' FILENAME
-```
-
-*   `-n`: Suppresses automatic printing of each line.
-*   `/PATTERN1/,/PATTERN2/`: Specifies a range of lines from `PATTERN1` to `PATTERN2`.
-*   `p`: Prints the lines within the specified range.
-
-**Using `awk`:**
-
-The `awk` command below achieves the same result, often providing more flexibility for complex logic.
-
-```bash
-awk '/PATTERN1/,/PATTERN2/' FILENAME
-```
-
-This simplified `awk` command works because when a range is specified (`/PATTERN1/,/PATTERN2/`), `awk` performs the default action (which is to print the line) for all lines within that range.
 
 # Makefile Built-in Variables List
 
