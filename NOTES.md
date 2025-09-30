@@ -19,7 +19,7 @@
     *   [Print lines between two patterns](#print-lines-between-two-patterns)
     *   [Extract only one file from a tar.gz archive](#extract-only-one-file-from-a-tar.gz-archive)
 *   [Neomutt](#neomutt)
-    *   [Saving Read Messages](#neomutt-saving-read-messages)
+    *   [Saving Read Messages](#saving-read-messages)
     *   [Toggle Headers](#toggle-headers)
 *   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
 *   [Git Tips](#git-tips)
