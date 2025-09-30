@@ -47,6 +47,11 @@ function edit () {
         $DIRSCRIPT/NOTES.md
 }
 
+function aider_edit () {
+    display
+    aider $DIRSCRIPT/notes.sh
+}
+
 # N=1  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
@@ -54,6 +59,7 @@ while [ "$#" -gt 0 ]; do
         -h|--help) usage; exit 0 ;;
         -d|--display) display; exit 0 ;;
         -e|--edit) edit; exit 0 ;;
+        -a|--aider) aider_edit; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
