@@ -37,7 +37,12 @@ function display () {
 }
 
 function edit () {
-    vim -c 'set mouse=' -c 'set spell' -c 'set spelllang=en_us' $DIRSCRIPT/NOTES.md
+    vim -c 'set mouse=' -c 'set spell' -c 'set spelllang=en_us' \
+        -c 'highlight SpellBad term=underline cterm=underline ctermbg=NONE gui=underline guibg=NONE' \
+        -c 'highlight SpellCap term=underline cterm=underline ctermbg=NONE gui=underline guibg=NONE' \
+        -c 'highlight SpellRare term=underline cterm=underline ctermbg=NONE gui=underline guibg=NONE' \
+        -c 'highlight SpellLocal term=underline cterm=underline ctermbg=NONE gui=underline guibg=NONE' \
+        $DIRSCRIPT/NOTES.md
 }
 
 # N=1  # Default value
