@@ -16,6 +16,7 @@
     *   [Installing packages from a `requirements.txt` file](#installing-packages-from-a-requirementstxt-file)
 *   [Linux Shell Tricks](#linux-shell-tricks)
     *   [Add a line with given content at a given line number](#add-a-line-with-given-content-at-a-given-line-number)
+    *   [Extract only one file from a tar.gz archive](#extract-only-one-file-from-a-tar.gz-archive)
     *   [Print lines between two patterns](#print-lines-between-two-patterns)
 *   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
 *   [Git Tips](#git-tips)
