@@ -19,8 +19,14 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 function usage () {
     cat << EOF
-Help message
-    -h, --help print this help message and exit
+Open the NOTES.md file in the current directory as an html file in google-chrome.
+
+Usage:
+    notes.sh
+    notes.sh -h | --help
+
+Options:
+    -h, --help    Print this help message and exit.
 EOF
 }
 
