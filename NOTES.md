@@ -315,6 +315,17 @@ mkdir extracted_files
 tar -xzf data.tar.gz -C extracted_files docs/report.txt
 ```
 
+To extract a file to a specific output directory without keeping its full path from the archive, use the `--strip-components` option. This is useful when the file you want is deeply nested but you only care about the file itself.
+
+**Example:** To extract `report.txt` from `data.tar.gz` (where `report.txt` is located at `docs/reports/2023/report.txt` inside the archive) and place it directly into `output_dir` as `report.txt`:
+
+```bash
+mkdir output_dir
+tar -xzf data.tar.gz docs/reports/2023/report.txt --strip-components=3 -C output_dir
+```
+
+Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the path, leaving just `report.txt`.
+
 # Makefile Built-in Variables List
 
 Make provides several automatic variables that are useful in recipes to refer to the target and prerequisites of the rule. These variables change their values for each rule.
