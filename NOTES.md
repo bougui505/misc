@@ -334,7 +334,9 @@ Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the p
 ```
 therefore, -C should be use with caution...
 
-## Neomutt: Saving Read Messages
+# Neomutt
+
+## Saving Read Messages
 
 Neomutt is a powerful, text-based email client known for its flexibility and extensive customization options. When managing emails, it's often useful to save messages that have already been read into a specific folder, for archiving or further processing.
 
@@ -345,6 +347,16 @@ To save all read messages in the current folder (e.g., your inbox) to another ma
 3.  Press `;s` (semicolon) to apply a command to the tagged messages and `s` (save) to initiate the save action.
 
 After pressing `s`, Neomutt will prompt you at the bottom of the screen to enter the name of the mailbox where the messages should be saved. For example, to save them to an `archive` folder, you would then type `archive` and press `Enter`.
+
+## Toggle Headers
+
+In Neomutt, you can toggle the visibility of message headers using a simple keybind. This is particularly useful for quickly decluttering the view and focusing on the message content itself.
+
+To toggle between showing all headers and showing only essential headers:
+
+1.  While viewing an email message, press `h`.
+
+This action will cycle through different header display modes, typically from showing all headers to a minimal set, and back again.
 
 # Makefile Built-in Variables List
 
