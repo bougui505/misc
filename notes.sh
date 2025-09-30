@@ -30,16 +30,20 @@ Options:
 EOF
 }
 
+function display () {
+    pandoc -s -f markdown -t html --css $DIRSCRIPT/notes.css $DIRSCRIPT/NOTES.md > $DIRSCRIPT/notes.html
+    google-chrome $DIRSCRIPT/notes.html
+}
+
 # N=1  # Default value
 while [ "$#" -gt 0 ]; do
     case $1 in
         # -n|--number) N="$2"; shift ;;
         -h|--help) usage; exit 0 ;;
+        -d|--display) display; exit 0 ;;
         --) OTHER="${@:2}";break; shift;;  # Everything after the '--' symbol
         *) usage; exit 1 ;;
     esac
     shift
 done
 
-pandoc -s -f markdown -t html --css $DIRSCRIPT/notes.css $DIRSCRIPT/NOTES.md > $DIRSCRIPT/notes.html
-google-chrome $DIRSCRIPT/notes.html
