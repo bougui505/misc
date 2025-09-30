@@ -18,6 +18,7 @@
     *   [Add a line with given content at a given line number](#add-a-line-with-given-content-at-a-given-line-number)
     *   [Print lines between two patterns](#print-lines-between-two-patterns)
     *   [Extract only one file from a tar.gz archive](#extract-only-one-file-from-a-tar.gz-archive)
+        *   [Neomutt: Saving Read Messages](#neomutt-saving-read-messages)
 *   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
 *   [Git Tips](#git-tips)
     *   [Clone a Specific Commit](#clone-a-specific-commit)
@@ -333,7 +334,7 @@ Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the p
 ```
 therefore, -C should be use with caution...
 
-### Neomutt: Saving Read Messages
+## Neomutt: Saving Read Messages
 
 Neomutt is a powerful, text-based email client known for its flexibility and extensive customization options. When managing emails, it's often useful to save messages that have already been read into a specific folder, for archiving or further processing.
 
