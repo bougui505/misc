@@ -37,7 +37,7 @@ function display () {
 }
 
 function edit () {
-    vim -c 'set mouse=' $DIRSCRIPT/NOTES.md
+    vim -c 'set mouse=' -c 'set spell' -c 'set spelllang=en_us' $DIRSCRIPT/NOTES.md
 }
 
 # N=1  # Default value
