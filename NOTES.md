@@ -315,7 +315,7 @@ mkdir extracted_files
 tar -xzf data.tar.gz -C extracted_files docs/report.txt
 ```
 
-To extract a file to a specific output directory without keeping its full path from the archive, use the `--strip-components` option. This is useful when the file you want is deeply nested but you only care about the file itself.
+To extract a file to a specific output directory without keeping its full path from the archive, use the `--strip-components` option. This option *always* requires a numeric argument, specifying the number of leading directory components to remove from the file path during extraction. This is useful when the file you want is deeply nested but you only care about the file itself.
 
 **Example:** To extract `report.txt` from `data.tar.gz` (where `report.txt` is located at `docs/reports/2023/report.txt` inside the archive) and place it directly into `output_dir` as `report.txt`:
 
