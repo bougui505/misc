@@ -25,13 +25,15 @@ Usage:
     notes.sh -d
     notes.sh -e
     notes.sh -a
+    notes.sh -c
     notes.sh -h | --help
 
 Options:
     -h, --help    Print this help message and exit.
     -d, --display Open the NOTES.md file as an html file in google-chrome.
     -e, --edit    Open the NOTES.md file in vim to edit.
-    -a, --aider   Open the NOTES.md file in aider.
+    -a, --aider   Open the NOTES.md file in aider to edit.
+    -c, --commit  Commit the NOTES.md file using aider.
 EOF
 }
 
