@@ -267,6 +267,31 @@ sed -i '3i\Hello World' myfile.txt
 
 To extract and print lines from a file that fall between two specific patterns (inclusive of the patterns themselves), you can use `sed` or `awk`.
 
+## Extract only one file from a tar.gz archive
+
+To extract a single specific file from a `.tar.gz` (or `.tgz`) archive without extracting the entire contents, you can use the `tar` command with the `-x` (extract), `-z` (gzip), `-f` (file), and the path to the specific file.
+
+```bash
+tar -xzf <archive.tar.gz> <path/to/file/in/archive>
+```
+
+*   `-x`: Extract files from an archive.
+*   `-z`: Filter the archive through `gzip` (for `.gz` archives).
+*   `-f`: Specify the archive file name.
+
+**Example:** To extract only `report.txt` from `data.tar.gz` located within a subdirectory `docs/`, you would use:
+
+```bash
+tar -xzf data.tar.gz docs/report.txt
+```
+
+If you want to extract the file to a different location or rename it during extraction, you can combine this with redirection or using the `--transform` option (for more advanced renaming), but for simple extraction, the above is sufficient. To extract to a different directory, navigate there first or specify the output directory with `-C`.
+
+```bash
+mkdir extracted_files
+tar -xzf data.tar.gz -C extracted_files docs/report.txt
+```
+
 **Using `sed`:**
 
 The `sed` command below prints all lines from `FILENAME` starting from the line matching `PATTERN1` up to and including the line matching `PATTERN2`.
