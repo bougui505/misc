@@ -307,3 +307,30 @@ Here are some commonly used built-in variables:
 *   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
 *   **`$(basename $@)`**: The file name of the target without its extension. For example, if `$@` is `foo.txt`, then `$(basename $@)` is `foo`. If `$@` is `dir/bar.c`, then `$(basename $@)` is `dir/bar`.
 *   **`$(basename $<)`**: The file name of the first prerequisite without its extension. Similar to `$(basename $@)`.
+
+# Git Tips
+
+## Clone a Specific Commit
+
+To clone a Git repository at a specific commit hash rather than the latest version, you can combine `git clone` with `git checkout`. This is useful for reproducing a build environment or examining the state of a project at a particular point in its history without cloning the entire repository's history depth.
+
+First, perform a shallow clone of the repository to reduce download time and disk space. A depth of 1 is usually sufficient if you only need a single commit.
+
+```bash
+git clone <repository_url> --depth 1
+```
+
+Once the repository is cloned, navigate into its directory and use `git checkout` to switch to the desired commit hash. The `--force` (`-f`) flag might be necessary if you have any local changes, though typically not needed immediately after a fresh shallow clone.
+
+```bash
+cd <repository_name>
+git checkout <commit_hash>
+```
+
+**Example:** To clone the `my-repo` repository from GitHub and then check out a specific commit `abcdef1234567890abcdef1234567890abcdef12`:
+
+```bash
+git clone https://github.com/user/my-repo.git --depth 1
+cd my-repo
+git checkout abcdef1234567890abcdef1234567890abcdef12
+```
