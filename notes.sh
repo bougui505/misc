@@ -37,7 +37,7 @@ function display () {
 }
 
 function edit () {
-    vim $DIRSCRIPT/NOTES.md
+    vim -c 'set mouse=' $DIRSCRIPT/NOTES.md
 }
 
 # N=1  # Default value
