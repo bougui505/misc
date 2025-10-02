@@ -22,6 +22,8 @@
     *   [Saving Read Messages](#saving-read-messages)
     *   [Toggle Headers](#toggle-headers)
 *   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
+*   [Makefile Tips](#makefile-tips)
+    *   [Suppressing Command Output](#suppressing-command-output)
 *   [Git Tips](#git-tips)
     *   [Clone a Specific Commit](#clone-a-specific-commit)
 
@@ -378,6 +380,46 @@ Here are some commonly used built-in variables:
 *   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
 *   **`$(basename $@)`**: The file name of the target without its extension. For example, if `$@` is `foo.txt`, then `$(basename $@)` is `foo`. If `$@` is `dir/bar.c`, then `$(basename $@)` is `dir/bar`.
 *   **`$(basename $<)`**: The file name of the first prerequisite without its extension. Similar to `$(basename $@)`.
+
+# Makefile Tips
+
+## Suppressing Command Output
+
+By default, `make` prints each command line before executing it. This can make the output verbose, especially for simple commands. To prevent `make` from echoing a command, prefix the command with an `@` symbol.
+
+This is useful for commands that produce their own descriptive output or for commands that you want to run silently.
+
+**Example:**
+
+Consider a Makefile with the following rule:
+
+```makefile
+greet:
+	echo "Hello, world!"
+	@echo "This line will not be echoed by Make."
+```
+
+When you run `make greet`:
+
+*   The first `echo "Hello, world!"` command will be printed, followed by its output.
+*   The second `@echo "This line will not be echoed by Make."` command will *not* be printed, only its output will appear.
+
+**Output:**
+
+```
+echo "Hello, world!"
+Hello, world!
+This line will not be echoed by Make.
+```
+
+If you want to suppress output for all commands in a Makefile, you can add `.SILENT:` as a special target. This is equivalent to prefixing every command with `@`.
+
+```makefile
+.SILENT:
+
+all:
+	echo "This will also not be echoed."
+```
 
 # Git Tips
 
