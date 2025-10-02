@@ -21,8 +21,8 @@
 *   [Neomutt](#neomutt)
     *   [Saving Read Messages](#saving-read-messages)
     *   [Toggle Headers](#toggle-headers)
-*   [Makefile Built-in Variables List](#makefile-built-in-variables-list)
-*   [Makefile Tips](#makefile-tips)
+*   [Makefile Notes](#makefile-notes)
+    *   [Built-in Variables List](#built-in-variables-list)
     *   [Suppressing Command Output](#suppressing-command-output)
 *   [Git Tips](#git-tips)
     *   [Clone a Specific Commit](#clone-a-specific-commit)
@@ -362,7 +362,9 @@ To toggle between showing all headers and showing only essential headers:
 
 This action will cycle through different header display modes, typically from showing all headers to a minimal set, and back again.
 
-# Makefile Built-in Variables List
+# Makefile Notes
+
+## Built-in Variables List
 
 Make provides several automatic variables that are useful in recipes to refer to the target and prerequisites of the rule. These variables change their values for each rule.
 
@@ -380,8 +382,6 @@ Here are some commonly used built-in variables:
 *   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
 *   **`$(basename $@)`**: The file name of the target without its extension. For example, if `$@` is `foo.txt`, then `$(basename $@)` is `foo`. If `$@` is `dir/bar.c`, then `$(basename $@)` is `dir/bar`.
 *   **`$(basename $<)`**: The file name of the first prerequisite without its extension. Similar to `$(basename $@)`.
-
-# Makefile Tips
 
 ## Suppressing Command Output
 
