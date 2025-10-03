@@ -87,6 +87,7 @@ if __name__ == "__main__":
         nargs="+",
         help="Query to retrieve. Multiple queries can be given. \
         See the query syntax here: https://www.uniprot.org/help/text-search \
+        and https://www.uniprot.org/help/query-fields \
         If a file is given read one query per line.",
     )
     parser.add_argument("--test", help="Test the code", action="store_true")
