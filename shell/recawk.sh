@@ -25,6 +25,7 @@ function usage () {
     -h, --help print this help message and exit
     -n, --nrec print the number of records for the given rec file
     -s, --sample give the number of records to pick up randomly from the given rec file
+    -k, --keys print all keys present in the file
     --torec <separator> convert a column file with the first line as keys and the rest 
     of the lines as values to a rec file. Columns are separated by <separator>.
     The first line is used as keys, the rest of the lines as values. The output is written to stdout.
