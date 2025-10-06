@@ -138,7 +138,7 @@ if [[ $TOREC != 0 ]]; then
         echo "Error: --torec requires a separator argument." >&2
         exit 1
     fi
-    awk -F"$TOREC" '{
+    awk -v FPAT="[^$TOREC]*|(\"([^\"]|\"\")*\")" '{
         if (NR==1){
             for (i=1; i<=NF; i++){
                 # gsub(/ /, "_", $i)
