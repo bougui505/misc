@@ -108,12 +108,14 @@ V="V=0"
 GETNREC=0
 SAMPLE=0
 TOREC=0
+KEYS=0
 case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
     -n|--nrec) GETNREC=1 ;;
     -s|--sample) SAMPLE=$2; shift ;;
     --torec) TOREC=$2; shift ;;
+    --keys) KEYS=1 ;;
 esac
 
 getnrec(){
@@ -130,6 +132,26 @@ FILENAMES="${@:2}"
 
 if [[ $GETNREC -eq 1 ]]; then
     getnrec $FILENAMES
+    exit 0
+fi
+
+if [[ $KEYS -eq 1 ]]; then
+    awk -F"=" '{
+        if (FNR==1){
+            fnr=0
+        }
+        if ($0=="--"){
+            fnr+=1
+        }
+        else{
+            keys[$1]=1
+        }
+    }
+    END{
+        for (k in keys){
+            print k
+        }
+    }' $FILENAMES
     exit 0
 fi
 
