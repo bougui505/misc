@@ -100,6 +100,7 @@ ${bold}
     zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
     zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'
     zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
+    zcat data/file.rec.gz | recawk --keys
 ${normal} 
 
 EOF
