@@ -11,6 +11,7 @@
     *   [Compute the middle point between two nodes](#compute-the-middle-point-between-two-nodes)
     *   [Justified text in TikZ nodes](#justified-text-in-tikz-nodes)
     *   [Node of Nodes (Fitting Nodes)](#node-of-nodes-fitting-nodes)
+    *   [Arrow Styles](#arrow-styles)
 *   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
     *   [Header](#header)
     *   [Sections](#sections)
@@ -330,6 +331,62 @@
         \draw[->] (A) -- (B);
         \draw[->] (C) -- (D);
         \draw[->, thick] (Container1) -- (Container2);
+    \end{tikzpicture}
+    \end{document}
+    ```
+
+    ## Arrow Styles
+
+    TikZ provides a wide variety of arrow tips and styles for customizing paths. These styles can be applied to `\draw` commands using options like `->` for a standard arrow, `<-` for an arrow at the start, or `<->` for arrows at both ends. You can also specify different arrow tip designs using libraries like `arrows.meta`.
+
+    To use advanced arrow tip designs, load the `arrows.meta` library:
+    `\usetikzlibrary{arrows.meta}`
+
+    Here are some common arrow styles and how to use them:
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \usetikzlibrary{arrows.meta,bending} % Load arrows.meta and bending for advanced tips
+    \begin{document}
+    \begin{tikzpicture}[
+        every node/.style={font=\sffamily\small},
+        arrow_style/.style={
+            thick,
+            draw=blue!70!black
+        }
+    ]
+        % Standard arrows
+        \node (A) at (0,0) {A};
+        \node (B) at (2,0) {B};
+        \draw[arrow_style, ->] (A) -- (B) node[midway, above] {Standard};
+        \node (C) at (0,-1) {C};
+        \node (D) at (2,-1) {D};
+        \draw[arrow_style, <-] (C) -- (D) node[midway, above] {Start};
+        \node (E) at (0,-2) {E};
+        \node (F) at (2,-2) {F};
+        \draw[arrow_style, <->] (E) -- (F) node[midway, above] {Both ends};
+
+        % Using arrows.meta library
+        \node (G) at (0,-3) {G};
+        \node (H) at (2,-3) {H};
+        \draw[arrow_style, {-Stealth[length=3mm, width=3mm]}] (G) -- (H) node[midway, above] {Stealth};
+
+        \node (I) at (0,-4) {I};
+        \node (J) at (2,-4) {J};
+        \draw[arrow_style, {-Triangle[fill=blue]}] (I) -- (J) node[midway, above] {Filled Triangle};
+
+        \node (K) at (0,-5) {K};
+        \node (L) at (2,-5) {L};
+        \draw[arrow_style, {-{[black]Circle[length=2mm]}] (K) -- (L) node[midway, above] {Circle};
+
+        \node (M) at (0,-6) {M};
+        \node (N) at (2,-6) {N};
+        \draw[arrow_style, {-Latex[red]}] (M) -- (N) node[midway, above] {Colored Latex};
+
+        % Combined and custom arrows
+        \node (O) at (0,-7) {O};
+        \node (P) at (2,-7) {P};
+        \draw[arrow_style, {Triangle[open]-Triangle[fill=green, scale=0.8]}] (O) -- (P) node[midway, above] {Custom Combined};
     \end{tikzpicture}
     \end{document}
     ```
