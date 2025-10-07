@@ -32,10 +32,10 @@
 
     ## TikZ document with `tikz` on an empty A4 page
 
-    To create a standard A4 LaTeX document and include TikZ diagrams, you typically use the `article` document class and load the `tikz` package. This setup provides a blank A4 page where you can place your TikZ figures alongside other document content.
+    To create a standard LaTeX document and include TikZ diagrams, you typically use the `article` document class and load the `tikz` package. You can specify the page size, such as `a4paper`, as an option to the `\documentclass` command. This setup provides a blank page of the specified size where you can place your TikZ figures alongside other document content.
 
     ```latex
-    \documentclass{article}
+    \documentclass[a4paper]{article} % Specify A4 paper size
     \usepackage{tikz}
 
     \begin{document}
