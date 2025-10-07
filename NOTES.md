@@ -40,7 +40,7 @@
     ```latex
     \documentclass[a4paper,12pt]{article} % Specify A4 paper size and a default font size
     \usepackage{tikz}
-    \usepackage[margin=1in]{geometry} % Set all margins to 1 inch
+    \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry} % Set individual margins
 
     \begin{document}
     \pagestyle{empty} % No page numbers
