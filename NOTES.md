@@ -7,6 +7,7 @@
     *   [TikZ nodes relative to page](#tikz-nodes-relative-to-page)
     *   [Define a custom color](#define-a-custom-color)
     *   [Underlining Text with the soul package](#underlining-text-with-the-soul-package)
+    *   [Style definition in TikZ](#style-definition-in-tikz)
 *   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
     *   [Header](#header)
     *   [Sections](#sections)
