@@ -165,6 +165,39 @@
     \end{document}
     ```
 
+    ## Style definition in TikZ
+
+    Define styles within a `tikzpicture` environment to apply consistent formatting to multiple nodes or paths. Styles encapsulate a set of drawing options, making diagrams cleaner and easier to modify.
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \begin{document}
+    \begin{tikzpicture}[
+        % Define a style for 'my node'
+        mynode/.style={
+            draw=blue,
+            thick,
+            fill=blue!20,
+            rounded corners,
+            font=\sffamily\bfseries
+        },
+        % Define a style for 'my arrow'
+        myarrow/.style={
+            ->,
+            thick,
+            red
+        }
+    ]
+        % Use the 'mynode' style for Node A
+        \node[mynode] (A) at (0,0) {Start};
+        % Use the 'mynode' style for Node B
+        \node[mynode] (B) at (3,0) {Process};
+        % Use the 'myarrow' style for the connection
+        \draw[myarrow] (A) -- (B);
+    \end{tikzpicture}
+    \end{document}
+    ```
+
 # Apptainer Definition File Sections
 
 Apptainer definition files are composed of two primary parts: a Header and a series of Sections.
