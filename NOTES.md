@@ -33,10 +33,10 @@
 
     ## TikZ document with `tikz` on an empty A4 page
 
-    A standard LaTeX document with TikZ diagrams, using the `article` document class and `tikz` package. `a4paper` specifies the page size.
+    A standard LaTeX document with TikZ diagrams, using the `article` document class and `tikz` package. `a4paper` specifies the page size, and you can add a default font size like `12pt`.
 
     ```latex
-    \documentclass[a4paper]{article} % Specify A4 paper size
+    \documentclass[a4paper,12pt]{article} % Specify A4 paper size and a default font size
     \usepackage{tikz}
 
     \begin{document}
