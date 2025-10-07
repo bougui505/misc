@@ -33,7 +33,7 @@
 
     ## TikZ document with `tikz` on an empty A4 page
 
-    To create a standard LaTeX document and include TikZ diagrams, you typically use the `article` document class and load the `tikz` package. You can specify the page size, such as `a4paper`, as an option to the `\documentclass` command. This setup provides a blank page of the specified size where you can place your TikZ figures alongside other document content.
+    A standard LaTeX document with TikZ diagrams, using the `article` document class and `tikz` package. `a4paper` specifies the page size.
 
     ```latex
     \documentclass[a4paper]{article} % Specify A4 paper size
@@ -49,7 +49,7 @@
 
     ## TikZ document with positioning
 
-    To create a LaTeX document that uses the `tikz` library and its `positioning` capabilities, you can use the following header:
+    To use the `tikz` library and its `positioning` capabilities:
 
     ```latex
     \documentclass{article}
@@ -65,7 +65,7 @@
 
     ## Minimal TikZ Picture Example Cropped
 
-    To create a minimal TikZ picture that is automatically cropped to its content, useful for embedding into other documents or generating standalone graphics, you can use the `standalone` document class with `tikz` as an option.
+    A minimal TikZ picture automatically cropped to its content, useful for standalone graphics, using the `standalone` document class with `tikz` option.
 
     ```latex
     \documentclass[tikz, border=2mm]{standalone}
@@ -79,7 +79,7 @@
 
     ## TikZ nodes relative positioning
 
-    This example demonstrates how to create nodes and position them relative to each other using the `positioning` library.
+    Example of creating nodes and positioning them relative to each other using the `positioning` library.
 
     ```latex
     \documentclass{article}
@@ -110,7 +110,7 @@
 
     ## TikZ nodes relative to page
 
-    To place nodes relative to the page rather than within the `tikzpicture` coordinate system, you can use the `current page` node. This requires loading the `overlay-beamer-styles` library (despite its name, it's useful outside of Beamer) or ensuring the `tikz` package is loaded with the `overlay` option if you want to place nodes outside the current text area. However, the `current page` node itself is generally available. Using `current page.south west`, `current page.north east`, etc., allows you to anchor elements to specific parts of the physical page.
+    Nodes can be placed relative to the page using the `current page` node with `remember picture, overlay` options for the `tikzpicture`. Anchors like `current page.south west` position elements on the physical page.
 
     ```latex
     \documentclass{article}
@@ -139,7 +139,7 @@
 
     ## Define a custom color
 
-    You can define custom colors in LaTeX using the `xcolor` package, which TikZ can then use. This is useful for maintaining a consistent color palette across your diagrams.
+    Define custom colors in LaTeX using the `xcolor` package for consistent color palettes in TikZ diagrams.
 
     ```latex
     \documentclass{article}
@@ -164,15 +164,7 @@
 
     ## Underlining Text with the soul package
 
-    The `soul` package provides advanced text effects, including a robust `\ul` command for underlining. Unlike `\underline` from `ulem` or the standard LaTeX `\underline`, `\ul` from `soul` handles line breaks and kerning more gracefully, making it suitable for underlining across multiple lines of text.
-
-    To use it, first load the package:
-
-    ```latex
-    \usepackage{soul}
-    ```
-
-    Then, you can underline text using the `\ul` command:
+    The `soul` package provides a robust `\ul` command for underlining. Unlike standard LaTeX `\underline`, `\ul` handles line breaks and kerning gracefully, suitable for underlining across multiple lines. Load the package and use `\ul{text}`.
 
     ```latex
     \documentclass{article}
