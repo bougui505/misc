@@ -1,6 +1,7 @@
 # Table of Contents
 
 *   [LaTeX TikZ Tips](#latex-tikz-tips)
+    *   [TikZ document with `tikz` on an empty A4 page](#tikz-document-with-tikz-on-an-empty-a4-page)
     *   [TikZ document with positioning](#tikz-document-with-positioning)
     *   [Minimal TikZ Picture Example Cropped](#minimal-tikz-picture-example-cropped)
     *   [TikZ nodes relative positioning](#tikz-nodes-relative-positioning)
