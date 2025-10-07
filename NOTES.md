@@ -108,7 +108,7 @@
     \end{document}
     ```
 
-    ### TikZ nodes relative to page
+    ## TikZ nodes relative to page
 
     To place nodes relative to the page rather than within the `tikzpicture` coordinate system, you can use the `current page` node. This requires loading the `overlay-beamer-styles` library (despite its name, it's useful outside of Beamer) or ensuring the `tikz` package is loaded with the `overlay` option if you want to place nodes outside the current text area. However, the `current page` node itself is generally available. Using `current page.south west`, `current page.north east`, etc., allows you to anchor elements to specific parts of the physical page.
 
@@ -137,7 +137,7 @@
     \end{document}
     ```
 
-    ### Define a custom color
+    ## Define a custom color
 
     You can define custom colors in LaTeX using the `xcolor` package, which TikZ can then use. This is useful for maintaining a consistent color palette across your diagrams.
 
@@ -162,7 +162,7 @@
     \end{document}
     ```
 
-    ### Underlining Text with the soul package
+    ## Underlining Text with the soul package
 
     The `soul` package provides advanced text effects, including a robust `\ul` command for underlining. Unlike `\underline` from `ulem` or the standard LaTeX `\underline`, `\ul` from `soul` handles line breaks and kerning more gracefully, making it suitable for underlining across multiple lines of text.
 
