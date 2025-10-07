@@ -10,6 +10,7 @@
     *   [Style definition in TikZ](#style-definition-in-tikz)
     *   [Compute the middle point between two nodes](#compute-the-middle-point-between-two-nodes)
     *   [Justified text in TikZ nodes](#justified-text-in-tikz-nodes)
+    *   [Node of Nodes (Fitting Nodes)](#node-of-nodes-fitting-nodes)
 *   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
     *   [Header](#header)
     *   [Sections](#sections)
@@ -278,6 +279,57 @@
             justification in a
             more compact node.
         };
+    \end{tikzpicture}
+    \end{document}
+    ```
+
+    ## Node of Nodes (Fitting Nodes)
+
+    To create a node that encompasses other nodes (a "node of nodes"), you can use the `fit` library. This library allows you to define a node that automatically resizes to precisely fit a list of specified nodes.
+
+    First, ensure you load the `fit` library:
+    `\usetikzlibrary{fit}`
+
+    Then, define your individual nodes and use the `fit` option for the container node:
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \usetikzlibrary{positioning,fit} % Load positioning and fit libraries
+    \begin{document}
+    \begin{tikzpicture}[
+        base_node/.style={
+            draw,
+            fill=blue!10,
+            rounded corners,
+            minimum width=2cm,
+            minimum height=1cm,
+            font=\sffamily\bfseries
+        },
+        container_node/.style={
+            draw=red,
+            line width=1.5pt,
+            dashed,
+            fill=red!5,
+            inner sep=5mm, % Padding around the fitted nodes
+            label={north:{\bfseries Container Node}},
+        }
+    ]
+        % Define individual nodes
+        \node[base_node] (A) {Node A};
+        \node[base_node, right=of A] (B) {Node B};
+        \node[base_node, below=of A] (C) {Node C};
+        \node[base_node, below=of B] (D) {Node D};
+
+        % Create a node that fits around Node B and Node D
+        \node[container_node, fit=(B) (D)] (Container1) {};
+
+        % Create another node that fits around Node A, Node C, and Container1
+        \node[container_node, draw=green, fill=green!5, label={south:{\bfseries Outer Node}}, fit=(A) (C) (Container1)] (Container2) {};
+
+        % You can still draw connections between inner nodes or to/from container nodes
+        \draw[->] (A) -- (B);
+        \draw[->] (C) -- (D);
+        \draw[->, thick] (Container1) -- (Container2);
     \end{tikzpicture}
     \end{document}
     ```
