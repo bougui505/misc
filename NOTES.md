@@ -224,11 +224,15 @@
         % Place a new node exactly in the middle of nodeA and nodeB
         \node[fill=red!20, circle, inner sep=1pt] at ($(nodeA)!0.5!(nodeB)$) {M};
 
-        % Draw an arrow from nodeA to the midpoint
-        \draw[->] (nodeA) -- ($(nodeA)!0.5!(nodeB)$);
+        % Alternatively, define a coordinate for the midpoint
+        \coordinate (midpoint) at ($(nodeA)!0.5!(nodeB)$);
 
-        % Draw an arrow from the midpoint to nodeB
-        \draw[->] ($(nodeA)!0.5!(nodeB)$) -- (nodeB);
+        % Now you can use 'midpoint' as any other coordinate
+        % For example, draw an arrow from nodeA to the midpoint
+        \draw[->] (nodeA) -- (midpoint);
+
+        % Or draw an arrow from the midpoint to nodeB
+        \draw[->] (midpoint) -- (nodeB);
 
     \end{tikzpicture}
     \end{document}
