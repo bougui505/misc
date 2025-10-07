@@ -4,7 +4,6 @@
     *   [TikZ document with `tikz` on an empty A4 page](#tikz-document-with-tikz-on-an-empty-a4-page)
     *   [TikZ document with positioning](#tikz-document-with-positioning)
     *   [Minimal TikZ Picture Example Cropped](#minimal-tikz-picture-example-cropped)
-    *   [TikZ nodes relative positioning](#tikz-nodes-relative-positioning)
     *   [TikZ nodes relative to page](#tikz-nodes-relative-to-page)
     *   [Define a custom color](#define-a-custom-color)
     *   [Underlining Text with the soul package](#underlining-text-with-the-soul-package)
@@ -77,9 +76,7 @@
     \end{document}
     ```
 
-    ## TikZ nodes relative positioning
-
-    Example of creating nodes and positioning them relative to each other using the `positioning` library.
+    Example of creating nodes and positioning them relative to each other using the `positioning` library:
 
     ```latex
     \documentclass{article}
