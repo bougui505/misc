@@ -38,6 +38,7 @@
     \usepackage{tikz}
 
     \begin{document}
+    \pagestyle{empty} % No page numbers
 
     % Your TikZ diagrams and document content go here
 
