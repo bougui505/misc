@@ -9,6 +9,7 @@
     *   [Underlining Text with the soul package](#underlining-text-with-the-soul-package)
     *   [Style definition in TikZ](#style-definition-in-tikz)
     *   [Compute the middle point between two nodes](#compute-the-middle-point-between-two-nodes)
+    *   [Justified text in TikZ nodes](#justified-text-in-tikz-nodes)
 *   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
     *   [Header](#header)
     *   [Sections](#sections)
@@ -234,6 +235,48 @@
         % Or draw an arrow from the midpoint to nodeB
         \draw[->] (midpoint) -- (nodeB);
 
+    \end{tikzpicture}
+    \end{document}
+    ```
+
+    ## Justified text in TikZ nodes
+
+    To have justified text within a TikZ node, you need to specify a fixed `text width` for the node and then set the `align=justify` option. This will cause the text inside the node to stretch evenly to fill the specified width, similar to justified paragraphs in standard LaTeX.
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \begin{document}
+    \begin{tikzpicture}
+        \node[
+            draw,
+            fill=blue!10,
+            text width=5cm, % Set a fixed width for the text
+            align=justify,  % Enable justified alignment
+            font=\sffamily,
+            inner sep=3mm    % Add some padding around the text
+        ] at (0,0) {
+            This is a paragraph of text that will be displayed
+            within a TikZ node. By setting the 'text width' and
+            'align=justify' options, the text will be
+            justified, spreading evenly across the specified width.
+            This is useful for creating professional-looking diagrams
+            with longer textual explanations inside nodes.
+        };
+
+        \node[
+            draw=red,
+            fill=red!10,
+            text width=3cm, % A narrower node
+            align=justify,
+            font=\sffamily\small,
+            below=of current bounding box.south, % Place below the first node
+            yshift=-1cm % Add some vertical space
+        ] {
+            A shorter example
+            demonstrating text
+            justification in a
+            more compact node.
+        };
     \end{tikzpicture}
     \end{document}
     ```
