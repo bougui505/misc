@@ -29,6 +29,21 @@
 
     # LaTeX TikZ Tips
 
+    ## TikZ document with `tikz` on an empty A4 page
+
+    To create a standard A4 LaTeX document and include TikZ diagrams, you typically use the `article` document class and load the `tikz` package. This setup provides a blank A4 page where you can place your TikZ figures alongside other document content.
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+
+    \begin{document}
+
+    % Your TikZ diagrams and document content go here
+
+    \end{document}
+    ```
+
     ## TikZ document with positioning
 
     To create a LaTeX document that uses the `tikz` library and its `positioning` capabilities, you can use the following header:
