@@ -107,6 +107,35 @@
     \end{document}
     ```
 
+    ### TikZ nodes relative to page
+
+    To place nodes relative to the page rather than within the `tikzpicture` coordinate system, you can use the `current page` node. This requires loading the `overlay-beamer-styles` library (despite its name, it's useful outside of Beamer) or ensuring the `tikz` package is loaded with the `overlay` option if you want to place nodes outside the current text area. However, the `current page` node itself is generally available. Using `current page.south west`, `current page.north east`, etc., allows you to anchor elements to specific parts of the physical page.
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+    \usetikzlibrary{calc} % Required for coordinate calculations
+
+    \begin{document}
+    \pagestyle{empty} % Optional: No page numbers for a cleaner example
+
+    \begin{tikzpicture}[remember picture, overlay]
+        % Place a node in the top left corner of the page (with some margin)
+        \node at ($(current page.north west) + (1cm,-1cm)$) [anchor=north west] {Top Left Node};
+
+        % Place a node in the bottom right corner of the page (with some margin)
+        \node at ($(current page.south east) + (-1cm,1cm)$) [anchor=south east] {Bottom Right Node};
+
+        % Place a node centered on the page
+        \node at (current page.center) {Centered Node};
+    \end{tikzpicture}
+
+    Some text on the page to demonstrate the overlay.
+    More text here.
+
+    \end{document}
+    ```
+
     ### Define a custom color
 
     You can define custom colors in LaTeX using the `xcolor` package, which TikZ can then use. This is useful for maintaining a consistent color palette across your diagrams.
