@@ -180,7 +180,7 @@
             thick,
             fill=blue!20,
             rounded corners,
-            font=\sffamily\bfseries
+            font=\sffamily\bfseries\Large % Added \Large for bigger font
         },
         % Define a style for 'my arrow'
         myarrow/.style={
