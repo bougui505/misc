@@ -46,6 +46,35 @@
     \end{document}
     ```
 
+    Example of creating nodes and positioning them relative to each other using the `positioning` library:
+
+    ```latex
+    \documentclass{article}
+    \usepackage{tikz}
+    \usetikzlibrary{positioning}
+
+    \begin{document}
+
+    \begin{tikzpicture}
+        % Define the first node
+        \node (A) {Node A};
+        % Define a second node to the right of Node A, with a specified distance
+        \node (B) [right=of A] {Node B};
+        % Define a third node below Node A, with a specified distance
+        \node (C) [below=of A] {Node C};
+        % Define a fourth node below Node B, implicitly using the same distance as previous relative placements
+        \node (D) [below=of B] {Node D};
+
+        % Draw some connecting lines/arrows
+        \draw[->] (A) -- (B);
+        \draw[->] (A) -- (C);
+        \draw[->] (B) -- (D);
+        \draw[->] (C) -- (D);
+    \end{tikzpicture}
+
+    \end{document}
+    ```
+
     ## TikZ document with positioning
 
     To use the `tikz` library and its `positioning` capabilities:
@@ -76,34 +105,6 @@
     \end{document}
     ```
 
-    Example of creating nodes and positioning them relative to each other using the `positioning` library:
-
-    ```latex
-    \documentclass{article}
-    \usepackage{tikz}
-    \usetikzlibrary{positioning}
-
-    \begin{document}
-
-    \begin{tikzpicture}
-        % Define the first node
-        \node (A) {Node A};
-        % Define a second node to the right of Node A, with a specified distance
-        \node (B) [right=of A] {Node B};
-        % Define a third node below Node A, with a specified distance
-        \node (C) [below=of A] {Node C};
-        % Define a fourth node below Node B, implicitly using the same distance as previous relative placements
-        \node (D) [below=of B] {Node D};
-
-        % Draw some connecting lines/arrows
-        \draw[->] (A) -- (B);
-        \draw[->] (A) -- (C);
-        \draw[->] (B) -- (D);
-        \draw[->] (C) -- (D);
-    \end{tikzpicture}
-
-    \end{document}
-    ```
 
     ## TikZ nodes relative to page
 
