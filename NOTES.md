@@ -40,12 +40,13 @@
     ```latex
     \documentclass[a4paper,12pt]{article} % Specify A4 paper size and a default font size
     \usepackage{tikz}
+    \usepackage[margin=1in]{geometry} % Set all margins to 1 inch
 
     \begin{document}
     \pagestyle{empty} % No page numbers
 
     % Your TikZ diagrams and document content go here
-
+    A sample text to demonstrate the margins.
     \end{document}
     ```
 
