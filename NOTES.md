@@ -8,6 +8,7 @@
     *   [Define a custom color](#define-a-custom-color)
     *   [Underlining Text with the soul package](#underlining-text-with-the-soul-package)
     *   [Style definition in TikZ](#style-definition-in-tikz)
+    *   [Compute the middle point between two nodes](#compute-the-middle-point-between-two-nodes)
 *   [Apptainer Definition File Sections](#apptainer-definition-file-sections)
     *   [Header](#header)
     *   [Sections](#sections)
@@ -195,6 +196,40 @@
         \node[mynode] (B) at (3,0) {Process};
         % Use the 'myarrow' style for the connection
         \draw[myarrow] (A) -- (B);
+    \end{tikzpicture}
+    \end{document}
+    ```
+
+    ## Compute the middle point between two nodes
+
+    To compute the middle point between two existing nodes in TikZ, you can use the `calc` library. This library allows you to perform arithmetic operations on coordinates. The syntax `($(<node1>)!<fraction>!(<node2>)$)` calculates a point along the line connecting `<node1>` and `<node2>`. For the exact midpoint, use a `fraction` of `0.5`.
+
+    First, ensure you load the `calc` library:
+    `\usetikzlibrary{calc}`
+
+    Then, you can place a node or draw from the midpoint:
+
+    ```latex
+    \documentclass[tikz, border=2mm]{standalone}
+    \usetikzlibrary{positioning,calc} % Load positioning and calc libraries
+    \begin{document}
+    \begin{tikzpicture}
+        % Define two nodes
+        \node (nodeA) {Node A};
+        \node (nodeB) [right=3cm of nodeA] {Node B};
+
+        % Draw a line between them
+        \draw (nodeA) -- (nodeB);
+
+        % Place a new node exactly in the middle of nodeA and nodeB
+        \node[fill=red!20, circle, inner sep=1pt] at ($(nodeA)!0.5!(nodeB)$) {M};
+
+        % Draw an arrow from nodeA to the midpoint
+        \draw[->] (nodeA) -- ($(nodeA)!0.5!(nodeB)$);
+
+        % Draw an arrow from the midpoint to nodeB
+        \draw[->] ($(nodeA)!0.5!(nodeB)$) -- (nodeB);
+
     \end{tikzpicture}
     \end{document}
     ```
