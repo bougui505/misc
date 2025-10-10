@@ -24,6 +24,7 @@
     *   [Add a line with given content at a given line number](#add-a-line-with-given-content-at-a-given-line-number)
     *   [Print lines between two patterns](#print-lines-between-two-patterns)
     *   [Extract only one file from a tar.gz archive](#extract-only-one-file-from-a-tar.gz-archive)
+    *   [Rename files removing spaces and special characters](#rename-files-removing-spaces-and-special-characters)
 *   [Neomutt](#neomutt)
     *   [Saving Read Messages](#saving-read-messages)
     *   [Toggle Headers](#toggle-headers)
@@ -586,6 +587,54 @@ Here, `--strip-components=3` removes `docs/`, `reports/`, and `2023/` from the p
               Change to DIR before performing any operations.  This option is order-sensitive, i.e. it affects all options that follow.
 ```
 therefore, -C should be use with caution...
+
+## Rename files removing spaces and special characters
+
+To rename multiple files by replacing spaces with underscores and removing other problematic special characters, you can use a combination of `find` and `rename` (Perl `rename`, often installed as `prename` or `rename` on many Linux distributions). This is particularly useful for cleaning up filenames for better compatibility with scripts, web servers, or file systems.
+
+First, ensure you have the Perl `rename` utility installed. If `rename` doesn't work, try `prename`.
+
+```bash
+# Replace spaces with underscores and remove some common special characters
+find . -depth -name '* *' -o -name '*[!a-zA-Z0-9._-]*' | while IFS= read -r f; do
+    # Replace spaces with underscores
+    newname=$(echo "$f" | sed 's/ /_/g')
+    # Remove characters that are not alphanumeric, underscore, dot, or hyphen
+    newname=$(echo "$newname" | sed 's/[^a-zA-Z0-9._-]/%_/g') # Optional: replace with %_ instead of simply removing
+    # Alternatively, simply remove invalid characters
+    # newname=$(echo "$newname" | sed 's/[^a-zA-Z0-9._-]//g')
+    
+    # Only rename if the name actually changed
+    if [ "$f" != "$newname" ]; then
+        mv -n "$f" "$newname"
+    fi
+done
+```
+
+**Using `rename` (Perl version)**
+
+A more robust and often simpler approach uses the Perl `rename` command directly for more complex pattern replacements.
+
+```bash
+# Replace spaces with underscores
+rename 's/ /_/g' *
+
+# Remove all characters that are not alphanumeric, underscore, dot, or hyphen
+# This applies to files in the current directory only.
+rename 's/[^a-zA-Z0-9._-]//g' *
+
+# Combine both, applying to all files recursively
+find . -depth -print0 | xargs -0 rename 's/ /_/g; s/[^a-zA-Z0-9._-]//g'
+```
+
+*   `find . -depth`: Searches for files and directories starting from the current directory. `-depth` ensures that files within a directory are processed before the directory itself, which is important when renaming directories.
+*   `-print0`: Prints the full file name on standard output, followed by a null character. This handles filenames with spaces or other problematic characters correctly.
+*   `xargs -0`: Reads items from standard input, separated by null characters, and executes the `rename` command with these items.
+*   `rename 's/ /_/g'`: The Perl `rename` command. `s/ /_/g` is a regular expression that substitutes (`s`) all occurrences (`g`) of a space (` `) with an underscore (`_`).
+*   `rename 's/[^a-zA-Z0-9._-]//g'`: This substitutes (`s`) any character that is *not* (`^`) an alphanumeric character, underscore, dot, or hyphen (`[a-zA-Z0-9._-]`) with nothing (`//`), effectively removing it.
+*   `find . -name '* *' -o -name '*[!a-zA-Z0-9._-]*'`: This part of the `find` command specifically looks for files that either contain spaces (`* *`) OR contain any character that is not alphanumeric, underscore, dot, or hyphen (`*[!a-zA-Z0-9._-]*`). This helps to target only the files that actually need renaming.
+
+**Caution**: Always test `rename` or `mv` commands on a small, non-critical set of files first, or use a dry-run option if available, as they permanently alter filenames.
 
 # Neomutt
 
