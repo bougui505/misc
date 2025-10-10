@@ -675,6 +675,13 @@ Here are some commonly used built-in variables:
 *   **`$?`**: The names of all the prerequisites that are newer than the target, with spaces in between. This variable is useful for rules that add dependencies to a list without rebuilding everything.
 *   **`$*`**: The stem with which an implicit rule matches. If the target is `dir/a.foo.b`, and the target pattern is `dir/%.foo`, then the stem is `a.b`. The stem is useful for constructing the names of related files.
 *   **`$(@D)`**: The directory part of `$@`. If `$@` is `dir/foo.o`, then `$(@D)` is `dir`. If `$@` does not contain a slash, `$(@D)` is `.`.
+    *   **Example Usage**:
+        ```makefile
+        # Rule to compile a .c file into a .o file, creating the output directory if needed
+        output/%.o: src/%.c
+        	mkdir -p $(@D) # Ensures the output directory 'output/' exists
+        	$(CC) -c $< -o $@
+        ```
 *   **`$(@F)`**: The file part of `$@`. If `$@` is `dir/foo.o`, then `$(@F)` is `foo.o`. `$(@F)` is equivalent to `$(notdir $@)`.
 *   **`$(<D)`**: The directory part of `$<`. Similar to `$(@D)`.
 *   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
