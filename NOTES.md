@@ -687,6 +687,14 @@ Here are some commonly used built-in variables:
 *   **`$(<F)`**: The file part of `$<`. Similar to `$(@F)`.
 *   **`$(basename $@)`**: The file name of the target without its extension. For example, if `$@` is `foo.txt`, then `$(basename $@)` is `foo`. If `$@` is `dir/bar.c`, then `$(basename $@)` is `dir/bar`.
 *   **`$(basename $<)`**: The file name of the first prerequisite without its extension. Similar to `$(basename $@)`.
+*   **`$(word N, $^)`**: The N-th prerequisite from the list of all prerequisites (`$^`). `N` is a 1-based index.
+    *   **Example Usage**:
+        ```makefile
+        target: prereq1 prereq2 prereq3
+        	@echo "First prerequisite: $(word 1, $^)"   # Expands to prereq1
+        	@echo "Second prerequisite: $(word 2, $^)"  # Expands to prereq2
+        	@echo "Third prerequisite: $(word 3, $^)"   # Expands to prereq3
+        ```
 
 ## Suppressing Command Output
 
