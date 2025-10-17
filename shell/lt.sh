@@ -73,9 +73,14 @@ done
 FILENAME=$@
 if [ "$LOWER" = "None" ] && [ "$UPPER" = "None" ]; then
     if hash exa; then
-        #exa -lh -snew --git --time-style full-iso --links --grid $(echo $FILENAME)
-	underline_last_modified $(echo $FILENAME)
+        if exa --help | grep -q -- --git; then
+            underline_last_modified $(echo $FILENAME)
+        else
+            # exa exists but does not support --git, fall back to ls
+            ls -rlth --time-style=+"%F %H:%M:%S.%N" --color $(echo $FILENAME)
+        fi
     else
+        # exa does not exist, fall back to ls
         ls -rlth --time-style=+"%F %H:%M:%S.%N" --color $(echo $FILENAME)
     fi
     exit
