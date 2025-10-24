@@ -12,10 +12,40 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwriting redirection
 
-awk '
+# Help message function
+function usage {
+    echo "Usage: $0 [-s FIELD_SEPARATOR] <input_file>"
+    echo "  -s FIELD_SEPARATOR: Set the field separator (default: ',')"
+    exit 1
+}
+
+FIELD_SEPARATOR="," # Default field separator
+
+# Parse command line options
+while getopts "s:h" OPTION; do
+    case "$OPTION" in
+        s)
+            FIELD_SEPARATOR="$OPTARG"
+            ;;
+        h)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift "$((OPTIND - 1))" # Shift arguments so that $1 refers to the first non-option argument
+
+# Check if an input file is provided
+if [ -z "$1" ]; then
+    usage
+fi
+
+awk -v FS="$FIELD_SEPARATOR" '
   BEGIN {
-    # Define the Field Separator (FS) as a comma, standard for CSV
-    FS = ";"
+    # Define the Field Separator (FS) for CSV (default: comma).
+    # This is set externally via -v FS="..."
     
     # Initialize a variable to track if we are currently inside a multi-line field
     # 0 = not inside, 1 = inside
@@ -47,4 +77,4 @@ awk '
       print $0
     }
   }
-' $1
+' "$1"
