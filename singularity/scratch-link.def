@@ -1,0 +1,30 @@
+BOOTSTRAP: docker
+FROM: ubuntu
+
+%files
+
+%post
+# See: https://github.com/kawasaki/pyscrlink
+################################# APT INSTALL #################################
+export DEBIAN_FRONTEND=noninteractive
+mkdir -p /tmp/apt/cache
+mkdir -p /tmp/apt/lists
+echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+
+apt-get update
+apt-get install -y python3-pip bluez libbluetooth-dev libnss3-tools libcap2-bin libglib2.0-dev
+###############################################################################
+
+################################# PIP INSTALL #################################
+python3 -m pip config set global.break-system-packages true  # See: https://stackoverflow.com/a/75722775/1679629
+mkdir -p /tmp/pip/cache
+python3 -m pip config set global.cache-dir /tmp/pip/cache
+pip3 install pyscrlink nest-asyncio
+###############################################################################
+sed -i 's/"sudo", //' /usr/local/lib/python3.12/dist-packages/pyscrlink/bluepy_helper_cap.py
+# bluepy_helper_cap
+python3 /usr/local/lib/python3.12/dist-packages/pyscrlink/bluepy_helper_cap.py
+# %runscript
+# cmd $@
+
