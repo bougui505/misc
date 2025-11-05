@@ -42,6 +42,8 @@ if [ -z "$1" ]; then
     usage
 fi
 
+dos2unix $1
+
 awk -v FS="$FIELD_SEPARATOR" '
   BEGIN {
     # Define the Field Separator (FS) for CSV (default: comma).
