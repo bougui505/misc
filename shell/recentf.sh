@@ -65,9 +65,10 @@ done
 # Set default count if -n was not provided
 COUNT=${COUNT:-$DEFAULT_COUNT}
 
-# If -D is used, force sorting by access time
+# If -D is used, force sorting by access time and list all files without limit
 if [ "$LAST_24H" -eq 1 ]; then
     SORT_BY_MODIFICATION=0
+    COUNT=999999999 # Set to a very large number to effectively remove the limit
 fi
 
 # --- Construct the stat --printf format string ---
