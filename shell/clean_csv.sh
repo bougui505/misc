@@ -42,7 +42,9 @@ if [ -z "$1" ]; then
     usage
 fi
 
-dos2unix $1
+if grep -q $'\r' "$1"; then
+  dos2unix "$1"
+fi
 
 awk -v FS="$FIELD_SEPARATOR" '
   BEGIN {
