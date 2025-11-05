@@ -11,7 +11,8 @@
 # Default values
 DEFAULT_COUNT=10
 INCLUDE_HIDDEN=0
-SHOW_TIME=0      # Default to only showing the filename
+SHOW_TIME=0
+SORT_BY_MODIFICATION=0 # Added to track -m option
 
 # --- Function to display script usage ---
 usage() {
@@ -22,7 +23,7 @@ usage() {
     echo "Options:"
     echo "  -n <count>   Set the number of top files to display (default: $DEFAULT_COUNT)."
     echo "  -a           Include hidden files and directories (starting with '.')."
-    echo "  -m           Sort by MODIFICATION Time (%Y) instead of Access Time (%X)."
+    echo "  -m           Sort by MODIFICATION Time (%y) instead of Access Time (%x)."
     echo "  -t           Display the Access/Modification Time along with the filename."
     echo "  -h           Display this help message."
     exit 1
@@ -42,7 +43,7 @@ while getopts "n:amth" opt; do
             INCLUDE_HIDDEN=1
             ;;
         m )
-            TIME_FORMAT='%Y'
+            SORT_BY_MODIFICATION=1 # Set flag when -m is present
             ;;
         t )
             SHOW_TIME=1
@@ -59,20 +60,33 @@ done
 # Set default count if -n was not provided
 COUNT=${COUNT:-$DEFAULT_COUNT}
 
-if [ "$SHOW_TIME" -eq 0 ]; then
-    TIME_FORMAT='%X' # Default to Access Time (Epoch seconds)
+# --- Construct the stat --printf format string ---
+# This will always output the sorting key (epoch time) first,
+# optionally followed by the human-readable time, and then the filename.
+STAT_PRINTF_FORMAT=""
+
+if [ "$SORT_BY_MODIFICATION" -eq 1 ]; then
+    STAT_PRINTF_FORMAT='%Y' # Modification time (Epoch seconds) for sorting
+    DISPLAY_TIME_FORMAT_PART='%y' # Corresponding human-readable modification time
 else
-    TIME_FORMAT='%x'
+    STAT_PRINTF_FORMAT='%X' # Access time (Epoch seconds) for sorting
+    DISPLAY_TIME_FORMAT_PART='%x' # Corresponding human-readable access time
 fi
+
+if [ "$SHOW_TIME" -eq 1 ]; then
+    STAT_PRINTF_FORMAT="$STAT_PRINTF_FORMAT $DISPLAY_TIME_FORMAT_PART"
+fi
+
+STAT_PRINTF_FORMAT="$STAT_PRINTF_FORMAT %n\0"
 
 # --- 1. Construct the 'find' Command ---
 
 if [ "$INCLUDE_HIDDEN" -eq 0 ]; then
     # Exclude hidden files
-    FIND_CMD="find . -path '*/.*' -prune -o -type f -exec stat --printf '$TIME_FORMAT %n\0' {} +"
+    FIND_CMD="find . -path '*/.*' -prune -o -type f -exec stat --printf '$STAT_PRINTF_FORMAT' {} +"
 else
     # Include hidden files
-    FIND_CMD="find . -type f -exec stat --printf '$TIME_FORMAT %n\0' {} +"
+    FIND_CMD="find . -type f -exec stat --printf '$STAT_PRINTF_FORMAT' {} +"
 fi
 
 # --- 2. Execute the entire pipeline directly ---
