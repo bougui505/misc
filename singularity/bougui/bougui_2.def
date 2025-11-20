@@ -4,6 +4,7 @@ FROM: bougui_1.sif
 %files
 
 %post
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" peft
 
 # %runscript
 # cmd $@
