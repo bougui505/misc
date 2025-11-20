@@ -1,72 +1,9 @@
 BOOTSTRAP: localimage
 FROM: bougui_1.sif
 
-# Everything there is to install atomsurf
-# see: https://github.com/Vincentx15/atomsurf
-
 %files
 
 %post
-export PIP_CACHE_DIR="/tmp/pip/cache"
-mkdir -p "$PIP_CACHE_DIR"
-python3 -m pip config set global.break-system-packages true # See: https://stackoverflow.com/a/75722775/1679629
-
-################################# APT INSTALL #################################
-export DEBIAN_FRONTEND=noninteractive
-mkdir -p /tmp/apt/cache
-mkdir -p /tmp/apt/lists
-mkdir -p /tmp/apt/archives/partial
-echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
-echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
-
-apt-get update
-apt-get install -y python3-open3d libeigen3-dev libboost-all-dev libglfw3-dev libglew-dev libpng-dev libtinyxml2-dev libxinerama-dev libxcursor-dev libxi-dev libmpfr-dev tree
-# apt-get install -y python3-pip
-###############################################################################
-
-python3 -m pip install cmake && export PATH="/usr/local/bin:$PATH"  # recent cmake needed to build libigl
-which cmake
-cmake --version
-# Install libigl Python bindings manually
-
-# Install libigl Python bindings manually
-cd /opt
-git clone --depth 1 --branch 2.4.1 https://github.com/libigl/libigl-python-bindings.git
-cd libigl-python-bindings
-
-# Initialize and update submodules, which includes numpyeigen
-git submodule update --init --recursive
-
-# Patch the main CMakeLists.txt of libigl-python-bindings to fix the "Compatibility with CMake < 3.5 has been removed" error.
-# The `cmake_minimum_required` in the main CMakeLists.txt is the root cause.
-sed -i 's/^cmake_minimum_required(VERSION [0-9.]\+)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
-
-# Install libigl Python bindings using pip, passing CMAKE_ARGS to ensure correct policy version.
-# This approach uses scikit-build to handle the CMake configure/build/install steps,
-# and the CMAKE_POLICY_VERSION_MINIMUM should propagate to sub-projects like numpyeigen.
-CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5" python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" .
-
-################################# ATOMSURF #################################
-pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" torch-sparse torch-scatter
-pip install pyg-lib -f https://data.pyg.org/whl/torch-2.8.0+cu128.html
-cd /opt
-git clone --depth 1 https://github.com/Vincentx15/atomsurf.git
-cd atomsurf
-rm -rf .git
-# Remove open3d from requirements.txt as it is installed via apt-get
-sed -i '/open3d/d' requirements.txt
-# Pandas is already installed
-sed -i '/pandas==1.1.3/d' requirements.txt
-sed -i '/biopython==1.81/d' requirements.txt
-sed 's/^deltaconv==1.0.2/deltaconv/' requirements.txt
-sed -i '/libigl/d' requirements.txt # <--- REMOVE libigl here
-# Install diffusion-net-plus and atomsurf requirements using python3 (which is Python 3.12 in Trixie)
-python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" git+https://github.com/pvnieo/diffusion-net-plus.git
-python3 -m pip install --break-system-packages --cache-dir "$PIP_CACHE_DIR" -r requirements.txt
-# Link repository to system python libraries
-# cd /usr/local/lib/python3.13/dist-packages
-# ln -s /opt/atomsurf/atomsurf .
-############################################################################
 
 # %runscript
 # cmd $@
