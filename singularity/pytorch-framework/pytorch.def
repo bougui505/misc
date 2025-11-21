@@ -12,6 +12,7 @@ echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
 echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 
 apt-get update
+apt install pciutils && /usr/sbin/update-pciids
 apt-get install -y python3-pip
 ###############################################################################
 
@@ -21,7 +22,7 @@ python3 -m pip config set global.break-system-packages true  # See: https://stac
 # python3 -m pip config set global.cache-dir /tmp/pip/cache
 pip3 install typing-extensions>=4.10.0 --upgrade
 pip3 install numpy
-pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/rocm6.4
+pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/nightly/rocm7.1
 ###############################################################################
 
 # %runscript
