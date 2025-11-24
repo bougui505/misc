@@ -9,25 +9,26 @@
 #
 # The output (stdout) of the remote command is printed locally.
 
-# --- Configuration ---
-# Set the remote shell command to use (defaulting to 'bash')
-REMOTE_SHELL_COMMAND="bash"
-# Check for required arguments
-if [ "$#" -lt 3 ]; then
-    echo "Usage: $0 <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
-    echo "Example: $0 user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
-    exit 1
-fi
+sshrun_main() {
+    # --- Configuration ---
+    # Set the remote shell command to use (defaulting to 'bash')
+    local REMOTE_SHELL_COMMAND="bash"
+    # Check for required arguments
+    if [ "$#" -lt 3 ]; then
+        echo "Usage: $0 <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
+        echo "Example: $0 user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
+        return 1 # Use return for functions, exit for scripts
+    fi
 
-# 1. Parse Arguments
-REMOTE_HOST="$1"
-REMOTE_COMMAND="$2"
-# Shift positional parameters to isolate files/directories list
-shift 2
-FILES_TO_SEND=("$@")
+    # 1. Parse Arguments
+    local REMOTE_HOST="$1"
+    local REMOTE_COMMAND="$2"
+    # Shift positional parameters to isolate files/directories list
+    shift 2
+    local FILES_TO_SEND=("$@")
 
-# Enable errexit for the main script
-set -e
+    # Enable errexit for the main script
+    set -e
 
     echo "--- Initiating Secure Remote Execution ---" >&2
     echo "Host: ${REMOTE_HOST}" >&2
@@ -147,12 +148,17 @@ EOF_REMOTE_SCRIPT_TEMPLATE
 
     # Check the result of the pipeline execution
     if ! "$pipeline_success"; then
-        PIPELINE_EXIT_CODE=$? # Capture the exit code from the failed pipeline
+        local PIPELINE_EXIT_CODE=$? # Capture the exit code from the failed pipeline
         echo "Error: Remote execution pipeline failed with exit code $PIPELINE_EXIT_CODE" >&2
-        exit $PIPELINE_EXIT_CODE
+        return $PIPELINE_EXIT_CODE
     fi
     # If successful, get the exit code from the last command in the pipeline (ssh)
-    PIPELINE_EXIT_CODE=$?
+    local PIPELINE_EXIT_CODE=$?
     
     echo "--- Final Status: Pipeline Exit Code $PIPELINE_EXIT_CODE ---" >&2
-    exit $PIPELINE_EXIT_CODE
+    return $PIPELINE_EXIT_CODE
+}
+
+# Call the main function with all script arguments
+sshrun_main "$@"
+exit $?
