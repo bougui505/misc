@@ -88,9 +88,12 @@ sshrun_main() {
         
         # 3. Execute the user-provided command
         echo "--- Remote Execution: Starting Command ---" >&2
-        # The actual command passed from the local machine, safely embedded.
-        # We use the bash -c 'CMD' _ ARG1 ARG2... idiom for safe execution.
-        /bin/bash -c "source ~/.bashrc 2>/dev/null; source ~/.profile 2>/dev/null; \"\$0\"" "REMOTE_COMMAND_PLACEHOLDER"
+        # Source user's environment files to ensure the command runs with expected paths/vars.
+        # Use '|| true' to prevent 'set -e' from exiting if files don't exist or have errors.
+        source ~/.bashrc 2>/dev/null || true
+        source ~/.profile 2>/dev/null || true
+        # The actual command passed from the local machine, safely embedded, is executed directly.
+        REMOTE_COMMAND_PLACEHOLDER
         COMMAND_EXIT_CODE=$?
         echo "--- Remote Execution: Command finished with exit code $COMMAND_EXIT_CODE ---" >&2
 
