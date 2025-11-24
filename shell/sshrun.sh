@@ -115,11 +115,18 @@ EOF_REMOTE_SCRIPT_TEMPLATE
     local FINAL_REMOTE_SCRIPT_CONTENT
     FINAL_REMOTE_SCRIPT_CONTENT="${REMOTE_SCRIPT_TEMPLATE//REMOTE_COMMAND_PLACEHOLDER/${ESCAPED_REMOTE_COMMAND}}"
 
-    # The entire FINAL_REMOTE_SCRIPT_CONTENT needs to be passed as a single argument to ssh,
-    # and then executed by the remote shell. To do this safely, we need to quote it robustly
-    # for the local shell's argument parsing.
-    local QUOTED_FINAL_REMOTE_SCRIPT
-    QUOTED_FINAL_REMOTE_SCRIPT=$(printf %q "${FINAL_REMOTE_SCRIPT_CONTENT}")
+    # Prepare the remote script content, escaping single quotes for safe embedding
+    # within a single-quoted string for the remote 'bash -c' command.
+    # We replace each single quote with '\'' (single quote, backslash, single quote, single quote).
+    # This effectively closes the current single-quoted string, inserts an escaped single quote,
+    # and then starts a new single-quoted string, allowing the remote shell to parse it correctly.
+    local ESCAPED_SCRIPT_FOR_BASH_C
+    ESCAPED_SCRIPT_FOR_BASH_C=$(echo "${FINAL_REMOTE_SCRIPT_CONTENT}" | sed "s/'/'\\\''/g")
+
+    # Construct the full command string for ssh.
+    # The entire script is passed as a single argument to 'bash -c'.
+    # This ensures proper parsing by the remote shell.
+    local COMMAND_FOR_SSH="${REMOTE_SHELL_COMMAND} -c '${ESCAPED_SCRIPT_FOR_BASH_C}'"
 
     # Check if 'pv' is installed for progress bar functionality
     local USE_PV=false
@@ -136,12 +143,12 @@ EOF_REMOTE_SCRIPT_TEMPLATE
     if "$USE_PV"; then
         # Execute the final pipeline with pv for progress: local_tar -> pv -> ssh.
         # pv writes its output to stderr. We use --force to ensure it displays a progress bar.
-        if tar czf - "${FILES_TO_SEND[@]}" | pv --force | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
+        if tar czf - "${FILES_TO_SEND[@]}" | pv --force | ssh -T "${REMOTE_HOST}" "${COMMAND_FOR_SSH}"; then
             pipeline_success=true
         fi
     else
         # Execute the final pipeline without pv: local_tar -> ssh.
-        if tar czf - "${FILES_TO_SEND[@]}" | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
+        if tar czf - "${FILES_TO_SEND[@]}" | ssh -T "${REMOTE_HOST}" "${COMMAND_FOR_SSH}"; then
             pipeline_success=true
         fi
     fi
