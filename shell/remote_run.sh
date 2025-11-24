@@ -5,7 +5,7 @@
 # and automatically cleaning up afterward.
 #
 # Usage:
-# ssh_run_temp user@host "remote_command_to_run" file1 file2 directory/
+# sshrun user@host "remote_command_to_run" file1 file2 directory/
 #
 # The output (stdout) of the remote command is printed locally.
 
@@ -15,11 +15,11 @@ REMOTE_SHELL_COMMAND="bash"
 
 # --- Helper Function ---
 # Function to perform the remote execution
-ssh_run_temp() {
+sshrun() {
     # Check for required arguments
     if [ "$#" -lt 3 ]; then
-        echo "Usage: ssh_run_temp <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
-        echo "Example: ssh_run_temp user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
+        echo "Usage: sshrun <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
+        echo "Example: sshrun user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
         return 1
     fi
 
@@ -137,7 +137,7 @@ EOF_REMOTE_SCRIPT_TEMPLATE
 
 # 2. Execute the function (replace user@host with your actual connection details)
 # Note: The command in quotes needs to be executed on the remote machine.
-# ssh_run_temp user@host "chmod +x myscript.sh; ./myscript.sh; cat file1.txt; cat mydata/data.csv" file1.txt myscript.sh mydata
+# sshrun user@host "chmod +x myscript.sh; ./myscript.sh; cat file1.txt; cat mydata/data.csv" file1.txt myscript.sh mydata
 
 # 3. Clean up local dummy files
 # rm -f file1.txt myscript.sh
@@ -146,4 +146,4 @@ EOF_REMOTE_SCRIPT_TEMPLATE
 # To use this, you must source the script:
 # source remote_run.sh
 # Then execute:
-# ssh_run_temp user@yourserver "echo 'Hello remote world!'" file1.txt
+# sshrun user@yourserver "echo 'Hello remote world!'" file1.txt
