@@ -162,12 +162,23 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             should_delete = False # Default to not deleting a reused directory, or if user explicitly says no
 
             if is_new_remote_dir: # We created this directory, so we ask the user
+                sys.stdout.flush() # Ensure all previous stdout messages are displayed
+                sys.stderr.flush() # Ensure all previous stderr messages are displayed
+
                 try:
-                    response = input(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ").strip().lower()
+                    # Direct the prompt to stderr for consistency with other messages and read from stdin
+                    response = ""
+                    try:
+                        print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
+                        sys.stderr.flush() # Ensure the prompt is immediately visible
+                        response = sys.stdin.readline().strip().lower()
+                    except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
+                        response = ""
+                    
                     if response in ('n', 'no'):
                         print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
                               f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
-                    else: # Default to yes, or any other input
+                    else: # Default to yes (empty response, EOFError, or any other input)
                         should_delete = True
                 except KeyboardInterrupt:
                     print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
