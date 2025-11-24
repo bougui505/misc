@@ -8,7 +8,7 @@ import tempfile
 
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
-                      remote_dir_to_reuse=None, keep_remote_dir=False, keep_on_failure=False):
+                      remote_dir_to_reuse=None, keep_remote_dir=False, keep_on_failure=True):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
@@ -209,10 +209,10 @@ if __name__ == "__main__":
              "regardless of command success. This overrides --keep-on-failure."
     )
     parser.add_argument(
-        "--keep-on-failure", action="store_true",
-        help="If a new temporary directory is created, it will be kept if the remote command fails "
-             "(exits with a non-zero status). Ignored if --keep-remote-dir is used or "
-             "--remote-dir is specified."
+        "--keep-on-failure", action="store_false", default=True,
+        help="By default, a new temporary directory will be kept if the remote command fails. "
+             "Specify this flag to delete the directory even if the command fails. "
+             "Ignored if --keep-remote-dir is used or --remote-dir is specified."
     )
 
     args = parser.parse_args()
