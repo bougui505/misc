@@ -56,8 +56,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if files_to_transfer:
             print(f"[{host}] Transferring files to {remote_tmp_dir}...", file=sys.stderr)
 
-            remote_dirs_to_create = set()
-            file_transfer_details = [] # Stores (local_path, remote_full_path_for_scp, remote_display_path)
+            file_transfer_details = [] # Stores (local_path, remote_target_path, remote_display_path)
 
             for local_file in files_to_transfer:
                 if not os.path.exists(local_file):
@@ -69,33 +68,20 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 # to ensure the path starts relative to the remote_tmp_dir.
                 remote_relative_path = local_file.lstrip(os.sep)
 
-                remote_sub_dir = os.path.dirname(remote_relative_path)
-                if remote_sub_dir: # Only add if it's not a file directly in the temp dir root
-                    remote_dirs_to_create.add(f"{remote_tmp_dir}/{remote_sub_dir}")
-
-                remote_full_path_for_scp = f"{host}:{remote_tmp_dir}/{remote_relative_path}"
+                # For rsync, we need to construct the destination path explicitly
+                remote_target_path = f"{host}:{remote_tmp_dir}/{remote_relative_path}"
                 remote_display_path = f"{remote_tmp_dir}/{remote_relative_path}"
-                file_transfer_details.append((local_file, remote_full_path_for_scp, remote_display_path))
-
-            # Create necessary directories on the remote host
-            for remote_dir in remote_dirs_to_create:
-                print(f"[{host}] Creating remote directory: {remote_dir}...", file=sys.stderr)
-                subprocess.run(
-                    ["ssh", host, f"mkdir -p {shlex.quote(remote_dir)}"],
-                    check=True,
-                    stdout=sys.stderr, # Redirect ssh's stdout to stderr
-                    stderr=sys.stderr  # Redirect ssh's stderr to stderr
-                )
+                file_transfer_details.append((local_file, remote_target_path, remote_display_path))
             
-            # Now transfer the files
-            for local_file, remote_full_path_for_scp, remote_display_path in file_transfer_details:
+            # Transfer the files using rsync -a (archive mode preserves metadata)
+            for local_file, remote_target_path, remote_display_path in file_transfer_details:
+                print(f"[{host}] Transferring: {local_file} -> {remote_display_path}", file=sys.stderr)
                 subprocess.run(
-                    ["scp", local_file, remote_full_path_for_scp],
+                    ["rsync", "-a", local_file, remote_target_path],
                     check=True,
-                    stdout=sys.stderr,  # Redirect scp's stdout to stderr
-                    stderr=sys.stderr   # Redirect scp's stderr to stderr
+                    stdout=sys.stderr,  # Redirect rsync's stdout to stderr
+                    stderr=sys.stderr   # Redirect rsync's stderr to stderr
                 )
-                print(f"[{host}] Transferred: {local_file} -> {remote_display_path}", file=sys.stderr)
 
         # 3. Execute the command on the remote host within the temporary directory
         print(f"[{host}] Executing command: '{command}' in {remote_tmp_dir}...", file=sys.stderr)
@@ -134,10 +120,10 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 print(f"[{host}] Retrieving: {remote_full_path.split(':')[-1]} -> {local_retrieve_path}", file=sys.stderr)
                 try:
                     subprocess.run(
-                        ["scp", remote_full_path, local_retrieve_path],
+                        ["rsync", "-a", remote_full_path, local_retrieve_path],
                         check=True,
-                        stdout=sys.stderr,  # Redirect scp's stdout to stderr
-                        stderr=sys.stderr   # Redirect scp's stderr to stderr
+                        stdout=sys.stderr,  # Redirect rsync's stdout to stderr
+                        stderr=sys.stderr   # Redirect rsync's stderr to stderr
                     )
                 except subprocess.CalledProcessError as e:
                     print(f"[{host}] Warning: Failed to retrieve '{remote_file}': {e}", file=sys.stderr)
@@ -151,7 +137,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if e.stderr:
             print(f"Stderr: {e.stderr}", file=sys.stderr)
     except FileNotFoundError:
-        print("Error: 'ssh' or 'scp' command not found. Please ensure OpenSSH client is installed and in your PATH.", file=sys.stderr)
+        print("Error: 'ssh', 'scp', or 'rsync' command not found. Please ensure OpenSSH client and rsync are installed and in your PATH.", file=sys.stderr)
     except Exception as e:
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
     finally:
