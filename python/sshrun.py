@@ -104,11 +104,10 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
         
         # 4. Retrieve specified result files (if any)
         if files_to_retrieve:
-            local_tmp_dir = tempfile.mkdtemp(prefix="remote_run_local_")
-            print(f"[{host}] Retrieving files to local temporary directory: {local_tmp_dir}...", file=sys.stderr)
+            print(f"[{host}] Retrieving files to current working directory...", file=sys.stderr)
             for remote_file in files_to_retrieve:
                 remote_full_path = f"{host}:{remote_tmp_dir}/{remote_file}"
-                local_retrieve_path = os.path.join(local_tmp_dir, remote_file)
+                local_retrieve_path = remote_file # Retrieve to current working directory, preserving structure
                 
                 # Create parent directories locally if they don't exist
                 os.makedirs(os.path.dirname(local_retrieve_path), exist_ok=True)
@@ -123,8 +122,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
                     )
                 except subprocess.CalledProcessError as e:
                     print(f"[{host}] Warning: Failed to retrieve '{remote_file}': {e}", file=sys.stderr)
-            print(f"[{host}] Retrieved files are in: {local_tmp_dir}", file=sys.stderr)
-            print(f"[{host}] Please manually remove '{local_tmp_dir}' when done.", file=sys.stderr)
+            print(f"[{host}] Retrieved files are in the current working directory.", file=sys.stderr)
 
 
     except subprocess.CalledProcessError as e:
@@ -153,7 +151,6 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
                 print(f"[{host}] Error removing remote temporary directory: {e.stderr.strip()}", file=sys.stderr)
             except Exception as e:
                 print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
-        # Note: local_tmp_dir is not automatically removed, as the user might want to inspect its contents.
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -168,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-r", "--retrieve", nargs="*", default=None,
         help="Remote files to retrieve from the remote temporary directory after command execution. "
-             "These will be downloaded to a local temporary directory."
+             "These will be downloaded to the current working directory."
     )
 
     args = parser.parse_args()
