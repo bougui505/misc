@@ -218,6 +218,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
-                      remote_dir_to_use=args.remote_dir,
+                      remote_dir_to_reuse=args.remote_dir,
                       keep_remote_dir=args.keep_remote_dir,
                       keep_on_failure=args.keep_on_failure)
