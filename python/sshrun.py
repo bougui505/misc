@@ -108,7 +108,11 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
             print(f"[{host}] Retrieving files to local temporary directory: {local_tmp_dir}...", file=sys.stderr)
             for remote_file in files_to_retrieve:
                 remote_full_path = f"{host}:{remote_tmp_dir}/{remote_file}"
-                local_retrieve_path = os.path.join(local_tmp_dir, os.path.basename(remote_file))
+                local_retrieve_path = os.path.join(local_tmp_dir, remote_file)
+                
+                # Create parent directories locally if they don't exist
+                os.makedirs(os.path.dirname(local_retrieve_path), exist_ok=True)
+
                 print(f"[{host}] Retrieving: {remote_full_path.split(':')[-1]} -> {local_retrieve_path}", file=sys.stderr)
                 try:
                     subprocess.run(
