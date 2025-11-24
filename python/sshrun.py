@@ -7,10 +7,12 @@ import sys
 import tempfile
 
 
-def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, keep_remote_dir=False):
+def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
+                      remote_dir_to_reuse=None, keep_remote_dir=False, keep_on_failure=False):
     """
-    Transfers files to a remote host, runs a command in a temporary directory,
-    retrieves results (stdout or specific files), and cleans up.
+    Transfers files to a remote host, runs a command in a temporary directory
+    (or a specified existing directory), retrieves results (stdout or specific files),
+    and cleans up.
 
     Args:
         host (str): The SSH host (e.g., 'user@example.com').
@@ -18,23 +20,37 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, 
         files_to_transfer (list): A list of local file paths to transfer.
         files_to_retrieve (list, optional): A list of remote file paths to retrieve
                                            from the temporary directory. Defaults to None.
-        keep_remote_dir (bool, optional): If True, the remote temporary directory
-                                          will not be deleted after execution. Defaults to False.
+        remote_dir_to_reuse (str, optional): An existing remote directory to use instead of creating a new one.
+                                             If specified, this directory will not be deleted by the script.
+        keep_remote_dir (bool, optional): If True, a newly created remote temporary directory
+                                          will not be deleted after execution, regardless of command success.
+                                          Defaults to False.
+        keep_on_failure (bool, optional): If True, a newly created remote temporary directory
+                                          will not be deleted if the remote command exits with
+                                          a non-zero status. This is overridden by `keep_remote_dir=True`.
+                                          Defaults to False.
     """
     remote_tmp_dir = ""
+    is_new_remote_dir = False
+    command_failed = False # Track command success/failure for conditional cleanup
 
     try:
-        # 1. Create a temporary directory on the remote host
-        print(f"[{host}] Creating temporary directory on remote host...", file=sys.stderr)
-        # Using mktemp as `mktemp -d` output path and we need to capture it
-        result = subprocess.run(
-            ["ssh", host, "mktemp -d -p /dev/shm"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        remote_tmp_dir = result.stdout.strip()
-        print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
+        if remote_dir_to_reuse:
+            remote_tmp_dir = remote_dir_to_reuse
+            print(f"[{host}] Reusing remote directory: {remote_tmp_dir}", file=sys.stderr)
+        else:
+            # 1. Create a temporary directory on the remote host
+            print(f"[{host}] Creating temporary directory on remote host...", file=sys.stderr)
+            # Using mktemp as `mktemp -d` output path and we need to capture it
+            result = subprocess.run(
+                ["ssh", host, "mktemp -d -p /dev/shm"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            remote_tmp_dir = result.stdout.strip()
+            is_new_remote_dir = True
+            print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
 
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
@@ -92,6 +108,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, 
             check=False
         )
         
+        if result.returncode != 0:
+            command_failed = True
+
         # This print statement remains directed to stdout as requested
         print(f"[{host}] Command stdout:", file=sys.stderr)
         print(result.stdout)
@@ -99,9 +118,8 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, 
         if result.stderr:
             print(f"[{host}] Command stderr:\n{result.stderr}", file=sys.stderr)
         
-        if result.returncode != 0:
+        if command_failed:
             print(f"[{host}] Command exited with non-zero status: {result.returncode}", file=sys.stderr)
-            # Optionally, decide to exit or continue based on error handling policy
         
         # 4. Retrieve specified result files (if any)
         if files_to_retrieve:
@@ -137,21 +155,33 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, 
     except Exception as e:
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
     finally:
-        # 5. Remove the temporary directory on the remote host
+        # 5. Remove the temporary directory on the remote host, if applicable
         if remote_tmp_dir:
-            print(f"[{host}] Cleaning up remote temporary directory {remote_tmp_dir}...", file=sys.stderr)
-            try:
-                subprocess.run(
-                    ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
-                print(f"[{host}] Remote temporary directory removed.", file=sys.stderr)
-            except subprocess.CalledProcessError as e:
-                print(f"[{host}] Error removing remote temporary directory: {e.stderr.strip()}", file=sys.stderr)
-            except Exception as e:
-                print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+            if is_new_remote_dir: # Only consider deleting if we created it
+                should_delete = True
+                if keep_remote_dir: # If --keep-remote-dir was specified (always keep)
+                    should_delete = False
+                elif keep_on_failure and command_failed: # If --keep-on-failure and command failed
+                    should_delete = False
+
+                if should_delete:
+                    print(f"[{host}] Cleaning up remote temporary directory {remote_tmp_dir}...", file=sys.stderr)
+                    try:
+                        subprocess.run(
+                            ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
+                            check=True,
+                            capture_output=True,
+                            text=True
+                        )
+                        print(f"[{host}] Remote temporary directory removed.", file=sys.stderr)
+                    except subprocess.CalledProcessError as e:
+                        print(f"[{host}] Error removing remote temporary directory: {e.stderr.strip()}", file=sys.stderr)
+                    except Exception as e:
+                        print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+                else:
+                    print(f"[{host}] Remote temporary directory {remote_tmp_dir} kept as requested.", file=sys.stderr)
+            else: # If we reused an existing directory, we never delete it
+                print(f"[{host}] Reused remote directory {remote_tmp_dir} was not deleted.", file=sys.stderr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -168,7 +198,26 @@ if __name__ == "__main__":
         help="Remote files to retrieve from the remote temporary directory after command execution. "
              "These will be downloaded to the current working directory."
     )
+    parser.add_argument(
+        "--remote-dir", type=str, default=None,
+        help="Use an existing remote directory instead of creating a new temporary one. "
+             "If specified, this directory will not be deleted by the script."
+    )
+    parser.add_argument(
+        "--keep-remote-dir", action="store_true",
+        help="If a new temporary directory is created, it will not be deleted after execution, "
+             "regardless of command success. This overrides --keep-on-failure."
+    )
+    parser.add_argument(
+        "--keep-on-failure", action="store_true",
+        help="If a new temporary directory is created, it will be kept if the remote command fails "
+             "(exits with a non-zero status). Ignored if --keep-remote-dir is used or "
+             "--remote-dir is specified."
+    )
 
     args = parser.parse_args()
 
-    run_remote_script(args.host, args.command, args.transfer, args.retrieve)
+    run_remote_script(args.host, args.command, args.transfer, args.retrieve,
+                      remote_dir_to_use=args.remote_dir,
+                      keep_remote_dir=args.keep_remote_dir,
+                      keep_on_failure=args.keep_on_failure)
