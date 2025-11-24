@@ -8,7 +8,7 @@ import tempfile
 
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
-                      remote_dir_to_reuse=None, keep_remote_dir=False, keep_on_failure=True):
+                      remote_dir_to_reuse=None):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
@@ -159,14 +159,18 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     finally:
         # 5. Remove the remote directory on the remote host, if applicable
         if remote_tmp_dir:
-            should_delete = False # Default to not deleting
+            should_delete = False # Default to not deleting a reused directory, or if user explicitly says no
 
-            if is_new_remote_dir: # We created this directory
-                # Delete if NOT (always keep) AND NOT (command failed AND user wants to keep on failure)
-                should_delete = not keep_remote_dir and not (command_failed and keep_on_failure)
-            else: # We reused an existing directory
-                # Delete only if the command succeeded (i.e., not command_failed)
-                should_delete = not command_failed
+            if is_new_remote_dir: # We created this directory, so we ask the user
+                response = input(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ").strip().lower()
+                if response in ('n', 'no'):
+                    print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
+                          f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
+                else: # Default to yes, or any other input
+                    should_delete = True
+            # If 'remote_dir_to_reuse' was provided (i.e., not is_new_remote_dir),
+            # 'should_delete' remains False, meaning the script will not delete it.
+            # This aligns with the requirement that user-specified directories are not deleted by the script.
 
             if should_delete:
                 print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
@@ -182,8 +186,6 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                     print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
                 except Exception as e:
                     print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
-            else:
-                print(f"[{host}] Remote directory {remote_tmp_dir} kept as requested.", file=sys.stderr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -205,21 +207,7 @@ if __name__ == "__main__":
         help="Use an existing remote directory instead of creating a new temporary one. "
              "If specified, this directory will not be deleted by the script."
     )
-    parser.add_argument(
-        "--keep-remote-dir", action="store_true",
-        help="If a new temporary directory is created, it will not be deleted after execution, "
-             "regardless of command success. This overrides --keep-on-failure."
-    )
-    parser.add_argument(
-        "--keep-on-failure", action="store_false", default=True,
-        help="By default, a new temporary directory will be kept if the remote command fails. "
-             "Specify this flag to delete the directory even if the command fails. "
-             "Ignored if --keep-remote-dir is used or --remote-dir is specified."
-    )
-
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
-                      remote_dir_to_reuse=args.remote_dir,
-                      keep_remote_dir=args.keep_remote_dir,
-                      keep_on_failure=args.keep_on_failure)
+                      remote_dir_to_reuse=args.remote_dir)
