@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# remote_run.sh - A utility function to securely execute a command on a remote server
+# sshrun - A utility to securely execute a command on a remote server
 # by piping necessary files over SSH, running the command in a temporary directory,
 # and automatically cleaning up afterward.
 #
@@ -12,8 +12,6 @@
 # --- Configuration ---
 # Set the remote shell command to use (defaulting to 'bash')
 REMOTE_SHELL_COMMAND="bash"
-
-# --- Helper Function ---
 # Check for required arguments
 if [ "$#" -lt 3 ]; then
     echo "Usage: $0 <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
