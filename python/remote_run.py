@@ -1,8 +1,10 @@
-import subprocess
-import os
+#!/usr/bin/env python3
 import argparse
-import tempfile
+import os
 import shlex
+import subprocess
+import tempfile
+
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
     """
@@ -24,7 +26,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
         print(f"[{host}] Creating temporary directory on remote host...")
         # Using mktemp as `mktemp -d` output path and we need to capture it
         result = subprocess.run(
-            ["ssh", host, "mktemp -d"],
+            ["ssh", host, "mktemp -d -p /dev/shm"],
             capture_output=True,
             text=True,
             check=True
