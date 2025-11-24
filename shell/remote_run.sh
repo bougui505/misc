@@ -80,6 +80,11 @@ sshrun() {
         echo "--- Remote File Transfer: Extracting files ---" >&2
         # The stdin of this remote shell is the tar archive from the local machine.
         tar xzf -
+        TAR_EXIT_CODE=$?
+        if [ $TAR_EXIT_CODE -ne 0 ]; then
+            echo "Warning: tar xzf - exited with code $TAR_EXIT_CODE. Assuming transfer interruption and forcing cleanup." >&2
+            exit $TAR_EXIT_CODE # Force exit to trigger all traps (EXIT, ERR, etc.)
+        fi
         
         # 3. Execute the user-provided command
         echo "--- Remote Execution: Starting Command ---" >&2
