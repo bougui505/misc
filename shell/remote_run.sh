@@ -14,21 +14,22 @@
 REMOTE_SHELL_COMMAND="bash"
 
 # --- Helper Function ---
-# Function to perform the remote execution
-sshrun() {
-    # Check for required arguments
-    if [ "$#" -lt 3 ]; then
-        echo "Usage: sshrun <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
-        echo "Example: sshrun user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
-        return 1
-    fi
+# Check for required arguments
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 <user@host> \"<remote_command>\" <file_to_send> [file_to_send...]" >&2
+    echo "Example: $0 user@server 'chmod +x script.sh; ./script.sh arg1' script.sh config.txt" >&2
+    exit 1
+fi
 
-    # 1. Parse Arguments
-    REMOTE_HOST="$1"
-    REMOTE_COMMAND="$2"
-    # Shift positional parameters to isolate files/directories list
-    shift 2
-    FILES_TO_SEND=("$@")
+# 1. Parse Arguments
+REMOTE_HOST="$1"
+REMOTE_COMMAND="$2"
+# Shift positional parameters to isolate files/directories list
+shift 2
+FILES_TO_SEND=("$@")
+
+# Enable errexit for the main script
+set -e
 
     echo "--- Initiating Secure Remote Execution ---" >&2
     echo "Host: ${REMOTE_HOST}" >&2
@@ -150,33 +151,10 @@ EOF_REMOTE_SCRIPT_TEMPLATE
     if ! "$pipeline_success"; then
         PIPELINE_EXIT_CODE=$? # Capture the exit code from the failed pipeline
         echo "Error: Remote execution pipeline failed with exit code $PIPELINE_EXIT_CODE" >&2
-        return $PIPELINE_EXIT_CODE
+        exit $PIPELINE_EXIT_CODE
     fi
     # If successful, get the exit code from the last command in the pipeline (ssh)
     PIPELINE_EXIT_CODE=$?
     
     echo "--- Final Status: Pipeline Exit Code $PIPELINE_EXIT_CODE ---" >&2
-    return $PIPELINE_EXIT_CODE
-}
-
-# Example of how to use this function (commented out):
-# ----------------------------------------------------
-# 1. Create dummy files for demonstration
-# echo "Hello from local file 1" > file1.txt
-# echo "function test() { echo 'Running Test function'; }" > myscript.sh
-# chmod +x myscript.sh
-# mkdir -p mydata
-# echo "Data point 1" > mydata/data.csv
-
-# 2. Execute the function (replace user@host with your actual connection details)
-# Note: The command in quotes needs to be executed on the remote machine.
-# sshrun user@host "chmod +x myscript.sh; ./myscript.sh; cat file1.txt; cat mydata/data.csv" file1.txt myscript.sh mydata
-
-# 3. Clean up local dummy files
-# rm -f file1.txt myscript.sh
-# rm -rf mydata
-
-# To use this, you must source the script:
-# source remote_run.sh
-# Then execute:
-# sshrun user@yourserver "echo 'Hello remote world!'" file1.txt
+    exit $PIPELINE_EXIT_CODE
