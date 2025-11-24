@@ -155,33 +155,33 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     except Exception as e:
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
     finally:
-        # 5. Remove the temporary directory on the remote host, if applicable
+        # 5. Remove the remote directory on the remote host, if applicable
         if remote_tmp_dir:
-            if is_new_remote_dir: # Only consider deleting if we created it
-                should_delete = True
-                if keep_remote_dir: # If --keep-remote-dir was specified (always keep)
-                    should_delete = False
-                elif keep_on_failure and command_failed: # If --keep-on-failure and command failed
-                    should_delete = False
+            should_delete = False # Default to not deleting
 
-                if should_delete:
-                    print(f"[{host}] Cleaning up remote temporary directory {remote_tmp_dir}...", file=sys.stderr)
-                    try:
-                        subprocess.run(
-                            ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
-                            check=True,
-                            capture_output=True,
-                            text=True
-                        )
-                        print(f"[{host}] Remote temporary directory removed.", file=sys.stderr)
-                    except subprocess.CalledProcessError as e:
-                        print(f"[{host}] Error removing remote temporary directory: {e.stderr.strip()}", file=sys.stderr)
-                    except Exception as e:
-                        print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
-                else:
-                    print(f"[{host}] Remote temporary directory {remote_tmp_dir} kept as requested.", file=sys.stderr)
-            else: # If we reused an existing directory, we never delete it
-                print(f"[{host}] Reused remote directory {remote_tmp_dir} was not deleted.", file=sys.stderr)
+            if is_new_remote_dir: # We created this directory
+                # Delete if NOT (always keep) AND NOT (command failed AND user wants to keep on failure)
+                should_delete = not keep_remote_dir and not (command_failed and keep_on_failure)
+            else: # We reused an existing directory
+                # Delete only if the command succeeded (i.e., not command_failed)
+                should_delete = not command_failed
+
+            if should_delete:
+                print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
+                try:
+                    subprocess.run(
+                        ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    print(f"[{host}] Remote directory removed.", file=sys.stderr)
+                except subprocess.CalledProcessError as e:
+                    print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
+                except Exception as e:
+                    print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+            else:
+                print(f"[{host}] Remote directory {remote_tmp_dir} kept as requested.", file=sys.stderr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
