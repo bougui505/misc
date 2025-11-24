@@ -104,23 +104,27 @@ EOF_REMOTE_SCRIPT_TEMPLATE
     local QUOTED_FINAL_REMOTE_SCRIPT
     QUOTED_FINAL_REMOTE_SCRIPT=$(printf %q "${FINAL_REMOTE_SCRIPT_CONTENT}")
 
-    # Set pipefail to ensure the exit code reflects any command in the pipeline that fails,
-    # not just the last one.
+    # Check if 'pv' is installed for progress bar functionality
+    if ! command -v pv &> /dev/null; then
+        echo "Warning: 'pv' command not found. File transfer progress bar will not be shown." >&2
+        echo "To install 'pv', use: 'sudo apt install pv' (Debian/Ubuntu) or 'sudo yum install pv' (CentOS/RHEL) or 'brew install pv' (macOS)." >&2
+        local PV_COMMAND="" # No pv command, pipe directly
+    else
+        local PV_COMMAND="pv" # Use pv command
+    fi
+
     set -o pipefail
     
-    # Execute the final pipeline: local_tar -> ssh.
+    # Execute the final pipeline: local_tar -> pv (if available) -> ssh.
     # The tar output is piped directly into the stdin of the remote shell executed by SSH.
     # The remote shell then executes the `QUOTED_FINAL_REMOTE_SCRIPT` (which contains `tar xzf -`
     # that consumes the pipe, and then executes the user's command).
-    if ! tar czf - "${FILES_TO_SEND[@]}" | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
+    if ! tar czf - "${FILES_TO_SEND[@]}" | ${PV_COMMAND} | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
         PIPELINE_EXIT_CODE=$?
         echo "Error: Remote execution pipeline failed with exit code $PIPELINE_EXIT_CODE" >&2
         return $PIPELINE_EXIT_CODE
     fi
     PIPELINE_EXIT_CODE=$?
-    
-    echo "--- Final Status: Pipeline Exit Code $PIPELINE_EXIT_CODE ---" >&2
-    return $PIPELINE_EXIT_CODE
     
     echo "--- Final Status: Pipeline Exit Code $PIPELINE_EXIT_CODE ---" >&2
     return $PIPELINE_EXIT_CODE
