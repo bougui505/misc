@@ -8,11 +8,11 @@ import tempfile
 
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
-                      remote_dir_to_reuse=None):
+                      remote_dir_to_reuse=None, follow_symlinks=True):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
-    and cleans up.
+    and cleans up. It also provides an option to control symlink following during file transfers.
 
     Args:
         host (str): The SSH host (e.g., 'user@example.com').
@@ -88,12 +88,15 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                     stdout=sys.stderr, # Redirect ssh's stdout to stderr
                     stderr=sys.stderr  # Redirect ssh's stderr to stderr
                 )
-            
+            rsync_options = ["-a", "--update", "-P", "-h"]
+            if follow_symlinks:
+                rsync_options.insert(0, "-L") # -L means follow symlinks
+
             # Now transfer the files using rsync -a (archive mode preserves metadata)
             for local_file, remote_target_path, remote_display_path in file_transfer_details:
                 print(f"[{host}] Transferring: {local_file} -> {remote_display_path}", file=sys.stderr)
                 subprocess.run(
-                    ["rsync", "-L", "-a", "--update", "-P", "-h", local_file, remote_target_path],
+                    ["rsync"] + rsync_options + [local_file, remote_target_path],
                     check=True,
                     stdout=sys.stderr,  # Redirect rsync's stdout to stderr
                     stderr=sys.stderr   # Redirect rsync's stderr to stderr
@@ -135,8 +138,12 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
 
                 print(f"[{host}] Retrieving: {remote_full_path.split(':')[-1]} -> {local_retrieve_path}", file=sys.stderr)
                 try:
+                    rsync_options = ["-a", "--update", "-P", "-h"]
+                    if follow_symlinks:
+                        rsync_options.insert(0, "-L") # -L means follow symlinks
+
                     subprocess.run(
-                        ["rsync", "-L", "-a", "--update", "-P", "-h", remote_full_path, local_retrieve_path],
+                        ["rsync"] + rsync_options + [remote_full_path, local_retrieve_path],
                         check=True,
                         stdout=sys.stderr,  # Redirect rsync's stdout to stderr
                         stderr=sys.stderr   # Redirect rsync's stderr to stderr
