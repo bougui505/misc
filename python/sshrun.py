@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 
-def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
+def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None, keep_remote_dir=False):
     """
     Transfers files to a remote host, runs a command in a temporary directory,
     retrieves results (stdout or specific files), and cleans up.
@@ -18,9 +18,10 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
         files_to_transfer (list): A list of local file paths to transfer.
         files_to_retrieve (list, optional): A list of remote file paths to retrieve
                                            from the temporary directory. Defaults to None.
+        keep_remote_dir (bool, optional): If True, the remote temporary directory
+                                          will not be deleted after execution. Defaults to False.
     """
     remote_tmp_dir = ""
-    local_tmp_dir = ""
 
     try:
         # 1. Create a temporary directory on the remote host
