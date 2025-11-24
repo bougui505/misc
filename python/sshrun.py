@@ -230,7 +230,13 @@ if __name__ == "__main__":
         help="Use an existing remote directory instead of creating a new temporary one. "
              "If specified, this directory will not be deleted by the script."
     )
+    parser.add_argument(
+        "--no-follow-symlinks", action="store_false", dest="follow_symlinks", default=True,
+        help="Do not follow symlinks when transferring or retrieving files (rsync's -a without -L). "
+             "By default, symlinks are followed (-L)."
+    )
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
-                      remote_dir_to_reuse=args.remote_dir)
+                      remote_dir_to_reuse=args.remote_dir,
+                      follow_symlinks=args.follow_symlinks)
