@@ -63,7 +63,8 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
         )
         
         # This print statement remains directed to stdout as requested
-        print(f"[{host}] Command stdout:\n{result.stdout}")
+        print(f"[{host}] Command stdout:", file=sys.stderr)
+        print(result.stdout)
         
         if result.stderr:
             print(f"[{host}] Command stderr:\n{result.stderr}", file=sys.stderr)
