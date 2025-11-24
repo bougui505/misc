@@ -92,8 +92,10 @@ sshrun_main() {
         # Use '|| true' to prevent 'set -e' from exiting if files don't exist or have errors.
         source ~/.bashrc 2>/dev/null || true
         source ~/.profile 2>/dev/null || true
-        # The actual command passed from the local machine, safely embedded, is executed directly.
-        REMOTE_COMMAND_PLACEHOLDER
+        # The actual command passed from the local machine, safely embedded.
+        # We use 'eval' to correctly interpret the command string, especially if it contains
+        # spaces or special characters that were escaped by 'printf %q'.
+        eval "REMOTE_COMMAND_PLACEHOLDER"
         COMMAND_EXIT_CODE=$?
         echo "--- Remote Execution: Command finished with exit code $COMMAND_EXIT_CODE ---" >&2
 
