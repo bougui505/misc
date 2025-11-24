@@ -38,18 +38,47 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
             print(f"[{host}] Transferring files to {remote_tmp_dir}...", file=sys.stderr)
+
+            remote_dirs_to_create = set()
+            file_transfer_details = [] # Stores (local_path, remote_full_path_for_scp, remote_display_path)
+
             for local_file in files_to_transfer:
                 if not os.path.exists(local_file):
                     print(f"Error: Local file '{local_file}' not found. Skipping.", file=sys.stderr)
                     continue
-                remote_path = f"{host}:{remote_tmp_dir}/{os.path.basename(local_file)}"
+
+                # Derive the path to be used on the remote, relative to remote_tmp_dir.
+                # This handles both relative and absolute local_file paths by stripping leading slashes
+                # to ensure the path starts relative to the remote_tmp_dir.
+                remote_relative_path = local_file.lstrip(os.sep)
+
+                remote_sub_dir = os.path.dirname(remote_relative_path)
+                if remote_sub_dir: # Only add if it's not a file directly in the temp dir root
+                    remote_dirs_to_create.add(f"{remote_tmp_dir}/{remote_sub_dir}")
+
+                remote_full_path_for_scp = f"{host}:{remote_tmp_dir}/{remote_relative_path}"
+                remote_display_path = f"{remote_tmp_dir}/{remote_relative_path}"
+                file_transfer_details.append((local_file, remote_full_path_for_scp, remote_display_path))
+
+            # Create necessary directories on the remote host
+            for remote_dir in remote_dirs_to_create:
+                print(f"[{host}] Creating remote directory: {remote_dir}...", file=sys.stderr)
                 subprocess.run(
-                    ["scp", local_file, remote_path],
+                    ["ssh", host, f"mkdir -p {shlex.quote(remote_dir)}"],
+                    check=True,
+                    stdout=sys.stderr, # Redirect ssh's stdout to stderr
+                    stderr=sys.stderr  # Redirect ssh's stderr to stderr
+                )
+            
+            # Now transfer the files
+            for local_file, remote_full_path_for_scp, remote_display_path in file_transfer_details:
+                subprocess.run(
+                    ["scp", local_file, remote_full_path_for_scp],
                     check=True,
                     stdout=sys.stderr,  # Redirect scp's stdout to stderr
                     stderr=sys.stderr   # Redirect scp's stderr to stderr
                 )
-                print(f"[{host}] Transferred: {local_file} -> {remote_path.split(':')[-1]}", file=sys.stderr)
+                print(f"[{host}] Transferred: {local_file} -> {remote_display_path}", file=sys.stderr)
 
         # 3. Execute the command on the remote host within the temporary directory
         print(f"[{host}] Executing command: '{command}' in {remote_tmp_dir}...", file=sys.stderr)
