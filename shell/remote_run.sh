@@ -66,8 +66,8 @@ sshrun() {
             fi
         }
 
-        # Ensure cleanup runs upon exit, failure (ERR), or interruption (INT) as early as possible
-        trap cleanup EXIT ERR INT
+        # Ensure cleanup runs upon exit, failure (ERR), interruption (INT), hangup (HUP), or termination (TERM) as early as possible
+        trap cleanup EXIT ERR INT HUP TERM
 
         # Enable errexit *after* the trap is set and the temporary directory is confirmed,
         # so that subsequent command failures (like tar extraction) trigger the trap.
