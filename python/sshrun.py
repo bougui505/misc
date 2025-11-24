@@ -93,7 +93,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             for local_file, remote_target_path, remote_display_path in file_transfer_details:
                 print(f"[{host}] Transferring: {local_file} -> {remote_display_path}", file=sys.stderr)
                 subprocess.run(
-                    ["rsync", "-a", "--update", "-P", "-h", local_file, remote_target_path],
+                    ["rsync", "-L", "-a", "--update", "-P", "-h", local_file, remote_target_path],
                     check=True,
                     stdout=sys.stderr,  # Redirect rsync's stdout to stderr
                     stderr=sys.stderr   # Redirect rsync's stderr to stderr
@@ -136,7 +136,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 print(f"[{host}] Retrieving: {remote_full_path.split(':')[-1]} -> {local_retrieve_path}", file=sys.stderr)
                 try:
                     subprocess.run(
-                        ["rsync", "-a", "--update", "-P", "-h", remote_full_path, local_retrieve_path],
+                        ["rsync", "-L", "-a", "--update", "-P", "-h", remote_full_path, local_retrieve_path],
                         check=True,
                         stdout=sys.stderr,  # Redirect rsync's stdout to stderr
                         stderr=sys.stderr   # Redirect rsync's stderr to stderr
