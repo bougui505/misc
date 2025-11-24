@@ -72,6 +72,8 @@ sshrun_main() {
         # Enable errexit *after* the trap is set and the temporary directory is confirmed,
         # so that subsequent command failures (like tar extraction) trigger the trap.
         set -e
+        # Enable command tracing to stderr for debugging purposes
+        set -x
 
         cd "$TMPDIR" || { echo "Error: Failed to change to temp directory." >&2; exit 1; }
         echo "Remote working directory: $TMPDIR" >&2
