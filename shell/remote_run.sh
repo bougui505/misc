@@ -70,8 +70,12 @@ sshrun() {
             fi
         }
 
-        # Ensure cleanup runs upon exit, failure (ERR), or interruption (INT)
+        # Ensure cleanup runs upon exit, failure (ERR), or interruption (INT) as early as possible
         trap cleanup EXIT ERR INT
+
+        # Enable errexit to ensure that the script exits immediately if any command fails.
+        # This is crucial for the 'trap ERR' to catch failures like a broken pipe during tar extraction.
+        set -e
 
         cd "$TMPDIR" || { echo "Error: Failed to change to temp directory." >&2; exit 1; }
         echo "Remote working directory: $TMPDIR" >&2
