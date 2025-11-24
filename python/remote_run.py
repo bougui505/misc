@@ -45,7 +45,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
                 remote_path = f"{host}:{remote_tmp_dir}/{os.path.basename(local_file)}"
                 subprocess.run(
                     ["scp", local_file, remote_path],
-                    check=True
+                    check=True,
+                    stdout=sys.stderr,  # Redirect scp's stdout to stderr
+                    stderr=sys.stderr   # Redirect scp's stderr to stderr
                 )
                 print(f"[{host}] Transferred: {local_file} -> {remote_path.split(':')[-1]}", file=sys.stderr)
 
@@ -81,7 +83,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None):
                 try:
                     subprocess.run(
                         ["scp", remote_full_path, local_retrieve_path],
-                        check=True
+                        check=True,
+                        stdout=sys.stderr,  # Redirect scp's stdout to stderr
+                        stderr=sys.stderr   # Redirect scp's stderr to stderr
                     )
                 except subprocess.CalledProcessError as e:
                     print(f"[{host}] Warning: Failed to retrieve '{remote_file}': {e}", file=sys.stderr)
