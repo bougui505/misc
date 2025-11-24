@@ -25,13 +25,14 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         keep_remote_dir (bool, optional): If True, a newly created remote temporary directory
                                           will not be deleted after execution, regardless of command success.
                                           Defaults to False.
-        keep_on_failure (bool, optional): If True, a newly created remote temporary directory
+        keep_on_failure (bool, optional): If True (default), a newly created remote temporary directory
                                           will not be deleted if the remote command exits with
                                           a non-zero status. This is overridden by `keep_remote_dir=True`.
-                                          Defaults to False.
+                                          Defaults to True.
     """
     remote_tmp_dir = ""
     is_new_remote_dir = False
+    remote_dirs_to_create = set() # For rsync to ensure parent directories exist
     command_failed = False # Track command success/failure for conditional cleanup
 
     try:
@@ -68,12 +69,27 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 # to ensure the path starts relative to the remote_tmp_dir.
                 remote_relative_path = local_file.lstrip(os.sep)
 
-                # For rsync, we need to construct the destination path explicitly
+                # Derive the remote parent directory path
+                remote_relative_dir = os.path.dirname(remote_relative_path)
+                if remote_relative_dir: # Only add if it's not a file directly in the temp dir root
+                    remote_dirs_to_create.add(f"{remote_tmp_dir}/{remote_relative_dir}")
+
+                # For rsync, we construct the destination path explicitly
                 remote_target_path = f"{host}:{remote_tmp_dir}/{remote_relative_path}"
                 remote_display_path = f"{remote_tmp_dir}/{remote_relative_path}"
                 file_transfer_details.append((local_file, remote_target_path, remote_display_path))
+
+            # Create necessary directories on the remote host before rsync
+            for remote_dir in remote_dirs_to_create:
+                print(f"[{host}] Creating remote directory: {remote_dir}...", file=sys.stderr)
+                subprocess.run(
+                    ["ssh", host, f"mkdir -p {shlex.quote(remote_dir)}"],
+                    check=True,
+                    stdout=sys.stderr, # Redirect ssh's stdout to stderr
+                    stderr=sys.stderr  # Redirect ssh's stderr to stderr
+                )
             
-            # Transfer the files using rsync -a (archive mode preserves metadata)
+            # Now transfer the files using rsync -a (archive mode preserves metadata)
             for local_file, remote_target_path, remote_display_path in file_transfer_details:
                 print(f"[{host}] Transferring: {local_file} -> {remote_display_path}", file=sys.stderr)
                 subprocess.run(
