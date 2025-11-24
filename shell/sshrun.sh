@@ -90,8 +90,12 @@ sshrun_main() {
         echo "--- Remote Execution: Starting Command ---" >&2
         # Source user's environment files to ensure the command runs with expected paths/vars.
         # Use '|| true' to prevent 'set -e' from exiting if files don't exist or have errors.
+        echo "Remote PATH before sourcing: $PATH" >&2
         source ~/.bashrc 2>/dev/null || true
         source ~/.profile 2>/dev/null || true
+        echo "Remote PATH after sourcing: $PATH" >&2
+        echo "Attempting to locate 'ls': $(which ls 2>/dev/null)" >&2
+        echo "Executing command: '${REMOTE_COMMAND_PLACEHOLDER}'" >&2
         # The actual command passed from the local machine, safely embedded.
         # We use 'eval' to correctly interpret the command string, especially if it contains
         # spaces or special characters that were escaped by 'printf %q'.
