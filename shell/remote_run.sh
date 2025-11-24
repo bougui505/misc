@@ -105,25 +105,37 @@ EOF_REMOTE_SCRIPT_TEMPLATE
     QUOTED_FINAL_REMOTE_SCRIPT=$(printf %q "${FINAL_REMOTE_SCRIPT_CONTENT}")
 
     # Check if 'pv' is installed for progress bar functionality
-    if ! command -v pv &> /dev/null; then
+    local USE_PV=false
+    if command -v pv &> /dev/null; then
+        USE_PV=true
+    else
         echo "Warning: 'pv' command not found. File transfer progress bar will not be shown." >&2
         echo "To install 'pv', use: 'sudo apt install pv' (Debian/Ubuntu) or 'sudo yum install pv' (CentOS/RHEL) or 'brew install pv' (macOS)." >&2
-        local PV_COMMAND="" # No pv command, pipe directly
-    else
-        local PV_COMMAND="pv" # Use pv command
     fi
 
     set -o pipefail
     
-    # Execute the final pipeline: local_tar -> pv (if available) -> ssh.
-    # The tar output is piped directly into the stdin of the remote shell executed by SSH.
-    # The remote shell then executes the `QUOTED_FINAL_REMOTE_SCRIPT` (which contains `tar xzf -`
-    # that consumes the pipe, and then executes the user's command).
-    if ! tar czf - "${FILES_TO_SEND[@]}" | ${PV_COMMAND} | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
-        PIPELINE_EXIT_CODE=$?
+    local pipeline_success=false
+    if "$USE_PV"; then
+        # Execute the final pipeline with pv for progress: local_tar -> pv -> ssh.
+        # pv writes its output to stderr. We use --force to ensure it displays a progress bar.
+        if tar czf - "${FILES_TO_SEND[@]}" | pv --force | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
+            pipeline_success=true
+        fi
+    else
+        # Execute the final pipeline without pv: local_tar -> ssh.
+        if tar czf - "${FILES_TO_SEND[@]}" | ssh -T "${REMOTE_HOST}" "${REMOTE_SHELL_COMMAND} -c ${QUOTED_FINAL_REMOTE_SCRIPT}"; then
+            pipeline_success=true
+        fi
+    fi
+
+    # Check the result of the pipeline execution
+    if ! "$pipeline_success"; then
+        PIPELINE_EXIT_CODE=$? # Capture the exit code from the failed pipeline
         echo "Error: Remote execution pipeline failed with exit code $PIPELINE_EXIT_CODE" >&2
         return $PIPELINE_EXIT_CODE
     fi
+    # If successful, get the exit code from the last command in the pipeline (ssh)
     PIPELINE_EXIT_CODE=$?
     
     echo "--- Final Status: Pipeline Exit Code $PIPELINE_EXIT_CODE ---" >&2
