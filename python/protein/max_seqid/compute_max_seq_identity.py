@@ -58,13 +58,23 @@ def calculate_sequence_identity(seq1, seq2):
     # Take the first (best) alignment from the iterator.
     first_alignment = next(alignments)
 
-    # Calculate identity: (number of identical characters) / (length of the alignment including gaps).
-    aligned_length = first_alignment.identities + first_alignment.mismatches + first_alignment.gaps
+    # Access the aligned sequences as strings.
+    aligned_seq1 = str(first_alignment.target)
+    aligned_seq2 = str(first_alignment.query)
+
+    # Calculate identities by comparing characters.
+    matches = 0
+    for char1, char2 in zip(aligned_seq1, aligned_seq2):
+        if char1 == char2 and char1 != aligner.gap_char:
+            matches += 1
+
+    # The aligned length is the length of either aligned sequence.
+    aligned_length = len(aligned_seq1)
 
     if aligned_length == 0:
         return 0.0
 
-    return first_alignment.identities / aligned_length
+    return matches / aligned_length
 
 def worker(test_seq_item, reference_sequences):
     """
