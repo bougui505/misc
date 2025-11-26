@@ -122,8 +122,10 @@ def main(
     worker_partial = partial(worker, reference_sequences=reference_sequences)
 
     print(f"Processing {len(test_seq_items)} test sequences...")
+    results = []
     with Pool(processes=jobs) as pool:
-        results = list(tqdm(pool.imap(worker_partial, test_seq_items), total=len(test_seq_items)))
+        for res in tqdm(pool.imap(worker_partial, test_seq_items), total=len(test_seq_items)):
+            results.append(res)
 
     print("\nMaximum Sequence Identities:")
     for test_id, max_identity in results:
