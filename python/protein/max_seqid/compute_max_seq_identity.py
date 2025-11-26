@@ -5,7 +5,6 @@ from multiprocessing import Pool
 
 import typer
 from Bio import pairwise2
-from tqdm import tqdm
 from typing_extensions import Annotated
 
 
@@ -123,7 +122,7 @@ def main(
 
     print(f"Processing {len(test_seq_items)} test sequences...")
     with Pool(processes=jobs) as pool:
-        results = list(tqdm(pool.imap(worker_partial, test_seq_items), total=len(test_seq_items)))
+        results = list(pool.imap(worker_partial, test_seq_items))
 
     print("\nMaximum Sequence Identities:")
     for test_id, max_identity in results:
