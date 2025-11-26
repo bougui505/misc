@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-import argparse
 import os
 from functools import partial
 from multiprocessing import Pool
+from typing_extensions import Annotated
+
+import typer
 
 
-def read_fasta(fasta_file):
+def read_fasta(fasta_file: str) -> dict[str, str]:
     """
     Reads sequences from a FASTA file into a dictionary.
     Keys are sequence IDs (up to the first space), values are the sequences.
@@ -64,43 +66,56 @@ def worker(test_seq_item, reference_sequences):
             max_identity = identity
     return test_id, max_identity
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Compute maximum sequence identity for test sequences relative to reference sequences in parallel."
-    )
-    parser.add_argument("test_fasta", help="Path to the FASTA file containing test sequences.")
-    parser.add_argument("ref_fasta", help="Path to the FASTA file containing reference sequences.")
-    parser.add_argument("-j", "--jobs", type=int, default=os.cpu_count(),
-                        help=f"Number of parallel jobs (default: {os.cpu_count()}).")
-    args = parser.parse_args()
+app = typer.Typer(
+    help="Compute maximum sequence identity for test sequences relative to reference sequences in parallel."
+)
 
-    print(f"Reading test sequences from {args.test_fasta}...")
-    test_sequences = read_fasta(args.test_fasta)
+
+@app.command()
+def main(
+    test_fasta: Annotated[
+        str, typer.Argument(help="Path to the FASTA file containing test sequences.")
+    ],
+    ref_fasta: Annotated[
+        str, typer.Argument(help="Path to the FASTA file containing reference sequences.")
+    ],
+    jobs: Annotated[
+        int,
+        typer.Option(
+            "-j",
+            "--jobs",
+            help=f"Number of parallel jobs (default: {os.cpu_count()}).",
+        ),
+    ] = os.cpu_count(),
+):
+    print(f"Reading test sequences from {test_fasta}...")
+    test_sequences = read_fasta(test_fasta)
     print(f"Found {len(test_sequences)} test sequences.")
 
-    print(f"Reading reference sequences from {args.ref_fasta}...")
-    reference_sequences = read_fasta(args.ref_fasta)
+    print(f"Reading reference sequences from {ref_fasta}...")
+    reference_sequences = read_fasta(ref_fasta)
     print(f"Found {len(reference_sequences)} reference sequences.")
 
     if not test_sequences:
         print("Error: Test FASTA file is empty or could not be read. Exiting.")
-        return
+        raise typer.Exit(code=1)
     if not reference_sequences:
         print("Error: Reference FASTA file is empty or could not be read. Exiting.")
-        return
+        raise typer.Exit(code=1)
 
-    print(f"Computing maximum sequence identity with {args.jobs} parallel jobs...")
+    print(f"Computing maximum sequence identity with {jobs} parallel jobs...")
     test_seq_items = list(test_sequences.items())
 
     # Use functools.partial to pass the static reference_sequences to each worker
     worker_partial = partial(worker, reference_sequences=reference_sequences)
 
-    with Pool(processes=args.jobs) as pool:
+    with Pool(processes=jobs) as pool:
         results = pool.map(worker_partial, test_seq_items)
 
     print("\nMaximum Sequence Identities:")
     for test_id, max_identity in results:
         print(f"{test_id}: {max_identity:.4f}")
 
+
 if __name__ == "__main__":
-    main()
+    app()
