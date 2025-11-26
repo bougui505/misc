@@ -6,6 +6,7 @@ from typing_extensions import Annotated
 
 import typer
 from Bio import pairwise2
+from tqdm import tqdm
 
 
 def read_fasta(fasta_file: str) -> dict[str, str]:
@@ -120,8 +121,9 @@ def main(
     # Use functools.partial to pass the static reference_sequences to each worker
     worker_partial = partial(worker, reference_sequences=reference_sequences)
 
+    print(f"Processing {len(test_seq_items)} test sequences...")
     with Pool(processes=jobs) as pool:
-        results = pool.map(worker_partial, test_seq_items)
+        results = list(tqdm(pool.imap(worker_partial, test_seq_items), total=len(test_seq_items)))
 
     print("\nMaximum Sequence Identities:")
     for test_id, max_identity in results:
