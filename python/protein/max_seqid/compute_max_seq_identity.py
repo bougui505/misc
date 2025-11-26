@@ -5,7 +5,7 @@ from multiprocessing import Pool
 from typing_extensions import Annotated
 
 import typer
-from Bio import pairwise2
+from Bio.Align import PairwiseAligner
 from tqdm import tqdm
 
 
@@ -41,28 +41,30 @@ def calculate_sequence_identity(seq1, seq2):
     if not seq1 or not seq2:
         return 0.0
 
-    # Perform global alignment (Needleman-Wunsch).
-    # globalxx uses default scores: match=2, mismatch=-1, gap_open=-0.5, gap_extend=-0.1.
-    alignments = pairwise2.align.globalxx(seq1, seq2)
+    # Initialize the aligner with parameters matching pairwise2.align.globalxx defaults.
+    aligner = PairwiseAligner()
+    aligner.mode = 'global' # Needleman-Wunsch global alignment
+    aligner.match_score = 2.0
+    aligner.mismatch_score = -1.0
+    aligner.open_gap_score = -0.5
+    aligner.extend_gap_score = -0.1
+
+    # Perform global alignment.
+    alignments = aligner.align(seq1, seq2)
 
     if not alignments:
         return 0.0
 
-    # Take the first (best) alignment
-    ali_seq1, ali_seq2, score, begin, end = alignments[0]
+    # Take the first (best) alignment from the iterator.
+    first_alignment = next(alignments)
 
-    matches = 0
-    # Aligned sequences will have the same length
-    aligned_length = len(ali_seq1)
+    # Calculate identity: (number of identical characters) / (length of the alignment including gaps).
+    aligned_length = first_alignment.identities + first_alignment.mismatches + first_alignment.gaps
 
     if aligned_length == 0:
         return 0.0
 
-    for i in range(aligned_length):
-        if ali_seq1[i] == ali_seq2[i]:
-            matches += 1
-
-    return matches / aligned_length
+    return first_alignment.identities / aligned_length
 
 def worker(test_seq_item, reference_sequences):
     """
