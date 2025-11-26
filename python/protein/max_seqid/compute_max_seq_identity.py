@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
 import argparse
 import os
-from multiprocessing import Pool
 from functools import partial
+from multiprocessing import Pool
+
 
 def read_fasta(fasta_file):
     """
