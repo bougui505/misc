@@ -64,8 +64,9 @@ def calculate_sequence_identity(seq1, seq2):
 
     # Calculate identities by comparing characters.
     matches = 0
+    gap_char = '-' # Standard gap character in Biopython alignments
     for char1, char2 in zip(aligned_seq1, aligned_seq2):
-        if char1 == char2 and char1 != aligner.gap_char:
+        if char1 == char2 and char1 != gap_char:
             matches += 1
 
     # The aligned length is the length of either aligned sequence.
