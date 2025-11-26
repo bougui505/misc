@@ -2,11 +2,11 @@
 import os
 from functools import partial
 from multiprocessing import Pool
-from typing_extensions import Annotated
 
 import typer
-from Bio.Align import PairwiseAligner
+from Bio import pairwise2
 from tqdm import tqdm
+from typing_extensions import Annotated
 
 
 def read_fasta(fasta_file: str) -> dict[str, str]:
@@ -41,41 +41,28 @@ def calculate_sequence_identity(seq1, seq2):
     if not seq1 or not seq2:
         return 0.0
 
-    # Initialize the aligner with parameters matching pairwise2.align.globalxx defaults.
-    aligner = PairwiseAligner()
-    aligner.mode = 'global' # Needleman-Wunsch global alignment
-    aligner.match_score = 2.0
-    aligner.mismatch_score = -1.0
-    aligner.open_gap_score = -0.5
-    aligner.extend_gap_score = -0.1
-
-    # Perform global alignment.
-    alignments = aligner.align(seq1, seq2)
+    # Perform global alignment (Needleman-Wunsch).
+    # globalxx uses default scores: match=2, mismatch=-1, gap_open=-0.5, gap_extend=-0.1.
+    alignments = pairwise2.align.globalxx(seq1, seq2)
 
     if not alignments:
         return 0.0
 
-    # Take the first (best) alignment from the iterator.
-    first_alignment = next(alignments)
+    # Take the first (best) alignment
+    ali_seq1, ali_seq2, score, begin, end = alignments[0]
 
-    # Access the aligned sequences as strings.
-    aligned_seq1 = str(first_alignment.target)
-    aligned_seq2 = str(first_alignment.query)
-
-    # Calculate identities by comparing characters.
     matches = 0
-    gap_char = '-' # Standard gap character in Biopython alignments
-    for char1, char2 in zip(aligned_seq1, aligned_seq2):
-        if char1 == char2 and char1 != gap_char:
-            matches += 1
-
-    # The aligned length is the length of either aligned sequence.
-    aligned_length = len(aligned_seq1)
+    # Aligned sequences will have the same length
+    aligned_length = len(ali_seq1)
 
     if aligned_length == 0:
         return 0.0
 
-    return matches / aligned_length
+    for i in range(aligned_length):
+        if ali_seq1[i] == ali_seq2[i] and ali_seq2[i] != "-":
+            matches += 1
+
+    return matches / min(len(seq1), len(seq2))
 
 def worker(test_seq_item, reference_sequences):
     """
