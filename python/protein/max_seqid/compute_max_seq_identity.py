@@ -5,6 +5,7 @@ from multiprocessing import Pool
 from typing_extensions import Annotated
 
 import typer
+from Bio import pairwise2
 
 
 def read_fasta(fasta_file: str) -> dict[str, str]:
@@ -33,24 +34,34 @@ def read_fasta(fasta_file: str) -> dict[str, str]:
 
 def calculate_sequence_identity(seq1, seq2):
     """
-    Calculates sequence identity between two sequences using a simple character-by-character
-    comparison over the length of the shorter sequence. This approach does not perform
-    a full sequence alignment (e.g., Needleman-Wunsch or Smith-Waterman) and thus
-    might not capture the 'maximum' identity in cases with indels or complex rearrangements.
+    Calculates sequence identity between two sequences after performing a global alignment.
+    Identity is defined as the number of matching characters divided by the length of the alignment.
     """
     if not seq1 or not seq2:
         return 0.0
 
-    min_len = min(len(seq1), len(seq2))
-    if min_len == 0:
+    # Perform global alignment (Needleman-Wunsch).
+    # globalxx uses default scores: match=2, mismatch=-1, gap_open=-0.5, gap_extend=-0.1.
+    alignments = pairwise2.align.globalxx(seq1, seq2)
+
+    if not alignments:
         return 0.0
 
+    # Take the first (best) alignment
+    ali_seq1, ali_seq2, score, begin, end = alignments[0]
+
     matches = 0
-    for i in range(min_len):
-        if seq1[i] == seq2[i]:
+    # Aligned sequences will have the same length
+    aligned_length = len(ali_seq1)
+
+    if aligned_length == 0:
+        return 0.0
+
+    for i in range(aligned_length):
+        if ali_seq1[i] == ali_seq2[i]:
             matches += 1
 
-    return matches / min_len
+    return matches / aligned_length
 
 def worker(test_seq_item, reference_sequences):
     """
