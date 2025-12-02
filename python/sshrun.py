@@ -161,6 +161,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             print(f"Stderr: {e.stderr}", file=sys.stderr)
     except FileNotFoundError:
         print("Error: 'ssh', 'scp', or 'rsync' command not found. Please ensure OpenSSH client and rsync are installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
     finally:
