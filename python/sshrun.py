@@ -144,45 +144,40 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                     if follow_symlinks:
                         rsync_options.insert(0, "-L") # -L means follow symlinks
 
-                    result = subprocess.run(
+                    subprocess.run(
                         ["rsync"] + rsync_options + [remote_source_path, local_destination_path],
-                        capture_output=True, # Capture output to display in case of error
-                        text=True,           # Decode stdout/stderr as text
-                        check=False          # Do not raise exception automatically, handle manually
+                        check=True, # Raise CalledProcessError if rsync fails
+                        stdout=sys.stderr,  # Redirect rsync's stdout to stderr
+                        stderr=sys.stderr   # Redirect rsync's stderr to stderr
                     )
+                    print(f"[{host}] Successfully retrieved: {remote_file} to {intended_local_path}", file=sys.stderr)
 
-                    if result.returncode != 0:
-                        print(f"[{host}] Error retrieving '{remote_file}'. rsync exited with status {result.returncode}.", file=sys.stderr)
-                        if result.stdout:
-                            print(f"[{host}] rsync stdout:\n{result.stdout.strip()}", file=sys.stderr)
-                        if result.stderr:
-                            print(f"[{host}] rsync stderr:\n{result.stderr.strip()}", file=sys.stderr)
-                    else:
-                        print(f"[{host}] Successfully retrieved: {remote_file} to {intended_local_path}", file=sys.stderr)
-
+                except subprocess.CalledProcessError as e:
+                    print(f"[{host}] Error retrieving '{remote_file}'. rsync exited with status {e.returncode}.", file=sys.stderr)
+                    # The rsync output is already streamed to stderr, so no need to print e.stdout/e.stderr again
                 except FileNotFoundError:
                     print(f"[{host}] Error: 'rsync' command not found. Please ensure it's installed and in your PATH.", file=sys.stderr)
                     sys.exit(1)
                 except Exception as e:
                     print(f"[{host}] Unexpected error during retrieval of '{remote_file}': {e}", file=sys.stderr)
-            # The general "Retrieved files are in the current working directory" message is removed
-            # as each file now has a specific success/failure message.
 
 
     except subprocess.CalledProcessError as e:
         print(f"Error during SSH/SCP operation: {e}", file=sys.stderr)
-        if e.stdout:
+        if e.stdout: # These only capture if subprocess.run was called with capture_output=True
             print(f"Stdout: {e.stdout}", file=sys.stderr)
-        if e.stderr:
+        if e.stderr: # These only capture if subprocess.run was called with capture_output=True
             print(f"Stderr: {e.stderr}", file=sys.stderr)
+        sys.exit(e.returncode) # Exit with the same return code as the failing command
     except FileNotFoundError:
-        print("Error: 'ssh', 'scp', or 'rsync' command not found. Please ensure OpenSSH client and rsync are installed and in your PATH.", file=sys.stderr)
+        print("Error: 'ssh' or 'rsync' command not found. Please ensure OpenSSH client and rsync are installed and in your PATH.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1) # Exit with a generic error code for unexpected errors
     finally:
         # 5. Remove the remote directory on the remote host, if applicable
-        if remote_tmp_dir:
+        if is_new_remote_dir and remote_tmp_dir: # Only prompt for deletion if it was a newly created directory
             should_delete = False # Default to not deleting a reused directory, or if user explicitly says no
 
             sys.stdout.flush() # Ensure all previous stdout messages are displayed
