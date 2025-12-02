@@ -130,27 +130,43 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if files_to_retrieve:
             print(f"[{host}] Retrieving files to current working directory...", file=sys.stderr)
             for remote_file in files_to_retrieve:
-                remote_full_path = f"{host}:{remote_tmp_dir}/{remote_file}"
-                local_retrieve_path = remote_file # Retrieve to current working directory, preserving structure
+                remote_source_path = f"{host}:{remote_tmp_dir}/{remote_file}"
+                local_destination_path = "." # Retrieve to current working directory, preserving remote structure
                 
-                # Create parent directories locally if they don't exist
-                os.makedirs(os.path.dirname(local_retrieve_path), exist_ok=True)
+                # rsync with -a (archive mode) automatically creates necessary local directories,
+                # so explicit os.makedirs for target subdirectories are not required.
 
-                print(f"[{host}] Retrieving: {remote_full_path.split(':')[-1]} -> {local_retrieve_path}", file=sys.stderr)
+                # Display the intended local path for clarity
+                intended_local_path = os.path.join(os.getcwd(), remote_file)
+                print(f"[{host}] Retrieving: {remote_source_path.split(':')[-1]} -> {intended_local_path}", file=sys.stderr)
                 try:
                     rsync_options = ["-a", "--update", "-P", "-h"]
                     if follow_symlinks:
                         rsync_options.insert(0, "-L") # -L means follow symlinks
 
-                    subprocess.run(
-                        ["rsync"] + rsync_options + [remote_full_path, local_retrieve_path],
-                        check=True,
-                        stdout=sys.stderr,  # Redirect rsync's stdout to stderr
-                        stderr=sys.stderr   # Redirect rsync's stderr to stderr
+                    result = subprocess.run(
+                        ["rsync"] + rsync_options + [remote_source_path, local_destination_path],
+                        capture_output=True, # Capture output to display in case of error
+                        text=True,           # Decode stdout/stderr as text
+                        check=False          # Do not raise exception automatically, handle manually
                     )
-                except subprocess.CalledProcessError as e:
-                    print(f"[{host}] Warning: Failed to retrieve '{remote_file}': {e}", file=sys.stderr)
-            print(f"[{host}] Retrieved files are in the current working directory.", file=sys.stderr)
+
+                    if result.returncode != 0:
+                        print(f"[{host}] Error retrieving '{remote_file}'. rsync exited with status {result.returncode}.", file=sys.stderr)
+                        if result.stdout:
+                            print(f"[{host}] rsync stdout:\n{result.stdout.strip()}", file=sys.stderr)
+                        if result.stderr:
+                            print(f"[{host}] rsync stderr:\n{result.stderr.strip()}", file=sys.stderr)
+                    else:
+                        print(f"[{host}] Successfully retrieved: {remote_file} to {intended_local_path}", file=sys.stderr)
+
+                except FileNotFoundError:
+                    print(f"[{host}] Error: 'rsync' command not found. Please ensure it's installed and in your PATH.", file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f"[{host}] Unexpected error during retrieval of '{remote_file}': {e}", file=sys.stderr)
+            # The general "Retrieved files are in the current working directory" message is removed
+            # as each file now has a specific success/failure message.
 
 
     except subprocess.CalledProcessError as e:
