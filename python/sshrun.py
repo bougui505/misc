@@ -177,7 +177,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         sys.exit(1) # Exit with a generic error code for unexpected errors
     finally:
         # 5. Remove the remote directory on the remote host, if applicable
-        if is_new_remote_dir and remote_tmp_dir: # Only prompt for deletion if it was a newly created directory
+        if remote_tmp_dir: # Always prompt for deletion if a remote directory was used
             should_delete = False # Default to not deleting a reused directory, or if user explicitly says no
 
             sys.stdout.flush() # Ensure all previous stdout messages are displayed
