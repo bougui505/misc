@@ -8,7 +8,7 @@ import tempfile
 
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
-                      remote_dir_to_reuse=None, follow_symlinks=True):
+                      remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm"):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
@@ -22,6 +22,8 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                                            from the temporary directory. Defaults to None.
         remote_dir_to_reuse (str, optional): An existing remote directory to use instead of creating a new one.
                                              If specified, this directory will not be deleted by the script.
+        remote_tmp_parent_dir (str, optional): The parent directory on the remote host where the temporary
+                                               directory will be created. Defaults to "/dev/shm".
         keep_remote_dir (bool, optional): If True, a newly created remote temporary directory
                                           will not be deleted after execution, regardless of command success.
                                           Defaults to False.
@@ -41,10 +43,10 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             print(f"[{host}] Reusing remote directory: {remote_tmp_dir}", file=sys.stderr)
         else:
             # 1. Create a temporary directory on the remote host
-            print(f"[{host}] Creating temporary directory on remote host...", file=sys.stderr)
+            print(f"[{host}] Creating temporary directory in {remote_tmp_parent_dir} on remote host...", file=sys.stderr)
             # Using mktemp as `mktemp -d` output path and we need to capture it
             result = subprocess.run(
-                ["ssh", host, "mktemp -d -p /dev/shm"],
+                ["ssh", host, f"mktemp -d -p {shlex.quote(remote_tmp_parent_dir)}"],
                 capture_output=True,
                 text=True,
                 check=True
