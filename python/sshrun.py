@@ -249,8 +249,14 @@ if __name__ == "__main__":
         help="Do not follow symlinks when transferring or retrieving files (rsync's -a without -L). "
              "By default, symlinks are followed (-L)."
     )
+    parser.add_argument(
+        "--remote-tmp-parent-dir", type=str, default="/dev/shm",
+        help="The parent directory on the remote host where the temporary directory will be created. "
+             "Defaults to /dev/shm."
+    )
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
                       remote_dir_to_reuse=args.remote_dir,
-                      follow_symlinks=args.follow_symlinks)
+                      follow_symlinks=args.follow_symlinks,
+                      remote_tmp_parent_dir=args.remote_tmp_parent_dir)
