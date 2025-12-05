@@ -224,7 +224,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                         remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
             
             # Log the final state of the remote directory
-            log_file = "sshrun_remote_dirs.log"
+            log_file = "sshrun.log"
             current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | {command}\n"
             try:
