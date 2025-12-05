@@ -25,18 +25,12 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                                              If specified, this directory will not be deleted by the script.
         remote_tmp_parent_dir (str, optional): The parent directory on the remote host where the temporary
                                                directory will be created. Defaults to "/dev/shm".
-        keep_remote_dir (bool, optional): If True, a newly created remote temporary directory
-                                          will not be deleted after execution, regardless of command success.
-                                          Defaults to False.
-        keep_on_failure (bool, optional): If True (default), a newly created remote temporary directory
-                                          will not be deleted if the remote command exits with
-                                          a non-zero status. This is overridden by `keep_remote_dir=True`.
-                                          Defaults to True.
     """
     remote_tmp_dir = ""
     is_new_remote_dir = False
     remote_dirs_to_create = set() # For rsync to ensure parent directories exist
     command_failed = False # Track command success/failure for conditional cleanup
+    remote_dir_removed_status = "N/A" # Initial status for logging
 
     try:
         if remote_dir_to_reuse:
@@ -55,22 +49,6 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             remote_tmp_dir = result.stdout.strip()
             is_new_remote_dir = True
             print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
-
-        # Log the remote directory
-        log_file = "sshrun_remote_dirs.log"
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {command}\n"
-        try:
-            # Check if the file is empty to add a header
-            file_exists_and_not_empty = os.path.exists(log_file) and os.path.getsize(log_file) > 0
-
-            with open(log_file, "a") as f:
-                if not file_exists_and_not_empty:
-                    f.write("# Date and Time | Remote Host | Remote Temp Directory | Command Executed\n")
-                f.write(log_entry)
-            print(f"[{host}] Logged remote directory and command to {log_file}", file=sys.stderr)
-        except Exception as e:
-            print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
 
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
@@ -195,51 +173,71 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1) # Exit with a generic error code for unexpected errors
     finally:
-        # 5. Remove the remote directory on the remote host, if applicable
-        if remote_tmp_dir: # Always prompt for deletion if a remote directory was used
-            should_delete = False # Default to not deleting a reused directory, or if user explicitly says no
+        # 5. Handle remote directory cleanup and log its final status
+        if remote_tmp_dir:
+            if remote_dir_to_reuse: # Directory was reused, not created by this script
+                remote_dir_removed_status = "KEPT (reused)"
+                print(f"[{host}] Remote directory {remote_tmp_dir} was reused and kept.", file=sys.stderr)
+            elif is_new_remote_dir: # It's a new directory created by this script
+                should_delete = False
+                sys.stdout.flush() # Ensure all previous stdout messages are displayed
+                sys.stderr.flush() # Ensure all previous stderr messages are displayed
 
-            sys.stdout.flush() # Ensure all previous stdout messages are displayed
-            sys.stderr.flush() # Ensure all previous stderr messages are displayed
-
-            try:
-                # Direct the prompt to stderr for consistency with other messages and read from stdin
-                response = ""
                 try:
-                    print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
-                    sys.stderr.flush() # Ensure the prompt is immediately visible
-                    response = sys.stdin.readline().strip().lower()
-                except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
                     response = ""
-                
-                if response in ('n', 'no'):
-                    # If it was a new directory, provide the reuse hint
-                    if is_new_remote_dir:
+                    try:
+                        print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
+                        sys.stderr.flush() # Ensure the prompt is immediately visible
+                        response = sys.stdin.readline().strip().lower()
+                    except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
+                        response = ""
+                    
+                    if response in ('n', 'no'):
                         print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
                               f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
-                    else: # It was a reused directory, just confirm it's kept
-                        print(f"[{host}] Remote directory {remote_tmp_dir} kept.", file=sys.stderr)
-                    should_delete = False
-                else: # Default to yes (empty response, EOFError, or any other input)
+                        should_delete = False
+                        remote_dir_removed_status = "KEPT (user choice)"
+                    else: # Default to yes (empty response, EOFError, or any other input)
+                        should_delete = True
+                        remote_dir_removed_status = "REMOVED"
+                except KeyboardInterrupt:
+                    print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
                     should_delete = True
-            except KeyboardInterrupt:
-                print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
-                should_delete = True
+                    remote_dir_removed_status = "REMOVED (interrupted)"
 
-            if should_delete:
-                print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
-                try:
-                    subprocess.run(
-                        ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
-                        check=True,
-                        capture_output=True,
-                        text=True
-                    )
-                    print(f"[{host}] Remote directory removed.", file=sys.stderr)
-                except subprocess.CalledProcessError as e:
-                    print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
-                except Exception as e:
-                    print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+                if should_delete:
+                    print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
+                    try:
+                        subprocess.run(
+                            ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
+                            check=True,
+                            capture_output=True,
+                            text=True
+                        )
+                        print(f"[{host}] Remote directory removed.", file=sys.stderr)
+                        # remote_dir_removed_status is already set to "REMOVED" or "REMOVED (interrupted)"
+                    except subprocess.CalledProcessError as e:
+                        print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
+                        remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+                    except Exception as e:
+                        print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+                        remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+            
+            # Log the final state of the remote directory
+            log_file = "sshrun_remote_dirs.log"
+            current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | {command}\n"
+            try:
+                # Check if the file is empty to add a header
+                file_exists_and_not_empty = os.path.exists(log_file) and os.path.getsize(log_file) > 0
+
+                with open(log_file, "a") as f:
+                    if not file_exists_and_not_empty:
+                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Command Executed\n")
+                    f.write(log_entry)
+                print(f"[{host}] Logged remote directory final status and command to {log_file}", file=sys.stderr)
+            except Exception as e:
+                print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
