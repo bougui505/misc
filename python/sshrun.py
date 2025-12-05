@@ -56,6 +56,17 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             is_new_remote_dir = True
             print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
 
+        # Log the remote directory
+        log_file = "sshrun_remote_dirs.log"
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"{current_date} | {host} | {remote_tmp_dir}\n"
+        try:
+            with open(log_file, "a") as f:
+                f.write(log_entry)
+            print(f"[{host}] Logged remote directory to {log_file}", file=sys.stderr)
+        except Exception as e:
+            print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
+
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
             print(f"[{host}] Transferring files to {remote_tmp_dir}...", file=sys.stderr)
