@@ -61,7 +61,12 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {command}\n"
         try:
+            # Check if the file is empty to add a header
+            file_exists_and_not_empty = os.path.exists(log_file) and os.path.getsize(log_file) > 0
+
             with open(log_file, "a") as f:
+                if not file_exists_and_not_empty:
+                    f.write("# Date and Time | Remote Host | Remote Temp Directory | Command Executed\n")
                 f.write(log_entry)
             print(f"[{host}] Logged remote directory and command to {log_file}", file=sys.stderr)
         except Exception as e:
