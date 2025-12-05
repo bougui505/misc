@@ -59,11 +59,11 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         # Log the remote directory
         log_file = "sshrun_remote_dirs.log"
         current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = f"{current_date} | {host} | {remote_tmp_dir}\n"
+        log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {command}\n"
         try:
             with open(log_file, "a") as f:
                 f.write(log_entry)
-            print(f"[{host}] Logged remote directory to {log_file}", file=sys.stderr)
+            print(f"[{host}] Logged remote directory and command to {log_file}", file=sys.stderr)
         except Exception as e:
             print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
 
