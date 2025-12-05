@@ -33,7 +33,15 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     command_exit_status = -1  # Default to -1 if command not run or an error occurs
     remote_dir_removed_status = "N/A"  # Initial status for logging
     # To store the first line of stdout (on success) or stderr (on failure) for logging
-    output_summary_for_log = "" 
+    output_summary_for_log = ""
+
+    # Generate a unique sequential filename for the full command output
+    output_file_index = 0
+    while True:
+        output_filename = f"sshrun_{output_file_index}.out"
+        if not os.path.exists(output_filename):
+            break
+        output_file_index += 1
 
     try:
         if remote_dir_to_reuse:
@@ -113,6 +121,21 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             check=False
         )
         command_exit_status = result.returncode
+
+        # Write full stdout/stderr to local file
+        with open(output_filename, "w") as f_out:
+            f_out.write(f"--- Command: {command} ---\n")
+            f_out.write(f"--- Remote Host: {host} ---\n")
+            f_out.write(f"--- Remote Dir: {remote_tmp_dir} ---\n")
+            f_out.write(f"--- Exit Status: {command_exit_status} ---\n\n")
+            if result.stdout:
+                f_out.write("--- STDOUT ---\n")
+                f_out.write(result.stdout)
+            if result.stderr:
+                f_out.write("\n--- STDERR ---\n")
+                f_out.write(result.stderr)
+        print(f"[{host}] Full command output saved to {output_filename}", file=sys.stderr)
+
 
         if command_exit_status != 0 and result.stderr:
             output_summary_for_log = result.stderr.split('\n')[0].strip()
@@ -236,7 +259,8 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             log_entry = (
                 f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | "
-                f"Exit Status: {command_exit_status} | Output Summary: '{output_summary_for_log}' | {command}\n"
+                f"Exit Status: {command_exit_status} | Output Summary: '{output_summary_for_log}' | "
+                f"Full Output File: {output_filename} | {command}\n"
             )
             try:
                 # Check if the file is empty to add a header
@@ -244,7 +268,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
 
                 with open(log_file, "a") as f:
                     if not file_exists_and_not_empty:
-                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Output Summary | Command Executed\n")
+                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Output Summary | Full Output File | Command Executed\n")
                     f.write(log_entry)
                 print(f"[{host}] Logged remote directory final status, exit status, and command to {log_file}", file=sys.stderr)
             except Exception as e:
