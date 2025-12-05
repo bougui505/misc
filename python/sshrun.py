@@ -29,8 +29,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     remote_tmp_dir = ""
     is_new_remote_dir = False
     remote_dirs_to_create = set() # For rsync to ensure parent directories exist
-    command_failed = False # Track command success/failure for conditional cleanup
-    remote_dir_removed_status = "N/A" # Initial status for logging
+    command_failed = False  # Track command success/failure for conditional cleanup
+    command_exit_status = -1  # Default to -1 if command not run or an error occurs
+    remote_dir_removed_status = "N/A"  # Initial status for logging
 
     try:
         if remote_dir_to_reuse:
@@ -109,8 +110,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             text=True,
             check=False
         )
+        command_exit_status = result.returncode
         
-        if result.returncode != 0:
+        if command_exit_status != 0:
             command_failed = True
 
         # This print statement remains directed to stdout as requested
@@ -223,19 +225,22 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                         print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
                         remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
             
-            # Log the final state of the remote directory
+            # Log the final state of the remote directory and command exit status
             log_file = "sshrun.log"
             current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            log_entry = f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | {command}\n"
+            log_entry = (
+                f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | "
+                f"Exit Status: {command_exit_status} | {command}\n"
+            )
             try:
                 # Check if the file is empty to add a header
                 file_exists_and_not_empty = os.path.exists(log_file) and os.path.getsize(log_file) > 0
 
                 with open(log_file, "a") as f:
                     if not file_exists_and_not_empty:
-                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Command Executed\n")
+                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Command Executed\n")
                     f.write(log_entry)
-                print(f"[{host}] Logged remote directory final status and command to {log_file}", file=sys.stderr)
+                print(f"[{host}] Logged remote directory final status, exit status, and command to {log_file}", file=sys.stderr)
             except Exception as e:
                 print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
 
