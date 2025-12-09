@@ -21,11 +21,30 @@ def _write_sshrun_log_entry(
     command_arg,
     timestamp_arg
 ):
+    # Escape and quote fields for CSV format
+    # Any field value containing a double quote must have that quote doubled,
+    # and the entire field must be enclosed in double quotes.
+    # We apply this universally for consistency with CSV standard practices.
+    _timestamp_arg = str(timestamp_arg).replace('"', '""')
+    _status_tag = str(status_tag).replace('"', '""')
+    _host_arg = str(host_arg).replace('"', '""')
+    _remote_tmp_dir_arg = str(remote_tmp_dir_arg).replace('"', '""')
+    _remote_dir_removed_status_arg = str(remote_dir_removed_status_arg).replace('"', '""')
+    _command_exit_status_arg = str(command_exit_status_arg).replace('"', '""') # Ensure int is stringified
+    _output_summary_arg = str(output_summary_arg).replace('"', '""')
+    _full_output_filename_arg = str(full_output_filename_arg).replace('"', '""')
+    _command_arg = str(command_arg).replace('"', '""')
+
     log_entry = (
-        f"{timestamp_arg} | {status_tag} | {host_arg} | {remote_tmp_dir_arg} | "
-        f"{remote_dir_removed_status_arg} | Exit Status: {command_exit_status_arg} | "
-        f"Output Summary: '{output_summary_arg}' | Full Output File: {full_output_filename_arg} | "
-        f"{command_arg}\n"
+        f'"{_timestamp_arg}",'
+        f'"{_status_tag}",'
+        f'"{_host_arg}",'
+        f'"{_remote_tmp_dir_arg}",'
+        f'"{_remote_dir_removed_status_arg}",'
+        f'"{_command_exit_status_arg}",'
+        f'"{_output_summary_arg}",'
+        f'"{_full_output_filename_arg}",'
+        f'"{_command_arg}"\n'
     )
     try:
         # Check if the file is empty to add a header
@@ -33,7 +52,17 @@ def _write_sshrun_log_entry(
 
         with open(log_file_path, "a") as f:
             if not file_exists_and_not_empty:
-                f.write("# Date and Time | Status | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Output Summary | Full Output File | Command Executed\n")
+                f.write(
+                    "#\"Date and Time\","
+                    "\"Status\","
+                    "\"Remote Host\","
+                    "\"Remote Temp Directory\","
+                    "\"Removed Status\","
+                    "\"Exit Status\","
+                    "\"Output Summary\","
+                    "\"Full Output File\","
+                    "\"Command Executed\"\n"
+                )
             f.write(log_entry)
         print(f"[{host_arg}] Log entry ({status_tag}) written to {log_file_path}", file=sys.stderr)
     except Exception as e:
