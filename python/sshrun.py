@@ -70,7 +70,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     current_start_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_remote_tmp_dir = "PENDING"
     log_remote_dir_removed_status = "PENDING"
-    log_command_exit_status = -1
+    log_command_exit_status = "UNK"
     log_output_summary = "PENDING"
     log_status = "START" # Initial status for the log entry
 
