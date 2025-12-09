@@ -81,7 +81,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if not os.path.exists(output_filename):
             break
         output_file_index += 1
-    
+
     # Write initial "START" log entry with known information and placeholders
     _write_sshrun_log_entry(
         log_file_path,
@@ -219,7 +219,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             for remote_file in files_to_retrieve:
                 remote_source_path = f"{host}:{remote_tmp_dir}/{remote_file}"
                 local_destination_path = "." # Retrieve to current working directory, preserving remote structure
-                
+
                 # rsync with -a (archive mode) automatically creates necessary local directories,
                 # so explicit os.makedirs for target subdirectories are not required.
 
@@ -274,7 +274,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         # 5. Handle remote directory cleanup and write final log entry
         if remote_tmp_dir:
             # Ensure the final remote_tmp_dir is captured, even if an error occurred early
-            log_remote_tmp_dir = remote_tmp_dir 
+            log_remote_tmp_dir = remote_tmp_dir
             if remote_dir_to_reuse: # Directory was reused, not created by this script
                 log_remote_dir_removed_status = "KEPT (reused)"
                 print(f"[{host}] Remote directory {remote_tmp_dir} was reused and kept.", file=sys.stderr)
@@ -291,7 +291,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                         response = sys.stdin.readline().strip().lower()
                     except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
                         response = ""
-                    
+
                     if response in ('n', 'no'):
                         print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
                               f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
@@ -333,7 +333,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 log_status = "FAILURE"
             else:
                 log_status = "END"
-        
+
         # Write the final log entry with all collected information
         _write_sshrun_log_entry(
             log_file_path,
