@@ -82,20 +82,6 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             break
         output_file_index += 1
 
-    # Write initial "START" log entry with known information and placeholders
-    _write_sshrun_log_entry(
-        log_file_path,
-        log_status,
-        host,
-        log_remote_tmp_dir, # Placeholder
-        log_remote_dir_removed_status, # Placeholder
-        log_command_exit_status, # Placeholder
-        log_output_summary, # Placeholder
-        output_filename,
-        command,
-        current_start_date
-    )
-
     try:
         if remote_dir_to_reuse:
             remote_tmp_dir = remote_dir_to_reuse
@@ -115,6 +101,20 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             log_remote_tmp_dir = remote_tmp_dir # Update log variable with actual temp dir
             is_new_remote_dir = True
             print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
+
+        # Now that remote_tmp_dir is known, write the initial "START" log entry
+        _write_sshrun_log_entry(
+            log_file_path,
+            log_status,
+            host,
+            log_remote_tmp_dir,
+            log_remote_dir_removed_status,
+            log_command_exit_status,
+            log_output_summary,
+            output_filename,
+            command,
+            current_start_date # Use the original start time of the function call
+        )
 
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
