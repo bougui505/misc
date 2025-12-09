@@ -8,6 +8,38 @@ import sys
 import tempfile
 
 
+# Helper function for logging
+def _write_sshrun_log_entry(
+    log_file_path,
+    status_tag, # e.g., "START", "END", "FAILURE", "ERROR"
+    host_arg,
+    remote_tmp_dir_arg, # The actual remote temp dir or a placeholder
+    remote_dir_removed_status_arg,
+    command_exit_status_arg,
+    output_summary_arg,
+    full_output_filename_arg,
+    command_arg,
+    timestamp_arg
+):
+    log_entry = (
+        f"{timestamp_arg} | {status_tag} | {host_arg} | {remote_tmp_dir_arg} | "
+        f"{remote_dir_removed_status_arg} | Exit Status: {command_exit_status_arg} | "
+        f"Output Summary: '{output_summary_arg}' | Full Output File: {full_output_filename_arg} | "
+        f"{command_arg}\n"
+    )
+    try:
+        # Check if the file is empty to add a header
+        file_exists_and_not_empty = os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0
+
+        with open(log_file_path, "a") as f:
+            if not file_exists_and_not_empty:
+                f.write("# Date and Time | Status | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Output Summary | Full Output File | Command Executed\n")
+            f.write(log_entry)
+        print(f"[{host_arg}] Log entry ({status_tag}) written to {log_file_path}", file=sys.stderr)
+    except Exception as e:
+        print(f"[{host_arg}] Error writing to log file {log_file_path}: {e}", file=sys.stderr)
+
+
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                       remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm"):
     """
@@ -26,14 +58,21 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         remote_tmp_parent_dir (str, optional): The parent directory on the remote host where the temporary
                                                directory will be created. Defaults to "/dev/shm".
     """
-    remote_tmp_dir = ""
+    # --- Variables for tracking state and logging ---
+    remote_tmp_dir = "" # Actual remote directory path
     is_new_remote_dir = False
-    remote_dirs_to_create = set() # For rsync to ensure parent directories exist
-    command_failed = False  # Track command success/failure for conditional cleanup
+    remote_dirs_to_create = set()
+    command_failed = False
     command_exit_status = -1  # Default to -1 if command not run or an error occurs
-    remote_dir_removed_status = "N/A"  # Initial status for logging
-    # To store the first line of stdout (on success) or stderr (on failure) for logging
-    output_summary_for_log = ""
+
+    # Variables specifically for the log entry, initialized with start-time info or placeholders
+    log_file_path = "sshrun.log" # Define log file path once
+    current_start_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_remote_tmp_dir = "PENDING"
+    log_remote_dir_removed_status = "PENDING"
+    log_command_exit_status = -1
+    log_output_summary = "PENDING"
+    log_status = "START" # Initial status for the log entry
 
     # Generate a unique sequential filename for the full command output
     output_file_index = 0
@@ -42,10 +81,25 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if not os.path.exists(output_filename):
             break
         output_file_index += 1
+    
+    # Write initial "START" log entry with known information and placeholders
+    _write_sshrun_log_entry(
+        log_file_path,
+        log_status,
+        host,
+        log_remote_tmp_dir, # Placeholder
+        log_remote_dir_removed_status, # Placeholder
+        log_command_exit_status, # Placeholder
+        log_output_summary, # Placeholder
+        output_filename,
+        command,
+        current_start_date
+    )
 
     try:
         if remote_dir_to_reuse:
             remote_tmp_dir = remote_dir_to_reuse
+            log_remote_tmp_dir = remote_tmp_dir # Update log variable
             print(f"[{host}] Reusing remote directory: {remote_tmp_dir}", file=sys.stderr)
         else:
             # 1. Create a temporary directory on the remote host
@@ -58,6 +112,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 check=True
             )
             remote_tmp_dir = result.stdout.strip()
+            log_remote_tmp_dir = remote_tmp_dir # Update log variable with actual temp dir
             is_new_remote_dir = True
             print(f"[{host}] Remote temporary directory: {remote_tmp_dir}", file=sys.stderr)
 
@@ -121,6 +176,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             check=False
         )
         command_exit_status = result.returncode
+        log_command_exit_status = command_exit_status # Update log variable
 
         # Write full stdout/stderr to local file
         with open(output_filename, "w") as f_out:
@@ -138,9 +194,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
 
 
         if command_exit_status != 0 and result.stderr:
-            output_summary_for_log = result.stderr.split('\n')[0].strip()
+            log_output_summary = result.stderr.split('\n')[0].strip() # Update log variable
         elif result.stdout:
-            output_summary_for_log = result.stdout.split('\n')[0].strip()
+            log_output_summary = result.stdout.split('\n')[0].strip() # Update log variable
 
         if command_exit_status != 0:
             command_failed = True
@@ -191,6 +247,10 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
 
 
     except subprocess.CalledProcessError as e:
+        log_status = "ERROR" # Set status for logging
+        log_command_exit_status = e.returncode # Use the failing command's exit code
+        if e.stderr:
+            log_output_summary = e.stderr.split('\n')[0].strip()
         print(f"Error during SSH/SCP operation: {e}", file=sys.stderr)
         if e.stdout: # These only capture if subprocess.run was called with capture_output=True
             print(f"Stdout: {e.stdout}", file=sys.stderr)
@@ -198,16 +258,22 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             print(f"Stderr: {e.stderr}", file=sys.stderr)
         sys.exit(e.returncode) # Exit with the same return code as the failing command
     except FileNotFoundError:
+        log_status = "ERROR" # Set status for logging
+        log_output_summary = "Command not found (ssh or rsync)"
         print("Error: 'ssh' or 'rsync' command not found. Please ensure OpenSSH client and rsync are installed and in your PATH.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
+        log_status = "ERROR" # Set status for logging
+        log_output_summary = f"Unexpected error: {str(e).split('\n')[0].strip()}"
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1) # Exit with a generic error code for unexpected errors
     finally:
-        # 5. Handle remote directory cleanup and log its final status
+        # 5. Handle remote directory cleanup and write final log entry
         if remote_tmp_dir:
+            # Ensure the final remote_tmp_dir is captured, even if an error occurred early
+            log_remote_tmp_dir = remote_tmp_dir 
             if remote_dir_to_reuse: # Directory was reused, not created by this script
-                remote_dir_removed_status = "KEPT (reused)"
+                log_remote_dir_removed_status = "KEPT (reused)"
                 print(f"[{host}] Remote directory {remote_tmp_dir} was reused and kept.", file=sys.stderr)
             elif is_new_remote_dir: # It's a new directory created by this script
                 should_delete = False
@@ -227,14 +293,14 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                         print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
                               f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
                         should_delete = False
-                        remote_dir_removed_status = "KEPT (user choice)"
+                        log_remote_dir_removed_status = "KEPT (user choice)"
                     else: # Default to yes (empty response, EOFError, or any other input)
                         should_delete = True
-                        remote_dir_removed_status = "REMOVED"
+                        # log_remote_dir_removed_status will be set to "REMOVED" or "REMOVED (interrupted)" below
                 except KeyboardInterrupt:
                     print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
                     should_delete = True
-                    remote_dir_removed_status = "REMOVED (interrupted)"
+                    log_remote_dir_removed_status = "REMOVED (interrupted)"
 
                 if should_delete:
                     print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
@@ -246,33 +312,38 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                             text=True
                         )
                         print(f"[{host}] Remote directory removed.", file=sys.stderr)
-                        # remote_dir_removed_status is already set to "REMOVED" or "REMOVED (interrupted)"
+                        if log_remote_dir_removed_status == "PENDING": # Only set if not already set by interrupt
+                           log_remote_dir_removed_status = "REMOVED"
                     except subprocess.CalledProcessError as e:
                         print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
-                        remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+                        log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
                     except Exception as e:
                         print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
-                        remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
-            
-            # Log the final state of the remote directory and command exit status
-            log_file = "sshrun.log"
-            current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            log_entry = (
-                f"{current_date} | {host} | {remote_tmp_dir} | {remote_dir_removed_status} | "
-                f"Exit Status: {command_exit_status} | Output Summary: '{output_summary_for_log}' | "
-                f"Full Output File: {output_filename} | {command}\n"
-            )
-            try:
-                # Check if the file is empty to add a header
-                file_exists_and_not_empty = os.path.exists(log_file) and os.path.getsize(log_file) > 0
+                        log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+            # If log_remote_dir_removed_status is still "PENDING" here, it means no cleanup action was taken (e.g. no remote_tmp_dir created)
+            elif not remote_tmp_dir: # No remote_tmp_dir was successfully established
+                 log_remote_dir_removed_status = "N/A (no remote dir)"
 
-                with open(log_file, "a") as f:
-                    if not file_exists_and_not_empty:
-                        f.write("# Date and Time | Remote Host | Remote Temp Directory | Removed Status | Exit Status | Output Summary | Full Output File | Command Executed\n")
-                    f.write(log_entry)
-                print(f"[{host}] Logged remote directory final status, exit status, and command to {log_file}", file=sys.stderr)
-            except Exception as e:
-                print(f"[{host}] Error writing to log file {log_file}: {e}", file=sys.stderr)
+        # Determine final log status if not already set by an exception
+        if log_status == "START": # If no exception occurred, means command ran
+            if command_failed:
+                log_status = "FAILURE"
+            else:
+                log_status = "END"
+        
+        # Write the final log entry with all collected information
+        _write_sshrun_log_entry(
+            log_file_path,
+            log_status,
+            host,
+            log_remote_tmp_dir,
+            log_remote_dir_removed_status,
+            log_command_exit_status,
+            log_output_summary,
+            output_filename,
+            command,
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Use end time for final entry
+        )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
