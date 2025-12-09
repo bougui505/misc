@@ -53,7 +53,7 @@ def _write_sshrun_log_entry(
         with open(log_file_path, "a") as f:
             if not file_exists_and_not_empty:
                 f.write(
-                    "#\"Date and Time\","
+                    "\"Date and Time\","
                     "\"Status\","
                     "\"Remote Host\","
                     "\"Remote Temp Directory\","
