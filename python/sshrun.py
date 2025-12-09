@@ -68,7 +68,7 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
     # Variables specifically for the log entry, initialized with start-time info or placeholders
     log_file_path = "sshrun.log" # Define log file path once
     current_start_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_remote_tmp_dir = "PENDING"
+    log_remote_tmp_dir = remote_dir_to_reuse if remote_dir_to_reuse else "PENDING" # Set if reusing
     log_remote_dir_removed_status = "PENDING"
     log_command_exit_status = "UNK"
     log_output_summary = "PENDING"
