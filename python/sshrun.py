@@ -197,6 +197,9 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             log_output_summary = result.stderr.split('\n')[0].strip() # Update log variable
         elif result.stdout:
             log_output_summary = result.stdout.split('\n')[0].strip() # Update log variable
+        else:
+            # If command ran, and neither stdout nor stderr had a summary, then output was effectively empty.
+            log_output_summary = "EMPTY"
 
         if command_exit_status != 0:
             command_failed = True
