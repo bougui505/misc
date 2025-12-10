@@ -26,7 +26,7 @@ function usage () {
     -n, --nrec print the number of records for the given rec file
     -s, --sample give the number of records to pick up randomly from the given rec file
     -k, --keys print all keys present in the file
-    --torec <separator> convert a column file with the first line as keys and the rest 
+    --torec <separator> convert a column file with the first line as keys and the rest
     of the lines as values to a rec file. Columns are separated by <separator>.
     The first line is used as keys, the rest of the lines as values. The output is written to stdout.
 
@@ -34,7 +34,7 @@ function usage () {
 
 Read a rec file formatted as:
 
-${bold} 
+${bold}
 key1=val1
 key2=val2
 --
@@ -42,7 +42,7 @@ key1=val12
 key2=val22
 --
 [...]
-${normal} 
+${normal}
 
 using awk.
 
@@ -59,11 +59,11 @@ The full rec file is not stored in ${bold}rec${normal}. Just the current record 
 
 To enumerate fields just use:
 
-    ${bold} 
+    ${bold}
     for (field in rec){
         print field
     }
-    ${normal} 
+    ${normal}
 
 A function ${bold}printrec()${normal} can be used to print the current record. The record separator "--" is not printed by ${bold}printrec()${normal} to allow the user to add an item to the record:
 
@@ -93,7 +93,7 @@ ${bold}IMPORTANT REMARKS${normal}
     '{value=rec["key"]*1}'
 
 ${bold}EXAMPLES${normal}
-${bold} 
+${bold}
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
     zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}
@@ -101,7 +101,7 @@ ${bold}
     zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'
     zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
     zcat data/file.rec.gz | recawk --keys
-${normal} 
+${normal}
 
 EOF
 }
@@ -162,25 +162,43 @@ if [[ $TOREC != 0 ]]; then
         echo "Error: --torec requires a separator argument." >&2
         exit 1
     fi
-    awk -v FPAT="[^$TOREC]*|(\"([^\"]|\"\")*\")" '{
-        if (NR==1){
-            for (i=1; i<=NF; i++){
-                # gsub(/ /, "_", $i)
-                keys[i]=$i
-            }
-        }
-        else{
-            for (i=1; i<=NF; i++){
-                if (keys[i] != ""){
-                    print keys[i]"="$i
+    if [[ $TOREC == " " ]]; then
+        awk -v FPAT="[^[:space:]]+|(\"([^\"]|\"\")*\")" '{
+            if (NR==1){
+                for (i=1; i<=NF; i++){
+                    # gsub(/ /, "_", $i)
+                    keys[i]=$i
                 }
             }
-            print "--"
-        }
-    }' "$FILENAMES"
+            else{
+                for (i=1; i<=NF; i++){
+                    if (keys[i] != ""){
+                        print keys[i]"="$i
+                    }
+                }
+                print "--"
+            }
+        }' "$FILENAMES"
+    else
+        awk -v FPAT="[^$TOREC]*|(\"([^\"]|\"\")*\")" '{
+            if (NR==1){
+                for (i=1; i<=NF; i++){
+                    # gsub(/ /, "_", $i)
+                    keys[i]=$i
+                }
+            }
+            else{
+                for (i=1; i<=NF; i++){
+                    if (keys[i] != ""){
+                        print keys[i]"="$i
+                    }
+                }
+                print "--"
+            }
+        }' "$FILENAMES"
+    fi
     exit 0
 fi
-    
 
 if [[ $SAMPLE -gt 0 ]]; then
     cat > $MYTMP/in
