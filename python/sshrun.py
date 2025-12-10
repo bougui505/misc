@@ -148,47 +148,43 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         # 2. Transfer files to the remote temporary directory
         if files_to_transfer:
             print(f"[{host}] Transferring files to {remote_tmp_dir}...", file=sys.stderr)
-
-            file_transfer_details = [] # Stores (local_path, remote_target_path, remote_display_path)
+            
+            local_files_to_transfer_sources = [] # Collects all local source paths for a single rsync call
 
             for local_file in files_to_transfer:
                 if not os.path.exists(local_file):
                     print(f"Error: Local file '{local_file}' not found. Skipping.", file=sys.stderr)
                     continue
 
-                # Derive the path to be used on the remote, relative to remote_tmp_dir.
-                # This handles both relative and absolute local_file paths by stripping leading slashes
-                # to ensure the path starts relative to the remote_tmp_dir.
+                local_files_to_transfer_sources.append(local_file)
+
+                # The following logic is kept to ensure "all features" including
+                # explicit remote directory creation are maintained, though rsync -R
+                # would create them automatically.
                 remote_relative_path = local_file.lstrip(os.sep)
-
-                # Derive the remote parent directory path
                 remote_relative_dir = os.path.dirname(remote_relative_path)
-                if remote_relative_dir: # Only add if it's not a file directly in the temp dir root
+                if remote_relative_dir and remote_relative_dir != ".": # Only add if it's not a file directly in the temp dir root or empty
                     remote_dirs_to_create.add(f"{remote_tmp_dir}/{remote_relative_dir}")
+            
+            if remote_dirs_to_create:
+                # Create necessary directories on the remote host before rsync
+                for remote_dir in remote_dirs_to_create:
+                    print(f"[{host}] Creating remote directory: {remote_dir}...", file=sys.stderr)
+                    subprocess.run(
+                        ["ssh", host, f"mkdir -p {shlex.quote(remote_dir)}"],
+                        check=True,
+                        stdout=sys.stderr, # Redirect ssh's stdout to stderr
+                        stderr=sys.stderr  # Redirect ssh's stderr to stderr
+                    )
 
-                # For rsync, we construct the destination path explicitly
-                remote_target_path = f"{host}:{remote_tmp_dir}/{remote_relative_path}"
-                remote_display_path = f"{remote_tmp_dir}/{remote_relative_path}"
-                file_transfer_details.append((local_file, remote_target_path, remote_display_path))
+            if local_files_to_transfer_sources:
+                rsync_options_transfer = ["-a", "--update", "-P", "-h", "-R"] # Add -R for relative path handling
+                if follow_symlinks:
+                    rsync_options_transfer.insert(0, "-L") # -L means follow symlinks
 
-            # Create necessary directories on the remote host before rsync
-            for remote_dir in remote_dirs_to_create:
-                print(f"[{host}] Creating remote directory: {remote_dir}...", file=sys.stderr)
+                print(f"[{host}] Transferring {len(local_files_to_transfer_sources)} file(s) to {remote_tmp_dir}/...", file=sys.stderr)
                 subprocess.run(
-                    ["ssh", host, f"mkdir -p {shlex.quote(remote_dir)}"],
-                    check=True,
-                    stdout=sys.stderr, # Redirect ssh's stdout to stderr
-                    stderr=sys.stderr  # Redirect ssh's stderr to stderr
-                )
-            rsync_options = ["-a", "--update", "-P", "-h"]
-            if follow_symlinks:
-                rsync_options.insert(0, "-L") # -L means follow symlinks
-
-            # Now transfer the files using rsync -a (archive mode preserves metadata)
-            for local_file, remote_target_path, remote_display_path in file_transfer_details:
-                print(f"[{host}] Transferring: {local_file} -> {remote_display_path}", file=sys.stderr)
-                subprocess.run(
-                    ["rsync"] + rsync_options + [local_file, remote_target_path],
+                    ["rsync"] + rsync_options_transfer + local_files_to_transfer_sources + [f"{host}:{remote_tmp_dir}/"],
                     check=True,
                     stdout=sys.stderr,  # Redirect rsync's stdout to stderr
                     stderr=sys.stderr   # Redirect rsync's stderr to stderr
@@ -245,38 +241,21 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         # 4. Retrieve specified result files (if any)
         if files_to_retrieve:
             print(f"[{host}] Retrieving files to current working directory...", file=sys.stderr)
+            remote_files_to_retrieve_sources = []
             for remote_file in files_to_retrieve:
-                remote_source_path = f"{host}:{remote_tmp_dir}/{remote_file}"
-                local_destination_path = "." # Retrieve to current working directory, preserving remote structure
+                remote_files_to_retrieve_sources.append(f"{host}:{remote_tmp_dir}/{remote_file}")
 
-                # rsync with -a (archive mode) automatically creates necessary local directories,
-                # so explicit os.makedirs for target subdirectories are not required.
-
-                # Display the intended local path for clarity
-                intended_local_path = os.path.join(os.getcwd(), remote_file)
-                print(f"[{host}] Retrieving: {remote_source_path.split(':')[-1]} -> {intended_local_path}", file=sys.stderr)
-                try:
-                    rsync_options = ["-a", "--update", "-P", "-h"]
-                    if follow_symlinks:
-                        rsync_options.insert(0, "-L") # -L means follow symlinks
-
-                    subprocess.run(
-                        ["rsync"] + rsync_options + [remote_source_path, local_destination_path],
-                        check=True, # Raise CalledProcessError if rsync fails
-                        stdout=sys.stderr,  # Redirect rsync's stdout to stderr
-                        stderr=sys.stderr   # Redirect rsync's stderr to stderr
-                    )
-                    print(f"[{host}] Successfully retrieved: {remote_file} to {intended_local_path}", file=sys.stderr)
-
-                except subprocess.CalledProcessError as e:
-                    print(f"[{host}] Error retrieving '{remote_file}'. rsync exited with status {e.returncode}.", file=sys.stderr)
-                    # The rsync output is already streamed to stderr, so no need to print e.stdout/e.stderr again
-                except FileNotFoundError:
-                    print(f"[{host}] Error: 'rsync' command not found. Please ensure it's installed and in your PATH.", file=sys.stderr)
-                    sys.exit(1)
-                except Exception as e:
-                    print(f"[{host}] Unexpected error during retrieval of '{remote_file}': {e}", file=sys.stderr)
-
+            if remote_files_to_retrieve_sources:
+                rsync_options_retrieve = ["-a", "--update", "-P", "-h"]
+                if follow_symlinks:
+                    rsync_options_retrieve.insert(0, "-L") # -L means follow symlinks
+                print(f"[{host}] Retrieving {len(remote_files_to_retrieve_sources)} file(s) to .", file=sys.stderr)
+                subprocess.run(
+                    ["rsync"] + rsync_options_retrieve + remote_files_to_retrieve_sources + ["."],
+                    check=True,
+                    stdout=sys.stderr,  # Redirect rsync's stdout to stderr
+                    stderr=sys.stderr   # Redirect rsync's stderr to stderr
+                )
 
     except subprocess.CalledProcessError as e:
         log_status = "ERROR" # Set status for logging
