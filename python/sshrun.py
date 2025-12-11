@@ -283,57 +283,54 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         if remote_tmp_dir:
             # Ensure the final remote_tmp_dir is captured, even if an error occurred early
             log_remote_tmp_dir = remote_tmp_dir
-            if remote_dir_to_reuse: # Directory was reused, not created by this script
-                log_remote_dir_removed_status = "KEPT (reused)"
-                print(f"[{host}] Remote directory {remote_tmp_dir} was reused and kept.", file=sys.stderr)
-            elif is_new_remote_dir: # It's a new directory created by this script
-                should_delete = False
-                sys.stdout.flush() # Ensure all previous stdout messages are displayed
-                sys.stderr.flush() # Ensure all previous stderr messages are displayed
+            should_delete = False
+            sys.stdout.flush() # Ensure all previous stdout messages are displayed
+            sys.stderr.flush() # Ensure all previous stderr messages are displayed
 
+            try:
+                response = ""
                 try:
+                    print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
+                    sys.stderr.flush() # Ensure the prompt is immediately visible
+                    response = sys.stdin.readline().strip().lower()
+                except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
                     response = ""
-                    try:
-                        print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
-                        sys.stderr.flush() # Ensure the prompt is immediately visible
-                        response = sys.stdin.readline().strip().lower()
-                    except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
-                        response = ""
 
-                    if response in ('n', 'no'):
-                        print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
-                              f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
-                        should_delete = False
-                        log_remote_dir_removed_status = "KEPT (user choice)"
-                    else: # Default to yes (empty response, EOFError, or any other input)
-                        should_delete = True
-                        # log_remote_dir_removed_status will be set to "REMOVED" or "REMOVED (interrupted)" below
-                except KeyboardInterrupt:
-                    print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
+                if response in ('n', 'no'):
+                    print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
+                          f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
+                    should_delete = False
+                    log_remote_dir_removed_status = "KEPT (user choice)"
+                else: # Default to yes (empty response, EOFError, or any other input)
                     should_delete = True
-                    log_remote_dir_removed_status = "REMOVED (interrupted)"
+                    # log_remote_dir_removed_status will be set to "REMOVED" or "REMOVED (interrupted)" below
+            except KeyboardInterrupt:
+                print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
+                should_delete = True
+                log_remote_dir_removed_status = "REMOVED (interrupted)"
 
-                if should_delete:
-                    print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
-                    try:
-                        subprocess.run(
-                            ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
-                            check=True,
-                            capture_output=True,
-                            text=True
-                        )
-                        print(f"[{host}] Remote directory removed.", file=sys.stderr)
-                        if log_remote_dir_removed_status == "PENDING": # Only set if not already set by interrupt
-                           log_remote_dir_removed_status = "REMOVED"
-                    except subprocess.CalledProcessError as e:
-                        print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
-                        log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
-                    except Exception as e:
-                        print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
-                        log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
-            # If log_remote_dir_removed_status is still "PENDING" here, it means no cleanup action was taken (e.g. no remote_tmp_dir created)
-            elif not remote_tmp_dir: # No remote_tmp_dir was successfully established
-                 log_remote_dir_removed_status = "N/A (no remote dir)"
+            if should_delete:
+                print(f"[{host}] Cleaning up remote directory {remote_tmp_dir}...", file=sys.stderr)
+                try:
+                    subprocess.run(
+                        ["ssh", host, f"rm -rf {shlex.quote(remote_tmp_dir)}"],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    print(f"[{host}] Remote directory removed.", file=sys.stderr)
+                    # If deletion succeeded, ensure status is "REMOVED",
+                    # unless it was "REMOVED (interrupted)" which is also a form of removal
+                    if log_remote_dir_removed_status == "PENDING" or log_remote_dir_removed_status == "REMOVED (interrupted)":
+                       log_remote_dir_removed_status = "REMOVED"
+                except subprocess.CalledProcessError as e:
+                    print(f"[{host}] Error removing remote directory: {e.stderr.strip()}", file=sys.stderr)
+                    log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+                except Exception as e:
+                    print(f"[{host}] Unexpected error during remote cleanup: {e}", file=sys.stderr)
+                    log_remote_dir_removed_status = "KEPT (cleanup failed)" # If deletion failed
+        else: # No remote_tmp_dir was successfully established
+             log_remote_dir_removed_status = "N/A (no remote dir)"
 
         # Determine final log status if not already set by an exception
         if log_status == "START": # If no exception occurred, means command ran
