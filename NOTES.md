@@ -801,6 +801,51 @@ ${function_name arguments}
 *   `function_name`: The name of the function (e.g., `subst`, `patsubst`, `word`, `foreach`).
 *   `arguments`: A comma-separated list of arguments required by the specific function. These arguments can themselves be variable references or other function calls, allowing for complex nested operations.
 
+## User-defined Functions (Macros)
+
+While Make has many built-in functions, you can also define your own simple functions, often referred to as "macros" or "user-defined functions," using variables with arguments. These work similarly to functions in shell scripts or other programming languages, allowing you to encapsulate reusable logic.
+
+User-defined functions are created by defining a variable that accepts arguments, which are referenced using `$(1)`, `$(2)`, etc., corresponding to the first, second, and subsequent arguments passed to the function.
+
+### Defining a Simple Macro
+
+```makefile
+# Define a macro named 'ECHO_MESSAGE' that takes one argument
+define ECHO_MESSAGE
+	@echo "--- $(1) ---"
+endef
+
+# Define a macro named 'SUM' that takes two arguments
+define SUM
+	@echo "Sum of $(1) and $(2) is: $$(expr $(1) + $(2))"
+endef
+
+all:
+	# Invoke the ECHO_MESSAGE macro
+	$(call ECHO_MESSAGE,Hello World)
+	$(call ECHO_MESSAGE,Another Message)
+
+	# Invoke the SUM macro
+	$(call SUM,10,20)
+```
+
+**Explanation:**
+
+*   `define MACRO_NAME`: Begins the definition of a multi-line macro. The macro's content follows on subsequent lines.
+*   `endef`: Marks the end of the macro definition.
+*   `$(1)`, `$(2)`: Inside the macro, these refer to the arguments passed when the macro is called.
+*   `$(call MACRO_NAME,arg1,arg2,...)`: This is the `call` function, used to invoke a user-defined macro. It passes the subsequent arguments (`arg1`, `arg2`, ...) to the macro.
+
+When `make` is run with the above Makefile, the output would be:
+
+```
+--- Hello World ---
+--- Another Message ---
+Sum of 10 and 20 is: 30
+```
+
+This mechanism allows you to create reusable blocks of Makefile logic that can be parameterized.
+
 ## Common String Functions
 
 ### `$(subst FROM,TO,TEXT)`
