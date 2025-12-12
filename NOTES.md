@@ -33,6 +33,7 @@
     *   [Suppressing Command Output](#suppressing-command-output)
 *   [Git Tips](#git-tips)
     *   [Clone a Specific Commit](#clone-a-specific-commit)
+*   [Makefile Function Syntax](#makefile-function-syntax)
 
     # LaTeX TikZ Tips
 
@@ -759,4 +760,174 @@ git checkout <commit_hash>
 git clone https://github.com/user/my-repo.git --depth 1
 cd my-repo
 git checkout abcdef1234567890abcdef1234567890abcdef12
+```
+
+# Makefile Function Syntax
+
+GNU Make provides a powerful set of built-in functions that allow for dynamic processing of text and lists within Makefiles. These functions are primarily used to manipulate strings, file names, variables, and to control conditional execution.
+
+## Function Syntax
+
+All Make functions follow a consistent syntax:
+
+```makefile
+$(function_name arguments)
+```
+
+or using curly braces (which is often preferred for clarity):
+
+```makefile
+${function_name arguments}
+```
+
+*   `function_name`: The name of the function (e.g., `subst`, `patsubst`, `word`, `foreach`).
+*   `arguments`: A comma-separated list of arguments required by the specific function. These arguments can themselves be variable references or other function calls, allowing for complex nested operations.
+
+## Common String Functions
+
+### `$(subst FROM,TO,TEXT)`
+
+Performs a textual substitution: replaces all occurrences of `FROM` with `TO` in `TEXT`.
+
+**Example:**
+```makefile
+VAR = foo.bar.baz
+RESULT = $(subst .,_,$(VAR))  # RESULT will be "foo_bar_baz"
+```
+
+### `$(patsubst PATTERN,REPLACEMENT,TEXT)`
+
+Performs a pattern substitution: finds words in `TEXT` that match `PATTERN` and replaces them with `REPLACEMENT`. `PATTERN` and `REPLACEMENT` can contain the `%` wildcard, which matches any non-empty substring.
+
+**Example:**
+```makefile
+SOURCES = foo.c bar.c baz.c
+OBJECTS = $(patsubst %.c,%.o,$(SOURCES)) # OBJECTS will be "foo.o bar.o baz.o"
+```
+
+### `$(strip STRING)`
+
+Removes leading and trailing whitespace from `STRING` and replaces sequences of multiple whitespace characters between words with a single space.
+
+**Example:**
+```makefile
+RAW_STRING = "  hello   world  "
+CLEAN_STRING = $(strip $(RAW_STRING)) # CLEAN_STRING will be "hello world"
+```
+
+## Common File Name Functions
+
+### `$(dir NAMES...)`
+
+Extracts the directory part of each file name in `NAMES`. The directory part includes the trailing slash.
+
+**Example:**
+```makefile
+FILES = src/main.c include/header.h Makefile
+DIRS = $(dir $(FILES)) # DIRS will be "src/ include/ ./ "
+```
+
+### `$(notdir NAMES...)`
+
+Extracts the non-directory (file) part of each file name in `NAMES`.
+
+**Example:**
+```makefile
+FILES = src/main.c include/header.h Makefile
+BASENAMES = $(notdir $(FILES)) # BASENAMES will be "main.c header.h Makefile"
+```
+
+### `$(suffix NAMES...)`
+
+Extracts the suffix (extension) of each file name in `NAMES`). The suffix is the part of the name after the last dot.
+
+**Example:**
+```makefile
+FILES = main.c report.txt archive.tar.gz
+SUFFIXES = $(suffix $(FILES)) # SUFFIXES will be ".c .txt .gz"
+```
+
+### `$(basename NAMES...)`
+
+Extracts the base name (file name without suffix) of each file name in `NAMES`.
+
+**Example:**
+```makefile
+FILES = main.c report.txt archive.tar.gz
+BASES = $(basename $(FILES)) # BASES will be "main report archive.tar"
+```
+
+### `$(addsuffix SUFFIX,NAMES...)`
+
+Appends `SUFFIX` to each name in `NAMES`.
+
+**Example:**
+```makefile
+TARGETS = main lib
+ADD_SUFFIX = $(addsuffix .o,$(TARGETS)) # ADD_SUFFIX will be "main.o lib.o"
+```
+
+### `$(addprefix PREFIX,NAMES...)`
+
+Prepends `PREFIX` to each name in `NAMES`.
+
+**Example:**
+```makefile
+SOURCES = main.c utils.c
+ADD_PREFIX = $(addprefix src/,$(SOURCES)) # ADD_PREFIX will be "src/main.c src/utils.c"
+```
+
+## Other Useful Functions
+
+### `$(foreach VAR,LIST,TEXT)`
+
+Executes `TEXT` for each word in `LIST`, assigning the current word to `VAR`. The results of each execution of `TEXT` are concatenated, separated by spaces.
+
+**Example:**
+```makefile
+NUMS = 1 2 3
+DOUBLED_NUMS = $(foreach N,$(NUMS),$(shell echo $$(expr $(N) \* 2))) # DOUBLED_NUMS will be "2 4 6"
+```
+*Note: The `$(shell ...)` and `expr` are used here to demonstrate arithmetic, which Make itself doesn't do directly.*
+
+### `$(word N,TEXT)`
+
+Extracts the N-th word from `TEXT`. `N` is 1-based.
+
+**Example:**
+```makefile
+MESSAGE = Hello world from Make
+FIRST_WORD = $(word 1,$(MESSAGE)) # FIRST_WORD will be "Hello"
+THIRD_WORD = $(word 3,$(MESSAGE)) # THIRD_WORD will be "from"
+```
+
+### `$(shell COMMAND)`
+
+Executes a shell `COMMAND` and returns its standard output. This is very powerful for integrating shell commands into Makefile logic.
+
+**Example:**
+```makefile
+CURRENT_DATE = $(shell date +"%Y-%m-%d") # CURRENT_DATE will be today's date
+```
+
+### `$(error TEXT)`
+
+Generates a fatal error message and exits Make.
+
+**Example:**
+```makefile
+ifndef MY_VAR
+    $(error MY_VAR is not defined! Aborting build.)
+endif
+```
+
+### `$(warning TEXT)`
+
+Generates a warning message but continues execution.
+
+**Example:**
+```makefile
+ifeq ($(OS),Windows_NT)
+    $(warning Building on Windows might lead to unexpected issues.)
+endif
 ```
