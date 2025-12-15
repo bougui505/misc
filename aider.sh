@@ -13,9 +13,16 @@ set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwriting redirection
 
 export OLLAMA_API_BASE=http://127.0.0.1:11435
-ssh -f -N -T -L 11435:localhost:11435 dgx-spark
 
-# Wait a moment to ensure the SSH tunnel is established
-sleep 2
+# Check if port 11435 is already listening
+if lsof -i :11435 > /dev/null 2>&1; then
+    echo "SSH tunnel already established on port 11435"
+else
+    echo "Establishing SSH tunnel..."
+    ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+    
+    # Wait a moment to ensure the SSH tunnel is established
+    sleep 2
+fi
 
 aider --model ollama/qwen3-coder:latest $@
