@@ -133,7 +133,7 @@ if [[ ! -z $IMG ]]; then
 \end{document}
 EOF
         # bk build/slides.pdf
-        latexmk -pdf -outdir=build slides.tex
+        # latexmk -pdf -outdir=build slides.tex
     fi
     cd -
 fi
