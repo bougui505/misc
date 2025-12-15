@@ -2,7 +2,7 @@
 
 # 1. Define the necessary environment variables globally
 export OLLAMA_HOST=127.0.0.1:11435
-export OLLAMA_CONTEXT_LENGTH=8192
+export OLLAMA_CONTEXT_LENGTH=65536
 
 echo "Starting Ollama server on ${OLLAMA_HOST} in the background..."
 
