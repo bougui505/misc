@@ -14,4 +14,8 @@ set -o noclobber  # prevent overwriting redirection
 
 export OLLAMA_API_BASE=http://127.0.0.1:11435
 ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+
+# Wait a moment to ensure the SSH tunnel is established
+sleep 2
+
 aider --model ollama/qwen3-coder:latest $@
