@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+#############################################################################
+# Author: Guillaume Bouvier -- guillaume.bouvier@pasteur.fr                 #
+# https://research.pasteur.fr/en/member/guillaume-bouvier/                  #
+# Copyright (c) 2025 Institut Pasteur                                       #
+#############################################################################
+#
+# creation_date: Mon Dec 15 15:06:27 2025
+
+set -e  # exit on error
+set -o pipefail  # exit when a process in the pipe fails
+set -o noclobber  # prevent overwriting redirection
+
+export OLLAMA_API_BASE=http://127.0.0.1:11435
+ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+aider --model ollama/qwen3-coder:latest $@
