@@ -19,7 +19,7 @@ echo "Waiting 5 seconds for server initialization..."
 sleep 5
 
 # 4. Now, run the pull command as a client.
-MODEL="deepseek-r1"
+MODEL="deepcoder"
 echo "Pulling model ${MODEL} to ${OLLAMA_HOST}..."
 ollama pull ${MODEL}
 
