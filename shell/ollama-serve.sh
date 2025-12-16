@@ -19,8 +19,9 @@ echo "Waiting 5 seconds for server initialization..."
 sleep 5
 
 # 4. Now, run the pull command as a client.
-echo "Pulling model qwen3-coder to ${OLLAMA_HOST}..."
-ollama pull qwen3-coder
+MODEL="deepseek-r1"
+echo "Pulling model ${MODEL} to ${OLLAMA_HOST}..."
+ollama pull ${MODEL}
 
 # 5. Bring the server process back to the foreground (optional, but necessary if
 # you want the script to wait until the server is killed).
