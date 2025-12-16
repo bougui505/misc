@@ -27,4 +27,4 @@ else
     sleep 2
 fi
 
-$DIRSCRIPT/aider_apptainer.sh --edit-format diff --model ollama/qwen3-coder:latest $@
+$DIRSCRIPT/aider_apptainer.sh --edit-format diff --model ollama/deepseek-r1:latest $@
