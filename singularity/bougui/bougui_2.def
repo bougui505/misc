@@ -5,7 +5,11 @@ FROM: bougui_1.sif
 
 %post
 
-pip install --upgrade --upgrade-strategy only-if-needed 'aider-chat[browser]'
+# Install aider-chat without dependencies first to avoid setuptools compatibility issues
+pip install --no-deps --upgrade --upgrade-strategy only-if-needed 'aider-chat[browser]'
+
+# Manually install required dependencies
+pip install --upgrade --upgrade-strategy only-if-needed setuptools wheel
 
 # %runscript
 # cmd $@
