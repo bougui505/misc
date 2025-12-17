@@ -262,6 +262,30 @@ pip install .
 pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" peft
 #################################################################################
 
+######################### OLLAMA ##########################################
+cd /opt
+apt-get purge -y python3-typing-extensions
+curl -fsSL https://ollama.com/install.sh | sh
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" pygls ollama
+###########################################################################
+
+################################# AIDER INSTALL #################################
+export PATH=/root/.local/bin:$PATH
+python3 -m pip config set global.break-system-packages true
+pip --cache-dir="$PIP_CACHE_DIR" install aider-install
+aider-install
+/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
+/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
+cd /root/.local/bin
+for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
+    filename=$(basename "$f")
+    target="/root/.local/bin/$filename"
+    if [ -f "$f" ] && [ ! -e "$target" ]; then
+        ln -s "$f" "$target"
+    fi
+done
+###############################################################################
+
 # rm -rf "$PIP_CACHE_DIR"
 # rm -rf "$APT_CACHE_DIR"
 

@@ -4,8 +4,6 @@ FROM: bougui_1.sif
 %files
 
 %post
-pip install --upgrade --upgrade-strategy only-if-needed setuptools
-pip install --upgrade --upgrade-strategy only-if-needed 'aider-chat[browser]'
 
 # %runscript
 # cmd $@
