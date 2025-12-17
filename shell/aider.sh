@@ -24,7 +24,23 @@ if lsof -i :11435 > /dev/null 2>&1; then
         echo "OLLAMA API is accessible through the tunnel"
     else
         echo "ERROR: OLLAMA API not accessible through the tunnel"
-        exit 1
+        echo "Killing existing SSH tunnel and restarting..."
+        # Kill the existing SSH tunnel
+        lsof -ti :11435 | xargs kill -9 2>/dev/null || true
+        # Establish new SSH tunnel
+        echo "Establishing SSH tunnel..."
+        ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+        
+        # Wait a moment to ensure the SSH tunnel is established
+        sleep 2
+        
+        # Test if the tunnel is working by checking the OLLAMA API
+        if curl -s --fail http://localhost:11435/api/tags > /dev/null; then
+            echo "OLLAMA API is accessible through the tunnel"
+        else
+            echo "ERROR: OLLAMA API not accessible through the tunnel after restart"
+            exit 1
+        fi
     fi
 else
     echo "Establishing SSH tunnel..."
