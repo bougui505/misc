@@ -205,10 +205,6 @@ ln -s /opt/nvim-linux-x86_64/bin/nvim .
 # configure neovim
 # spell languages
 cd /opt/nvim-linux-x86_64/share/nvim/runtime/spell && wget https://www.mirrorservice.org/pub/vim/runtime/spell/fr.utf-8.spl
-
-cd /opt
-curl -fsSL https://ollama.com/install.sh | sh
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" pygls ollama
 ###########################################################################
 
 ################################# PYTORCH #################################
@@ -227,11 +223,6 @@ pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" rdkit
 ################################# SELFIES #################################
 pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" selfies
 ###########################################################################
-
-################################# Python Remind library #################################
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" gcalcli
-pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" remind
-#########################################################################################
 
 ################################# CHIMERA #################################
 cd /opt
@@ -260,14 +251,6 @@ make
 make install
 ###############################
 
-################################# spaCy #################################
-# The global pip config is set at the top of %post
-# The pip cache directory is created at the top of %post
-pip3 --cache-dir="$PIP_CACHE_DIR" install spacy
-python3 -m spacy download en_core_web_sm
-python3 -m spacy download fr_core_news_sm
-##########################################################################
-
 ################################# Group SELFIES #################################
 cd /opt
 git clone https://github.com/aspuru-guzik-group/group-selfies
@@ -275,22 +258,9 @@ cd group-selfies
 pip install .
 #################################################################################
 
-################################# AIDER INSTALL #################################
-export PATH=/root/.local/bin:$PATH
-python3 -m pip config set global.break-system-packages true
-pip --cache-dir="$PIP_CACHE_DIR" install aider-install
-aider-install
-/root/.local/share/uv/tools/aider-chat/bin/python -m pip install --upgrade --upgrade-strategy only-if-needed aider-chat[playwright]
-/root/.local/share/uv/tools/aider-chat/bin/python -m playwright install
-cd /root/.local/bin
-for f in /root/.local/share/uv/tools/aider-chat/bin/*; do
-    filename=$(basename "$f")
-    target="/root/.local/bin/$filename"
-    if [ -f "$f" ] && [ ! -e "$target" ]; then
-        ln -s "$f" "$target"
-    fi
-done
-###############################################################################
+############################### PEFT ############################################
+pip3 install --break-system-packages --cache-dir "$PIP_CACHE_DIR" peft
+#################################################################################
 
 # rm -rf "$PIP_CACHE_DIR"
 # rm -rf "$APT_CACHE_DIR"
