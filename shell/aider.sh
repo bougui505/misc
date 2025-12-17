@@ -20,7 +20,7 @@ export OLLAMA_API_BASE=http://127.0.0.1:11435
 if lsof -i :11435 > /dev/null 2>&1; then
     echo "SSH tunnel already established on port 11435"
     # Test if the tunnel is working by checking the OLLAMA API
-    if curl -s --fail http://localhost:11435/api/tags > /dev/null; then
+    if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
         echo "OLLAMA API is accessible through the tunnel"
     else
         echo "ERROR: OLLAMA API not accessible through the tunnel"
@@ -35,7 +35,7 @@ if lsof -i :11435 > /dev/null 2>&1; then
         sleep 2
         
         # Test if the tunnel is working by checking the OLLAMA API
-        if curl -s --fail http://localhost:11435/api/tags > /dev/null; then
+        if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
             echo "OLLAMA API is accessible through the tunnel"
         else
             echo "ERROR: OLLAMA API not accessible through the tunnel after restart"
@@ -50,7 +50,7 @@ else
     sleep 2
     
     # Test if the tunnel is working by checking the OLLAMA API
-    if curl -s --fail http://localhost:11435/api/tags > /dev/null; then
+    if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
         echo "OLLAMA API is accessible through the tunnel"
     else
         echo "ERROR: OLLAMA API not accessible through the tunnel"
