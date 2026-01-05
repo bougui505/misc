@@ -17,8 +17,8 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 # trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-REMOTEHOST="horace"
-REMOTEDIR="/horace/bougui/archives"
+REMOTEHOST="maestro"
+REMOTEDIR="/pasteur/gaia/homes/bougui/archives"
 
 ssh "$REMOTEHOST" "mkdir -p $REMOTEDIR"
 
