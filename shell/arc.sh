@@ -78,6 +78,9 @@ if [[ -f $1 ]]; then
             # Set the incomplete archive variable for cleanup
             INCOMPLETE_ARCHIVE="$OUTFILE"
             
+            # Store the original file's timestamp
+            ORIGINAL_TIMESTAMP=$(stat -c %Y:%y "$FILE")
+            
             # cat the file to gzip and send it to the remote host
             pcat "$FILE" | pigz -c | ssh "$REMOTEHOST" "cat > $OUTFILE"
             
@@ -99,6 +102,12 @@ if [[ -f $1 ]]; then
 # Do not edit it
 # Transfer the compressed file and decompress locally
 ssh "$REMOTEHOST" "cat $OUTFILE" | pigz -c -d > "$(realpath "$FILE")"
+# Restore the original timestamp
+ORIGINAL_TIMESTAMP="${ORIGINAL_TIMESTAMP}"
+if [[ -n "\$ORIGINAL_TIMESTAMP" ]]; then
+    IFS=':' read -r mtime atime <<< "\$ORIGINAL_TIMESTAMP"
+    touch -d "@\$mtime" "$(realpath "$FILE")"
+fi
 # check if the file was successfully unarchived
 if [[ -f "$(realpath "$FILE")" ]]; then
     echo "File $(realpath "$FILE") unarchived"
