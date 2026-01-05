@@ -97,8 +97,8 @@ if [[ -f $1 ]]; then
 # This script will unarchive the file $REMOTEHOST:$OUTFILE
 # It was created by the script $(basename "$0")
 # Do not edit it
-# ungzip the archived file on the remote host
-ssh "$REMOTEHOST" "gzip -c -d $OUTFILE" > "$(realpath "$FILE")"
+# Transfer the compressed file and decompress locally
+ssh "$REMOTEHOST" "cat $OUTFILE" | pigz -c -d > "$(realpath "$FILE")"
 # check if the file was successfully unarchived
 if [[ -f "$(realpath "$FILE")" ]]; then
     echo "File $(realpath "$FILE") unarchived"
