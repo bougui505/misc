@@ -12,6 +12,9 @@ set -e  # exit on error
 set -o pipefail  # exit when a process in the pipe fails
 set -o noclobber  # prevent overwritting redirection
 
+mkdir -p ~/.ssh/sockets
+
+
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 # MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
@@ -43,6 +46,16 @@ The original files will be removed and replaced by a script that will unarchive 
 The script will be called <file>.arc.sh and will be created in the same directory as the original file.
 
     -h, --help print this help message and exit
+
+Set or add:
+
+Host $REMOTEHOST
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+
+In the file: ~/.ssh/config
+to be able to reuse open connections with ssh (faster and safer implementation for archiving several files).
 EOF
 }
 
