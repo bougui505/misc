@@ -102,7 +102,7 @@ if [[ -f $1 ]]; then
 # It was created by the script $(basename "$0")
 # Do not edit it
 # Transfer the compressed file and decompress locally
-ssh "$REMOTEHOST" "cat $OUTFILE" | pigz -c -d | tar -xzf - -C "$(dirname $(realpath "$FILE"))"
+ssh "$REMOTEHOST" "cat $OUTFILE" | tar -xzf - -C "$(dirname $(realpath "$FILE"))"
 # Restore the original timestamp
 ORIGINAL_TIMESTAMP="${ORIGINAL_TIMESTAMP}"
 if [[ -n "\$ORIGINAL_TIMESTAMP" ]]; then
