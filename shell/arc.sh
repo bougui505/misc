@@ -70,7 +70,62 @@ if [[ -f $1 ]]; then
         ETA=$(printf "%02d:%02d:%02d" $((REMAINING / 3600)) $(((REMAINING % 3600) / 60)) $((REMAINING % 60)))
         printf "\rArchiving files: [%-50s] %.2f%% ETA: %s " $(printf '#%.0s' $(seq 1 $((i*50/NLINES)))) $PROGRESS $ETA
         i=$((i+1))
-        if [ -f $FILE ] && [ ! -L $FILE ]; then
+        if [ -d "$FILE" ]; then
+            # It's a directory, archive it using tar
+            DIRNAME=$(dirname $(realpath "$FILE"))
+            ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${DIRNAME}"
+            OUTFILE="${REMOTEDIR}$(realpath "$FILE").tar.gz"
+            
+            # Set the incomplete archive variable for cleanup
+            INCOMPLETE_ARCHIVE="$OUTFILE"
+            
+            # Store the original directory's timestamp
+            ORIGINAL_TIMESTAMP=$(stat -c %Y:%y "$FILE")
+            
+            # Create a tar archive, compress it with pigz, and send it to the remote host
+            tar -czf - -C "$(dirname $(realpath "$FILE"))" "$(basename $(realpath "$FILE"))" | ssh "$REMOTEHOST" "cat > $OUTFILE"
+            
+            # check if the file was successfully archived
+            if ssh "$REMOTEHOST" "test -f $OUTFILE"; then
+                echo "Directory $FILE archived as $OUTFILE" > /dev/null
+                # Clear the incomplete archive variable since it's now complete
+                INCOMPLETE_ARCHIVE=""
+            else
+                echo "Error archiving directory $FILE" > /dev/stderr
+                exit 1
+            fi
+            
+            # Create the unarchive script
+            cat << EOF > "${FILE}.arc.sh"
+#!/usr/bin/env bash
+# This script will unarchive the directory $REMOTEHOST:$OUTFILE
+# It was created by the script $(basename "$0")
+# Do not edit it
+# Transfer the compressed file and decompress locally
+ssh "$REMOTEHOST" "cat $OUTFILE" | pigz -c -d | tar -xzf - -C "$(dirname $(realpath "$FILE"))"
+# Restore the original timestamp
+ORIGINAL_TIMESTAMP="${ORIGINAL_TIMESTAMP}"
+if [[ -n "\$ORIGINAL_TIMESTAMP" ]]; then
+    IFS=':' read -r mtime atime <<< "\$ORIGINAL_TIMESTAMP"
+    touch -d "@\$mtime" "$(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE"))"
+fi
+# check if the directory was successfully unarchived
+if [[ -d "$(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE"))" ]]; then
+    echo "Directory $(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE")) unarchived"
+else
+    echo "Error unarchiving directory $(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE"))"
+    exit 1
+fi
+# remove the archived file on the remote host
+ssh "$REMOTEHOST" "rm -v $OUTFILE"
+# remove the script itself
+rm -v "$(realpath "$FILE").arc.sh"
+EOF
+            chmod +x "${FILE}.arc.sh"
+            # remove the original directory
+            rm -rv "$FILE"
+        elif [ -f "$FILE" ] && [ ! -L "$FILE" ]; then
+            # It's a regular file, archive it as before
             DIRNAME=$(dirname $(realpath "$FILE"))
             ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${DIRNAME}"
             OUTFILE="${REMOTEDIR}$(realpath $FILE).gz"
@@ -130,7 +185,7 @@ EOF
                 i=$((i-1))
                 T0=$SECONDS
             else
-                echo "File $FILE is not a regular file"
+                echo "File $FILE is not a regular file or directory"
             fi
         fi
     done
