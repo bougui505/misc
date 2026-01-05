@@ -122,6 +122,7 @@ ssh "$REMOTEHOST" "rm -v $OUTFILE"
 rm -v "$(realpath "$FILE").arc.sh"
 EOF
             chmod +x "${FILE}.arc.sh"
+            # AI! give the ORIGINAL_TIMESTAMP to the file: "${FILE}.arc.sh"
             # remove the original directory
             rm -rv "$FILE"
         elif [ -f "$FILE" ] && [ ! -L "$FILE" ]; then
