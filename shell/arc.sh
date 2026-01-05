@@ -22,6 +22,17 @@ REMOTEDIR="/pasteur/gaia/homes/bougui/archives"
 
 ssh "$REMOTEHOST" "mkdir -p $REMOTEDIR"
 
+# Function to clean up on exit
+cleanup() {
+    # Remove any incomplete archives that might have been created
+    if [[ -n "$INCOMPLETE_ARCHIVE" ]]; then
+        ssh "$REMOTEHOST" "rm -f $INCOMPLETE_ARCHIVE" 2>/dev/null || true
+    fi
+}
+
+# Set trap to cleanup on exit
+trap cleanup EXIT INT TERM
+
 function usage () {
     cat << EOF
 Usage: $(basename "$0") <file>
@@ -63,17 +74,24 @@ if [[ -f $1 ]]; then
             DIRNAME=$(dirname $(realpath "$FILE"))
             ssh "$REMOTEHOST" "mkdir -vp ${REMOTEDIR}${DIRNAME}"
             OUTFILE="${REMOTEDIR}$(realpath $FILE).gz"
+            
+            # Set the incomplete archive variable for cleanup
+            INCOMPLETE_ARCHIVE="$OUTFILE"
+            
             # cat the file to gzip and send it to the remote host
             pcat "$FILE" | pigz -c | ssh "$REMOTEHOST" "cat > $OUTFILE"
+            
             # check if the file was successfully archived
             if ssh "$REMOTEHOST" "test -f $OUTFILE"; then
                 echo "File $FILE archived as $OUTFILE" > /dev/null
+                # Clear the incomplete archive variable since it's now complete
+                INCOMPLETE_ARCHIVE=""
             else
                 echo "Error archiving file $FILE" > /dev/stderr
                 exit 1
             fi
-            # replace FILE with a script that will unarchive it
-            # the script will be called ${file}.arc.sh
+            
+            # Create the unarchive script
             cat << EOF > "${FILE}.arc.sh"
 #!/usr/bin/env bash
 # This script will unarchive the file $REMOTEHOST:$OUTFILE
