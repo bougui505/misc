@@ -53,6 +53,8 @@ if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
     YMAX=$(echo "scale=2; $YMAX+($YMAX-$YMIN)/10" | bc)
     YMIN=$(echo "scale=2; $YMIN-($YMAX-$YMIN)/10" | bc)
     cat "$OUTFILE" \
+        | uniq \
+        | tail -500 \
         | awk 'NR>1 {print $1,$5/(1024^2)}' \
         | plot3 --xlabel "date" \
                 --ylabel "disk available (GB)" \
