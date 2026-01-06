@@ -53,16 +53,12 @@ if [[ "$1" == "--plot" || "$1" == "-p" ]]; then
     YMAX=$(echo "scale=2; $YMAX+($YMAX-$YMIN)/10" | bc)
     YMIN=$(echo "scale=2; $YMIN-($YMAX-$YMIN)/10" | bc)
     cat "$OUTFILE" \
-        | awk 'NR>1 {print $1,$3/(1024^2),$5/(1024^2)}' \
+        | awk 'NR>1 {print $1,$5/(1024^2)}' \
         | plot3 --xlabel "date" \
                 --ylabel "disk available (GB)" \
                 --grid \
                 plot \
-                    --fields "ts y y" \
-                    --labels "total available" \
+                    --fields "ts y" \
                     --ymin $YMIN \
-                    --ymax $YMAX \
-                    --shade "1 1" \
-                    --alpha-shade 1 \
-                    --fmt "lightcoral lightcyan"
+                    --ymax $YMAX
 fi
