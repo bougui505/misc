@@ -36,6 +36,12 @@ echo "==========="
 ssh horace bzcat /horace/bougui/backintime/backintime/arcturus/root/1/20260108-120001-544/takesnapshot.log.bz2 | headtail
 echo "==========="
 
+echo "recently changed files (changed-within 1day) in the backup directory:"
+echo "====================================================================="
+ssh horace fdfind --changed-within 1day --type f . /horace/bougui/backintime/backintime/arcturus/root/1/last_snapshot/backup \
+  | sed 's,/horace/bougui/backintime/backintime/arcturus/root/1/last_snapshot/backup,,'
+echo "====================================================================="
+
 # echo "check-config:"
 # echo "============="
 # sudo backintime check-config
