@@ -28,8 +28,13 @@ echo "==============="
 
 echo "journalctl logs:"
 echo "================"
-sudo journalctl _UID=0 -t backintime | tail -n 15
+sudo journalctl _UID=0 -t backintime | grep -v mount | tail -n 15
 echo "================"
+
+echo "rsync logs:"
+echo "==========="
+ssh horace bzcat /horace/bougui/backintime/backintime/arcturus/root/1/20260108-120001-544/takesnapshot.log.bz2 | headtail
+echo "==========="
 
 # echo "check-config:"
 # echo "============="
