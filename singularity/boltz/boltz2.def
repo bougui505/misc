@@ -6,16 +6,16 @@ boltz_data /opt/
 
 %post
 export DEBIAN_FRONTEND=noninteractive
-mkdir -p /tmp/apt/cache
-mkdir -p /tmp/apt/lists
-echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
-echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
+# mkdir -p /tmp/apt/cache
+# mkdir -p /tmp/apt/lists
+# echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
+# echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 apt-get update
 apt-get install -y --no-install-recommends python3-pip git build-essential python3-dev gfortran pkg-config libopenblas-dev liblapack-dev cmake
 
 python3 -m pip config set global.break-system-packages true
-mkdir -p /tmp/pip/cache
-pip --cache-dir=/tmp/pip/cache install boltz -U
+# mkdir -p /tmp/pip/cache
+pip install boltz[cuda] -U
 pip install cuequivariance-torch
 pip install cuequivariance-ops-torch-cu12
 touch /opt/boltz_data/mols.tar  # required (bug of boltz)
