@@ -38,7 +38,8 @@ boltz_data/boltz2_aff.ckpt:
 	wget https://huggingface.co/boltz-community/boltz-2/resolve/main/boltz2_aff.ckpt -O $@
 
 boltz.sif: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/boltz2_conf.ckpt boltz_data/boltz2_aff.ckpt
-	APPTAINER_TMPDIR=/dev/shm/ singularity build -F $@ $<
+	mkdir -p tmp
+	APPTAINER_TMPDIR=$$(pwd)/tmp singularity build -F $@ $<
 
 boltz.sif-maestro: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/
 	ssh maestro << EOF
