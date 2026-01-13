@@ -18,15 +18,16 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 PORT=11435
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+FLAG=1
+while [[ $# -gt 0 && $FLAG -gt 0 ]]; do
     case $1 in
         -p|--port)
             PORT="$2"
             shift 2
             ;;
         *)
-            echo "Unknown option $1"
-            exit 1
+            echo "Passing option $1 to aider"
+            FLAG=0
             ;;
     esac
 done
