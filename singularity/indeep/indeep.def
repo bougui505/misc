@@ -21,6 +21,7 @@ apt-get install -y clustalw
 apt-get install -y qalc
 apt-get install -y gztool
 apt-get install -y python3-h5py python3-sklearn python3-tqdm python3-skimage vim
+apt-get install -y cmake
 apt-get clean
 ###############################################################################
 
@@ -39,19 +40,19 @@ tar xf collada2gltf-*.tar.bz2 -C / bin/collada2gltf
 git clone --depth 1 https://github.com/schrodinger/pymol-testing.git
 git clone --depth 1 https://github.com/rcsb/mmtf-cpp.git
 cp -R mmtf-cpp/include/mmtf* include/
-python3 setup.py --glut build install
+python3 setup.py build install
 # PYMOL PLUGINS:
-cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
-git clone https://github.com/bougui505/pymol_isosurface.git
-ln -s /opt/InDeep/InDeep_PyMol_plugin
+# cd /usr/local/lib/python3.11/dist-packages/pymol/pymol_path/data/startup
+# git clone https://github.com/bougui505/pymol_isosurface.git
+# ln -s /opt/InDeep/InDeep_PyMol_plugin
 ##########################################################################
 
-################################# PYMOL PSICO ##################################
-cd /opt
-git clone https://github.com/speleo3/pymol-psico.git
-cd pymol-psico
-pip3 install --break-system-packages .
-################################################################################
+# ################################# PYMOL PSICO ##################################
+# cd /opt
+# git clone https://github.com/speleo3/pymol-psico.git
+# cd pymol-psico
+# pip3 install --break-system-packages .
+# ################################################################################
 
 ############################## INDEEP ##############################
 cd /opt
