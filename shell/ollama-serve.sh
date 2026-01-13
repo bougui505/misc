@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# 1. Define the necessary environment variables globally
-export OLLAMA_HOST=127.0.0.1:11435
+# Parse command line arguments
+PORT=${1:-11435}  # Use first argument or default to 11435
+export OLLAMA_HOST=127.0.0.1:${PORT}
 export OLLAMA_CONTEXT_LENGTH=65536
 
 echo "Starting Ollama server on ${OLLAMA_HOST} in the background..."
