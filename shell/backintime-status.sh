@@ -19,28 +19,23 @@ trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 echo "Backuped directories:"
 echo "====================="
 sudo grep "include" /root/.config/backintime/config | grep value | cut -d'=' -f2
-echo "====================="
+echo ""
 
 echo "snapshots-list:"
 echo "==============="
 sudo backintime snapshots-list
-echo "==============="
+echo ""
 
 echo "journalctl logs:"
 echo "================"
 sudo journalctl _UID=0 -t backintime | grep -v mount | tail -n 15
-echo "================"
-
-echo "rsync logs:"
-echo "==========="
-ssh horace bzcat /horace/bougui/backintime/backintime/arcturus/root/1/20260108-120001-544/takesnapshot.log.bz2 | headtail
-echo "==========="
+echo ""
 
 echo "recently changed files (changed-within 1day) in the backup directory:"
 echo "====================================================================="
 ssh horace fdfind --changed-within 1day --type f . /horace/bougui/backintime/backintime/arcturus/root/1/last_snapshot/backup \
   | sed 's,/horace/bougui/backintime/backintime/arcturus/root/1/last_snapshot/backup,,'
-echo "====================================================================="
+echo ""
 
 # echo "check-config:"
 # echo "============="
