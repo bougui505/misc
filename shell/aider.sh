@@ -16,6 +16,8 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 # Default port
 PORT=11435
+# Default host
+HOST=dgx-spark
 
 # Parse command line arguments
 FLAG=1
@@ -23,6 +25,10 @@ while [[ $# -gt 0 && $FLAG -gt 0 ]]; do
     case $1 in
         -p|--port)
             PORT="$2"
+            shift 2
+            ;;
+        -H|--host)
+            HOST="$2"
             shift 2
             ;;
         *)
@@ -47,7 +53,7 @@ if lsof -i :$PORT > /dev/null 2>&1; then
         lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
         # Establish new SSH tunnel
         echo "Establishing SSH tunnel..."
-        ssh -f -N -T -L $PORT:localhost:11435 dgx-spark
+        ssh -f -N -T -L $PORT:localhost:11435 $HOST
         
         # Wait a moment to ensure the SSH tunnel is established
         sleep 2
@@ -62,7 +68,7 @@ if lsof -i :$PORT > /dev/null 2>&1; then
     fi
 else
     echo "Establishing SSH tunnel..."
-    ssh -f -N -T -L $PORT:localhost:11435 dgx-spark
+    ssh -f -N -T -L $PORT:localhost:11435 $HOST
     
     # Wait a moment to ensure the SSH tunnel is established
     sleep 2
