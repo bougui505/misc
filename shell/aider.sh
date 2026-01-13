@@ -14,28 +14,45 @@ set -o noclobber  # prevent overwriting redirection
 
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
-export OLLAMA_API_BASE=http://127.0.0.1:11435
+# Default port
+PORT=11435
 
-# Check if port 11435 is already listening
-if lsof -i :11435 > /dev/null 2>&1; then
-    echo "SSH tunnel already established on port 11435"
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -p|--port)
+            PORT="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option $1"
+            exit 1
+            ;;
+    esac
+done
+
+export OLLAMA_API_BASE=http://127.0.0.1:$PORT
+
+# Check if port is already listening
+if lsof -i :$PORT > /dev/null 2>&1; then
+    echo "SSH tunnel already established on port $PORT"
     # Test if the tunnel is working by checking the OLLAMA API
-    if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
+    if curl --max-time 2 -s --fail http://localhost:$PORT/api/tags > /dev/null; then
         echo "OLLAMA API is accessible through the tunnel"
     else
         echo "ERROR: OLLAMA API not accessible through the tunnel"
         echo "Killing existing SSH tunnel and restarting..."
         # Kill the existing SSH tunnel
-        lsof -ti :11435 | xargs kill -9 2>/dev/null || true
+        lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
         # Establish new SSH tunnel
         echo "Establishing SSH tunnel..."
-        ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+        ssh -f -N -T -L $PORT:localhost:11435 dgx-spark
         
         # Wait a moment to ensure the SSH tunnel is established
         sleep 2
         
         # Test if the tunnel is working by checking the OLLAMA API
-        if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
+        if curl --max-time 2 -s --fail http://localhost:$PORT/api/tags > /dev/null; then
             echo "OLLAMA API is accessible through the tunnel"
         else
             echo "ERROR: OLLAMA API not accessible through the tunnel after restart"
@@ -44,13 +61,13 @@ if lsof -i :11435 > /dev/null 2>&1; then
     fi
 else
     echo "Establishing SSH tunnel..."
-    ssh -f -N -T -L 11435:localhost:11435 dgx-spark
+    ssh -f -N -T -L $PORT:localhost:11435 dgx-spark
     
     # Wait a moment to ensure the SSH tunnel is established
     sleep 2
     
     # Test if the tunnel is working by checking the OLLAMA API
-    if curl --max-time 2 -s --fail http://localhost:11435/api/tags > /dev/null; then
+    if curl --max-time 2 -s --fail http://localhost:$PORT/api/tags > /dev/null; then
         echo "OLLAMA API is accessible through the tunnel"
     else
         echo "ERROR: OLLAMA API not accessible through the tunnel"
