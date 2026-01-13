@@ -53,7 +53,7 @@ if lsof -i :$PORT > /dev/null 2>&1; then
         lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
         # Establish new SSH tunnel
         echo "Establishing SSH tunnel..."
-        ssh -f -N -T -L $PORT:localhost:11435 $HOST
+        ssh -f -N -T -L $PORT:localhost:$PORT $HOST
         
         # Wait a moment to ensure the SSH tunnel is established
         sleep 2
@@ -68,7 +68,7 @@ if lsof -i :$PORT > /dev/null 2>&1; then
     fi
 else
     echo "Establishing SSH tunnel..."
-    ssh -f -N -T -L $PORT:localhost:11435 $HOST
+    ssh -f -N -T -L $PORT:localhost:$PORT $HOST
     
     # Wait a moment to ensure the SSH tunnel is established
     sleep 2
