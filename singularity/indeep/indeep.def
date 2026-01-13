@@ -45,8 +45,9 @@ python3 setup.py build install
 ############################## INDEEP ##############################
 cd /opt
 git clone https://gitlab.pasteur.fr/InDeep/InDeep.git
-# AI! how to get the location of the python dist-packages directory ?
-cd /usr/local/lib/python3.11/dist-packages
+# Get the python dist-packages directory
+PYTHON_DIST_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+cd $PYTHON_DIST_PACKAGES
 ln -s /opt/InDeep/* .
 cd /usr/bin
 ln -s /opt/InDeep/learning/predict.py
