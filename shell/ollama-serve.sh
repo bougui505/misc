@@ -20,7 +20,7 @@ echo "Waiting 5 seconds for server initialization..."
 sleep 5
 
 # 4. Now, run the pull command as a client.
-MODEL="gemma"
+MODEL="qwen3-coder:latest"
 echo "Pulling model ${MODEL} to ${OLLAMA_HOST}..."
 ollama pull ${MODEL}
 
