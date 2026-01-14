@@ -7,8 +7,8 @@
 #
 # creation_date: Wed Jan 14 09:39:24 2025
 
-import typer
 import MDAnalysis as mda
+import typer
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
@@ -38,7 +38,7 @@ def load_trajectory(traj_file: str, top_file: str = None):
         top_file (str, optional): Path to the topology file. If None, will try to infer from traj_file
     """
     try:
-        if top_file is None:
+        ifs top_file is None:
             # Try to infer topology from trajectory file
             u = mda.Universe(traj_file)
         else:
