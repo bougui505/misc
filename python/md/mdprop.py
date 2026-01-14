@@ -38,7 +38,7 @@ def load_trajectory(traj_file: str, top_file: str = None):
         top_file (str, optional): Path to the topology file. If None, will try to infer from traj_file
     """
     try:
-        ifs top_file is None:
+        if top_file is None:
             # Try to infer topology from trajectory file
             u = mda.Universe(traj_file)
         else:
