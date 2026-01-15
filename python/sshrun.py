@@ -70,7 +70,8 @@ def _write_sshrun_log_entry(
 
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
-                      remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm"):
+                      remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm",
+                      force_remove=False):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
@@ -288,22 +289,27 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
             sys.stderr.flush() # Ensure all previous stderr messages are displayed
 
             try:
-                response = ""
-                try:
-                    print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
-                    sys.stderr.flush() # Ensure the prompt is immediately visible
-                    response = sys.stdin.readline().strip().lower()
-                except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
-                    response = ""
-
-                if response in ('n', 'no'):
-                    print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
-                          f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
-                    should_delete = False
-                    log_remote_dir_removed_status = "KEPT (user choice)"
-                else: # Default to yes (empty response, EOFError, or any other input)
+                # If force_remove is set, skip user prompt and immediately delete
+                if force_remove:
                     should_delete = True
-                    # log_remote_dir_removed_status will be set to "REMOVED" or "REMOVED (interrupted)" below
+                    log_remote_dir_removed_status = "REMOVED (forced)"
+                else:
+                    response = ""
+                    try:
+                        print(f"[{host}] Remove remote temporary directory {remote_tmp_dir}? [Y/n] ", file=sys.stderr, end='')
+                        sys.stderr.flush() # Ensure the prompt is immediately visible
+                        response = sys.stdin.readline().strip().lower()
+                    except EOFError: # Handles cases where stdin is closed (e.g., piped input), defaults to 'yes'
+                        response = ""
+
+                    if response in ('n', 'no'):
+                        print(f"[{host}] Remote directory {remote_tmp_dir} kept. To reuse it later, use: "
+                              f"--remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
+                        should_delete = False
+                        log_remote_dir_removed_status = "KEPT (user choice)"
+                    else: # Default to yes (empty response, EOFError, or any other input)
+                        should_delete = True
+                        # log_remote_dir_removed_status will be set to "REMOVED" or "REMOVED (interrupted)" below
             except KeyboardInterrupt:
                 print(f"\n[{host}] Interrupted. Defaulting to deleting remote directory {remote_tmp_dir}.", file=sys.stderr)
                 should_delete = True
@@ -383,9 +389,14 @@ if __name__ == "__main__":
         help="The parent directory on the remote host where the temporary directory will be created. "
              "Defaults to /dev/shm."
     )
+    parser.add_argument(
+        "--force-remove", action="store_true", default=False,
+        help="Force remove the remote temporary directory after completion or exit, regardless of user input."
+    )
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
                       remote_dir_to_reuse=args.remote_dir,
                       follow_symlinks=args.follow_symlinks,
-                      remote_tmp_parent_dir=args.remote_tmp_parent_dir)
+                      remote_tmp_parent_dir=args.remote_tmp_parent_dir,
+                      force_remove=args.force_remove)
