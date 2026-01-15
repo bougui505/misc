@@ -22,6 +22,7 @@ touch /opt/boltz_data/mols.tar  # required (bug of boltz)
 
 # FOR COMPATIBILITY WITH DGX-SPARK see: https://github.com/sanjyotshenoy/boltz-gb10-spark/
 # AI! uninstall the standard triton
+pip uninstall -y triton
 
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
