@@ -41,6 +41,10 @@ boltz.sif: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.c
 	mkdir -p tmp
 	APPTAINER_TMPDIR=$$(pwd)/tmp singularity build -F $@ $<
 
+boltz-dgx.sif: boltz2-dgx.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/boltz2_conf.ckpt boltz_data/boltz2_aff.ckpt
+	mkdir -p tmp
+	APPTAINER_TMPDIR=$$(pwd)/tmp singularity build -F $@ $<
+
 boltz.sif-maestro: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/
 	ssh maestro << EOF
 	cd /pasteur/appa/homes/bougui/source/misc
