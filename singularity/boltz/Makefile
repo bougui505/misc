@@ -8,7 +8,7 @@
 
 SHELL := zsh
 .ONESHELL:
-.SHELLFLAGS := -eu -c
+.SHELLFLAGS := -e
 
 outputs=target1 target2
 .PHONY: help clean #  which targets are not represented by files
