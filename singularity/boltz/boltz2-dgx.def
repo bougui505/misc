@@ -22,7 +22,7 @@ touch /opt/boltz_data/mols.tar  # required (bug of boltz)
 
 # FOR COMPATIBILITY WITH DGX-SPARK see: https://github.com/sanjyotshenoy/boltz-gb10-spark/
 pip uninstall -y triton
-pip install triton-nightly==3.6.0.dev20240801
+pip install triton-nightly
 
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
