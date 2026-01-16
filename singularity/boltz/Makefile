@@ -42,8 +42,7 @@ boltz.sif: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.c
 	APPTAINER_TMPDIR=$$(pwd)/tmp singularity build -F $@ $<
 
 boltz-dgx.sif: boltz2-dgx.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/boltz2_conf.ckpt boltz_data/boltz2_aff.ckpt
-	mkdir -p tmp
-	APPTAINER_TMPDIR=$$(pwd)/tmp singularity build -F $@ $<
+	sshrun dgx-spark "singularity build -F $@ $<" -t $^ -r boltz-dgx.sif --remote-tmp-parent-dir /tmp --remote-dir /tmp/tmp.cAt1QutmvA
 
 boltz.sif-maestro: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz1_conf.ckpt boltz_data/
 	ssh maestro << EOF
