@@ -7,7 +7,7 @@ boltz_data /opt/
 %post
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends python3-pip git build-essential python3-dev gfortran pkg-config libopenblas-dev liblapack-dev cmake
+apt-get install -y --no-install-recommends python3-pip git build-essential python3-dev gfortran pkg-config libopenblas-dev liblapack-dev cmake ninja-build
 
 # Install Python packages
 python3 -m pip config set global.break-system-packages true
