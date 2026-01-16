@@ -1,23 +1,25 @@
 BOOTSTRAP: docker
-FROM: debian:12
+FROM: nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 %files
 boltz_data /opt/
 
 %post
 export DEBIAN_FRONTEND=noninteractive
-# mkdir -p /tmp/apt/cache
-# mkdir -p /tmp/apt/lists
-# echo 'Dir::Cache "/tmp/apt/cache";' > /etc/apt/apt.conf.d/99custom
-# echo 'Dir::State::Lists "/tmp/apt/lists";' >> /etc/apt/apt.conf.d/99custom
 apt-get update
 apt-get install -y --no-install-recommends python3-pip git build-essential python3-dev gfortran pkg-config libopenblas-dev liblapack-dev cmake
 
+# Install Python packages
 python3 -m pip config set global.break-system-packages true
-# mkdir -p /tmp/pip/cache
+
+# Install PyTorch with CUDA support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Install boltz and dependencies
 pip install boltz[cuda] -U
 pip install cuequivariance-torch
 pip install cuequivariance-ops-torch-cu12
+
 touch /opt/boltz_data/mols.tar  # required (bug of boltz)
 
 # FOR COMPATIBILITY WITH DGX-SPARK see: https://github.com/sanjyotshenoy/boltz-gb10-spark/
@@ -26,3 +28,5 @@ pip install --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_pa
 
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
+export CUDA_HOME=/usr/local/cuda
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
