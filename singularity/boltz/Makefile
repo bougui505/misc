@@ -57,5 +57,8 @@ boltz.sif-maestro: boltz.def boltz_data/ccd.pkl boltz_data/mols boltz_data/boltz
 test:
 	apptainer run --nv boltz.sif boltz predict data/1t4e.yml --use_msa_server --override
 
+test_dgx-spark:
+	sshrun dgx-spark "apptainer run --nv ./boltz-dgx.sif boltz predict data/1t4e.yml --num_workers 0 --use_msa_server --override" -t boltz-dgx.sif data/1t4e.yml --force-remove
+
 test-cpu:
 	apptainer run boltz.sif boltz predict data/1t4e.yml --use_msa_server --override --accelerator cpu
