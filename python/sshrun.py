@@ -71,7 +71,7 @@ def _write_sshrun_log_entry(
 
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                       remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm",
-                      force_remove=False):
+                      force_remove=False, force_keep=False):
     """
     Transfers files to a remote host, runs a command in a temporary directory
     (or a specified existing directory), retrieves results (stdout or specific files),
@@ -293,6 +293,11 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                 if force_remove:
                     should_delete = True
                     log_remote_dir_removed_status = "REMOVED (forced)"
+                elif force_keep:
+                    print(f"[{host}] Remote directory {remote_tmp_dir} will be kept as requested. "
+                          f"To reuse it later, use: --remote-dir {shlex.quote(remote_tmp_dir)}", file=sys.stderr)
+                    should_delete = False
+                    log_remote_dir_removed_status = "KEPT (forced)"
                 else:
                     response = ""
                     try:
@@ -393,10 +398,16 @@ if __name__ == "__main__":
         "--force-remove", action="store_true", default=False,
         help="Force remove the remote temporary directory after completion or exit, regardless of user input."
     )
+    parser.add_argument(
+        "--force-keep", action="store_true", default=False,
+        help="Force keep the remote temporary directory after completion, without asking any questions. "
+             "A reminder message will be printed."
+    )
     args = parser.parse_args()
 
     run_remote_script(args.host, args.command, args.transfer, args.retrieve,
                       remote_dir_to_reuse=args.remote_dir,
                       follow_symlinks=args.follow_symlinks,
                       remote_tmp_parent_dir=args.remote_tmp_parent_dir,
-                      force_remove=args.force_remove)
+                      force_remove=args.force_remove,
+                      force_keep=args.force_keep)
