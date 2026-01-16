@@ -26,6 +26,9 @@ touch /opt/boltz_data/mols.tar  # required (bug of boltz)
 pip uninstall -y triton
 pip install --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton
 
+# Ensure CUDA libraries are properly linked
+ln -sf /usr/local/cuda/lib64/stubs/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so
+
 %environment
 export BOLTZ_CACHE=/opt/boltz_data
 export CUDA_HOME=/usr/local/cuda
