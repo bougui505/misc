@@ -27,3 +27,7 @@ bougui.sif-maestro:
 
 test-cuda: bougui.sif
 	singularity run --nv bougui.sif python3 -c 'import torch; print(torch.cuda.is_available())'
+
+blast_swissprot.sif: blast_swissprot.def
+	mkdir -p tmp
+	APPTTAINER_TMPDIR=$$(pwd)/tmp apptainer build --force $@ $<
