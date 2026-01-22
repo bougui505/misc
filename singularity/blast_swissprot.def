@@ -42,6 +42,7 @@ From: ubuntu:22.04
     blastp -query "$QUERY" \
            -db swissprot \
            -num_threads "$THREADS" \
+           -max_target_seqs 1 \
            -outfmt "10 qseqid sscinames staxids evalue bitscore" >> "$OUTPUT"
 
     echo "Search complete. Results saved to $OUTPUT"
