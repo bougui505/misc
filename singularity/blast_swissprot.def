@@ -29,20 +29,21 @@ From: ubuntu:22.04
     # It adds a header to a CSV file and then runs the search
     
     if [ $# -lt 1 ]; then
-        echo "Usage: apptainer run blast_swissprot.sif <query.fasta> <output.csv> <threads>"
+        echo "Usage: apptainer run blast_swissprot.sif <query.fasta> <output.csv> <threads> <max_target_seqs>"
         exit 1
     fi
 
     QUERY=$1
     OUTPUT=$2
     THREADS=${3:-4}  # Default to 4 threads if not specified
+    MAX_TARGET_SEQS=${4:-1}  # Default to 1 if not specified
 
     echo "Query_ID,Scientific_Name,Tax_ID,E_Value,Bitscore" > "$OUTPUT"
     
     blastp -query "$QUERY" \
            -db swissprot \
            -num_threads "$THREADS" \
-           -max_target_seqs 1 \
+           -max_target_seqs "$MAX_TARGET_SEQS" \
            -outfmt "10 qseqid sscinames staxids evalue bitscore" >> "$OUTPUT"
 
     echo "Search complete. Results saved to $OUTPUT"
@@ -50,4 +51,4 @@ From: ubuntu:22.04
 %help
     This container runs blastp against a local Swiss-Prot database with taxonomic lookup.
     Example usage:
-    apptainer run blast_swissprot.sif input.fasta results.csv 8
+    apptainer run blast_swissprot.sif input.fasta results.csv 8 1
