@@ -86,9 +86,19 @@ fi
 # Test if the model exists before trying to use it
 MODEL_NAME="qwen3-coder"
 echo "Checking if model $MODEL_NAME exists..."
-if ! curl --max-time 5 -s --fail http://localhost:$PORT/api/models | grep -q "$MODEL_NAME"; then
+
+# Fetch models and check if the desired model is present
+MODELS_JSON=$(curl --max-time 5 -s http://localhost:$PORT/api/models)
+if echo "$MODELS_JSON" | jq -e ".models[] | select(.name == \"ollama/$MODEL_NAME\")" > /dev/null; then
+    echo "Model $MODEL_NAME found."
+else
     echo "Model $MODEL_NAME not found. Available models:"
-    curl --max-time 5 -s http://localhost:$PORT/api/models | jq -r '.models[].name'
+    # Safely print available models if JSON is valid
+    if echo "$MODELS_JSON" | jq -e '.models' > /dev/null; then
+        echo "$MODELS_JSON" | jq -r '.models[].name'
+    else
+        echo "Could not retrieve model list or invalid JSON response."
+    fi
     echo "Using default model instead..."
     MODEL_NAME="llama3"
 fi
