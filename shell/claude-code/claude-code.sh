@@ -39,7 +39,7 @@ while [[ $# -gt 0 && $FLAG -gt 0 ]]; do
     esac
 done
 
-export OLLAMA_API_BASE=http://127.0.0.1:$PORT
+export OLLAMA_API_BASE=http://127.0.0.1:$PORT/v1
 
 # Check if port is already listening
 if lsof -i :$PORT > /dev/null 2>&1; then
@@ -84,6 +84,6 @@ else
 fi
 
 export ANTHROPIC_AUTH_TOKEN=ollama
-export ANTHROPIC_BASE_URL=http://localhost:11435
+export ANTHROPIC_BASE_URL=http://localhost:$PORT
 
 claude --model ollama/qwen3-coder:latest
