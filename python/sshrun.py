@@ -113,6 +113,17 @@ def clean_from_log():
             # Try to remove the directory
             try:
                 print(f"Cleaning directory: {remote_dir} on host {host}")
+                # Check if directory exists first
+                check_result = subprocess.run(
+                    ["ssh", host, f"test -d {shlex.quote(remote_dir)} && echo 'exists' || echo 'not found'"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                if "not found" in check_result.stdout:
+                    print(f"Directory {remote_dir} on host {host} has already been removed.")
+                    continue
+                
                 subprocess.run(
                     ["ssh", host, f"rm -rf {shlex.quote(remote_dir)}"],
                     check=True,
