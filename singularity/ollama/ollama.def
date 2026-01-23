@@ -22,8 +22,9 @@ apt-get install -y curl
 # ###############################################################################
 
 cd /opt
-curl -L https://ollama.com/download/ollama-linux-amd64.tgz -o ollama-linux-amd64.tgz
-tar -C /usr -xzf ollama-linux-amd64.tgz
+curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst \
+    | tar x -C /usr
+# tar -C /usr -xzf ollama-linux-amd64.tgz
 
 %runscript
 ollama $@
