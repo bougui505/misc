@@ -69,6 +69,67 @@ def _write_sshrun_log_entry(
         print(f"[{host_arg}] Error writing to log file {log_file_path}: {e}", file=sys.stderr)
 
 
+def clean_from_log():
+    """Read sshrun.log and clean all remote temporary directories listed there."""
+    log_file_path = "sshrun.log"
+    
+    if not os.path.exists(log_file_path):
+        print(f"Log file {log_file_path} not found.", file=sys.stderr)
+        return
+    
+    try:
+        with open(log_file_path, 'r') as f:
+            lines = f.readlines()
+        
+        if len(lines) < 2:
+            print("Log file is empty or has only header.", file=sys.stderr)
+            return
+            
+        # Skip header line
+        lines = lines[1:]
+        
+        cleaned_count = 0
+        for line in lines:
+            # Parse CSV line
+            fields = line.strip().split('","')
+            if len(fields) < 9:
+                continue
+                
+            # Extract remote directory from the 4th field (index 3)
+            remote_dir = fields[3].strip('"')
+            
+            # Skip if it's a placeholder or empty
+            if remote_dir in ["PENDING", "N/A (no remote dir)", ""]:
+                continue
+                
+            # Check if directory was removed already
+            removed_status = fields[4].strip('"')
+            if "REMOVED" in removed_status or "KEPT" in removed_status:
+                continue
+                
+            # Try to remove the directory
+            try:
+                print(f"Cleaning directory: {remote_dir}")
+                subprocess.run(
+                    ["ssh", remote_dir.split(':')[0], f"rm -rf {shlex.quote(remote_dir)}"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                print(f"Successfully removed: {remote_dir}")
+                cleaned_count += 1
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to remove {remote_dir}: {e.stderr.strip()}", file=sys.stderr)
+            except Exception as e:
+                print(f"Unexpected error removing {remote_dir}: {e}", file=sys.stderr)
+                
+        print(f"Cleaned {cleaned_count} remote directories from log.")
+        
+    except Exception as e:
+        print(f"Error reading log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
                       remote_dir_to_reuse=None, follow_symlinks=True, remote_tmp_parent_dir="/dev/shm",
                       force_remove=False, force_keep=False):
