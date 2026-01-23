@@ -464,11 +464,18 @@ if __name__ == "__main__":
         help="Force keep the remote temporary directory after completion, without asking any questions. "
              "A reminder message will be printed."
     )
+    parser.add_argument(
+        "--clean-from-log", action="store_true", default=False,
+        help="Read sshrun.log and clean all remote temporary directories listed there."
+    )
     args = parser.parse_args()
 
-    run_remote_script(args.host, args.command, args.transfer, args.retrieve,
-                      remote_dir_to_reuse=args.remote_dir,
-                      follow_symlinks=args.follow_symlinks,
-                      remote_tmp_parent_dir=args.remote_tmp_parent_dir,
-                      force_remove=args.force_remove,
-                      force_keep=args.force_keep)
+    if args.clean_from_log:
+        clean_from_log()
+    else:
+        run_remote_script(args.host, args.command, args.transfer, args.retrieve,
+                          remote_dir_to_reuse=args.remote_dir,
+                          follow_symlinks=args.follow_symlinks,
+                          remote_tmp_parent_dir=args.remote_tmp_parent_dir,
+                          force_remove=args.force_remove,
+                          force_keep=args.force_keep)
