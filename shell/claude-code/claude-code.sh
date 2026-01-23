@@ -83,7 +83,17 @@ else
     fi
 fi
 
+# Test if the model exists before trying to use it
+MODEL_NAME="qwen3-coder"
+echo "Checking if model $MODEL_NAME exists..."
+if ! curl --max-time 5 -s --fail http://localhost:$PORT/api/tags | grep -q "$MODEL_NAME"; then
+    echo "Model $MODEL_NAME not found. Available models:"
+    curl --max-time 5 -s http://localhost:$PORT/api/tags | jq -r '.models[].name'
+    echo "Using default model instead..."
+    MODEL_NAME="llama3"
+fi
+
 export ANTHROPIC_AUTH_TOKEN=ollama
 export ANTHROPIC_BASE_URL=http://localhost:$PORT
 
-claude --model ollama/qwen3-coder:latest
+claude --model ollama/$MODEL_NAME
