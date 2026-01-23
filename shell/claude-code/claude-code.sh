@@ -39,7 +39,7 @@ while [[ $# -gt 0 && $FLAG -gt 0 ]]; do
     esac
 done
 
-export OLLAMA_API_BASE=http://localhost:$PORT
+export OLLAMA_API_BASE=http://127.0.0.1:$PORT
 
 # Check if port is already listening
 if lsof -i :$PORT > /dev/null 2>&1; then
@@ -83,27 +83,7 @@ else
     fi
 fi
 
-# Test if the model exists before trying to use it
-MODEL_NAME="qwen3-coder"
-echo "Checking if model $MODEL_NAME exists..."
-
-# Fetch models and check if the desired model is present
-MODELS_JSON=$(curl --max-time 5 -s http://localhost:$PORT/api/models)
-if echo "$MODELS_JSON" | jq -e ".models[] | select(.name == \"ollama/$MODEL_NAME\")" > /dev/null; then
-    echo "Model $MODEL_NAME found."
-else
-    echo "Model $MODEL_NAME not found. Available models:"
-    # Safely print available models if JSON is valid
-    if echo "$MODELS_JSON" | jq -e '.models' > /dev/null; then
-        echo "$MODELS_JSON" | jq -r '.models[].name'
-    else
-        echo "Could not retrieve model list or invalid JSON response."
-    fi
-    echo "Using default model instead..."
-    MODEL_NAME="llama3"
-fi
-
 export ANTHROPIC_AUTH_TOKEN=ollama
-export ANTHROPIC_BASE_URL=http://localhost:$PORT
+export ANTHROPIC_BASE_URL=http://localhost:11435
 
-claude --model ollama/$MODEL_NAME
+claude --model ollama/qwen3-coder:latest
