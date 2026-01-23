@@ -98,6 +98,9 @@ def clean_from_log():
             # Extract remote directory from the 4th field (index 3)
             remote_dir = fields[3].strip('"')
             
+            # Extract host from the 3rd field (index 2)
+            host = fields[2].strip('"')
+            
             # Skip if it's a placeholder or empty
             if remote_dir in ["PENDING", "N/A (no remote dir)", ""]:
                 continue
@@ -109,9 +112,9 @@ def clean_from_log():
                 
             # Try to remove the directory
             try:
-                print(f"Cleaning directory: {remote_dir}")
+                print(f"Cleaning directory: {remote_dir} on host {host}")
                 subprocess.run(
-                    ["ssh", remote_dir.split(':')[0], f"rm -rf {shlex.quote(remote_dir)}"],
+                    ["ssh", host, f"rm -rf {shlex.quote(remote_dir)}"],
                     check=True,
                     capture_output=True,
                     text=True
@@ -119,9 +122,9 @@ def clean_from_log():
                 print(f"Successfully removed: {remote_dir}")
                 cleaned_count += 1
             except subprocess.CalledProcessError as e:
-                print(f"Failed to remove {remote_dir}: {e.stderr.strip()}", file=sys.stderr)
+                print(f"Failed to remove {remote_dir} on {host}: {e.stderr.strip()}", file=sys.stderr)
             except Exception as e:
-                print(f"Unexpected error removing {remote_dir}: {e}", file=sys.stderr)
+                print(f"Unexpected error removing {remote_dir} on {host}: {e}", file=sys.stderr)
                 
         print(f"Cleaned {cleaned_count} remote directories from log.")
         
