@@ -86,4 +86,4 @@ fi
 export ANTHROPIC_AUTH_TOKEN=ollama
 export ANTHROPIC_BASE_URL=http://localhost:$PORT
 
-claude --model ollama/qwen3-coder
+claude --model ollama/llama3
