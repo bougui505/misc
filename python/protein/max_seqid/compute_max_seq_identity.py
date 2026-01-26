@@ -5,7 +5,6 @@ from multiprocessing import Pool
 
 import typer
 from Bio import pairwise2
-from typing_extensions import Annotated
 
 
 def read_fasta(fasta_file: str) -> dict[str, str]:
@@ -84,20 +83,14 @@ app = typer.Typer(
 
 @app.command()
 def main(
-    test_fasta: Annotated[
-        str, typer.Argument(help="Path to the FASTA file containing test sequences.")
-    ],
-    ref_fasta: Annotated[
-        str, typer.Argument(help="Path to the FASTA file containing reference sequences.")
-    ],
-    jobs: Annotated[
-        int,
-        typer.Option(
-            "-j",
-            "--jobs",
-            help=f"Number of parallel jobs (default: {os.cpu_count()}).",
-        ),
-    ] = os.cpu_count(),
+    test_fasta: str = typer.Argument(..., help="Path to the FASTA file containing test sequences."),
+    ref_fasta: str = typer.Argument(..., help="Path to the FASTA file containing reference sequences."),
+    jobs: int = typer.Option(
+        os.cpu_count(),
+        "-j",
+        "--jobs",
+        help=f"Number of parallel jobs (default: {os.cpu_count()}).",
+    ),
 ):
     print(f"Reading test sequences from {test_fasta}...")
     test_sequences = read_fasta(test_fasta)
