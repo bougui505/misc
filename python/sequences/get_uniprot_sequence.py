@@ -22,8 +22,7 @@ app = typer.Typer(
 )
 
 def main(
-        # AI! generate the help message
-        acc
+        acc: str = typer.Argument(..., help="UniProt accession number"),
     ):
     # Get features to find the "Chain"
     gff = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.gff").text
