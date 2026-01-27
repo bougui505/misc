@@ -21,9 +21,13 @@ app = typer.Typer(
     add_completion=False,
 )
 
+@app.command()
 def main(
-        acc: str = typer.Argument(..., help="UniProt accession number"),
+        acc: str = typer.Argument(..., help="UniProt accession number. The script will retrieve the mature sequence (without signal peptide)"),
     ):
+    """
+    Retrieve a fasta sequence of the mature protein (without signal peptide) from a uniprot id
+    """
     # Get features to find the "Chain"
     gff = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.gff").text
     for line in gff.splitlines():
@@ -34,7 +38,7 @@ def main(
             # Get sequence and slice
             fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
             record = SeqIO.read(StringIO(fasta), "fasta")
-            print(f">Mature_{acc}\n{record.seq[start-1:end]}")
+            print(f">Mature_{acc}  {start}-{end}\n{record.seq[start-1:end]}")
             break
 
 if __name__ == "__main__":
