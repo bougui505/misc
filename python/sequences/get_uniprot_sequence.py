@@ -38,18 +38,18 @@ def main(
                 
                 # Get sequence and slice
                 fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
-                record = SeqIO.read(StringIO(fasta), "fasta")
+                record = SeqIO.read(StringIO(fasta), "fasta-pearson")
                 print(f">Mature_{acc}  {start}-{end}\n{record.seq[start-1:end]}")
                 break
         else:
             # If no chain found, get the full sequence
             fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
-            record = SeqIO.read(StringIO(fasta), "fasta")
+            record = SeqIO.read(StringIO(fasta), "fasta-pearson")
             print(f">Full_{acc}\n{record.seq}")
     except requests.exceptions.RequestException:
         # If GFF request fails, get the full sequence
         fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
-        record = SeqIO.read(StringIO(fasta), "fasta")
+        record = SeqIO.read(StringIO(fasta), "fasta-pearson")
         print(f">Full_{acc}\n{record.seq}")
 
 if __name__ == "__main__":
