@@ -28,18 +28,29 @@ def main(
     """
     Retrieve a fasta sequence of the mature protein (without signal peptide) from a uniprot id
     """
-    # Get features to find the "Chain"
-    gff = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.gff").text
-    for line in gff.splitlines():
-        if "Chain" in line:
-            parts = line.split("\t")
-            start, end = int(parts[3]), int(parts[4])
-            
-            # Get sequence and slice
+    # Try to get features to find the "Chain"
+    try:
+        gff = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.gff").text
+        for line in gff.splitlines():
+            if "Chain" in line:
+                parts = line.split("\t")
+                start, end = int(parts[3]), int(parts[4])
+                
+                # Get sequence and slice
+                fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
+                record = SeqIO.read(StringIO(fasta), "fasta")
+                print(f">Mature_{acc}  {start}-{end}\n{record.seq[start-1:end]}")
+                break
+        else:
+            # If no chain found, get the full sequence
             fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
             record = SeqIO.read(StringIO(fasta), "fasta")
-            print(f">Mature_{acc}  {start}-{end}\n{record.seq[start-1:end]}")
-            break
+            print(f">Full_{acc}\n{record.seq}")
+    except requests.exceptions.RequestException:
+        # If GFF request fails, get the full sequence
+        fasta = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.fasta").text
+        record = SeqIO.read(StringIO(fasta), "fasta")
+        print(f">Full_{acc}\n{record.seq}")
 
 if __name__ == "__main__":
     import doctest
