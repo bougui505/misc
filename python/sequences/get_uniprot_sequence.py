@@ -8,23 +8,15 @@
 # creation_date: Tue Jan 27 09:35:49 2026
 
 from io import StringIO
+import argparse
+import sys
 
 import requests
-import typer
 from Bio import SeqIO
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
-app = typer.Typer(
-    no_args_is_help=True,
-    pretty_exceptions_show_locals=False,  # do not show local variable
-    add_completion=False,
-)
-
-@app.command()
-def main(
-        acc: str = typer.Argument(..., help="UniProt accession number. The script will retrieve the mature sequence (without signal peptide)"),
-    ):
+def main(acc):
     """
     Retrieve a fasta sequence of the mature protein (without signal peptide) from a uniprot id
     """
@@ -57,5 +49,7 @@ def main(
 
 if __name__ == "__main__":
     import doctest
-    import sys
-    app()
+    parser = argparse.ArgumentParser(description="Retrieve a fasta sequence of the mature protein (without signal peptide) from a uniprot id")
+    parser.add_argument("acc", help="UniProt accession number. The script will retrieve the mature sequence (without signal peptide)")
+    args = parser.parse_args()
+    main(args.acc)
