@@ -6,7 +6,7 @@ FROM: python
 %post
 ################################# APT INSTALL #################################
 apt-get update
-apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev libx11-dev libxext-dev libxrender-dev
+apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev libx11-dev libxext-dev libxrender-dev libpng-dev libjpeg-dev
 apt-get clean
 ###############################################################################
 
@@ -15,7 +15,7 @@ cd /opt
 git clone https://github.com/schrodinger/pymol-open-source.git
 cd pymol-open-source
 # Install with specific flags to ensure proper compilation
-pip install --no-cache-dir .
+pip install --no-cache-dir --global-option=build_ext --global-option="--include-dirs=/usr/include:/usr/include/libpng:/usr/include/libjpeg" .
 ##########################################################################
 
 %runscript
