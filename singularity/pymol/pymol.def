@@ -1,0 +1,18 @@
+BOOTSTRAP: docker
+FROM: python
+
+%files
+
+%post
+################################# APT INSTALL #################################
+apt-get update
+apt-get install -y git
+apt-get clean
+###############################################################################
+
+################################# PYMOL ##################################
+cd /opt
+git clone https://github.com/schrodinger/pymol-open-source.git
+cd pymol-open-source
+pip install .
+##########################################################################
