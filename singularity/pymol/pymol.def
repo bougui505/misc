@@ -6,7 +6,7 @@ FROM: python
 %post
 ################################# APT INSTALL #################################
 apt-get update
-apt-get install -y git netcdf-bin libnetcdf-dev
+apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev
 apt-get clean
 ###############################################################################
 
