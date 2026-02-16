@@ -6,7 +6,7 @@ FROM: python
 %post
 ################################# APT INSTALL #################################
 apt-get update
-apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev libx11-dev libxext-dev libxrender-dev libpng-dev libjpeg-dev
+apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev libx11-dev libxext-dev libxrender-dev libpng-dev libjpeg-dev libqt5opengl5-dev libqt5widgets5 libqt5gui5 libqt5core5a
 apt-get clean
 ###############################################################################
 
@@ -14,7 +14,8 @@ apt-get clean
 cd /opt
 git clone https://github.com/schrodinger/pymol-open-source.git
 cd pymol-open-source
-pip install .
+# Install with Qt support
+pip install --no-cache-dir .
 ##########################################################################
 
 %runscript
