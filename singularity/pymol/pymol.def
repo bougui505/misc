@@ -24,7 +24,7 @@ From: python
 
     # Install Python build requirements
     pip3 install --upgrade pip
-    pip3 install numpy matplotlib build Pmw mrcfile PyQt5 PyQt5-Qt5
+    pip3 install numpy matplotlib build Pmw mrcfile PyQt5 PyQt5-Qt5 tqdm
 
     # Clone and Install PyMOL Open Source
     cd /opt
