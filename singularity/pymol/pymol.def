@@ -6,7 +6,7 @@ FROM: python
 %post
 ################################# APT INSTALL #################################
 apt-get update
-apt-get install -y git
+apt-get install -y git netcdf-bin libnetcdf-dev
 apt-get clean
 ###############################################################################
 
