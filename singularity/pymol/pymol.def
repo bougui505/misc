@@ -14,8 +14,11 @@ apt-get clean
 cd /opt
 git clone https://github.com/schrodinger/pymol-open-source.git
 cd pymol-open-source
-# Install with specific flags to ensure proper compilation
-pip install --no-cache-dir --global-option=build_ext --global-option="--include-dirs=/usr/include:/usr/include/libpng:/usr/include/libjpeg" .
+# Set environment variables for compilation
+export CFLAGS="-I/usr/include -I/usr/include/libpng -I/usr/include/libjpeg"
+export LDFLAGS="-L/usr/lib"
+# Install with proper compilation flags
+pip install --no-cache-dir .
 ##########################################################################
 
 %runscript
