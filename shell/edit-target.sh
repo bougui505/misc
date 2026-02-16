@@ -33,7 +33,7 @@ edit-target () {
 	local line=$(grep -nE "^$target:" Makefile | cut -d: -f1 | head -n 1) 
 	if [ -n "$line" ]
 	then
-		nvim Makefile +$line
+		lvim Makefile +$line
 	else
 		echo "Target '$target' not found in Makefile."
 	fi
