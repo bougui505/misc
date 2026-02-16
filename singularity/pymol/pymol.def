@@ -17,3 +17,6 @@ cd pymol-open-source
 # Install with specific flags to ensure proper compilation
 pip install --no-cache-dir .
 ##########################################################################
+
+%runscript
+/usr/local/bin/pymol $@
