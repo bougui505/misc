@@ -1,22 +1,55 @@
-BOOTSTRAP: docker
-FROM: python
-
-%files
+Bootstrap: docker
+From: ubuntu:22.04
 
 %post
-################################# APT INSTALL #################################
-apt-get update
-apt-get install -y git netcdf-bin libnetcdf-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreetype6-dev libxml2-dev libx11-dev libxext-dev libxrender-dev libpng-dev libjpeg-dev libqt5opengl5-dev libqt5widgets5 libqt5gui5 libqt5core5a
-apt-get clean
-###############################################################################
+    export DEBIAN_FRONTEND=noninteractive
+    
+    # Install system dependencies (C++17, CMake, OpenGL, etc.)
+    apt-get update && apt-get install -y \
+        git \
+        build-essential \
+        cmake \
+        python3-dev \
+        python3-pip \
+        libglew-dev \
+        freeglut3-dev \
+        libpng-dev \
+        libfreetype6-dev \
+        libxml2-dev \
+        libmsgpack-dev \
+        libnetcdf-dev \
+        libglm-dev \
+        qtbase5-dev \
+        libqt5svg5-dev \
+        python3-pyqt5 \
+        python3-pyqt5.qtopengl \
+        libdbus-1-3 \
+        libgl1-mesa-glx \
+        libxcb-xinerama0
 
-################################# PYMOL ##################################
-cd /opt
-git clone https://github.com/schrodinger/pymol-open-source.git
-cd pymol-open-source
-# Install with Qt support
-pip install --no-cache-dir .
-##########################################################################
+    # Install Python build requirements
+    pip3 install --upgrade pip
+    pip3 install numpy matplotlib build Pmw
+
+    # Clone and Install PyMOL Open Source
+    cd /opt
+    git clone https://github.com/schrodinger/pymol-open-source.git
+    cd pymol-open-source
+    
+    # Run the installation (this builds the _cmd module)
+    # We use --prefix to ensure it is in the system path
+    pip3 install .
+
+%environment
+    # Set PyMOL path and ensure it runs in headless mode if no display is found
+    export PYMOL_PATH=/usr/local/lib/python3.11/dist-packages/pymol/pymol_path
+    export LC_ALL=C
 
 %runscript
-/usr/local/bin/pymol $@
+    # Default to running pymol in command line mode
+    exec pymol "$@"
+
+%help
+    This container runs Open Source PyMOL.
+    To run headless: apptainer run <image> -c
+    To use in Python: apptainer exec <image> python3 -c "import pymol; print(pymol.__file__)"
