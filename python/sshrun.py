@@ -89,6 +89,8 @@ def clean_from_log():
         lines = lines[1:]
         
         cleaned_count = 0
+        unique_remote_dirs = set()  # Track unique remote directories to avoid duplicates
+        
         for line in lines:
             # Parse CSV line
             fields = line.strip().split('","')
@@ -105,10 +107,17 @@ def clean_from_log():
             if remote_dir in ["PENDING", "N/A (no remote dir)", ""]:
                 continue
                 
+            # Skip if we've already processed this directory
+            if remote_dir in unique_remote_dirs:
+                continue
+                
             # Check if directory was removed already
             removed_status = fields[4].strip('"')
             if "REMOVED" in removed_status or "KEPT" in removed_status:
                 continue
+                
+            # Add to set of unique directories
+            unique_remote_dirs.add(remote_dir)
                 
             # Try to remove the directory
             try:
@@ -137,7 +146,7 @@ def clean_from_log():
             except Exception as e:
                 print(f"Unexpected error removing {remote_dir} on {host}: {e}", file=sys.stderr)
                 
-        print(f"Cleaned {cleaned_count} remote directories from log.")
+        print(f"Cleaned {cleaned_count} unique remote directories from log.")
         
     except Exception as e:
         print(f"Error reading log file: {e}", file=sys.stderr)
