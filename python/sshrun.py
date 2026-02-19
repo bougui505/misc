@@ -360,7 +360,8 @@ def run_remote_script(host, command, files_to_transfer, files_to_retrieve=None,
         sys.exit(1)
     except Exception as e:
         log_status = "ERROR" # Set status for logging
-        log_output_summary = f"Unexpected error: {str(e).split('\n')[0].strip()}"
+        localerror_string = str(e).split('\n')[0].strip()
+        log_output_summary = f"Unexpected error: {localerror_string}" 
         print(f"An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1) # Exit with a generic error code for unexpected errors
     finally:
