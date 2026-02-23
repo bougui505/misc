@@ -32,10 +32,11 @@ class AttentionPooling(nn.Module):
         # Squeeze to get [batch, embed_dim]
         return attn_output.squeeze(1)
 
-# Example usage
-key_padding_mask = torch.rand(32,100) > 0.5
-pooler = AttentionPooling(embed_dim=512, num_heads=8, key_padding_mask=key_padding_mask)
-features = torch.randn(32, 100, 512) # 32 samples, 100 tokens
-print(f"{features.shape=}")
-pooled_out = pooler(features) # [32, 512]
-print(f"{pooled_out.shape=}")
+if __name__ == "__main__":
+    # Example usage
+    key_padding_mask = torch.rand(32,100) > 0.5
+    pooler = AttentionPooling(embed_dim=512, num_heads=8, key_padding_mask=key_padding_mask)
+    features = torch.randn(32, 100, 512) # 32 samples, 100 tokens
+    print(f"{features.shape=}")
+    pooled_out = pooler(features) # [32, 512]
+    print(f"{pooled_out.shape=}")
