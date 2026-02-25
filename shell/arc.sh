@@ -114,6 +114,11 @@ if [[ -f $1 ]]; then
 # This script will unarchive the directory $REMOTEHOST:$OUTFILE
 # It was created by the script $(basename "$0")
 # Do not edit it
+# Check if the remote file exists and is readable
+if ! ssh "$REMOTEHOST" "test -r $OUTFILE"; then
+    echo "Error: Remote file $OUTFILE not accessible" >&2
+    exit 1
+fi
 # Transfer the compressed file and decompress locally
 ssh "$REMOTEHOST" "cat $OUTFILE" | tar -xzf - -C "$(dirname $(realpath "$FILE"))"
 # Restore the original timestamp
@@ -125,14 +130,14 @@ fi
 # check if the directory was successfully unarchived
 if [[ -d "$(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE"))" ]]; then
     echo "Directory $(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE")) unarchived"
+    # remove the archived file on the remote host
+    ssh "$REMOTEHOST" "rm -v $OUTFILE"
+    # remove the script itself
+    rm -v "$(realpath "$FILE").arc.sh"
 else
     echo "Error unarchiving directory $(dirname $(realpath "$FILE"))/$(basename $(realpath "$FILE"))"
     exit 1
 fi
-# remove the archived file on the remote host
-ssh "$REMOTEHOST" "rm -v $OUTFILE"
-# remove the script itself
-rm -v "$(realpath "$FILE").arc.sh"
 EOF
             chmod +x "${FILE}.arc.sh"
             # Set the original timestamp on the created script
@@ -173,6 +178,11 @@ EOF
 # This script will unarchive the file $REMOTEHOST:$OUTFILE
 # It was created by the script $(basename "$0")
 # Do not edit it
+# Check if the remote file exists and is readable
+if ! ssh "$REMOTEHOST" "test -r $OUTFILE"; then
+    echo "Error: Remote file $OUTFILE not accessible" >&2
+    exit 1
+fi
 # Transfer the compressed file and decompress locally
 ssh "$REMOTEHOST" "cat $OUTFILE" | pigz -c -d > "$(realpath "$FILE")"
 # Restore the original timestamp
@@ -184,14 +194,14 @@ fi
 # check if the file was successfully unarchived
 if [[ -f "$(realpath "$FILE")" ]]; then
     echo "File $(realpath "$FILE") unarchived"
+    # remove the archived file on the remote host
+    ssh "$REMOTEHOST" "rm -v $OUTFILE"
+    # remove the script itself
+    rm -v "$(realpath "$FILE").arc.sh"
 else
     echo "Error unarchiving file $(realpath "$FILE")"
     exit 1
 fi
-# remove the archived file on the remote host
-ssh "$REMOTEHOST" "rm -v $OUTFILE"
-# remove the script itself
-rm -v "$(realpath "$FILE").arc.sh"
 EOF
             chmod +x "${FILE}.arc.sh"
             # Set the original timestamp on the created script
