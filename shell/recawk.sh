@@ -219,6 +219,65 @@ function printrec(){
         print field"="rec[field]
     }
 }
+
+function spearman_correlation(x, y, n) {
+    # Create arrays for ranking
+    delete rank_x
+    delete rank_y
+    delete sorted_x
+    delete sorted_y
+    
+    # Copy arrays
+    for (i = 1; i <= n; i++) {
+        sorted_x[i] = x[i]
+        sorted_y[i] = y[i]
+    }
+    
+    # Sort arrays
+    for (i = 1; i <= n; i++) {
+        for (j = i + 1; j <= n; j++) {
+            if (sorted_x[i] > sorted_x[j]) {
+                temp = sorted_x[i]
+                sorted_x[i] = sorted_x[j]
+                sorted_x[j] = temp
+            }
+            if (sorted_y[i] > sorted_y[j]) {
+                temp = sorted_y[i]
+                sorted_y[i] = sorted_y[j]
+                sorted_y[j] = temp
+            }
+        }
+    }
+    
+    # Assign ranks
+    for (i = 1; i <= n; i++) {
+        for (j = 1; j <= n; j++) {
+            if (x[i] == sorted_x[j]) {
+                rank_x[i] = j
+                break
+            }
+        }
+        for (j = 1; j <= n; j++) {
+            if (y[i] == sorted_y[j]) {
+                rank_y[i] = j
+                break
+            }
+        }
+    }
+    
+    # Calculate Spearman correlation
+    sum_d2 = 0
+    for (i = 1; i <= n; i++) {
+        d = rank_x[i] - rank_y[i]
+        sum_d2 += d * d
+    }
+    
+    if (n > 1) {
+        return 1 - (6 * sum_d2) / (n * (n * n - 1))
+    } else {
+        return 0
+    }
+}
 BEGIN{
 srand(seed)
 nr=0
