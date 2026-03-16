@@ -202,17 +202,18 @@ if [[ $TOCSV -eq 1 ]]; then
         if ($0 == "--") {
             if (first) {
                 # Print header
-                for (key in keys) {
-                    printf "%s", key
-                    if (key != keys[length(keys)]) printf ","
+                for (i = 1; i <= nkeys; i++) {
+                    printf "%s", keys[i]
+                    if (i < nkeys) printf ","
                 }
                 printf "\n"
                 first = 0
             }
             # Print values for current record
-            for (key in keys) {
+            for (i = 1; i <= nkeys; i++) {
+                key = keys[i]
                 printf "%s", rec[key]
-                if (key != keys[length(keys)]) printf ","
+                if (i < nkeys) printf ","
             }
             printf "\n"
             delete rec
@@ -222,8 +223,16 @@ if [[ $TOCSV -eq 1 ]]; then
             key = a[1]
             value = a[2]
             rec[key] = value
-            if (key != keys[length(keys)]) {
-                keys[++i] = key
+            # Add key to keys array if not already present
+            found = 0
+            for (i = 1; i <= nkeys; i++) {
+                if (keys[i] == key) {
+                    found = 1
+                    break
+                }
+            }
+            if (!found) {
+                keys[++nkeys] = key
             }
         }
     }
