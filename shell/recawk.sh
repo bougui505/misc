@@ -22,13 +22,14 @@ normal=$(tput sgr0)
 function usage () {
     cat << EOF
 
-    -h, --help print this help message and exit
-    -n, --nrec print the number of records for the given rec file
-    -s, --sample give the number of records to pick up randomly from the given rec file
-    -k, --keys print all keys present in the file
+    -h, --help          print this help message and exit
+    -n, --nrec          print the number of records for the given rec file
+    -s, --sample        give the number of records to pick up randomly from the given rec file
+    -k, --keys          print all keys present in the file
     --torec <separator> convert a column file with the first line as keys and the rest
-    of the lines as values to a rec file. Columns are separated by <separator>.
-    The first line is used as keys, the rest of the lines as values. The output is written to stdout.
+                        of the lines as values to a rec file. Columns are separated by <separator>.
+                        The first line is used as keys, the rest of the lines as values.
+                        The output is written to stdout.
 
 ----------------${bold}RECAWK${normal}----------------
 
@@ -69,19 +70,17 @@ A function ${bold}printrec()${normal} can be used to print the current record. T
 
     ${bold}zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'${normal}
 
-Variable ${bold}nr${normal} is defined. ${bold}nr${normal} is the number of input records awk has processed since the beginning of the program’s execution. Not to be confused with ${bold}NR${normal}, which is the builtin awk variable, which store the number of rows/lines awk has processed since the beginning of the program’s execution.
+Variables ${bold}nr${normal} and ${bold}fnr${normal} are defined:
+- ${bold}nr${normal}: number of input records awk has processed since the beginning of the program's execution
+- ${bold}fnr${normal}: number of input records awk has processed for the current file
 
-    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'${normal}
-
-Variable ${bold}fnr${normal} is defined. ${bold}fnr${normal} is the number of input records awk has processed for the current file. Not to be confused with ${bold}FNR${normal}, which is the builtin awk variable, which store the number of rows/lines awk has processed for the current file.
-
-    ${bold}recawk '{print NR,FNR,nr,fnr}' =(zcat data/file.rec.gz) =(zcat data/file.rec.gz)${normal}
+    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("fnr="fnr);print("--")}'${normal}
 
 An ${bold}END${normal} can be given as in standard awk to run a command when awk has parsed the full file(s).
 
     ${bold}zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'${normal}
 
-${bold}-v${normal} can be given as in standard awk command. E.g. ${bold}recawk -v "A=1" '{...}'${normal}
+${bold}-v${normal} can be given as in standard awk command. E.g. ${bold}recawk -v "A=1" '{. ..}'${normal}
 
     ${bold}zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'${normal}
 
@@ -94,13 +93,29 @@ ${bold}IMPORTANT REMARKS${normal}
 
 ${bold}EXAMPLES${normal}
 ${bold}
+    # Print the value of key 'i' from each record
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
+    
+    # Print all keys in the file
     zcat data/file.rec.gz | recawk '{for (field in rec){print field}}'
-    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}
-    zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("NR="NR);print("--")}'
+    
+    # Print each record with an additional key-value pair
+    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
+    
+    # Print record number and file record number
+    zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("fnr="fnr);print("--")}'
+    
+    # Store all values of key 'i' in an array
     zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'
+    
+    # Use a custom variable
     zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
+    
+    # Print all keys in the file
     zcat data/file.rec.gz | recawk --keys
+    
+    # Convert a CSV file to rec format
+    cat data.csv | recawk --torec ","
 ${normal}
 
 EOF
