@@ -95,10 +95,17 @@ ${bold}SPEARMAN FUNCTION${normal}
 
 A ${bold}spearman(x, y, n)${normal} function is available to compute Spearman correlation coefficient between two arrays x and y of length n.
 
+${bold}PEARSON FUNCTION${normal}
+
+A ${bold}pearson(x, y, n)${normal} function is available to compute Pearson correlation coefficient between two arrays x and y of length n.
+
 ${bold}EXAMPLES${normal}
 ${bold}
     # Compute Spearman correlation between two arrays
     zcat data/file.rec.gz | recawk '{x[nr]=rec["x"]; y[nr]=rec["y"]}END{print spearman(x, y, nr)}'
+    
+    # Compute Pearson correlation between two arrays
+    zcat data/file.rec.gz | recawk '{x[nr]=rec["x"]; y[nr]=rec["y"]}END{print pearson(x, y, nr)}'
     
     # Print the value of key 'i' from each record
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
