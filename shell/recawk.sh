@@ -220,7 +220,7 @@ function printrec(){
     }
 }
 
-function spearman_correlation(x, y, n) {
+function spearman(x, y, n) {
     # Create arrays for ranking
     delete rank_x
     delete rank_y
