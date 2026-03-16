@@ -30,6 +30,8 @@ function usage () {
                         of the lines as values to a rec file. Columns are separated by <separator>.
                         The first line is used as keys, the rest of the lines as values.
                         The output is written to stdout.
+    --tocsv             convert a rec file to csv format on stdout. The first line contains the keys
+                        and the following lines contain the values for each record.
 
 ----------------${bold}RECAWK${normal}----------------
 
@@ -140,6 +142,7 @@ GETNREC=0
 SAMPLE=0
 TOREC=0
 KEYS=0
+TOCSV=0
 case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
@@ -147,6 +150,7 @@ case $1 in
     -s|--sample) SAMPLE=$2; shift ;;
     --torec) TOREC=$2; shift ;;
     --keys) KEYS=1 ;;
+    --tocsv) TOCSV=1 ;;
 esac
 
 getnrec(){
@@ -183,6 +187,47 @@ if [[ $KEYS -eq 1 ]]; then
             print k
         }
     }' $FILENAMES
+    exit 0
+fi
+
+if [[ $TOCSV -eq 1 ]]; then
+    awk '
+    BEGIN {
+        first = 1
+    }
+    {
+        if (FNR == 1) {
+            fnr = 0
+        }
+        if ($0 == "--") {
+            if (first) {
+                # Print header
+                for (key in keys) {
+                    printf "%s", key
+                    if (key != keys[length(keys)]) printf ","
+                }
+                printf "\n"
+                first = 0
+            }
+            # Print values for current record
+            for (key in keys) {
+                printf "%s", rec[key]
+                if (key != keys[length(keys)]) printf ","
+            }
+            printf "\n"
+            delete rec
+        } else {
+            # Store key-value pairs
+            split($0, a, "=")
+            key = a[1]
+            value = a[2]
+            rec[key] = value
+            if (key != keys[length(keys)]) {
+                keys[++i] = key
+            }
+        }
+    }
+    ' "$FILENAMES"
     exit 0
 fi
 
