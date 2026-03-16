@@ -300,6 +300,36 @@ function spearman(x, y, n) {
         return 0
     }
 }
+
+function pearson(x, y, n) {
+    # Calculate means
+    mean_x = 0
+    mean_y = 0
+    for (i = 1; i <= n; i++) {
+        mean_x += x[i]
+        mean_y += y[i]
+    }
+    mean_x /= n
+    mean_y /= n
+    
+    # Calculate Pearson correlation
+    numerator = 0
+    sum_sq_x = 0
+    sum_sq_y = 0
+    for (i = 1; i <= n; i++) {
+        dx = x[i] - mean_x
+        dy = y[i] - mean_y
+        numerator += dx * dy
+        sum_sq_x += dx * dx
+        sum_sq_y += dy * dy
+    }
+    
+    if (sum_sq_x > 0 && sum_sq_y > 0) {
+        return numerator / sqrt(sum_sq_x * sum_sq_y)
+    } else {
+        return 0
+    }
+}
 BEGIN{
 srand(seed)
 nr=0
