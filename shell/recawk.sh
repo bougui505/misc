@@ -91,8 +91,15 @@ ${bold}IMPORTANT REMARKS${normal}
 - For ${bold}float or integer values${normal}, string ${bold}conversion to float or integer${normal} is needed using;
     '{value=rec["key"]*1}'
 
+${bold}SPEARMAN FUNCTION${normal}
+
+A ${bold}spearman(x, y, n)${normal} function is available to compute Spearman correlation coefficient between two arrays x and y of length n.
+
 ${bold}EXAMPLES${normal}
 ${bold}
+    # Compute Spearman correlation between two arrays
+    zcat data/file.rec.gz | recawk '{x[nr]=rec["x"]; y[nr]=rec["y"]}END{print spearman(x, y, nr)}'
+    
     # Print the value of key 'i' from each record
     zcat data/file.rec.gz | recawk '{print rec["i"]}'
     
