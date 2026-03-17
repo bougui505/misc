@@ -21,15 +21,34 @@ function usage () {
     cat << EOF
 Unique command using awk
     -h, --help print this help message and exit
+    -r, --refresh_rate refresh rate for printing the count (default 100, print every 100 lines)
 EOF
 }
 
+REFRESH_RATE=100
 while [ "$#" -gt 0 ]; do
     case $1 in
         -h|--help) usage; exit 0 ;;
+        -r|--refresh_rate) REFRESH_RATE=$2; shift ;;
         *) usage; exit 1 ;;
     esac
     shift
 done
 
-awk '{if (!($0 in SEEN)){print $0};SEEN[$0]++}'
+awk -v refresh_rate=$REFRESH_RATE '
+function printcount () {
+# \033[H moves cursor to top, \033[J clears the screen
+  printf "\033[H\033[J"
+  for (k in COUNT){
+    print k,COUNT[k]
+  }
+}
+{
+COUNT[$0]++
+if (NR % refresh_rate == 0) {
+  printcount()
+}
+}
+END{
+  printcount()
+}'
