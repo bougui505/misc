@@ -284,23 +284,14 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    # For sampling, we need to count records first to determine if we need to sample
-    # When data comes from a pipe, we must read it all into a temporary file first
-    # Check if input is from a pipe
-    if [ ! -t 0 ]; then
-        # Input is from a pipe, read all records into temporary file
-        cat > $MYTMP/in
-        FILENAMES="$MYTMP/in $FILENAMES"
-    fi
-    
-    # Count records
-    NREC=$(awk 'BEGIN{nr=0} $0=="--"{nr++} END{print nr}' "$FILENAMES")
+    cat > $MYTMP/in
+    FILENAMES="$MYTMP/in $FILENAMES"
+    NREC=$(getnrec $FILENAMES)
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
         CMD='{if (fnr in RECSEL){printrec();print("--")}}'
     else
-        # If sample size is greater than or equal to total records, just print all
-        CMD='{printrec();print("--")}'
+        cat $MYTMP/in
         exit 0
     fi
 fi
