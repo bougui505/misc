@@ -284,15 +284,15 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    cat > $MYTMP/in
-    FILENAMES="$MYTMP/in $FILENAMES"
-    NREC=$(getnrec $FILENAMES)
+    # Count total records without storing them
+    NREC=$(getnrec "$FILENAMES")
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
+        # Use awk to select random records without temporary file
         CMD='{if (fnr in RECSEL){printrec();print("--")}}'
     else
-        cat $MYTMP/in
-        exit 0
+        # If sample size is >= total records, just output all records
+        CMD='{printrec();print("--")}'
     fi
 fi
 
