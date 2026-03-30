@@ -284,15 +284,15 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    # cat > $MYTMP/in
-    # AI! How to get the number of records coming from the pipe ?
+    # Read input into temporary file to determine total record count
+    cat > $MYTMP/in
     FILENAMES="$MYTMP/in $FILENAMES"
     NREC=$(getnrec $FILENAMES)
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
         CMD='{if (fnr in RECSEL){printrec();print("--")}}'
     else
-        # cat $MYTMP/in
+        # If sample size is greater than or equal to total records, just print all
         CMD='{printrec();print("--")}'
         exit 0
     fi
