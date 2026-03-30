@@ -285,9 +285,15 @@ fi
 
 if [[ $SAMPLE -gt 0 ]]; then
     # For sampling, we need to count records first to determine if we need to sample
-    # We'll use a streaming approach to avoid temporary files
-    # First, count the records in the input stream
-    # AI! The problem is when the data comes from a pipe...
+    # When data comes from a pipe, we must read it all into a temporary file first
+    # Check if input is from a pipe
+    if [ ! -t 0 ]; then
+        # Input is from a pipe, read all records into temporary file
+        cat > $MYTMP/in
+        FILENAMES="$MYTMP/in $FILENAMES"
+    fi
+    
+    # Count records
     NREC=$(awk 'BEGIN{nr=0} $0=="--"{nr++} END{print nr}' "$FILENAMES")
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
