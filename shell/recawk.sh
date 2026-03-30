@@ -284,11 +284,10 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    # Read input into temporary file to determine total record count
-    # AI! How to avoid the usage of the temporary file ?
-    cat > $MYTMP/in
-    FILENAMES="$MYTMP/in $FILENAMES"
-    NREC=$(getnrec $FILENAMES)
+    # For sampling, we need to count records first to determine if we need to sample
+    # We'll use a streaming approach to avoid temporary files
+    # First, count the records in the input stream
+    NREC=$(awk 'BEGIN{nr=0} $0=="--"{nr++} END{print nr}' "$FILENAMES")
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
         CMD='{if (fnr in RECSEL){printrec();print("--")}}'
