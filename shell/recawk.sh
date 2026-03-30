@@ -285,6 +285,7 @@ fi
 
 if [[ $SAMPLE -gt 0 ]]; then
     # Read input into temporary file to determine total record count
+    # AI! How to avoid the usage of the temporary file ?
     cat > $MYTMP/in
     FILENAMES="$MYTMP/in $FILENAMES"
     NREC=$(getnrec $FILENAMES)
