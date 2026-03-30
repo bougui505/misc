@@ -394,6 +394,7 @@ function pearson(x, y, n) {
 BEGIN{
 srand(seed)
 nr=0
+fnr=0
 if (SAMPLE>0){
     n=0
     while (n<SAMPLE){
@@ -410,7 +411,15 @@ if (FNR==1){
 if ($0=="--"){
     nr+=1
     fnr+=1
-    '"$CMD"'
+    if (SAMPLE>0){
+        if (nr in RECSEL){
+            printrec()
+            print "--"
+        }
+    } else {
+        printrec()
+        print "--"
+    }
     delete rec
 }
 else{
