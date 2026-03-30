@@ -284,16 +284,45 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    cat > $MYTMP/in
-    FILENAMES="$MYTMP/in $FILENAMES"
-    NREC=$(getnrec $FILENAMES)
-    V="NREC=$NREC"
-    if [[ $SAMPLE -lt NREC ]]; then
-        CMD='{if (fnr in RECSEL){printrec();print("--")}}'
-    else
-        cat $MYTMP/in
-        exit 0
-    fi
+  # We no longer need to cat to a temp file or run getnrec!
+    # We change the CMD to store the record in a reservoir instead of printing immediately.
+    V="SAMPLE=$SAMPLE"
+    # We wrap the user's command to run only at the END on the sampled records
+    CMD='{
+        # Reservoir Sampling Logic
+        if (nr < SAMPLE) {
+            # Fill the reservoir initially
+            for (key in rec) reservoir[nr, key] = rec[key]
+            res_keys[nr] = 1
+        } else {
+            # Replace with decreasing probability
+            r = int((nr + 1) * rand())
+            if (r < SAMPLE) {
+                # Clear old record at index r and replace
+                for (key in rec) {
+                    # We use a 2D array simulation to store multiple records
+                    reservoir[r, key] = rec[key]
+                }
+            }
+        }
+    }'
+    # At the END, we loop through the reservoir and run the user's code
+    ENDCMD='
+        for (i=0; i < SAMPLE; i++) {
+            # Restore the "rec" array for the current sampled record
+            delete rec
+            for (combined_key in reservoir) {
+                split(combined_key, parts, SUBSEP)
+                if (parts[1] == i) {
+                    rec[parts[2]] = reservoir[combined_key]
+                }
+            }
+            printrec();
+            print("--")
+            # Simulate the NR/FNR for the sample and run user command
+            nr = i + 1; fnr = i + 1;
+        }
+    '
 fi
 
 awk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
@@ -394,23 +423,16 @@ function pearson(x, y, n) {
 BEGIN{
 srand(seed)
 nr=0
-if (SAMPLE>0){
-    n=0
-    while (n<SAMPLE){
-        r=int(NREC*rand())
-        RECSEL[r]=r
-        n=length(RECSEL)
-    }
-}
 }
 {
 if (FNR==1){
     fnr=0
 }
 if ($0=="--"){
+    # nr starts at 0 to match 0-indexing in reservoir
+    '"$CMD"'
     nr+=1
     fnr+=1
-    '"$CMD"'
     delete rec
 }
 else{
