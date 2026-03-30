@@ -284,15 +284,17 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    # Count total records without storing them
-    NREC=$(getnrec "$FILENAMES")
+    # cat > $MYTMP/in
+    # AI! How to get the number of records coming from the pipe ?
+    FILENAMES="$MYTMP/in $FILENAMES"
+    NREC=$(getnrec $FILENAMES)
     V="NREC=$NREC"
     if [[ $SAMPLE -lt NREC ]]; then
-        # Use awk to select random records without temporary file
         CMD='{if (fnr in RECSEL){printrec();print("--")}}'
     else
-        # If sample size is >= total records, just output all records
+        # cat $MYTMP/in
         CMD='{printrec();print("--")}'
+        exit 0
     fi
 fi
 
@@ -394,7 +396,6 @@ function pearson(x, y, n) {
 BEGIN{
 srand(seed)
 nr=0
-fnr=0
 if (SAMPLE>0){
     n=0
     while (n<SAMPLE){
@@ -411,15 +412,7 @@ if (FNR==1){
 if ($0=="--"){
     nr+=1
     fnr+=1
-    if (SAMPLE>0){
-        if (nr in RECSEL){
-            printrec()
-            print "--"
-        }
-    } else {
-        printrec()
-        print "--"
-    }
+    '"$CMD"'
     delete rec
 }
 else{
