@@ -16,9 +16,6 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-bold=$(tput bold)
-normal=$(tput sgr0)
-
 function usage () {
     cat << EOF
 
@@ -33,11 +30,10 @@ function usage () {
     --tocsv             convert a rec file to csv format on stdout. The first line contains the keys
                         and the following lines contain the values for each record.
 
-----------------${bold}RECAWK${normal}----------------
+----------------RECAWK----------------
 
 Read a rec file formatted as:
 
-${bold}
 key1=val1
 key2=val2
 --
@@ -45,64 +41,60 @@ key1=val12
 key2=val22
 --
 [...]
-${normal}
 
 using awk.
 
-An example rec file can be found in ${bold}$DIRSCRIPT/recawk_test/data/file.rec.gz${normal}
+An example rec file can be found in $DIRSCRIPT/recawk_test/data/file.rec.gz
 
-The key, value couples are stored in ${bold}rec${normal} awk array.
+The key, value couples are stored in rec awk array.
 To access key1, use:
 
-    ${bold}rec["key1"]${normal} -> val1 (if in first records)
+    rec["key1"] -> val1 (if in first records)
 
-    ${bold}zcat data/file.rec.gz | recawk '{print rec["i"]}'${normal}
+    zcat data/file.rec.gz | recawk '{print rec["i"]}'
 
-The full rec file is not stored in ${bold}rec${normal}. Just the current record is stored.
+The full rec file is not stored in rec. Just the current record is stored.
 
 To enumerate fields just use:
 
-    ${bold}
     for (field in rec){
         print field
     }
-    ${normal}
 
-A function ${bold}printrec()${normal} can be used to print the current record. The record separator "--" is not printed by ${bold}printrec()${normal} to allow the user to add an item to the record:
+A function printrec() can be used to print the current record. The record separator "--" is not printed by printrec() to allow the user to add an item to the record:
 
-    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'${normal}
+    zcat data/file.rec.gz | recawk '{printrec();print("k=v");print("--")}'
 
-Variables ${bold}nr${normal} and ${bold}fnr${normal} are defined:
-- ${bold}nr${normal}: number of input records awk has processed since the beginning of the program's execution
-- ${bold}fnr${normal}: number of input records awk has processed for the current file
+Variables nr and fnr are defined:
+- nr: number of input records awk has processed since the beginning of the program's execution
+- fnr: number of input records awk has processed for the current file
 
-    ${bold}zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("fnr="fnr);print("--")}'${normal}
+    zcat data/file.rec.gz | recawk '{printrec();print("nr="nr);print("fnr="fnr);print("--")}'
 
-An ${bold}END${normal} can be given as in standard awk to run a command when awk has parsed the full file(s).
+An END can be given as in standard awk to run a command when awk has parsed the full file(s).
 
-    ${bold}zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'${normal}
+    zcat data/file.rec.gz | recawk '{a[nr]=rec["i"]}END{for (i in a){print i, a[i]}}'
 
-${bold}-v${normal} can be given as in standard awk command. E.g. ${bold}recawk -v "A=1" '{. ..}'${normal}
+-v can be given as in standard awk command. E.g. recawk -v "A=1" '{. ..}'
 
-    ${bold}zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'${normal}
+    zcat data/file.rec.gz | recawk -v "ania=ciao" '{printrec();print("ania="ania);print("--")}'
 
 The semicolon ";" terminates the statement. It is highly recommanded to put the semicolon ";" at the end of the statements, even in a script on multiple lines, to avoid bugs.
 
-${bold}IMPORTANT REMARKS${normal}
+IMPORTANT REMARKS
 
-- For ${bold}float or integer values${normal}, string ${bold}conversion to float or integer${normal} is needed using;
+- For float or integer values, string conversion to float or integer is needed using;
     '{value=rec["key"]*1}'
 
-${bold}SPEARMAN FUNCTION${normal}
+SPEARMAN FUNCTION
 
-A ${bold}spearman(x, y, n)${normal} function is available to compute Spearman correlation coefficient between two arrays x and y of length n.
+A spearman(x, y, n) function is available to compute Spearman correlation coefficient between two arrays x and y of length n.
 
-${bold}PEARSON FUNCTION${normal}
+PEARSON FUNCTION
 
-A ${bold}pearson(x, y, n)${normal} function is available to compute Pearson correlation coefficient between two arrays x and y of length n.
+A pearson(x, y, n) function is available to compute Pearson correlation coefficient between two arrays x and y of length n.
 
-${bold}EXAMPLES${normal}
-${bold}
+EXAMPLES
     # Compute Spearman correlation between two arrays
     zcat data/file.rec.gz | recawk '{x[nr]=rec["x"]; y[nr]=rec["y"]}END{print spearman(x, y, nr)}'
     
@@ -132,8 +124,6 @@ ${bold}
     
     # Convert a CSV file to rec format
     cat data.csv | recawk --torec ","
-${normal}
-
 EOF
 }
 
