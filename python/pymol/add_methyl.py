@@ -38,25 +38,35 @@ def trim_nterm_hydrogen(pymolContext, selection):
 @app.command()
 def main(
         pdb:str = typer.Option(..., help="Input PDB file"),
-        chain:str = typer.Option(..., help="Chain identifier"),
+        chain:str = typer.Option(..., help="Chain identifier. Give a comma separated list for multiple chains to edit (e.g. A,B,C)"),
         outfilename:str = typer.Option(..., help="Output PDB file name"),
         selection:str = typer.Option("polymer.protein", help="Selection string for the protein"),
         ):
+    """
+    Add a methyl to the N-terminus of the given chain(s)
+    """
+    chains = chain.split(",")
     with pymol2.PyMOL() as pm:
-        pm.cmd.load(pdb, "struct")
-        # 1. Identify the N-terminal Nitrogen (usually the N of the first residue)
-        # We sort by residue index to find the lowest one
-        residues = []
-        pm.cmd.iterate(f"{selection} and chain {chain} and name N", "residues.append(resi)", space={'residues': residues})
-        nterm_resi = sorted(residues, key=int)[0]
-        nterm_selection = f"chain {chain} and resi {nterm_resi} and name N"
-        trim_nterm_hydrogen(pm, selection=nterm_selection)
+        for chain in chains:
+            pm.cmd.load(pdb, "struct")
+            # 1. Identify the N-terminal Nitrogen (usually the N of the first residue)
+            # We sort by residue index to find the lowest one
+            residues = []
+            pm.cmd.iterate(f"{selection} and chain {chain} and name N", "residues.append(resi)", space={'residues': residues})
+            nterm_resi = sorted(residues, key=int)[0]
+            nterm_selection = f"chain {chain} and resi {nterm_resi} and name N"
+            trim_nterm_hydrogen(pm, selection=nterm_selection)
 
-        pm.cmd.edit(nterm_selection)
-        pm.cmd.attach("C", 1, 1)
+            pm.cmd.edit(nterm_selection)
+            pm.cmd.attach("C", 1, 1)
 
-        pm.cmd.h_add() # Add hydrogens to the new Carbon
-        # pm.cmd.clean(f"chain {chain} and resi {nterm_resi}") # Local energy minimization
+            pm.cmd.h_add() # Add hydrogens to the new Carbon
+            modified_residue = []
+            pm.cmd.iterate(nterm_selection, "modified_residue.append((chain, resi, resn))", space={"modified_residue": modified_residue})
+            chain, resi, resn = modified_residue[0]
+            print(f"{resn} {resi} {chain} has been modified")
+            print("--")
+            # pm.cmd.clean(f"chain {chain} and resi {nterm_resi}") # Local energy minimization
         pm.cmd.save(outfilename)
 
 
