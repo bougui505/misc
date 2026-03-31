@@ -429,10 +429,9 @@ if (FNR==1){
     fnr=0
 }
 if ($0=="--"){
-    # nr starts at 0 to match 0-indexing in reservoir
-    '"$CMD"'
     nr+=1
     fnr+=1
+    '"$CMD"'
     delete rec
 }
 else{
