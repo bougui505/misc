@@ -37,10 +37,10 @@ def trim_nterm_hydrogen(pymolContext, selection):
 
 @app.command()
 def main(
-        pdb:str,
-        chain:str,
-        outfilename:str,
-        selection:str="polymer.protein",
+        pdb:str = typer.Option(..., help="Input PDB file"),
+        chain:str = typer.Option(..., help="Chain identifier"),
+        outfilename:str = typer.Option(..., help="Output PDB file name"),
+        selection:str = typer.Option("polymer.protein", help="Selection string for the protein"),
         ):
     with pymol2.PyMOL() as pm:
         pm.cmd.load(pdb, "struct")
