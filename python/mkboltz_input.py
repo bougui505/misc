@@ -40,10 +40,10 @@ def reverse_complement(seq: str) -> str:
 @app.command()
 def main(
     output: Path = typer.Option("input.yaml", "--out", "-o", help="Path to save the generated YAML."),
-    protein: List[Path] = typer.Option([], "--protein", "-p", help="Path to protein FASTA files."),
-    dna: List[Path] = typer.Option([], "--dna", "-d", help="Path to DNA FASTA files."),
-    rna: List[Path] = typer.Option([], "--rna", "-r", help="Path to RNA FASTA files."),
-    smiles: List[str] = typer.Option([], "--smiles", "-s", help="SMILES strings for ligands."),
+    protein: List[Path] = typer.Option([], "--protein", "-p", help="Path to protein FASTA files. Multiple files can be given by repeating the -p option."),
+    dna: List[Path] = typer.Option([], "--dna", "-d", help="Path to DNA FASTA files. Multiple files can be given by repeating the -d option. The reverse complement sequence will be automatically built."),
+    rna: List[Path] = typer.Option([], "--rna", "-r", help="Path to RNA FASTA files. Multiple files can be given by repeating the -r option."),
+    smiles: List[str] = typer.Option([], "--smiles", "-s", help="SMILES strings for ligands. Multiple files can be given by repeating the -s option."),
 ):
     """
     Generate a Boltz-2 compatible YAML file.
