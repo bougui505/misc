@@ -31,6 +31,12 @@ def parse_fasta(fasta_path: Path):
             sequences.append("".join(current_seq))
     return sequences
 
+def reverse_complement(seq: str) -> str:
+    """Generates the complementary DNA strand."""
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'}
+    # Reverse the sequence and map to complement
+    return "".join(complement.get(base, base) for base in reversed(seq.upper()))
+
 @app.command()
 def main(
     output: Path = typer.Option("input.yaml", "--out", "-o", help="Path to save the generated YAML."),
@@ -62,6 +68,11 @@ def main(
                 entry = {category: {"id": get_next_id(), "sequence": s}}
                 # Boltz defaults proteins to 'msa' server if not specified
                 yaml_data["sequences"].append(entry)
+                if category == "dna":
+                    # Generate complement sequence
+                    cs = reverse_complement(s)
+                    entry = {category: {"id": get_next_id(), "sequence": cs}}
+                    yaml_data["sequences"].append(entry)
 
     # Process Ligands
     for s in smiles:
