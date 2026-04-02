@@ -154,8 +154,8 @@ if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
-ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
+CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n" | tr "\n" ";")
+ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n" | tr "\n" ";")
 FILENAMES="${@:2}"
 
 if [[ $GETNREC -eq 1 ]]; then
