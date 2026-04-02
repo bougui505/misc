@@ -42,7 +42,9 @@ key2=val22
 --
 [...]
 
-using awk.
+using gawk.
+
+Note that some features used in the command are specific to gawk, therefore gawk must be installed on your system before using it.
 
 An example rec file can be found in $DIRSCRIPT/recawk_test/data/file.rec.gz
 
@@ -151,8 +153,8 @@ if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$(echo "$1" | tr "\n" "$" | awk -F"END" '{print $1}' | tr "$" "\n")
-ENDCMD=$(echo "$1" | tr "\n" "$" | awk -F"END" '{print $2}' | tr "$" "\n")
+CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
+ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
 FILENAMES="${@:2}"
 
 if [[ $GETNREC -eq 1 ]]; then
@@ -161,7 +163,7 @@ if [[ $GETNREC -eq 1 ]]; then
 fi
 
 if [[ $KEYS -eq 1 ]]; then
-    awk -F"=" '{
+    gawk -F"=" '{
         if (FNR==1){
             fnr=0
         }
@@ -181,7 +183,7 @@ if [[ $KEYS -eq 1 ]]; then
 fi
 
 if [[ $TOCSV -eq 1 ]]; then
-    awk '
+    gawk '
     BEGIN {
         first = 1
     }
@@ -236,7 +238,7 @@ if [[ $TOREC != 0 ]]; then
         exit 1
     fi
     if [[ $TOREC == " " ]]; then
-        awk -v FPAT="[^[:space:]]+|(\"([^\"]|\"\")*\")" '{
+        gawk -v FPAT="[^[:space:]]+|(\"([^\"]|\"\")*\")" '{
             if (NR==1){
                 for (i=1; i<=NF; i++){
                     # gsub(/ /, "_", $i)
@@ -253,7 +255,7 @@ if [[ $TOREC != 0 ]]; then
             }
         }' "$FILENAMES"
     else
-        awk -v FPAT="[^$TOREC]*|(\"([^\"]|\"\")*\")" '{
+        gawk -v FPAT="[^$TOREC]*|(\"([^\"]|\"\")*\")" '{
             if (NR==1){
                 for (i=1; i<=NF; i++){
                     # gsub(/ /, "_", $i)
@@ -315,7 +317,7 @@ if [[ $SAMPLE -gt 0 ]]; then
     '
 fi
 
-awk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
+gawk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
 function printrec(){
     for (field in rec){
         print field"="rec[field]
