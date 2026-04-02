@@ -49,7 +49,6 @@ Note that some features used in the command are specific to gawk, therefore gawk
 An example rec file can be found in $DIRSCRIPT/recawk_test/data/file.rec.gz
 
 The key, value couples are stored in rec awk array.
-To be more concise, R is an alias to the rec array. Therefore you can use R["key"] as a shorthand to rec["key"].
 To access key1, use:
 
     rec["key1"] -> val1 (if in first records)
@@ -154,8 +153,8 @@ if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n" | tr "\n" ";")
-ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n" | tr "\n" ";")
+CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
+ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
 FILENAMES="${@:2}"
 
 if [[ $GETNREC -eq 1 ]]; then
@@ -319,13 +318,6 @@ if [[ $SAMPLE -gt 0 ]]; then
 fi
 
 gawk -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" '
-
-function run_cmd(R) {
-    # This allows the user to write R["key"] as well as rec["key"] in their command string
-    # This create an alias R to rec.
-    '"$CMD"'
-}
-
 function printrec(){
     for (field in rec){
         print field"="rec[field]
@@ -431,8 +423,7 @@ if (FNR==1){
 if ($0=="--"){
     nr+=1
     fnr+=1
-    # '"$CMD"'
-    run_cmd(rec)
+    '"$CMD"'
     delete rec
 }
 else{
