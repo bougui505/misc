@@ -33,7 +33,7 @@ def callback(debug:bool=False):
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
 
-def metric(v1, v2, threshold=1e-6):
+def metric(v1, v2, threshold=1e-4):
     """
     >>> v1 = np.asarray([0, 1, 2])
     >>> v2 = np.asarray([1, 0, 2])
@@ -49,9 +49,10 @@ def metric(v1, v2, threshold=1e-6):
     cdist = scidist.cdist(v1[:, None], v2[:, None], metric="euclidean")
     cdist = 1. - (cdist<threshold)
     # print(cdist)
-    row_ind, col_ind = linear_sum_assignment(cdist)
+    # row_ind, col_ind = linear_sum_assignment(cdist)
     # d = 1. - (cdist[row_ind, col_ind]).sum()/min(len(row_ind), len(col_ind))
-    d = cdist[row_ind, col_ind].mean()
+    # d = cdist[row_ind, col_ind].mean()
+    d = cdist.min(axis=1).mean()
     # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
     return d
 
@@ -63,11 +64,13 @@ def PSR(coords1, coords2, n_neighbors=8):
     '1ycr'
     >>> coords1 = cmd.get_coords("chain A")
     >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
-    >>> row_ind, col_ind, error = PSR(coords1, coords2+10.)
+    >>> row_ind, col_ind, error = PSR(coords1, coords2+100)
     >>> rmsd = ((coords1[row_ind] - coords2[col_ind])**2).sum(axis=1).mean()
     >>> rmsd
     np.float32(0.0)
     """
+    # coords1 -= coords1.mean(axis=0)
+    # coords2 -= coords2.mean(axis=0)
     tree1 = cKDTree(coords1)
     tree2 = cKDTree(coords2)
     n_neighbors = min(coords1.shape[0], coords2.shape[0], n_neighbors)
