@@ -33,7 +33,7 @@ def callback(debug:bool=False):
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
 
-def metric(v1, v2):
+def metric(v1, v2, threshold=1e-6):
     """
     >>> v1 = np.asarray([0, 1, 2])
     >>> v2 = np.asarray([1, 0, 2])
@@ -44,12 +44,15 @@ def metric(v1, v2):
     >>> v2 = np.asarray([3, 0, 2])
     >>> d = metric(v1, v2)
     >>> d
-    np.float64(0.33333333333333337)
+    np.float64(0.3333333333333333)
     """
-    cdist = scidist.cdist(v1[:, None], v2[:, None], metric="hamming")
+    cdist = scidist.cdist(v1[:, None], v2[:, None], metric="euclidean")
+    cdist = 1. - (cdist<threshold)
     # print(cdist)
     row_ind, col_ind = linear_sum_assignment(cdist)
-    d = 1. - (cdist[row_ind, col_ind]==0).sum()/min(len(row_ind), len(col_ind))
+    # d = 1. - (cdist[row_ind, col_ind]).sum()/min(len(row_ind), len(col_ind))
+    d = cdist[row_ind, col_ind].mean()
+    # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
     return d
 
 
@@ -60,7 +63,7 @@ def PSR(coords1, coords2, n_neighbors=8):
     '1ycr'
     >>> coords1 = cmd.get_coords("chain A")
     >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
-    >>> row_ind, col_ind, error = PSR(coords1, coords2)
+    >>> row_ind, col_ind, error = PSR(coords1, coords2+10.)
     >>> rmsd = ((coords1[row_ind] - coords2[col_ind])**2).sum(axis=1).mean()
     >>> rmsd
     np.float32(0.0)
