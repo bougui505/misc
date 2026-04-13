@@ -56,27 +56,32 @@ def metric(v1, v2, threshold=1e-4):
     # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
     return d
 
-
 def PSR(coords1, coords2, n_neighbors=8):
     """
+    >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
     >>> cmd.fetch("1ycr")
     '1ycr'
     >>> coords1 = cmd.get_coords("chain A")
     >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
+
+    # >>> rot = R.from_euler('zx', [90, 45], degrees=True)
+    # >>> coords2 = rot.apply(coords2)
+
     >>> row_ind, col_ind, error = PSR(coords1, coords2+100)
     >>> rmsd = ((coords1[row_ind] - coords2[col_ind])**2).sum(axis=1).mean()
     >>> rmsd
     np.float32(0.0)
     """
-    coords1_c = coords1 - coords1.mean(axis=0)
-    coords2_c = coords2 - coords2.mean(axis=0)
+    coords1_c = np.round(coords1 - coords1.mean(axis=0), 3)
+    coords2_c = np.round(coords2 - coords2.mean(axis=0), 3)
     tree1 = cKDTree(coords1_c)
     tree2 = cKDTree(coords2_c)
     n_neighbors = min(coords1_c.shape[0], coords2_c.shape[0], n_neighbors)
     distances1, inds1 = tree1.query(coords1_c, k=n_neighbors)
     distances2, inds2 = tree2.query(coords2_c, k=n_neighbors)
     pdist = scidist.cdist(distances1, distances2, metric=metric)
+    # print(np.unique(pdist.flatten(), return_counts=True))
     row_ind, col_ind = linear_sum_assignment(pdist)
     error = pdist[row_ind, col_ind].mean()
     return row_ind, col_ind, error
