@@ -74,8 +74,8 @@ def PSR(coords1, coords2, n_neighbors=8):
     >>> rmsd
     np.float32(0.0)
     """
-    coords1_c = np.round(coords1 - coords1.mean(axis=0), 3)
-    coords2_c = np.round(coords2 - coords2.mean(axis=0), 3)
+    coords1_c = coords1 - coords1.mean(axis=0)
+    coords2_c = coords2 - coords2.mean(axis=0)
     tree1 = cKDTree(coords1_c)
     tree2 = cKDTree(coords2_c)
     n_neighbors = min(coords1_c.shape[0], coords2_c.shape[0], n_neighbors)
