@@ -66,7 +66,7 @@ def PSR(coords1, coords2, n_neighbors=8):
     >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
 
     >>> rot = R.from_euler('zx', [90, 45], degrees=True)
-    >>> coords2 = rot.apply(coords2)
+    >>> coords2 = rot.apply(coords2) + 100.
 
     >>> row_ind, col_ind, error = PSR(coords1, coords2)
     >>> coords2_back = cmd.get_coords("chain A and resi 50-60+70-75")
