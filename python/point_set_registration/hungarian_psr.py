@@ -47,10 +47,14 @@ def metric(v1, v2, threshold=1e-4):
     np.float64(0.3333333333333333)
     """
     cdist = scidist.cdist(v1[:, None], v2[:, None], metric="euclidean")
-    # Convert to binary similarity (1 if within threshold, 0 otherwise)
-    similarity = (cdist < threshold).astype(float)
-    # Return the minimum similarity for each point in v1
-    return 1. - cdist.min(axis=1).mean()
+    cdist = 1. - (cdist<threshold)
+    # print(cdist)
+    # row_ind, col_ind = linear_sum_assignment(cdist)
+    # d = 1. - (cdist[row_ind, col_ind]).sum()/min(len(row_ind), len(col_ind))
+    # d = cdist[row_ind, col_ind].mean()
+    d = cdist.min(axis=1).mean()
+    # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
+    return d
 
 def PSR(coords1, coords2, n_neighbors=8):
     """
@@ -61,11 +65,12 @@ def PSR(coords1, coords2, n_neighbors=8):
     >>> coords1 = cmd.get_coords("chain A")
     >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
 
-    # >>> rot = R.from_euler('zx', [90, 45], degrees=True)
-    # >>> coords2 = rot.apply(coords2)
+    >>> rot = R.from_euler('zx', [90, 45], degrees=True)
+    >>> coords2 = rot.apply(coords2)
 
-    >>> row_ind, col_ind, error = PSR(coords1, coords2+100)
-    >>> rmsd = ((coords1[row_ind] - coords2[col_ind])**2).sum(axis=1).mean()
+    >>> row_ind, col_ind, error = PSR(coords1, coords2)
+    >>> coords2_back = cmd.get_coords("chain A and resi 50-60+70-75")
+    >>> rmsd = ((coords1[row_ind] - coords2_back[col_ind])**2).sum(axis=1).mean()
     >>> rmsd
     np.float32(0.0)
     """
@@ -76,31 +81,10 @@ def PSR(coords1, coords2, n_neighbors=8):
     n_neighbors = min(coords1_c.shape[0], coords2_c.shape[0], n_neighbors)
     distances1, inds1 = tree1.query(coords1_c, k=n_neighbors)
     distances2, inds2 = tree2.query(coords2_c, k=n_neighbors)
-    
-    # Create a distance matrix between the neighbor distances
-    # This is a more direct approach - compute pairwise distances between points
-    # and use Hungarian algorithm to find optimal matching
-    
-    # For each point in coords1, find the corresponding point in coords2
-    # by matching their local neighborhoods
-    
-    # Create a matrix of distances between all points in coords1 and coords2
-    # This is a simpler approach - just compute the distance matrix directly
-    # and use Hungarian algorithm for assignment
-    
-    # Alternative approach: compute the distance matrix between all points
-    # and use the Hungarian algorithm to find the optimal assignment
-    
-    # Let's compute a simpler version that directly matches points
-    # by computing the distance matrix between all points
-    dist_matrix = scidist.cdist(coords1_c, coords2_c, metric='euclidean')
-    
-    # Use Hungarian algorithm to find optimal assignment
-    row_ind, col_ind = linear_sum_assignment(dist_matrix)
-    
-    # Compute the error as the mean distance of the matched pairs
-    error = dist_matrix[row_ind, col_ind].mean()
-    
+    pdist = scidist.cdist(distances1, distances2, metric=metric)
+    # print(np.unique(pdist.flatten(), return_counts=True))
+    row_ind, col_ind = linear_sum_assignment(pdist)
+    error = pdist[row_ind, col_ind].mean()
     return row_ind, col_ind, error
 
 if __name__ == "__main__":
