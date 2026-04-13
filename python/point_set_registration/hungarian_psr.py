@@ -56,7 +56,38 @@ def metric(v1, v2, threshold=1e-4):
     # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
     return d
 
-def PSR(coords1, coords2, n_neighbors=8):
+def rigid_body_fit(A, B):
+    """
+    See: https://en.wikipedia.org/wiki/Kabsch_algorithm
+    2-D or 3-D registration with known correspondences.
+    Registration occurs in the zero centered coordinate system, and then
+    must be transported back.
+        Args:
+        -    A: Numpy array of shape (N,D) -- Point Cloud to Align (source)
+        -    B: Numpy array of shape (N,D) -- Reference Point Cloud (target)
+        Returns:
+        -    R: optimal rotation
+        -    t: optimal translation
+    """
+    a_mean = A.mean(axis=0)
+    b_mean = B.mean(axis=0)
+    A_c = A - a_mean
+    B_c = B - b_mean
+    # Covariance matrix
+    H = A_c.T.dot(B_c)
+    U, S, Vt = np.linalg.svd(H)
+    V = Vt.T
+    # Rotation matrix calculation with reflection check
+    d = np.linalg.det(V.dot(U.T))
+    if d < 0:
+        V[:, -1] *= -1
+    # Rotation matrix
+    R = V.dot(U.T)
+    # Translation vector
+    t = b_mean - R.dot(a_mean)
+    return R, t
+
+def PSR(coords1, coords2, n_neighbors=8, fit=True):
     """
     >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
@@ -68,7 +99,10 @@ def PSR(coords1, coords2, n_neighbors=8):
     >>> rot = R.from_euler('zx', [90, 45], degrees=True)
     >>> coords2 = rot.apply(coords2) + 100.
 
-    >>> row_ind, col_ind, error = PSR(coords1, coords2)
+    >>> row_ind, col_ind, error, rmsd = PSR(coords1, coords2)
+    >>> rmsd
+    np.float64(5.564791087648194e-12)
+
     >>> coords2_back = cmd.get_coords("chain A and resi 50-60+70-75")
     >>> rmsd = ((coords1[row_ind] - coords2_back[col_ind])**2).sum(axis=1).mean()
     >>> rmsd
@@ -85,7 +119,13 @@ def PSR(coords1, coords2, n_neighbors=8):
     # print(np.unique(pdist.flatten(), return_counts=True))
     row_ind, col_ind = linear_sum_assignment(pdist)
     error = pdist[row_ind, col_ind].mean()
-    return row_ind, col_ind, error
+    if fit:
+        R, t = rigid_body_fit(coords2[col_ind], coords1[row_ind])
+        coords2_aligned = (R.dot(coords2.T)).T + t
+        rmsd = ((coords1[row_ind] - coords2_aligned[col_ind])**2).sum(axis=1).mean()
+    else:
+        rmsd = None
+    return row_ind, col_ind, error, rmsd
 
 if __name__ == "__main__":
     import doctest

@@ -61,6 +61,10 @@ def rigid_body_fit(A, B):
     H = A_c.T.dot(B_c)
     U, S, Vt = np.linalg.svd(H)
     V = Vt.T
+    # Rotation matrix calculation with reflection check
+    d = np.linalg.det(V.dot(U.T))
+    if d < 0:
+        V[:, -1] *= -1
     # Rotation matrix
     R = V.dot(U.T)
     # Translation vector
