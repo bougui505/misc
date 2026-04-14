@@ -33,28 +33,16 @@ def callback(debug:bool=False):
     DEBUG = debug
     app.pretty_exceptions_show_locals = debug
 
-def metric(v1, v2, threshold=1e-4):
-    """
-    >>> v1 = np.asarray([0, 1, 2])
-    >>> v2 = np.asarray([1, 0, 2])
-    >>> d = metric(v1, v2)
-    >>> d
-    np.float64(0.0)
-    >>> v1 = np.asarray([0, 1, 2])
-    >>> v2 = np.asarray([3, 0, 2])
-    >>> d = metric(v1, v2)
-    >>> d
-    np.float64(0.3333333333333333)
-    """
-    cdist = scidist.cdist(v1[:, None], v2[:, None], metric="euclidean")
-    cdist = 1. - (cdist<threshold)
-    # print(cdist)
-    # row_ind, col_ind = linear_sum_assignment(cdist)
-    # d = 1. - (cdist[row_ind, col_ind]).sum()/min(len(row_ind), len(col_ind))
-    # d = cdist[row_ind, col_ind].mean()
-    d = cdist.min(axis=1).mean()
-    # d = 1. - np.isclose(cdist[row_ind, col_ind], 0).sum()/min(len(row_ind), len(col_ind))
-    return d
+def isin_tolerance(dmat_big, dmat_small, tol=1e-4):
+    # Reshape dmat_big to (10, 10, 1, 1) and dmat_small to (4, 4)
+    # This allows broadcasting to a (10, 10, 4, 4) comparison matrix
+    diffs = np.abs(dmat_big[:, :, np.newaxis, np.newaxis] - dmat_small)
+    
+    # Check where the absolute difference is within tolerance
+    in_tolerance = np.any(diffs <= tol, axis=(2, 3))
+    # in_tolerance = diffs <= tol
+    
+    return in_tolerance
 
 def rigid_body_fit(A, B):
     """
@@ -87,45 +75,48 @@ def rigid_body_fit(A, B):
     t = b_mean - R.dot(a_mean)
     return R, t
 
-def PSR(coords1, coords2, n_neighbors=8, fit=True):
+def PSR(A, B, tol=1e-4):
     """
     >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
     >>> cmd.fetch("1ycr")
     '1ycr'
-    >>> coords1 = cmd.get_coords("chain A")
-    >>> coords2 = cmd.get_coords("chain A and resi 50-60+70-75")
+    >>> coords1 = cmd.get_coords("chain A and resi 50-60+70-75")
+    >>> coords2 = cmd.get_coords("chain A")
 
     >>> rot = R.from_euler('zx', [90, 45], degrees=True)
-    >>> coords2 = rot.apply(coords2) + 100.
+    >>> coords1 = rot.apply(coords1) + 100.
+    >>> coords1_back = cmd.get_coords("chain A and resi 50-60+70-75")
 
-    >>> row_ind, col_ind, error, rmsd = PSR(coords1, coords2)
+    >>> i,j,rmsd = PSR(coords1, coords2)
     >>> rmsd
-    np.float64(5.564791087648194e-12)
-
-    >>> coords2_back = cmd.get_coords("chain A and resi 50-60+70-75")
-    >>> rmsd = ((coords1[row_ind] - coords2_back[col_ind])**2).sum(axis=1).mean()
-    >>> rmsd
-    np.float32(0.0)
+    2.358980942620816e-06
     """
-    coords1_c = coords1 - coords1.mean(axis=0)
-    coords2_c = coords2 - coords2.mean(axis=0)
-    tree1 = cKDTree(coords1_c)
-    tree2 = cKDTree(coords2_c)
-    n_neighbors = min(coords1_c.shape[0], coords2_c.shape[0], n_neighbors)
-    distances1, inds1 = tree1.query(coords1_c, k=n_neighbors)
-    distances2, inds2 = tree2.query(coords2_c, k=n_neighbors)
-    pdist = scidist.cdist(distances1, distances2, metric=metric)
-    # print(np.unique(pdist.flatten(), return_counts=True))
-    row_ind, col_ind = linear_sum_assignment(pdist)
-    error = pdist[row_ind, col_ind].mean()
-    if fit:
-        R, t = rigid_body_fit(coords2[col_ind], coords1[row_ind])
-        coords2_aligned = (R.dot(coords2.T)).T + t
-        rmsd = ((coords1[row_ind] - coords2_aligned[col_ind])**2).sum(axis=1).mean()
+    if A.shape[0] > B.shape[0]:
+        big = A
+        small = B
     else:
-        rmsd = None
-    return row_ind, col_ind, error, rmsd
+        big = B
+        small = A
+    n_small = small.shape[0]
+    dmat_big = scidist.squareform(scidist.pdist(big))
+    dmat_small = scidist.squareform(scidist.pdist(small))
+    small_ind = []
+    big_ind = []
+    for ismall, vsmall in enumerate(dmat_small):
+        for ibig, vbig in enumerate(dmat_big):
+            dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
+            r = (dmat_i<tol).sum()/n_small
+            if r>=1:  # all the distances match
+                small_ind.append(ismall)
+                big_ind.append(ibig)
+                break
+    R, t = rigid_body_fit(small[small_ind], big[big_ind])
+    small_aligned = (R.dot(small.T)).T + t
+    rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
+    return small_ind, big_ind, float(rmsd)
+
+
 
 if __name__ == "__main__":
     import doctest
