@@ -99,17 +99,22 @@ def PSR(A, B, tol=1e-4):
         big = B
         small = A
     n_small = small.shape[0]
+    n_big = big.shape[0]
     dmat_big = scidist.squareform(scidist.pdist(big))
     dmat_small = scidist.squareform(scidist.pdist(small))
     small_ind = []
     big_ind = []
+    bigset = set(np.arange(n_big))
     for ismall, vsmall in enumerate(dmat_small):
-        for ibig, vbig in enumerate(dmat_big):
+        # for ibig, vbig in enumerate(dmat_big):
+        for ibig in bigset:
+            vbig = dmat_big[ibig]
             dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
             r = (dmat_i<tol).sum()/n_small
             if r>=1:  # all the distances match
                 small_ind.append(ismall)
                 big_ind.append(ibig)
+                bigset -= {ibig}
                 break
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small.T)).T + t
