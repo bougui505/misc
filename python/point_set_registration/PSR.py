@@ -117,7 +117,7 @@ def PSR(A, B, tol=1e-4):
                     big_ind.append(ibig)
                     bigset -= {ibig}
                     nmatch+=1
-                    pbar.set_description(f"PSR: {nmatch}/{n_small} matches")
+                    pbar.set_postfix(matches=f"{nmatch}/{n_small}")
                     break
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small.T)).T + t
