@@ -14,6 +14,7 @@ import numpy as np
 import scipy.spatial.distance as scidist
 from tqdm import tqdm
 import os
+from scipy.optimize import linear_sum_assignment
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
@@ -84,13 +85,14 @@ def PSR(A, B):
     >>> coords1 = cmd.get_coords("chain A and resi 50-60+70-75")
     >>> coords2 = cmd.get_coords("chain A")
 
+    # shuffle the order of coords2
+    >>> coords2 = coords2[np.random.choice(coords2.shape[0], replace=False, size=coords2.shape[0]), :]
+
     >>> rot = R.from_euler('zx', [90, 45], degrees=True)
     >>> coords1 = rot.apply(coords1) + 100.
 
     # # Add noise
     # >>> coords1 += np.random.uniform(0., 0.001, size=coords1.shape)
-
-    >>> coords1_back = cmd.get_coords("chain A and resi 50-60+70-75")
 
     >>> i,j,rmsd = PSR(coords1, coords2)
     >>> rmsd
@@ -116,7 +118,9 @@ def PSR(A, B):
             for ibig in bigset:
                 vbig = dmat_big[ibig]
                 dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
-                error = dmat_i.min(axis=1).mean()  # should we used the hungarian algorithm ?
+                # error = dmat_i.min(axis=1).mean()  # should we use the hungarian algorithm ?
+                row_ind, col_ind = linear_sum_assignment(dmat_i)
+                error = dmat_i[row_ind, col_ind].mean()
                 if error < error_min:
                     error_min = error
                     ismall_best = ismall
@@ -135,7 +139,7 @@ def PSR(A, B):
     return small_ind, big_ind, float(rmsd)
 
 @app.command()
-def fit(pdb1, pdb2, sel1="all", sel2="all", tol:float=1e-4):
+def fit(pdb1, pdb2, sel1="all", sel2="all"):
     from pymol import cmd
     if os.path.exists(pdb1):
         cmd.load(pdb1, "pdb1")
@@ -147,7 +151,7 @@ def fit(pdb1, pdb2, sel1="all", sel2="all", tol:float=1e-4):
         cmd.fetch(pdb2, "pdb2")
     coords1 = cmd.get_coords(f"pdb1 and ({sel1})")
     coords2 = cmd.get_coords(f"pdb2 and ({sel2})")
-    small_ind, big_ind, rmsd = PSR(coords1, coords2, tol=tol)
+    small_ind, big_ind, rmsd = PSR(coords1, coords2)
     print(f"{rmsd=}")
 
 
