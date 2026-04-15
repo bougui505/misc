@@ -15,6 +15,8 @@ import scipy.spatial.distance as scidist
 from tqdm import tqdm
 import os
 from scipy.optimize import linear_sum_assignment
+from joblib import Parallel, delayed
+import multiprocessing
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
@@ -76,7 +78,12 @@ def rigid_body_fit(A, B):
     t = b_mean - R.dot(a_mean)
     return R, t
 
-def PSR(A, B):
+def _match_profiles(vsmall, vbig):
+    dmat_i = scidist.cdist(vsmall[:, None], vbig[:, None])
+    row_ind, col_ind = linear_sum_assignment(dmat_i)
+    return dmat_i[row_ind, col_ind].mean()
+
+def PSR(A, B, n_jobs=None, verbose=False):
     """
     >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
@@ -108,31 +115,24 @@ def PSR(A, B):
     n_big = big.shape[0]
     dmat_big = scidist.squareform(scidist.pdist(big))
     dmat_small = scidist.squareform(scidist.pdist(small))
-    small_ind = []
-    big_ind = []
-    bigset = set(np.arange(n_big))
-    nmatch = 0
-    with tqdm(dmat_small) as pbar:
-        for ismall, vsmall in enumerate(pbar):
-            error_min, ismall_best, ibig_best = np.inf, None, None
-            for ibig in bigset:
-                vbig = dmat_big[ibig]
-                dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
-                # error = dmat_i.min(axis=1).mean()  # should we use the hungarian algorithm ?
-                row_ind, col_ind = linear_sum_assignment(dmat_i)
-                error = dmat_i[row_ind, col_ind].mean()
-                if error < error_min:
-                    error_min = error
-                    ismall_best = ismall
-                    ibig_best = ibig
-                    if error_min == 0:
-                        break
-            if error_min != np.inf:
-                small_ind.append(ismall_best)
-                big_ind.append(ibig_best)
-                bigset -= {ibig_best}
-                nmatch+=1
-                pbar.set_postfix(matches=f"{nmatch}/{n_small}", error=f"{error_min:.2f}")
+    if n_jobs is None:
+        n_jobs = multiprocessing.cpu_count()
+    
+    # Precompute cost matrix in parallel
+    if verbose:
+        print(f"Computing cost matrix ({n_small}x{n_big}) using {n_jobs} cores...")
+    
+    costs = Parallel(n_jobs=n_jobs)(
+        delayed(_match_profiles)(dmat_small[i], dmat_big[j])
+        for i in tqdm(range(n_small), desc="Distance profiles", disable=not verbose)
+        for j in range(n_big)
+    )
+    cost_matrix = np.array(costs).reshape(n_small, n_big)
+    
+    # Global assignment
+    if verbose:
+        print("Solving global assignment...")
+    small_ind, big_ind = linear_sum_assignment(cost_matrix)
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small.T)).T + t
     # rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
@@ -151,7 +151,8 @@ def PSR(A, B):
         small_aligned = (R.dot(small.T)).T + t
 
         rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
-        # print(rmsd)
+        if verbose:
+            print(f"Iterative refined RMSD: {rmsd}")
     return small_ind, big_ind, float(rmsd), R, t
 
 @app.command()
@@ -159,7 +160,9 @@ def fit(
     pdb1: str = typer.Argument(..., help="First PDB file (local path or PDB ID)"),
     pdb2: str = typer.Argument(..., help="Second PDB file (local path or PDB ID)"),
     sel1: str = typer.Option("all", help="Selection string for the first PDB"),
-    sel2: str = typer.Option("all", help="Selection string for the second PDB")
+    sel2: str = typer.Option("all", help="Selection string for the second PDB"),
+    n_jobs: int = typer.Option(None, help="Number of jobs for parallel processing"),
+    verbose: bool = typer.Option(True, help="Show progress messages")
 ):
     """
     Perform point set registration between two PDB files.
@@ -177,7 +180,7 @@ def fit(
     coords2 = cmd.get_coords(f"pdb2 and ({sel2})")
     n1 = coords1.shape[0]
     n2 = coords2.shape[0]
-    small_ind, big_ind, rmsd, R, t = PSR(coords1, coords2)
+    small_ind, big_ind, rmsd, R, t = PSR(coords1, coords2, n_jobs=n_jobs, verbose=verbose)
     print(f"{rmsd=}")
     if n1 > n2:
         big = coords1
