@@ -10,10 +10,9 @@
 # Hungarian Point Set Registration
 
 import typer
-from scipy.spatial import cKDTree
 import numpy as np
 import scipy.spatial.distance as scidist
-from scipy.optimize import linear_sum_assignment
+from tqdm import tqdm
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
@@ -105,17 +104,21 @@ def PSR(A, B, tol=1e-4):
     small_ind = []
     big_ind = []
     bigset = set(np.arange(n_big))
-    for ismall, vsmall in enumerate(dmat_small):
-        # for ibig, vbig in enumerate(dmat_big):
-        for ibig in bigset:
-            vbig = dmat_big[ibig]
-            dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
-            r = (dmat_i<tol).sum()/n_small
-            if r>=1:  # all the distances match
-                small_ind.append(ismall)
-                big_ind.append(ibig)
-                bigset -= {ibig}
-                break
+    nmatch = 0
+    with tqdm(dmat_small) as pbar:
+        for ismall, vsmall in enumerate(pbar):
+            # for ibig, vbig in enumerate(dmat_big):
+            for ibig in bigset:
+                vbig = dmat_big[ibig]
+                dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
+                r = (dmat_i<tol).sum()/n_small
+                if r>=1:  # all the distances match
+                    small_ind.append(ismall)
+                    big_ind.append(ibig)
+                    bigset -= {ibig}
+                    nmatch+=1
+                    pbar.set_description(f"PSR: {nmatch}/{n_small} matches")
+                    break
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small.T)).T + t
     rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
