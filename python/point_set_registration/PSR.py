@@ -85,6 +85,10 @@ def PSR(A, B, tol=1e-4):
 
     >>> rot = R.from_euler('zx', [90, 45], degrees=True)
     >>> coords1 = rot.apply(coords1) + 100.
+
+    # # Add noise
+    # >>> coords1 += np.random.uniform(0., 0.001, size=coords1.shape)
+
     >>> coords1_back = cmd.get_coords("chain A and resi 50-60+70-75")
 
     >>> i,j,rmsd = PSR(coords1, coords2)
@@ -107,18 +111,23 @@ def PSR(A, B, tol=1e-4):
     nmatch = 0
     with tqdm(dmat_small) as pbar:
         for ismall, vsmall in enumerate(pbar):
-            # for ibig, vbig in enumerate(dmat_big):
+            rmax, ismall_max, ibig_max = 0, None, None
             for ibig in bigset:
                 vbig = dmat_big[ibig]
                 dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
                 r = (dmat_i<tol).sum()/n_small
-                if r>=1:  # all the distances match
-                    small_ind.append(ismall)
-                    big_ind.append(ibig)
-                    bigset -= {ibig}
-                    nmatch+=1
-                    pbar.set_postfix(matches=f"{nmatch}/{n_small}")
-                    break
+                if r > rmax:
+                    rmax = r
+                    ismall_max = ismall
+                    ibig_max = ibig
+                    if rmax >= 1.0:
+                        break
+            if rmax > 0:
+                small_ind.append(ismall_max)
+                big_ind.append(ibig_max)
+                bigset -= {ibig_max}
+                nmatch+=1
+                pbar.set_postfix(matches=f"{nmatch}/{n_small}", rmax=f"{rmax:.2f}")
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small[small_ind].T)).T + t
     rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
