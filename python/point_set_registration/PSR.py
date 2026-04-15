@@ -92,9 +92,9 @@ def PSR(A, B):
     >>> coords1 = rot.apply(coords1) + 100.
 
     # # Add noise
-    # >>> coords1 += np.random.uniform(0., 0.001, size=coords1.shape)
+    # >>> coords1 += np.random.uniform(0., 0.1, size=coords1.shape)
 
-    >>> i,j,rmsd = PSR(coords1, coords2)
+    >>> i,j,rmsd,R,t = PSR(coords1, coords2)
     >>> rmsd
     2.358980942620816e-06
     """
@@ -136,7 +136,7 @@ def PSR(A, B):
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small[small_ind].T)).T + t
     rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
-    return small_ind, big_ind, float(rmsd)
+    return small_ind, big_ind, float(rmsd), R, t
 
 @app.command()
 def fit(pdb1, pdb2, sel1="all", sel2="all"):
@@ -151,8 +151,23 @@ def fit(pdb1, pdb2, sel1="all", sel2="all"):
         cmd.fetch(pdb2, "pdb2")
     coords1 = cmd.get_coords(f"pdb1 and ({sel1})")
     coords2 = cmd.get_coords(f"pdb2 and ({sel2})")
-    small_ind, big_ind, rmsd = PSR(coords1, coords2)
+    n1 = coords1.shape[0]
+    n2 = coords2.shape[0]
+    small_ind, big_ind, rmsd, R, t = PSR(coords1, coords2)
     print(f"{rmsd=}")
+    if n1 > n2:
+        big = coords1
+        small = coords2
+        to_align = pdb2
+        obj = "pdb2"
+    else:
+        big = coords2
+        small = coords1
+        to_align = pdb1
+        obj = "pdb1"
+    aligned = (R.dot(cmd.get_coords(obj).T)).T + t
+    cmd.load_coords(aligned, obj, 1)
+    cmd.save(f"{to_align}_aligned.pdb", obj)
 
 
 if __name__ == "__main__":
