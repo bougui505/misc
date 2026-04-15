@@ -13,6 +13,7 @@ import typer
 import numpy as np
 import scipy.spatial.distance as scidist
 from tqdm import tqdm
+import os
 
 # import IPython  # you can use IPython.embed() to explore variables and explore where it's called
 
@@ -74,7 +75,7 @@ def rigid_body_fit(A, B):
     t = b_mean - R.dot(a_mean)
     return R, t
 
-def PSR(A, B, tol=1e-4):
+def PSR(A, B):
     """
     >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
@@ -111,28 +112,43 @@ def PSR(A, B, tol=1e-4):
     nmatch = 0
     with tqdm(dmat_small) as pbar:
         for ismall, vsmall in enumerate(pbar):
-            rmax, ismall_max, ibig_max = 0, None, None
+            error_min, ismall_best, ibig_best = np.inf, None, None
             for ibig in bigset:
                 vbig = dmat_big[ibig]
                 dmat_i = scidist.cdist(vsmall[:,None],vbig[:,None])
-                r = (dmat_i<tol).sum()/n_small
-                if r > rmax:
-                    rmax = r
-                    ismall_max = ismall
-                    ibig_max = ibig
-                    if rmax >= 1.0:
+                error = dmat_i.min(axis=1).mean()  # should we used the hungarian algorithm ?
+                if error < error_min:
+                    error_min = error
+                    ismall_best = ismall
+                    ibig_best = ibig
+                    if error_min == 0:
                         break
-            if rmax > 0:
-                small_ind.append(ismall_max)
-                big_ind.append(ibig_max)
-                bigset -= {ibig_max}
+            if error_min != np.inf:
+                small_ind.append(ismall_best)
+                big_ind.append(ibig_best)
+                bigset -= {ibig_best}
                 nmatch+=1
-                pbar.set_postfix(matches=f"{nmatch}/{n_small}", rmax=f"{rmax:.2f}")
+                pbar.set_postfix(matches=f"{nmatch}/{n_small}", error=f"{error_min:.2f}")
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small[small_ind].T)).T + t
     rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
     return small_ind, big_ind, float(rmsd)
 
+@app.command()
+def fit(pdb1, pdb2, sel1="all", sel2="all", tol:float=1e-4):
+    from pymol import cmd
+    if os.path.exists(pdb1):
+        cmd.load(pdb1, "pdb1")
+    else:
+        cmd.fetch(pdb1, "pdb1")
+    if os.path.exists(pdb2):
+        cmd.load(pdb2, "pdb2")
+    else:
+        cmd.fetch(pdb2, "pdb2")
+    coords1 = cmd.get_coords(f"pdb1 and ({sel1})")
+    coords2 = cmd.get_coords(f"pdb2 and ({sel2})")
+    small_ind, big_ind, rmsd = PSR(coords1, coords2, tol=tol)
+    print(f"{rmsd=}")
 
 
 if __name__ == "__main__":
