@@ -135,10 +135,23 @@ def PSR(A, B):
                 pbar.set_postfix(matches=f"{nmatch}/{n_small}", error=f"{error_min:.2f}")
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
     small_aligned = (R.dot(small.T)).T + t
-    # Once everything is aligned redo the assignment of small on big to fix inconsistant assignments
-    dmat = scidist.cdist(small_aligned, big)
-    small_ind, big_ind = linear_sum_assignment(dmat)
-    rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
+    # rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
+
+    assignments, rmsd = set(), -1
+    while True:
+        # Once everything is aligned redo the assignment of small on big to fix inconsistant assignments
+        dmat = scidist.cdist(small_aligned, big)
+        small_ind, big_ind = linear_sum_assignment(dmat)
+        assignment = (tuple(small_ind), tuple(big_ind))
+        if assignment in assignments:
+            break
+        else:
+            assignments.add(assignment)
+        R, t = rigid_body_fit(small[small_ind], big[big_ind])
+        small_aligned = (R.dot(small.T)).T + t
+
+        rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
+        # print(rmsd)
     return small_ind, big_ind, float(rmsd), R, t
 
 @app.command()
