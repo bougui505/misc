@@ -1,0 +1,1 @@
+./PSR.py: align 2 point clouds with arbitrary number of points. CLI is made 2 align 2 distinct proteins without using the sequence. Work fast on Calpha (to give as selection), not so fast on full atom representation.
