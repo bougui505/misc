@@ -156,6 +156,15 @@ def PSR(A, B):
 
 @app.command()
 def fit(pdb1, pdb2, sel1="all", sel2="all"):
+    """
+    Perform point set registration between two PDB files.
+    
+    Args:
+        pdb1: First PDB file (local path or PDB ID)
+        pdb2: Second PDB file (local path or PDB ID)
+        sel1: Selection string for the first PDB (default: "all")
+        sel2: Selection string for the second PDB (default: "all")
+    """
     from pymol import cmd
     if os.path.exists(pdb1):
         cmd.load(pdb1, "pdb1")
