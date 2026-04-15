@@ -120,7 +120,7 @@ def PSR(A, B, tol=1e-4):
                     pbar.set_postfix(matches=f"{nmatch}/{n_small}")
                     break
     R, t = rigid_body_fit(small[small_ind], big[big_ind])
-    small_aligned = (R.dot(small.T)).T + t
+    small_aligned = (R.dot(small[small_ind].T)).T + t
     rmsd = np.sqrt(((small_aligned - big[big_ind])**2).sum(axis=1).mean())
     return small_ind, big_ind, float(rmsd)
 
