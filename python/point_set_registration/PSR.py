@@ -114,20 +114,26 @@ def ransac_seed(S, B, tol=2.0, n_iterations=100, verbose=False):
     best_R, best_t = None, None
     
     for _ in range(n_iterations):
+        # We take randomly an element of D_S
         idx1 = np.random.randint(n_matches)
+        # We check for neighbors in D_B (dist<tol)
         consistent_with_1 = np.where(Diff[idx1] < tol)[0]
         if len(consistent_with_1) < 3:
             continue
         
+        # then we choose randomly 3 of this neighbors
         sample_idx = np.random.choice(consistent_with_1, size=3, replace=False)
+        # to compute an alignment between S and B
         R_seed, t_seed = rigid_body_fit(S[sample_idx], B[sample_idx])
         
         # Check inliers among the provided matches
         S_aligned = (R_seed.dot(S.T)).T + t_seed
+        # then we check the new distances between S_aligned and B
         dists = np.linalg.norm(S_aligned - B, axis=1)
         inliers = dists < 5.0 # Loose tolerance for initial seed
         n_inliers = inliers.sum()
         
+        # We store if we increase the number of inliers (matching points)
         if n_inliers > best_n_inliers:
             best_n_inliers = n_inliers
             best_R, best_t = R_seed, t_seed
