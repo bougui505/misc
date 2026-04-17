@@ -200,7 +200,7 @@ def _refine_seed(seed, small, big, tol, verbose, seed_idx, n_seeds, small_ind, b
         
     return (curr_small_ind, curr_big_ind, float(rmsd), R, t)
 
-def PSR(A, B, n_jobs=None, n_iterations=2000, n_seeds=5, verbose=False):
+def PSR(A, B, n_jobs=None, n_iterations=2000, n_seeds=2000, verbose=False):
     """
     >>> from scipy.spatial.transform import Rotation as R
     >>> from pymol import cmd
