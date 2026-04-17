@@ -83,6 +83,63 @@ def _match_profiles(vsmall, vbig):
     row_ind, col_ind = linear_sum_assignment(dmat_i)
     return dmat_i[row_ind, col_ind].mean()
 
+def get_consistency_inliers(S, B, tol=2.0):
+    """
+    Find the largest subset of matches (S, B) that are internally consistent
+    in terms of pairwise distances.
+    """
+    if len(S) < 3:
+        return np.ones(len(S), dtype=bool)
+    D_S = scidist.squareform(scidist.pdist(S))
+    D_B = scidist.squareform(scidist.pdist(B))
+    Diff = np.abs(D_S - D_B)
+    consistency = (Diff < tol).sum(axis=1)
+    seed_idx = np.argmax(consistency)
+    inliers = Diff[seed_idx] < tol
+    return inliers
+
+def ransac_seed(S, B, tol=2.0, n_iterations=100, verbose=False):
+    """
+    Find an initial rigid body transformation using RANSAC on triplets.
+    """
+    n_matches = len(S)
+    if n_matches < 3:
+        return rigid_body_fit(S, B)
+    
+    D_S = scidist.squareform(scidist.pdist(S))
+    D_B = scidist.squareform(scidist.pdist(B))
+    Diff = np.abs(D_S - D_B)
+    
+    best_n_inliers = -1
+    best_R, best_t = None, None
+    
+    for _ in range(n_iterations):
+        idx1 = np.random.randint(n_matches)
+        consistent_with_1 = np.where(Diff[idx1] < tol)[0]
+        if len(consistent_with_1) < 3:
+            continue
+        
+        sample_idx = np.random.choice(consistent_with_1, size=3, replace=False)
+        R_seed, t_seed = rigid_body_fit(S[sample_idx], B[sample_idx])
+        
+        # Check inliers among the provided matches
+        S_aligned = (R_seed.dot(S.T)).T + t_seed
+        dists = np.linalg.norm(S_aligned - B, axis=1)
+        inliers = dists < 5.0 # Loose tolerance for initial seed
+        n_inliers = inliers.sum()
+        
+        if n_inliers > best_n_inliers:
+            best_n_inliers = n_inliers
+            best_R, best_t = R_seed, t_seed
+            
+    if verbose and best_n_inliers != -1:
+        print(f"RANSAC seed found {best_n_inliers}/{n_matches} inliers")
+        
+    if best_R is not None:
+        return best_R, best_t
+    else:
+        return rigid_body_fit(S, B)
+
 def PSR(A, B, n_jobs=None, verbose=False):
     """
     >>> from scipy.spatial.transform import Rotation as R
@@ -115,6 +172,7 @@ def PSR(A, B, n_jobs=None, verbose=False):
     n_big = big.shape[0]
     dmat_big = scidist.squareform(scidist.pdist(big))
     dmat_small = scidist.squareform(scidist.pdist(small))
+    tol = 2.0 # Tolerance for geometric consistency check
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
     
@@ -133,27 +191,41 @@ def PSR(A, B, n_jobs=None, verbose=False):
     if verbose:
         print("Solving global assignment...")
     small_ind, big_ind = linear_sum_assignment(cost_matrix)
-    R, t = rigid_body_fit(small[small_ind], big[big_ind])
+    
+    # Robust seeding using RANSAC to handle dimers/symmetries
+    R, t = ransac_seed(small[small_ind], big[big_ind], tol=tol, verbose=verbose)
     small_aligned = (R.dot(small.T)).T + t
-    # rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
 
     assignments, rmsd = set(), -1
+    curr_small_ind, curr_big_ind = small_ind, big_ind
     while True:
-        # Once everything is aligned redo the assignment of small on big to fix inconsistant assignments
+        # Re-assign based on Euclidean distance
         dmat = scidist.cdist(small_aligned, big)
         small_ind, big_ind = linear_sum_assignment(dmat)
-        assignment = (tuple(small_ind), tuple(big_ind))
+        
+        # Identify the consistent inliers for the rigid fit
+        inliers = get_consistency_inliers(small[small_ind], big[big_ind], tol=tol)
+        curr_small_ind, curr_big_ind = small_ind[inliers], big_ind[inliers]
+
+        # Termination condition based on the set of matched indices
+        assignment = (tuple(curr_small_ind), tuple(curr_big_ind))
         if assignment in assignments:
             break
+        assignments.add(assignment)
+        
+        # Update the rigid body transformation
+        if len(curr_small_ind) >= 3:
+            R, t = rigid_body_fit(small[curr_small_ind], big[curr_big_ind])
         else:
-            assignments.add(assignment)
-        R, t = rigid_body_fit(small[small_ind], big[big_ind])
+            # Fallback to all matches if consistency fails
+            R, t = rigid_body_fit(small[small_ind], big[big_ind])
         small_aligned = (R.dot(small.T)).T + t
 
-        rmsd = np.sqrt(((small_aligned[small_ind] - big[big_ind])**2).sum(axis=1).mean())
+        rmsd = np.sqrt(((small_aligned[curr_small_ind] - big[curr_big_ind])**2).sum(axis=1).mean())
         if verbose:
-            print(f"Iterative refined RMSD: {rmsd}")
-    return small_ind, big_ind, float(rmsd), R, t
+            print(f"Iterative refined RMSD: {rmsd:.4f} (on {len(curr_small_ind)} inliers)")
+            
+    return curr_small_ind, curr_big_ind, float(rmsd), R, t
 
 @app.command()
 def fit(
