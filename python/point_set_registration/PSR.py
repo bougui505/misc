@@ -261,8 +261,8 @@ def PSR(A, B, n_jobs=None, n_iterations=2000, n_seeds=5, verbose=False):
     
     results = Parallel(n_jobs=n_jobs)(
         delayed(_refine_seed)(
-            seed, small, big, tol, verbose, i, len(seeds), small_ind, big_ind
-        ) for i, seed in enumerate(seeds)
+            seed, small, big, tol, False, i, len(seeds), small_ind, big_ind
+        ) for i, seed in enumerate(tqdm(seeds))
     )
 
     best_res = None
