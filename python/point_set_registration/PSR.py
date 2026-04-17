@@ -137,6 +137,11 @@ def ransac_seed(S, B, tol=2.0, n_iterations=1000, n_seeds=1, verbose=False):
         
         seeds.add((tuple(map(tuple, R_seed)), tuple(t_seed), n_inliers))
             
+    if len(seeds) == 0:
+        R_seed, t_seed = rigid_body_fit(S, B)
+        n_inliers = 0
+        seeds.add((tuple(map(tuple, R_seed)), tuple(t_seed), n_inliers))
+
     seeds = list(seeds)
     # Sort seeds by number of inliers
     seeds = sorted(seeds, key=lambda x: x[2], reverse=True)
