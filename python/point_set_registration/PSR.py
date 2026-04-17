@@ -113,7 +113,7 @@ def ransac_seed(S, B, tol=2.0, n_iterations=1000, n_seeds=1, verbose=False):
     D_B = scidist.squareform(scidist.pdist(B))
     Diff = np.abs(D_S - D_B)
     
-    seeds = [] # List of (R, t, n_inliers)
+    seeds = set() # Set of (R, t, n_inliers)
     
     for _ in range(n_iterations):
         # We take randomly an element of D_S
@@ -135,8 +135,9 @@ def ransac_seed(S, B, tol=2.0, n_iterations=1000, n_seeds=1, verbose=False):
         inliers = dists < 5.0 # Loose tolerance for initial seed
         n_inliers = inliers.sum()
         
-        seeds.append((R_seed, t_seed, n_inliers))
+        seeds.add((tuple(map(tuple, R_seed)), tuple(t_seed), n_inliers))
             
+    seeds = list(seeds)
     # Sort seeds by number of inliers
     seeds = sorted(seeds, key=lambda x: x[2], reverse=True)
     
@@ -153,6 +154,8 @@ def ransac_seed(S, B, tol=2.0, n_iterations=1000, n_seeds=1, verbose=False):
 
 def _refine_seed(seed, small, big, tol, verbose, seed_idx, n_seeds, small_ind, big_ind):
     R_seed, t_seed, _ = seed
+    R_seed = np.asarray(R_seed)
+    t_seed = np.asarray(t_seed)
     if verbose and n_seeds > 1:
         print(f"Refining from RANSAC seed {seed_idx+1}/{n_seeds}...")
     small_aligned = (R_seed.dot(small.T)).T + t_seed
@@ -282,7 +285,7 @@ def fit(
     sel1: str = typer.Option("all", help="Selection string for the first PDB"),
     sel2: str = typer.Option("all", help="Selection string for the second PDB"),
     n_iterations: int = typer.Option(1000, help="Number of RANSAC iterations"),
-    n_seeds: int = typer.Option(3, help="Number of RANSAC seeds to refine"),
+    n_seeds: int = typer.Option(2000, help="Number of RANSAC seeds to refine"),
     n_jobs: int = typer.Option(None, help="Number of jobs for parallel processing"),
     verbose: bool = typer.Option(True, help="Show progress messages")
 ):
