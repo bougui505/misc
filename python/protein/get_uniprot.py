@@ -37,17 +37,23 @@
 #############################################################################
 import os
 import requests
+import random
 import numpy as np
 import tqdm
 
 
-def get_uniprot(query):
+def get_uniprot(query, n=None):
     url = (
         "https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=list&query="
     )
     url_query = url + query
     out = requests.get(url_query).text.strip()
+    if out == "":
+        return []
     out = out.split("\n")
+    if n is not None:
+        n = min(n, len(out))
+        out = random.sample(out, n)
     return out
 
 
@@ -90,6 +96,13 @@ if __name__ == "__main__":
         and https://www.uniprot.org/help/query-fields \
         If a file is given read one query per line.",
     )
+    parser.add_argument(
+        "-n",
+        "--number",
+        type=int,
+        default=None,
+        help="Number of random elements to return for each query.",
+    )
     parser.add_argument("--test", help="Test the code", action="store_true")
     parser.add_argument("--func", help="Test only the given function(s)", nargs="+")
     args = parser.parse_args()
@@ -128,7 +141,7 @@ if __name__ == "__main__":
         if printpbar:
             pbar.set_description(query)
             pbar.update(1)
-        uniprotlist = get_uniprot(query)
+        uniprotlist = get_uniprot(query, n=args.number)
         # print(f"{query.replace(' ', '_')} {' '.join(uniprotlist)}")
         querystr = query.replace(" ", "_")
         for uniprot in uniprotlist:
