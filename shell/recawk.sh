@@ -115,7 +115,9 @@ if [[ $TOREC == 0 && $KEYS == 0 && $TOCSV == 0 ]]; then
 fi
 
 AWK_BIN="gawk"
-if command -v mawk > /dev/null 2>&1 && [[ $TOREC == 0 ]]; then
+# Use mawk if available for performance, but fallback to gawk if multidimensional arrays
+# ([][]) are detected, as mawk does not support them.
+if command -v mawk > /dev/null 2>&1 && [[ $TOREC == 0 ]] && ! echo "$1" | grep -q "\]\["; then
     AWK_BIN="mawk"
 fi
 
