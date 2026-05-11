@@ -26,5 +26,9 @@ for F in $(echo $FILENAMES); do
 done \
   | awk '{S+=$1}END{print S}'
 )
-cat $FILENAMES | pv -N "$FILENAMES" -p -e -b -s $TOTALBYTES | zcat 2> /dev/null
-
+if command -v pigz > /dev/null 2>&1; then
+    ZCAT="pigz -dc"
+else
+    ZCAT="zcat"
+fi
+cat $FILENAMES | pv -N "$FILENAMES" -p -e -b -s $TOTALBYTES | $ZCAT 2> /dev/null
