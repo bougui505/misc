@@ -38,6 +38,8 @@
 import os
 
 import numpy as np
+import requests
+import json
 from misc.protein import coords_loader
 from pymol import cmd
 from rdkit import Chem, DataStructs
@@ -110,6 +112,43 @@ def clean_system():
     cmd.alter("all", "alt=''")
 
 
+def get_pdb_smi(resname):
+    """
+    >>> get_pdb_smi('ATP')
+    'O=P(O)(O)OP(=O)(O)OP(=O)(O)OCC3OC(n2cnc1c(ncnc12)N)C(O)C3O'
+    """
+    url = "https://data.rcsb.org/graphql"
+    query = """
+    query GetLigand($id: String!) {
+      chem_comp(comp_id: $id) {
+        pdbx_chem_comp_descriptor {
+          descriptor
+          type
+        }
+      }
+    }
+    """
+    variables = {"id": resname}
+    try:
+        response = requests.post(
+            url, json={'query': query, 'variables': variables}, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if 'data' not in data or data['data']['chem_comp'] is None:
+                return None
+            descriptors = data['data']['chem_comp']['pdbx_chem_comp_descriptor']
+            if descriptors is None:
+                return None
+            for desc in descriptors:
+                if desc.get('type') == 'SMILES':
+                    return desc.get('descriptor')
+                if desc.get('type') == 'SMILES_CANONICAL':
+                    return desc.get('descriptor')
+    except Exception as e:
+        sys.stderr.write(f"Error fetching SMILES for {resname}: {e}\n")
+    return None
+
+
 HEADER = "#SMILES #PDB #resname #chain #resid"
 
 
@@ -137,7 +176,8 @@ def get_ligands(
     smi_ref=None,
     fetch_path=os.path.expanduser("~/pdb"),
     user_selection="all",
-    no_smi=False
+    no_smi=False,
+    pdb_smi=False
 ):
     """
     - if no_smi is True, do not compute smiles
@@ -187,6 +227,10 @@ def get_ligands(
             continue
         if no_smi:
             smi = "-"
+        elif pdb_smi:
+            smi = get_pdb_smi(resn)
+            if smi is None:
+                smi = "-"
         else:
             smi = selection_to_smi(selection, sanitize=sanitize)
         outstr = f"{smi} {pdb} {resn} {chain} {resi}"
@@ -264,6 +308,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no_smi", help="Do not compute SMILES", action="store_true")
     parser.add_argument(
+        "--pdb_smi", help="Get SMILES from PDB database", action="store_true")
+    parser.add_argument(
         "--fetch_path",
         help="Directory where to store the pdb files (default: ~/pdb)",
         default=os.path.expanduser("~/pdb"),
@@ -333,7 +379,8 @@ if __name__ == "__main__":
             smi_ref=smi_ref,
             fetch_path=args.fetch_path,
             user_selection=args.sel,
-            no_smi=args.no_smi
+            no_smi=args.no_smi,
+            pdb_smi=args.pdb_smi
         )
         if args.smi is not None:
             pbar.update(1)
