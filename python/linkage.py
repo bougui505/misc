@@ -122,5 +122,5 @@ if __name__ == "__main__":
         with gzip.open(CLUSTERREC, "wt") as gz:
             for i, cluster in enumerate(clusters):
                 gz.write(f"{i=}\n")
-                gz.write(f"{cluster=}\n")
+                gz.write(f"{cluster=:d}\n")
                 gz.write("--\n")
