@@ -53,8 +53,6 @@ AWK Integration:
 Performance Optimizations:
   - Smart Filtering: recawk detects used fields (e.g., rec["tmscore"]) and pre-filters
     the input using 'grep' to significantly speed up processing of large files.
-  - Mawk Support: Automatically uses 'mawk' instead of 'gawk' for a ~20% speedup, 
-    unless gawk-specific features (like --torec) are used.
   - Pair with pigz: For maximum speed on .gz files, use: pigz -dc file.rec.gz | recawk ...
 
 Examples:
@@ -104,7 +102,7 @@ FILENAMES="${@:2}"
 FILTER=""
 if [[ $TOREC == 0 && $KEYS == 0 && $TOCSV == 0 ]]; then
     # Detect fields used in the script: rec["field"] or rec['field']
-    USED_FIELDS=$(echo "$1" | grep -oP "rec\[\s*['\"]\K[^'\"]+(?=['\"]\s*\])" | sort -u)
+    USED_FIELDS=$(echo "$1" | grep -oP "rec\[\s*['\"]\K[^'\"]+(?=['\"]\s*\])" | sort -u || true)
     # If the script iterates over all fields or uses printrec, we can't filter
     if [[ -n $USED_FIELDS ]] && ! echo "$1" | grep -qE "printrec|field\s+in\s+rec"; then
         FILTER="^--$"
@@ -115,11 +113,7 @@ if [[ $TOREC == 0 && $KEYS == 0 && $TOCSV == 0 ]]; then
 fi
 
 AWK_BIN="gawk"
-# Use mawk if available for performance, but fallback to gawk if multidimensional arrays
-# ([][]) are detected, as mawk does not support them.
-if command -v mawk > /dev/null 2>&1 && [[ $TOREC == 0 ]] && ! echo "$1" | grep -q "\]\["; then
-    AWK_BIN="mawk"
-fi
+# echo "Using $AWK_BIN" >&2
 
 if [[ $GETNREC -eq 1 ]]; then
     getnrec $FILENAMES
