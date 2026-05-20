@@ -6,7 +6,7 @@ MYTMP=$(mktemp -d)
 
 trap 'rm -rvf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
-tmpfile=$MYTMP/smi.dwar
+tmpfile=$MYTMP/smi.tsv
 # Read stdin, convert spaces to tabs, write the header/data, and append properties
 (
   cat | tr " " "\t" \
