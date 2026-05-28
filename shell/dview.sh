@@ -1,5 +1,23 @@
 #!/usr/bin/env zsh
 
+function usage () {
+    cat << EOF
+dview: View SMILES in DataWarrior with customizable cell sizes
+    -h, --help        print this help message and exit
+    -s, --size HEIGHT set row height in pixels (default: 120)
+EOF
+}
+
+HEIGHT=120
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -s|--size) HEIGHT="$2"; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage; exit 1 ;;
+    esac
+    shift
+done
+
 
 # Create a unique temporary file with a .tsv extension
 MYTMP=$(mktemp -d)
@@ -21,13 +39,14 @@ tmpfile=$MYTMP/smi.tsv
         }
         print $0
       }'
-  cat <<'EOF'
+  cat <<EOF
 <datawarrior properties>
 <mainView="Table">
 <mainViewCount="1">
 <mainViewDockInfo0="root">
 <mainViewName0="Table">
 <mainViewType0="tableView">
+<rowHeight_Table="$HEIGHT">
 </datawarrior properties>
 EOF
 ) > "$tmpfile"
