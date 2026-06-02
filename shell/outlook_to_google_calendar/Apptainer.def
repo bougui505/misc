@@ -1,0 +1,17 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%files
+    ews_to_gcal.py /app/ews_to_gcal.py
+
+%post
+    pip install --no-cache-dir \
+        msal \
+        "exchangelib[msal]" \
+        google-auth \
+        google-auth-oauthlib \
+        google-auth-httplib2 \
+        google-api-python-client
+
+%runscript
+    exec python3 /app/ews_to_gcal.py "$@"

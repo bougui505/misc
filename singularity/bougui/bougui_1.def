@@ -75,7 +75,8 @@ apt-get install -y libnss3 \
         libwayland-egl1 \
         libwayland-cursor0 \
         libxshmfence1 \
-        xdg-utils
+        xdg-utils \
+        zstd
 apt-get install -y python3-libtmux  # for: https://github.com/ofirgall/tmux-window-name?tab=readme-ov-file#automatic-rename-after-launching-neovim
 ###############################################################################
 
