@@ -11,7 +11,8 @@ import datetime
 import os
 import json
 import sys
-from exchangelib import Account, Configuration, DELEGATE, OAUTH2
+from exchangelib import Account, Configuration, DELEGATE, OAUTH2, EWSTimeZone
+from exchangelib.winzone import MS_TIMEZONE_TO_IANA_MAP
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -108,6 +109,10 @@ SYNC_DAYS = config_data.get("sync_days", 30)
 GOOGLE_CALENDAR_NAME = config_data.get("google_calendar_name", "primary")
 GOOGLE_TOKEN_PATH = config_data.get("google_token_path", "~/.config/outlook_to_google_calendar/google_token.json")
 GOOGLE_CREDENTIALS_PATH = config_data.get("google_credentials_path", "~/.config/outlook_to_google_calendar/google_credentials.json")
+TIMEZONE = config_data.get("timezone", "Europe/Paris")
+
+# Map empty timezone ID to fallback IANA timezone to prevent warnings
+MS_TIMEZONE_TO_IANA_MAP[''] = TIMEZONE
 
 # Google Calendar API Scopes
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -161,7 +166,8 @@ def get_outlook_events():
         primary_smtp_address=OUTLOOK_EMAIL,
         config=config,
         autodiscover=False,
-        access_type=DELEGATE
+        access_type=DELEGATE,
+        default_timezone=EWSTimeZone(TIMEZONE)
     )
         
     tz = account.default_timezone
