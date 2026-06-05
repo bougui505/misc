@@ -42,4 +42,4 @@
 # >>> echo 'foo,"field,""with"",commas",bar' | ./awktsv.sh '{print NF}'
 # 3
 
-awk -v FPAT='[^\t]*|("([^"]|"")*")' $@
+awk -v FPAT='[^\t]*|("([^"]|"")*")' "$@"

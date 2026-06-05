@@ -44,4 +44,4 @@
 # >>> echo 'foo,"field,""with"",commas",bar' | awk -F, '{print NF}'
 # 5
 
-gawk -v FPAT='[^,]*|("([^"]|"")*")' $@
+gawk -v FPAT='[^,]*|("([^"]|"")*")' "$@"

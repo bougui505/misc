@@ -44,4 +44,4 @@ set -o noclobber  # prevent overwritting redirection
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
 
-awk "BEGIN{print($@)}"
+awk "BEGIN{print($*)}"
