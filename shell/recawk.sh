@@ -25,6 +25,7 @@ A powerful tool to process record-formatted files (key=value) using AWK.
 Options:
   -h, --help           Print this help message and exit
   -n, --nrec           Print the number of records
+  -e, --est-nrec       Estimate the number of records (for large files)
   -s, --sample N       Pick N random records (reservoir sampling)
   -k, --keys           Print all unique keys present in the file
   --torec SEP          Convert column-based files (e.g., CSV/TSV) to rec format
@@ -72,6 +73,7 @@ EOF
 
 V="V=0"
 GETNREC=0
+ESTNREC=0
 SAMPLE=0
 TOREC=0
 KEYS=0
@@ -80,6 +82,7 @@ case $1 in
     -h|--help) usage; exit 0 ;;
     -v) shift; V=$1; shift ;;
     -n|--nrec) GETNREC=1 ;;
+    -e|--est-nrec) ESTNREC=1 ;;
     -s|--sample) SAMPLE=$2; shift ;;
     --torec) TOREC=$2; shift ;;
     --keys) KEYS=1 ;;
@@ -88,6 +91,78 @@ esac
 
 getnrec(){
     grep -c "^--$" $1
+}
+
+estnrec(){
+    local file="$1"
+    if [ -z "$file" ] || [ "$file" = "-" ]; then
+        echo "Error: Estimation requires a file path, cannot estimate from stdin." >&2
+        exit 1
+    fi
+    if [ ! -f "$file" ]; then
+        echo "Error: File '$file' does not exist." >&2
+        exit 1
+    fi
+
+    local total_bytes
+    total_bytes=$(stat -c %s "$file")
+
+    # Sample 100 MiB or 10 MiB depending on file size
+    local sample_size_mb=100
+    if [ "$total_bytes" -lt $(( 100 * 1024 * 1024 )) ]; then
+        sample_size_mb=10
+    fi
+
+    local sample_bytes=$(( sample_size_mb * 1024 * 1024 ))
+    if [ "$total_bytes" -le "$sample_bytes" ]; then
+        local lines
+        lines=$(gzip -dfc "$file" | wc -l)
+        local records
+        records=$(gzip -dfc "$file" | grep -c "^--$")
+        python3 -c "
+file_path = \"$file\"
+total_bytes = $total_bytes
+lines = $lines
+records = $records
+avg_lines = lines / records if records > 0 else 0
+print(f\"Analyzing '{file_path}'...\")
+print(f\"Total size: {total_bytes:,} bytes\")
+print(f\"\\n--- Exact Counts ---\")
+print(f\"Total lines:          {lines:,}\")
+print(f\"Total records:        {records:,}\")
+print(f\"Average lines/record: {avg_lines:.2f}\")
+"
+        return
+    fi
+
+    local sample_lines
+    sample_lines=$(head -c "$sample_bytes" "$file" | (gzip -dfc 2>/dev/null || true) | wc -l)
+    local sample_records
+    sample_records=$(head -c "$sample_bytes" "$file" | (gzip -dfc 2>/dev/null || true) | grep -c "^--$")
+
+    python3 -c "
+file_path = \"$file\"
+total_bytes = $total_bytes
+sample_bytes = $sample_bytes
+sample_lines = $sample_lines
+sample_records = $sample_records
+
+density_lines = sample_lines / sample_bytes
+density_records = sample_records / sample_bytes
+
+est_lines = total_bytes * density_lines
+est_records = total_bytes * density_records
+avg_lines_per_record = sample_lines / sample_records if sample_records > 0 else 0
+
+print(f\"Analyzing '{file_path}'...\")
+print(f\"Total size: {total_bytes:,} bytes\")
+print(f\"Sampling the first {sample_bytes / (1024*1024):.0f} MiB...\")
+print(f\"\\n--- Estimation Results ---\")
+print(f\"Sample lines:          {sample_lines:,}\")
+print(f\"Sample records:        {sample_records:,}\")
+print(f\"Estimated total lines: {est_lines:,.0f}\")
+print(f\"Estimated records:     {est_records:,.0f} (average {avg_lines_per_record:.2f} lines/record)\")
+"
 }
 
 if [ "$#" -eq 0 ]; then
@@ -117,6 +192,11 @@ AWK_BIN="gawk"
 
 if [[ $GETNREC -eq 1 ]]; then
     getnrec $FILENAMES
+    exit 0
+fi
+
+if [[ $ESTNREC -eq 1 ]]; then
+    estnrec $FILENAMES
     exit 0
 fi
 
