@@ -169,9 +169,9 @@ if [[ $TOCSV -eq 1 ]]; then
             delete rec
         } else {
             # Store key-value pairs
-            split($0, a, "=")
-            key = a[1]
-            value = a[2]
+            idx = index($0, "=")
+            key = substr($0, 1, idx - 1)
+            value = substr($0, idx + 1)
             rec[key] = value
             # Add key to keys array if not already present
             found = 0
