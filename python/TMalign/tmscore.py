@@ -70,7 +70,7 @@ def usalign():
                 tmscore = run_usalign(
                     pdb1, pdb2, selmodel=sel1, selnative=sel2
                 )
-                print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}")
+                print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}", flush=True)
             except Exception as e:
                 print(f"Error processing line '{line}': {e}", file=sys.stderr)
     else:
@@ -107,20 +107,19 @@ def get_tmscore(modelfile, nativefile):
     # -ter Number of chains to align.
     #      0: align all chains from all models (recommended for aligning
     #         biological assemblies, i.e. biounits)
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
+    )
 
     if process is None:
         raise RuntimeError("Failed to start USalign process.")
-    if process.stderr:
-        err = process.stderr.read()
-        if err:
-            raise RuntimeError(f"USalign error: {err.strip()}")
-    if process.stdout is None:
-        raise RuntimeError("USalign process did not produce any output.")
-    if process.stdout.closed:
-        raise RuntimeError("USalign process output stream is closed.")
 
-    lines = process.stdout.readlines()
+    stdout, stderr = process.communicate()
+
+    if stderr:
+        raise RuntimeError(f"USalign error: {stderr.strip()}")
+
+    lines = stdout.splitlines()
     tmscores = []
     for line in lines:
         if line.startswith("TM-score="):
@@ -128,6 +127,8 @@ def get_tmscore(modelfile, nativefile):
             tmscores.append(float(line.split()[1]))
         if len(tmscores) == 2:
             break
+    if not tmscores:
+        raise RuntimeError("USalign process did not produce any TM-score outputs.")
     tmscore = max(tmscores)
     return tmscore
 
