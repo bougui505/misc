@@ -1,0 +1,65 @@
+#compdef recawk.sh recawk
+
+_recawk() {
+    local curcontext="$curcontext" state line ret=1
+    typeset -A opt_args
+
+    _arguments -s -S \
+        '(-h --help)'{-h,--help}'[Print help message and exit]' \
+        '(-n --nrec)'{-n,--nrec}'[Print the number of records]' \
+        '(-e --est-nrec)'{-e,--est-nrec}'[Estimate the number of records]' \
+        '(-s --sample)'{-s,--sample}'[Sample N random records]:count' \
+        '(-k --keys)'{-k,--keys}'[Print all unique keys present in the file]' \
+        '--torec[Convert column-based files to rec format]:separator' \
+        '--tocsv[Convert rec format to CSV]' \
+        '-v[Pass a variable to the AWK script]:var=val' \
+        '1:AWK script:_recawk_keys' \
+        '*:files:_files' && ret=0
+
+    return ret
+}
+
+_recawk_keys() {
+    # Extract files from the current arguments and the entire command buffer (useful for pipes)
+    local -a existing_files
+    local word
+    for word in ${(vi)words[2,-1]} ${(s: :)BUFFER}; do
+        word="${word//[\'\"\|<>;]/}"
+        if [[ -f "$word" ]]; then
+            existing_files+=("$word")
+        fi
+    done
+
+    # Fallback to current directory if no files specified or found
+    if [[ ${#existing_files} -eq 0 ]]; then
+        existing_files=(*.rec(N) *.rec.gz(N))
+    fi
+
+    local sq="'"
+    local dq='"'
+    # Check if the cursor is inside rec["..."] or rec['...']
+    if [[ "$PREFIX" =~ "rec\[([${sq}${dq}])([^${sq}${dq}]*)$" ]]; then
+        local quote="${match[1]}"
+        local partial_key="${match[2]}"
+        local -a keys
+        
+        if [[ ${#existing_files} -gt 0 ]]; then
+            # Extract unique keys quickly from the first 5000 lines of each file to avoid shell lag
+            keys=(${(f)"$(
+                local f
+                for f in $existing_files; do
+                    if [[ "$f" == *.gz ]]; then
+                        gzip -dc "$f" 2>/dev/null | head -n 5000
+                    else
+                        head -n 5000 "$f" 2>/dev/null
+                    fi
+                done | gawk -F'=' '($0 != "--" && $0 ~ /=/) {print $1}' | sort -u
+            )"})
+        fi
+        
+        # Complete the key and add the matching closing quote and bracket
+        compadd -S "${quote}]" -P "${PREFIX%${partial_key}}" -- $keys
+    fi
+}
+
+_recawk "$@"
