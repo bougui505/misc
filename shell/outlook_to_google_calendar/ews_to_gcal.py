@@ -125,18 +125,23 @@ def get_gcal_service():
     creds = None
     if os.path.exists(token_path):
         creds = GoogleCredentials.from_authorized_user_file(token_path, SCOPES)
-    if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not os.path.exists(creds_path):
-                raise FileNotFoundError(
-                    f"Google Client Credentials file not found at {creds_path}. "
-                    f"Please download credentials.json from Google Cloud Console, rename it to "
-                    f"google_credentials.json, and place it there."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-            creds = flow.run_local_server(port=0, open_browser=False)
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print(f"Failed to refresh Google token: {e}")
+                print("Falling back to full authentication flow...")
+                creds = None
+        
+    if not creds or not creds.valid:
+        if not os.path.exists(creds_path):
+            raise FileNotFoundError(
+                f"Google Client Credentials file not found at {creds_path}. "
+                f"Please download credentials.json from Google Cloud Console, rename it to "
+                f"google_credentials.json, and place it there."
+            )
+        flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+        creds = flow.run_local_server(port=0, open_browser=False)
         with open(token_path, 'w') as token:
             token.write(creds.to_json())
     return build('calendar', 'v3', credentials=creds)
