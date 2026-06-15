@@ -7,16 +7,16 @@
 # Copyright (c) 2023 Institut Pasteur                                       #
 #############################################################################
 
+import gzip
 import itertools
 import os
 import subprocess
+import sys
 import tempfile
 
 import numpy as np
-import pymol2
 from joblib import Parallel, delayed
 from misc.Timer import Timer
-from pymol.creating import gzip
 from tqdm import tqdm
 
 from misc import rec
@@ -51,10 +51,10 @@ def clean_chains(p, sel, obj, nres_per_chain_min=3):
     chains = p.cmd.get_chains(f"{sel} and {obj}")
     for chain in chains:
         nres = p.cmd.select(
-            f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}"
+            f"{sel} and polymer.protein and chain '{chain}' and name CA and present and {obj}"
         )
         if nres <= nres_per_chain_min:
-            p.cmd.remove(f"chain {chain} and polymer.protein and {obj}")
+            p.cmd.remove(f"chain '{chain}' and polymer.protein and {obj}")
 
 
 def tmalign(model, native, selmodel=None, selnative=None, verbose=False):
@@ -118,6 +118,8 @@ def get_tmscore(modelfile, nativefile):
 
 
 def pymolsave(infile, sel, outfile, verbose=False):
+    import pymol2
+
     if verbose:
         timer = Timer(autoreset=True)
     with pymol2.PyMOL() as p:
@@ -128,8 +130,15 @@ def pymolsave(infile, sel, outfile, verbose=False):
         p.cmd.remove(f"not (mymodel and ({sel}))")
         if verbose:
             timer.stop(f"keeping only: {sel}")
-        # Remove alternate locations
-        p.cmd.remove("not alt ''+A")
+        # Remove alternate locations, keeping the first available (e.g. 'A' or 'B' if 'A' is missing)
+        alts = set()
+        p.cmd.iterate("mymodel", "alts.add(alt)", space={"alts": alts})
+        alts.discard('')
+        best_alt = sorted(list(alts))[0] if alts else ''
+        if best_alt:
+            p.cmd.remove(f"not alt ''+{best_alt}")
+        else:
+            p.cmd.remove("not alt ''")
         p.cmd.alter("all", "alt=''")
         if verbose:
             timer.stop(f"Removing alternate locations...")
@@ -247,8 +256,8 @@ def tmalign_pairwise(pdb_list, sel_list, outfilename):
 
 
 def tmalign_rec(recfile):
-    outfile_rec = recfile.split(".")[0] + "_tmscore.rec.gz"
-    outfile_npy = recfile.split(".")[0] + "_tmdistance.npy"
+    outfile_rec = os.path.splitext(recfile)[0] + "_tmscore.rec.gz"
+    outfile_npy = os.path.splitext(recfile)[0] + "_tmdistance.npy"
     assert not os.path.exists(
         outfile_rec
     ), f"{outfile_rec} already exists, please remove it"
@@ -272,7 +281,12 @@ def tmalign_rec(recfile):
         ] * n
     ncpu = os.cpu_count()
     tmscores = Parallel(n_jobs=ncpu)(
-        delayed(tmalign_wrapper)(model=pdb1, native=pdb2, selmodel=sel1, selnative=sel2)
+        delayed(tmalign_wrapper)(
+            model=pdb1,
+            native=pdb2,
+            selmodel=None if sel1 == "-" else sel1,
+            selnative=None if sel2 == "-" else sel2,
+        )
         for (pdb1, pdb2, sel1, sel2) in tqdm(
             zip(pdb1list, pdb2list, sel1list, sel2list),
             total=n,
@@ -311,7 +325,6 @@ def read_csv(csvfilename):
 if __name__ == "__main__":
     import argparse
     import doctest
-    import sys
 
     # ### UNCOMMENT FOR LOGGING ####
     # import os

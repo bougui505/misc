@@ -10,9 +10,9 @@
 import os
 import subprocess
 import sys
+import sys
 import tempfile
 
-import pymol2
 import typer
 
 app = typer.Typer(
@@ -61,8 +61,12 @@ def usalign():
             try:
                 pdb1 = parts[0]
                 pdb2 = parts[1]
-                sel1 = parts[2] if len(parts) > 2 else "all"
-                sel2 = parts[3] if len(parts) > 3 else "all"
+                sel1 = parts[2] if len(parts) > 2 else None
+                sel2 = parts[3] if len(parts) > 3 else None
+                if sel1 in ("-", "all"):
+                    sel1 = None
+                if sel2 in ("-", "all"):
+                    sel2 = None
                 tmscore = run_usalign(
                     pdb1, pdb2, selmodel=sel1, selnative=sel2
                 )
@@ -128,6 +132,8 @@ def get_tmscore(modelfile, nativefile):
     return tmscore
 
 def pymolsave(infile, sel, outfile, verbose=False):
+    import pymol2
+
     with pymol2.PyMOL() as p:
         p.cmd.feedback(action="disable", module="all", mask="everything")
         if os.path.exists(infile):
@@ -137,8 +143,15 @@ def pymolsave(infile, sel, outfile, verbose=False):
             p.cmd.set('fetch_path', fetch_path, quiet=0)
             p.cmd.fetch(infile, name="mymodel")
         p.cmd.remove(f"not (mymodel and ({sel}))")
-        # Remove alternate locations
-        p.cmd.remove("not alt ''+A")
+        # Remove alternate locations, keeping the first available (e.g. 'A' or 'B' if 'A' is missing)
+        alts = set()
+        p.cmd.iterate("mymodel", "alts.add(alt)", space={"alts": alts})
+        alts.discard('')
+        best_alt = sorted(list(alts))[0] if alts else ''
+        if best_alt:
+            p.cmd.remove(f"not alt ''+{best_alt}")
+        else:
+            p.cmd.remove("not alt ''")
         p.cmd.alter("all", "alt=''")
         ############################
         clean_states(p)
@@ -160,10 +173,10 @@ def clean_chains(p, sel, obj, nres_per_chain_min=3):
     chains = p.cmd.get_chains(f"{sel} and {obj}")
     for chain in chains:
         nres = p.cmd.select(
-            f"{sel} and polymer.protein and chain {chain} and name CA and present and {obj}"
+            f"{sel} and polymer.protein and chain '{chain}' and name CA and present and {obj}"
         )
         if nres <= nres_per_chain_min:
-            p.cmd.remove(f"chain {chain} and polymer.protein and {obj}")
+            p.cmd.remove(f"chain '{chain}' and polymer.protein and {obj}")
 
 if __name__ == "__main__":
     import doctest
