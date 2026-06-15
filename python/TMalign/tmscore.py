@@ -10,8 +10,10 @@
 import os
 import subprocess
 import sys
-import sys
 import tempfile
+import signal
+import atexit
+
 
 import typer
 
@@ -76,6 +78,26 @@ def usalign():
     else:
         print("No input provided. Please pipe data to this script.")
 
+_ACTIVE_TEMPFILES = set()
+
+def _cleanup_tempfiles():
+    while _ACTIVE_TEMPFILES:
+        filepath = _ACTIVE_TEMPFILES.pop()
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+
+def _signal_handler(signum, frame):
+    _cleanup_tempfiles()
+    sys.exit(128 + signum)
+
+# Register cleanups
+atexit.register(_cleanup_tempfiles)
+for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+    signal.signal(sig, _signal_handler)
+
 def run_usalign(model, native, selmodel=None, selnative=None, verbose=False):
     """
     """
@@ -88,9 +110,15 @@ def run_usalign(model, native, selmodel=None, selnative=None, verbose=False):
     ) as model_file, tempfile.NamedTemporaryFile(
         suffix=".pdb", dir="/dev/shm"
     ) as native_file:
-        pymolsave(model, selmodel, model_file.name, verbose=verbose)
-        pymolsave(native, selnative, native_file.name, verbose=verbose)
-        tmscore = get_tmscore(model_file.name, native_file.name)
+        _ACTIVE_TEMPFILES.add(model_file.name)
+        _ACTIVE_TEMPFILES.add(native_file.name)
+        try:
+            pymolsave(model, selmodel, model_file.name, verbose=verbose)
+            pymolsave(native, selnative, native_file.name, verbose=verbose)
+            tmscore = get_tmscore(model_file.name, native_file.name)
+        finally:
+            _ACTIVE_TEMPFILES.discard(model_file.name)
+            _ACTIVE_TEMPFILES.discard(native_file.name)
     return tmscore
 
 def GetScriptDir():
