@@ -1,0 +1,60 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%files
+    /home/bougui/source/misc/python/TMalign/tmscore.py /opt/tmalign/tmscore.py
+    /home/bougui/source/misc/python/TMalign/USalign.cpp /opt/tmalign/USalign.cpp
+
+%environment
+    export PATH="/opt/tmalign:$PATH"
+
+%post
+    export PIP_CACHE_DIR="/tmp/pip/cache"
+    mkdir -p "$PIP_CACHE_DIR"
+
+    # Update and install system dependencies and PyMOL build dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        catch2 libfreetype6-dev libglew-dev libglm-dev libmsgpack-dev \
+        libnetcdf-dev libpng-dev libxml2-dev freeglut3-dev \
+        build-essential git wget tar bzip2 ca-certificates \
+        libxrender1 libxext6 libsm6 libgl1 cmake \
+        python-is-python3 python3-dev python3-pip \
+        g++ \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Compile USalign from source
+    mkdir -p /opt/tmalign
+    g++ -O3 -ffast-math -lm -o /opt/tmalign/USalign /opt/tmalign/USalign.cpp
+
+    python3 -m pip config set global.break-system-packages true
+
+    # Install Python dependencies for PyMOL build and typer
+    pip3 install --cache-dir "$PIP_CACHE_DIR" numpy pytest pmw mrcfile biopython setuptools wheel typer
+
+    # Build PyMOL from source
+    cd /opt
+    git clone https://github.com/schrodinger/pymol-open-source.git
+    cd pymol-open-source
+    wget -nv https://anaconda.org/schrodinger/collada2gltf/2.1.4/download/linux-64/collada2gltf-2.1.4-h6bb024c_0.tar.bz2
+    tar xf collada2gltf-*.tar.bz2 -C / bin/collada2gltf
+    git clone --depth 1 https://github.com/schrodinger/pymol-testing.git
+    git clone --depth 1 https://github.com/rcsb/mmtf-cpp.git
+    cp -R mmtf-cpp/include/mmtf* include/
+
+    python3 setup.py --glut True build install
+
+    # Make tmscore.py executable
+    chmod +x /opt/tmalign/tmscore.py
+
+%runscript
+    exec /opt/tmalign/tmscore.py "$@"
+
+%labels
+    Author Guillaume Bouvier
+    Description Apptainer container for tmscore.py and USalign
+
+%help
+    This container runs the tmscore.py command.
+    
+    Usage:
+        cat input.txt | apptainer run tmscore.sif usalign
