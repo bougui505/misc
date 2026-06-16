@@ -13,8 +13,6 @@ import sys
 import tempfile
 import signal
 import atexit
-
-
 import typer
 
 app = typer.Typer(
@@ -50,31 +48,35 @@ def usalign():
     pdb1='1abc.pdb',pdb2='2xyz.pdb',sel1='all',sel2='all',tmscore=0.1234\n
     ...\n
     """ 
+    import pymol2
 
     if not sys.stdin.isatty():
-        for line in sys.stdin:
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split(",")
-            if len(parts) < 2:
-                print("Error: At least two arguments are required (pdb1 and pdb2).")
-                continue
-            try:
-                pdb1 = parts[0]
-                pdb2 = parts[1]
-                sel1 = parts[2] if len(parts) > 2 else None
-                sel2 = parts[3] if len(parts) > 3 else None
-                if sel1 in ("-", "all"):
-                    sel1 = None
-                if sel2 in ("-", "all"):
-                    sel2 = None
-                tmscore = run_usalign(
-                    pdb1, pdb2, selmodel=sel1, selnative=sel2
-                )
-                print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}", flush=True)
-            except Exception as e:
-                print(f"Error processing line '{line}': {e}", file=sys.stderr)
+        # Reuse a single PyMOL instance to prevent memory leaks and run much faster
+        with pymol2.PyMOL() as p:
+            p.cmd.feedback(action="disable", module="all", mask="everything")
+            for line in sys.stdin:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(",")
+                if len(parts) < 2:
+                    print("Error: At least two arguments are required (pdb1 and pdb2).")
+                    continue
+                try:
+                    pdb1 = parts[0]
+                    pdb2 = parts[1]
+                    sel1 = parts[2] if len(parts) > 2 else None
+                    sel2 = parts[3] if len(parts) > 3 else None
+                    if sel1 in ("-", "all"):
+                        sel1 = None
+                    if sel2 in ("-", "all"):
+                        sel2 = None
+                    tmscore = run_usalign(
+                        p, pdb1, pdb2, selmodel=sel1, selnative=sel2
+                    )
+                    print(f"{pdb1=},{pdb2=},{sel1=},{sel2=},{tmscore=:.4f}", flush=True)
+                except Exception as e:
+                    print(f"Error processing line '{line}': {e}", file=sys.stderr)
     else:
         print("No input provided. Please pipe data to this script.")
 
@@ -98,23 +100,24 @@ atexit.register(_cleanup_tempfiles)
 for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
     signal.signal(sig, _signal_handler)
 
-def run_usalign(model, native, selmodel=None, selnative=None, verbose=False):
+def run_usalign(p, model, native, selmodel=None, selnative=None, verbose=False):
     """
     """
     selmodel = selmodel if selmodel is not None else "polymer.protein"
     selnative = selnative if selnative is not None else "polymer.protein"
-    # model_filename = tempfile.mktemp(suffix=".pdb", dir="/dev/shm")
-    # native_filename = tempfile.mktemp(suffix=".pdb", dir="/dev/shm")
+    
+    # Write temp files to system default tmp directory instead of /dev/shm
+    # to avoid RAM exhaustion on compute nodes.
     with tempfile.NamedTemporaryFile(
-        suffix=".pdb", dir="/dev/shm"
+        suffix=".pdb"
     ) as model_file, tempfile.NamedTemporaryFile(
-        suffix=".pdb", dir="/dev/shm"
+        suffix=".pdb"
     ) as native_file:
         _ACTIVE_TEMPFILES.add(model_file.name)
         _ACTIVE_TEMPFILES.add(native_file.name)
         try:
-            pymolsave(model, selmodel, model_file.name, verbose=verbose)
-            pymolsave(native, selnative, native_file.name, verbose=verbose)
+            pymolsave(p, model, selmodel, model_file.name, verbose=verbose)
+            pymolsave(p, native, selnative, native_file.name, verbose=verbose)
             tmscore = get_tmscore(model_file.name, native_file.name)
         finally:
             _ACTIVE_TEMPFILES.discard(model_file.name)
@@ -129,12 +132,6 @@ def GetScriptDir():
 def get_tmscore(modelfile, nativefile):
     scriptdir = GetScriptDir()
     cmd = f"{scriptdir}/USalign -mm 1 -ter 0 -mol prot {modelfile} {nativefile}".split(" ")
-    # Options of USalign:
-    # -mm  Multimeric alignment option:
-    #      1: alignment of two multi-chain oligomeric structures
-    # -ter Number of chains to align.
-    #      0: align all chains from all models (recommended for aligning
-    #         biological assemblies, i.e. biounits)
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
     )
@@ -160,32 +157,30 @@ def get_tmscore(modelfile, nativefile):
     tmscore = max(tmscores)
     return tmscore
 
-def pymolsave(infile, sel, outfile, verbose=False):
-    import pymol2
-
-    with pymol2.PyMOL() as p:
-        p.cmd.feedback(action="disable", module="all", mask="everything")
-        if os.path.exists(infile):
-            p.cmd.load(filename=infile, object="mymodel")
-        else:
-            fetch_path = os.path.expandvars('$HOME/pdb')
-            p.cmd.set('fetch_path', fetch_path, quiet=0)
-            p.cmd.fetch(infile, name="mymodel")
-        p.cmd.remove(f"not (mymodel and ({sel}))")
-        # Remove alternate locations, keeping the first available (e.g. 'A' or 'B' if 'A' is missing)
-        alts = set()
-        p.cmd.iterate("mymodel", "alts.add(alt)", space={"alts": alts})
-        alts.discard('')
-        best_alt = sorted(list(alts))[0] if alts else ''
-        if best_alt:
-            p.cmd.remove(f"not alt ''+{best_alt}")
-        else:
-            p.cmd.remove("not alt ''")
-        p.cmd.alter("all", "alt=''")
-        ############################
-        clean_states(p)
-        clean_chains(p, "all", obj="mymodel")
-        p.cmd.save(filename=outfile, selection="mymodel", state=-1)
+def pymolsave(p, infile, sel, outfile, verbose=False):
+    p.cmd.reinitialize()
+    p.cmd.feedback(action="disable", module="all", mask="everything")
+    if os.path.exists(infile):
+        p.cmd.load(filename=infile, object="mymodel")
+    else:
+        fetch_path = os.path.expandvars('$HOME/pdb')
+        p.cmd.set('fetch_path', fetch_path, quiet=0)
+        p.cmd.fetch(infile, name="mymodel")
+    p.cmd.remove(f"not (mymodel and ({sel}))")
+    # Remove alternate locations, keeping the first available (e.g. 'A' or 'B' if 'A' is missing)
+    alts = set()
+    p.cmd.iterate("mymodel", "alts.add(alt)", space={"alts": alts})
+    alts.discard('')
+    best_alt = sorted(list(alts))[0] if alts else ''
+    if best_alt:
+        p.cmd.remove(f"not alt ''+{best_alt}")
+    else:
+        p.cmd.remove("not alt ''")
+    p.cmd.alter("all", "alt=''")
+    ############################
+    clean_states(p)
+    clean_chains(p, "all", obj="mymodel")
+    p.cmd.save(filename=outfile, selection="mymodel", state=-1)
 
 def clean_states(p):
     objlist_ori = set(p.cmd.get_object_list())
