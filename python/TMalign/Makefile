@@ -17,5 +17,5 @@ help:
 	@echo "\e[4mTargets:\e[0m"
 	@grep '^[[:alnum:]].*:' Makefile
 
-tmscore.sif:
-	apptainer build tmscore.sif apptainer.def
+tmscore.sif: apptainer.def tmscore.py USalign.cpp
+	apptainer build --force tmscore.sif apptainer.def

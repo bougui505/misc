@@ -43,6 +43,15 @@ From: ubuntu:22.04
 
     python3 setup.py --glut True build install
 
+    # Copy missing python modules to standard dist-packages
+    cp -r /opt/pymol-open-source/modules/pymol2 /usr/local/lib/python3.10/dist-packages/
+    cp -r /opt/pymol-open-source/modules/chempy /usr/local/lib/python3.10/dist-packages/
+    cp -r /opt/pymol-open-source/modules/pmg_qt /usr/local/lib/python3.10/dist-packages/
+    cp -r /opt/pymol-open-source/modules/pmg_tk /usr/local/lib/python3.10/dist-packages/
+    cp -r /opt/pymol-open-source/modules/web /usr/local/lib/python3.10/dist-packages/
+    # Merge PyMOL's core wrapper Python scripts into the compiled pymol directory
+    cp -rp /opt/pymol-open-source/modules/pymol/* /usr/local/lib/python3.10/dist-packages/pymol/
+
     # Make tmscore.py executable
     chmod +x /opt/tmalign/tmscore.py
 
