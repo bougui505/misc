@@ -142,7 +142,14 @@ def get_tmscore(modelfile, nativefile):
     stdout, stderr = process.communicate()
 
     if stderr:
-        raise RuntimeError(f"USalign error: {stderr.strip()}")
+        errors = []
+        for line in stderr.splitlines():
+            if "warning" in line.lower():
+                sys.stderr.write(f"USalign subprocess warning: {line}\n")
+            else:
+                errors.append(line)
+        if errors:
+            raise RuntimeError(f"USalign error: {', '.join(errors)}")
 
     lines = stdout.splitlines()
     tmscores = []
