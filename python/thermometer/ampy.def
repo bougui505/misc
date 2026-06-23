@@ -1,0 +1,11 @@
+Bootstrap: docker
+From: python:3.10-slim
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+    pip install --no-cache-dir adafruit-ampy mpremote
+
+%runscript
+    exec ampy "$@"

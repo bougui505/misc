@@ -90,43 +90,62 @@ def serial_reader_thread():
             if not os.path.exists(SERIAL_PORT):
                 raise FileNotFoundError(f"Serial port {SERIAL_PORT} does not exist.")
             
-            # Open serial port as a standard file
-            with open(SERIAL_PORT, 'r', encoding='utf-8', errors='ignore') as f:
+            # Open serial port as an unbuffered binary file
+            with open(SERIAL_PORT, 'rb', buffering=0) as f:
                 print(f"[+] Successfully opened serial port {SERIAL_PORT}")
                 latest_reading["status"] = "connected"
                 latest_reading["error"] = None
                 
+                buffer = b""
                 while True:
-                    line = f.readline()
-                    if not line:
+                    # Read up to 100 bytes (blocks until at least 1 byte is available)
+                    chunk = f.read(100)
+                    if not chunk:
                         # EOF indicates serial device disconnected
                         print("[-] Serial port returned EOF. Reconnecting in 2 seconds...")
                         time.sleep(2)
                         break
                     
-                    print(f"[*] Raw serial line: {repr(line)}")
-                    temp = parse_temp(line)
-                    if temp is not None:
-                        now = int(time.time())
+                    buffer += chunk
+                    # Split lines by either \r or \n
+                    while b'\n' in buffer or b'\r' in buffer:
+                        # Find the first occurrence of either \r or \n
+                        idx_r = buffer.find(b'\r')
+                        idx_n = buffer.find(b'\n')
                         
-                        # Update global status
-                        latest_reading["temperature"] = temp
-                        latest_reading["timestamp"] = now
-                        latest_reading["status"] = "connected"
-                        latest_reading["error"] = None
+                        if idx_r != -1 and (idx_n == -1 or idx_r < idx_n):
+                            split_idx = idx_r
+                        else:
+                            split_idx = idx_n
+                            
+                        line_bytes = buffer[:split_idx]
+                        buffer = buffer[split_idx+1:]
                         
-                        # Log to database
-                        try:
-                            conn = sqlite3.connect(DB_PATH)
-                            cursor = conn.cursor()
-                            cursor.execute(
-                                "INSERT INTO readings (timestamp, temperature) VALUES (?, ?)",
-                                (now, temp)
-                            )
-                            conn.commit()
-                            conn.close()
-                        except Exception as db_err:
-                            print(f"[!] Database insert error: {db_err}")
+                        line = line_bytes.decode('utf-8', errors='ignore').strip()
+                        if line:
+                            print(f"[*] Raw serial line: {repr(line)}")
+                            temp = parse_temp(line)
+                            if temp is not None:
+                                now = int(time.time())
+                                
+                                # Update global status
+                                latest_reading["temperature"] = temp
+                                latest_reading["timestamp"] = now
+                                latest_reading["status"] = "connected"
+                                latest_reading["error"] = None
+                                
+                                # Log to database
+                                try:
+                                    conn = sqlite3.connect(DB_PATH)
+                                    cursor = conn.cursor()
+                                    cursor.execute(
+                                        "INSERT INTO readings (timestamp, temperature) VALUES (?, ?)",
+                                        (now, temp)
+                                    )
+                                    conn.commit()
+                                    conn.close()
+                                except Exception as db_err:
+                                    print(f"[!] Database insert error: {db_err}")
                             
         except Exception as e:
             # Update state with connection error
