@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPi Local Thermometer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Local Chart.js -->
+    <script src="chart.js"></script>
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <svg class="icon-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C9.79 2 8 3.79 8 6V14.28C6.79 15.19 6 16.5 6 18C6 20.21 7.79 22 10 22C11.5 22 12.81 21.21 13.72 20H13.73C14.5 18.9 15 17.5 15 16C15 14.5 14.5 13.1 13.73 12H13.72V6C13.72 3.79 11.93 2 9.72 2H12Z" fill="currentColor"/>
+                    <circle cx="10" cy="18" r="2" fill="var(--bg-color)"/>
+                    <path d="M10 6V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <h1>PiTemp <span class="badge">Local</span></h1>
+            </div>
+            
+            <div class="status-indicator-container">
+                <span class="status-dot pulses" id="status-dot"></span>
+                <span class="status-text" id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard-grid">
+            
+            <!-- Temperature Gauge Card -->
+            <section class="card temp-hero-card" id="temp-card">
+                <div class="card-bg-glow"></div>
+                <div class="card-content">
+                    <h2 class="card-title">Current Temperature</h2>
+                    <div class="temp-display">
+                        <span class="temp-value" id="current-temp">--.-</span>
+                        <span class="temp-unit">°C</span>
+                    </div>
+                    <div class="temp-meta">
+                        <span class="meta-label">Last updated:</span>
+                        <span class="meta-value" id="last-update">Never</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Column -->
+            <section class="stats-panel">
+                <!-- Max Card -->
+                <div class="card stat-card max-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4V20M12 4L6 10M12 4L18 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Maximum</span>
+                        <span class="stat-value" id="stat-max">--.-°C</span>
+                    </div>
+                </div>
+                
+                <!-- Average Card -->
+                <div class="card stat-card avg-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 12H20M12 4V20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Average</span>
+                        <span class="stat-value" id="stat-avg">--.-°C</span>
+                    </div>
+                </div>
+                
+                <!-- Min Card -->
+                <div class="card stat-card min-card">
+                    <div class="stat-icon-wrapper">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4V20M12 20L6 14M12 20L18 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Minimum</span>
+                        <span class="stat-value" id="stat-min">--.-°C</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chart Card -->
+            <section class="card chart-card">
+                <header class="chart-header">
+                    <h2 class="card-title">Temperature Trend</h2>
+                    <div class="timeframe-selector">
+                        <button class="btn-timeframe" data-period="1h">1 Hour</button>
+                        <button class="btn-timeframe active" data-period="24h">24 Hours</button>
+                        <button class="btn-timeframe" data-period="7d">7 Days</button>
+                    </div>
+                </header>
+                <div class="chart-wrapper">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Network Info Box -->
+        <section class="card info-box">
+            <div class="info-content">
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div>
+                    <h4>Local Phone Connection</h4>
+                    <p>To view this graph on your phone, connect it to the same Wi-Fi network and open the URL displayed in your computer terminal when starting this server.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>PiTemp Thermometer System • Device: <code id="device-path">/dev/ttyACM0</code></p>
+        </footer>
+
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
