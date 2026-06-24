@@ -302,17 +302,26 @@ function drawChart(historyData) {
             }
         }
           if (currentPeriod === 'ventilation_deviation') {
-            const deviations = new Array(totalHours).fill(null);
-            for (let idx = 0; idx < totalHours; idx++) {
-                const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
+            const simulatedPrediction = new Array(totalHours).fill(null);
+            simulatedPrediction[0] = actualIndoor[0];
+            
+            for (let idx = 1; idx <= numPastHours; idx++) {
+                const prevPred = simulatedPrediction[idx - 1];
                 const outTemp = outdoorDataPoints[idx];
-                if (inTemp !== null && outTemp !== null) {
-                    deviations[idx] = parseFloat((outTemp - inTemp).toFixed(2));
+                if (prevPred !== null && outTemp !== null) {
+                    simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
+                }
+            }
+            
+            const deviations = new Array(totalHours).fill(null);
+            for (let idx = 0; idx <= numPastHours; idx++) {
+                if (actualIndoor[idx] !== null && simulatedPrediction[idx] !== null) {
+                    deviations[idx] = parseFloat((actualIndoor[idx] - simulatedPrediction[idx]).toFixed(2));
                 }
             }
             dataset1 = deviations;
             dataset2 = null;
-            label1 = "Ventilation Temp Deviation (Outdoor - Indoor)";
+            label1 = "Model Deviation (Actual Measurement - Closed-Window Prediction)";
         } else {
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
