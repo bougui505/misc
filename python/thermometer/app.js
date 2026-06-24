@@ -973,8 +973,6 @@ function calculateClimateInsights(history7d) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${timeStr}</strong></td>
-                    <td>${currentPred.toFixed(1)}°C</td>
-                    <td>${outTemp.toFixed(1)}°C</td>
                     <td>${deltaHtml}</td>
                     <td>${verdict}</td>
                 `;
