@@ -782,9 +782,9 @@ function calculateClimateInsights(history7d) {
             return `${yyyy}-${mm}-${dd}T${hh}:00`;
         };
         
-        // Loop for the next 8 hours
+        // Loop for the next 8 hours (starting at the current hour)
         let currentPred = lastIndoor;
-        for (let h = 1; h <= 8; h++) {
+        for (let h = 0; h < 8; h++) {
             const ts = nowHourTS + h * 3600;
             const dateObj = new Date(ts * 1000);
             const pad = (n) => String(n).padStart(2, '0');
@@ -798,8 +798,10 @@ function calculateClimateInsights(history7d) {
             }
             
             if (outTemp !== null) {
-                // Predict step
-                currentPred = currentPred + 0.05 * (outTemp - currentPred) + 0.03;
+                if (h > 0) {
+                    // Predict step only for future hours
+                    currentPred = currentPred + 0.05 * (outTemp - currentPred) + 0.03;
+                }
                 
                 const delta = outTemp - currentPred;
                 const pct = Math.min((Math.abs(delta) / 10) * 50, 50); // Scale 10°C to 50% max width
