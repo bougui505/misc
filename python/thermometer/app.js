@@ -635,11 +635,14 @@ function drawChart(historyData) {
                         displayColors: true,
                         callbacks: {
                             label: function(context) {
+                                const label = context.dataset.label || '';
+                                if (label === 'Action Suggestion') {
+                                    return null;
+                                }
                                 const val = context.parsed.y;
                                  if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
                                      return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
                                  }
-                                const label = context.dataset.label || '';
                                 return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
                             }
                         }
