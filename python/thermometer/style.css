@@ -380,6 +380,15 @@ body {
     padding: 0.25rem;
     border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.04);
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    flex-wrap: nowrap;
+}
+
+.timeframe-selector::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari, Opera */
 }
 
 .btn-timeframe {
@@ -387,12 +396,14 @@ body {
     border: none;
     outline: none;
     color: var(--text-secondary);
-    padding: 0.4rem 1rem;
+    padding: 0.45rem 1rem;
     font-size: 0.85rem;
     font-weight: 500;
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .btn-timeframe:hover {
