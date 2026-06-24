@@ -463,7 +463,8 @@ function drawChart(historyData) {
             yAxisID: 'y',
             pointRadius: 0,
             spanGaps: true,
-            order: 1
+            order: 1,
+            pointStyle: 'line'
         });
         chartDatasets.push({
             label: label2,
@@ -476,7 +477,8 @@ function drawChart(historyData) {
             yAxisID: 'y',
             pointRadius: 0,
             spanGaps: true,
-            order: 1
+            order: 1,
+            pointStyle: 'line'
         });
         chartDatasets.push({
             label: label3,
@@ -488,7 +490,8 @@ function drawChart(historyData) {
             yAxisID: 'y',
             pointRadius: 0,
             spanGaps: true,
-            order: 1
+            order: 1,
+            pointStyle: 'line'
         });
     } else {
         chartDatasets.push({
@@ -511,7 +514,8 @@ function drawChart(historyData) {
             pointHoverBackgroundColor: color1,
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
-            spanGaps: true
+            spanGaps: true,
+            pointStyle: 'line'
         });
         
         chartDatasets.push({
@@ -534,7 +538,8 @@ function drawChart(historyData) {
             pointHoverBackgroundColor: color2,
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
-            spanGaps: true
+            spanGaps: true,
+            pointStyle: 'line'
         });
     }
 
@@ -610,6 +615,7 @@ function drawChart(historyData) {
                         labels: {
                             color: '#9ca3af',
                             font: { family: 'Outfit', size: 12 },
+                            usePointStyle: true,
                             filter: function(item, chartData) {
                                 return item.text !== 'Action Suggestion';
                             }
