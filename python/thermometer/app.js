@@ -289,26 +289,38 @@ function drawChart(historyData) {
             }
         }
         
+        // Pre-calculate effective outdoor temperatures adjusting for south-facing solar load
+        const effectiveOutdoorData = new Array(totalHours).fill(null);
+        for (let idx = 0; idx < totalHours; idx++) {
+            const outTemp = outdoorDataPoints[idx];
+            if (outTemp !== null) {
+                const ts = nowHourTS + (idx - numPastHours) * 3600;
+                const date = new Date(ts * 1000);
+                const hour = date.getHours();
+                const cloudCover = outdoorCloudPoints[idx];
+                const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
+                effectiveOutdoorData[idx] = parseFloat((outTemp + solarBias).toFixed(2));
+            }
+        }
+        
         // 3. Connect predicted line to the last actual reading at index 24 (Now)
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
-        // 4. Recursive thermal prediction for future hours (windows assumed closed)
+        // 4. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
         for (let offset = 1; offset <= numFutureHours; offset++) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
             const prevIndoor = (offset === 1) ? actualIndoor[numPastHours] : predictedIndoor[prevIdx];
-            const outTemp = outdoorDataPoints[idx];
+            const outTemp = effectiveOutdoorData[idx];
             
             if (prevIndoor !== null && outTemp !== null) {
-                // T_in = T_prev + k*(T_out - T_prev) + internal_heating
-                // k = 0.05 (thermal transfer coefficient), internal_heating = 0.03°C/hour
                 predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.03).toFixed(2));
             }
         }
-          if (currentPeriod === 'ventilation_deviation') {
+        
+        if (currentPeriod === 'ventilation_deviation') {
             const simulatedPrediction = new Array(totalHours).fill(null);
             
-            // Find the first valid actual indoor reading to initialize the simulation
             let firstValidIdx = -1;
             for (let idx = 0; idx <= numPastHours; idx++) {
                 if (actualIndoor[idx] !== null) {
@@ -321,7 +333,7 @@ function drawChart(historyData) {
                 simulatedPrediction[firstValidIdx] = actualIndoor[firstValidIdx];
                 for (let idx = firstValidIdx + 1; idx <= numPastHours; idx++) {
                     const prevPred = simulatedPrediction[idx - 1];
-                    const outTemp = outdoorDataPoints[idx];
+                    const outTemp = effectiveOutdoorData[idx];
                     if (prevPred !== null && outTemp !== null) {
                         simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
                     } else if (prevPred !== null) {
@@ -333,7 +345,7 @@ function drawChart(historyData) {
             const deviations = new Array(totalHours).fill(null);
             for (let idx = 0; idx < totalHours; idx++) {
                 const inTemp = idx <= numPastHours ? simulatedPrediction[idx] : predictedIndoor[idx];
-                const outTemp = outdoorDataPoints[idx];
+                const outTemp = effectiveOutdoorData[idx];
                 if (inTemp !== null && outTemp !== null) {
                     deviations[idx] = parseFloat((outTemp - inTemp).toFixed(2));
                 }
@@ -344,7 +356,7 @@ function drawChart(historyData) {
         } else {
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
-            dataset3 = outdoorDataPoints;
+            dataset3 = effectiveOutdoorData;
             label1 = 'Indoor Temp (Actual)';
             label2 = 'Indoor Temp (Predicted)';
             label3 = 'Outdoor Temp (Forecast)';
@@ -359,22 +371,15 @@ function drawChart(historyData) {
             dataset4Colors = new Array(totalHours).fill('rgba(0,0,0,0)');
             for (let idx = 0; idx < totalHours; idx++) {
                 const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
-                const outTemp = outdoorDataPoints[idx];
+                const outTemp = effectiveOutdoorData[idx];
                 if (inTemp !== null && outTemp !== null) {
-                    const ts = nowHourTS + (idx - numPastHours) * 3600;
-                    const date = new Date(ts * 1000);
-                    const hour = date.getHours();
-                    const cloudCover = outdoorCloudPoints[idx];
-                    const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
-                    const effectiveOut = outTemp + solarBias;
-                    
                     let isOpen = false;
                     if (inTemp < COMFORT_MIN) {
-                        isOpen = effectiveOut > inTemp;
+                        isOpen = outTemp > inTemp;
                     } else if (inTemp > COMFORT_MAX) {
-                        isOpen = effectiveOut < inTemp;
+                        isOpen = outTemp < inTemp;
                     } else {
-                        isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
+                        isOpen = outTemp >= COMFORT_MIN && outTemp <= COMFORT_MAX;
                     }
                     dataset4[idx] = 1;
                     dataset4Colors[idx] = isOpen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.04)';
