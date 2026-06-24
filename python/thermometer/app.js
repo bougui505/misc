@@ -41,20 +41,20 @@ function getSolarParameters(date, cloudCover) {
     
     // Summer: May-Aug (months 4, 5, 6, 7)
     if (month >= 4 && month <= 7) {
-        startHour = 13.0;
-        endHour = 19.0;
+        startHour = 14.0; // 14:00
+        endHour = 20.0;   // 20:00
         maxBias = 4.0;
     } 
     // Spring/Autumn: Mar-Apr (months 2, 3) & Sep-Oct (months 8, 9)
     else if (month === 2 || month === 3 || month === 8 || month === 9) {
-        startHour = 12.5; // 12:50 represented as 12.5
-        endHour = 18.0;   // 18:00
+        startHour = 13.8333; // 13:50 (13 + 50/60)
+        endHour = 19.0;      // 19:00
         maxBias = 4.5;
     } 
     // Winter: Nov-Feb (months 10, 11, 0, 1)
     else {
-        startHour = 13.0;
-        endHour = 16.5;   // 16:30 represented as 16.5
+        startHour = 14.0; // 14:00
+        endHour = 17.25;  // 17:15 (17 + 15/60)
         maxBias = 2.5;
     }
     
