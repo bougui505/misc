@@ -224,7 +224,7 @@ function drawChart(historyData) {
             
             dataset1 = anomalies;
             dataset2 = null;
-            label1 = "Temperature Anomaly (Today - Yesterday)";
+            label1 = "Today's Temp Deviation from Yesterday";
         } else {
             // 'compare' overlaid lines
             dataset1 = todayTemps;
@@ -550,7 +550,7 @@ function drawChart(historyData) {
                             label: function(context) {
                                 const val = context.parsed.y;
                                 if (currentPeriod === 'anomaly') {
-                                    return `Anomaly: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
+                                     return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
                                 }
                                 const label = context.dataset.label || '';
                                 return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
