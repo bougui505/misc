@@ -357,13 +357,19 @@ function drawChart(historyData) {
                 const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
                 const outTemp = outdoorDataPoints[idx];
                 if (inTemp !== null && outTemp !== null) {
+                    const ts = nowHourTS + (idx - numPastHours) * 3600;
+                    const date = new Date(ts * 1000);
+                    const hour = date.getHours();
+                    const solarBias = (hour >= 10 && hour <= 16) ? 2.5 : 0.0;
+                    const effectiveOut = outTemp + solarBias;
+                    
                     let isOpen = false;
                     if (inTemp < COMFORT_MIN) {
-                        isOpen = outTemp > inTemp;
+                        isOpen = effectiveOut > inTemp;
                     } else if (inTemp > COMFORT_MAX) {
-                        isOpen = outTemp < inTemp;
+                        isOpen = effectiveOut < inTemp;
                     } else {
-                        isOpen = outTemp >= COMFORT_MIN && outTemp <= COMFORT_MAX;
+                        isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
                     }
                     dataset4[idx] = 1;
                     dataset4Colors[idx] = isOpen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.04)';
@@ -888,15 +894,19 @@ function calculateClimateInsights(history7d) {
                 const COMFORT_MAX = 21.0;
                 let isOpen = false;
                 
+                const hour = dateObj.getHours();
+                const solarBias = (hour >= 10 && hour <= 16) ? 2.5 : 0.0;
+                const effectiveOut = outTemp + solarBias;
+                
                 if (currentPred < COMFORT_MIN) {
                     // Indoor is too cold: open only if outdoor is warmer than indoor to help heat the room
-                    isOpen = outTemp > currentPred;
+                    isOpen = effectiveOut > currentPred;
                 } else if (currentPred > COMFORT_MAX) {
                     // Indoor is too hot: open only if outdoor is cooler than indoor to help cool the room
-                    isOpen = outTemp < currentPred;
+                    isOpen = effectiveOut < currentPred;
                 } else {
                     // Indoor is in comfort range: open only if outdoor air is also comfortable to maintain state
-                    isOpen = outTemp >= COMFORT_MIN && outTemp <= COMFORT_MAX;
+                    isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
                 }
                 
                 const verdict = isOpen 
