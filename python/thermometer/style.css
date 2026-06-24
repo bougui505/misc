@@ -11,8 +11,8 @@
     --temp-cold-glow: rgba(59, 130, 246, 0.2);
     --temp-normal: #10b981;
     --temp-normal-glow: rgba(16, 185, 129, 0.2);
-    --temp-warm: #f59e0b;
-    --temp-warm-glow: rgba(245, 158, 11, 0.2);
+    --temp-warm: #eab308;
+    --temp-warm-glow: rgba(234, 179, 8, 0.2);
     --temp-hot: #ef4444;
     --temp-hot-glow: rgba(239, 68, 68, 0.2);
     
@@ -608,5 +608,182 @@ code {
     padding: 0.35rem 0.85rem;
     border-radius: 9999px;
     border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Analytics & Insights styles */
+.analytics-card {
+    grid-column: 1 / -1;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.ventilation-schedule-card {
+    grid-column: 1 / -1;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.ventilation-schedule-card .card-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 150px;
+    background: var(--temp-normal-glow);
+    filter: blur(80px);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.analytics-layout {
+    display: block;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+    .analytics-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+.analytics-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.analytics-table th, .analytics-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.analytics-table th {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.analytics-table td {
+    color: var(--text-primary);
+}
+
+.loading-cell {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem !important;
+}
+
+.insights-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.insight-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 0.75rem;
+    align-items: flex-start;
+}
+
+.insight-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.insight-text h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.insight-text p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.insight-chart-wrapper {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mini-chart-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+/* Bidirectional Delta Bar */
+.delta-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 160px;
+    max-width: 220px;
+}
+
+.delta-bar-label {
+    font-family: monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: 55px;
+    text-align: right;
+    color: var(--text-primary);
+}
+
+.delta-bar-track {
+    flex-grow: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    position: relative;
+}
+
+.delta-bar-center {
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    width: 2px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+}
+
+.delta-bar-fill {
+    position: absolute;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.delta-bar-fill.cool {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+.delta-bar-fill.warm {
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
 }
 

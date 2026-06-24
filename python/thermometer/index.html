@@ -132,11 +132,69 @@
                     <div class="timeframe-selector">
                         <button class="btn-timeframe" data-period="1h">1 Hour</button>
                         <button class="btn-timeframe active" data-period="24h">24 Hours</button>
+                        <button class="btn-timeframe" data-period="compare">Yesterday vs Today</button>
+                        <button class="btn-timeframe" data-period="anomaly">Anomaly</button>
+                        <button class="btn-timeframe" data-period="ventilation">Ventilation Guide</button>
                         <button class="btn-timeframe" data-period="7d">7 Days</button>
                     </div>
                 </header>
                 <div class="chart-wrapper">
                     <canvas id="tempChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Analytics & Insights Card -->
+            <section class="card analytics-card">
+                <div class="card-bg-glow"></div>
+                <div class="card-content">
+                    <h2 class="card-title">Climate Insights & Daily Summaries</h2>
+                    <div class="analytics-layout">
+                        <!-- Table Column -->
+                        <div class="analytics-table-wrapper">
+                            <h4 class="mini-chart-title" style="margin-bottom:0.75rem;">Daily History</h4>
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Min Temp</th>
+                                        <th>Max Temp</th>
+                                        <th>Avg Temp</th>
+                                        <th>Avg Hum</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-table-body">
+                                    <tr>
+                                        <td colspan="5" class="loading-cell">Loading insights...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+            </section>
+
+            <!-- Ventilation Schedule Card -->
+            <section class="card ventilation-schedule-card">
+                <div class="card-bg-glow"></div>
+                <div class="card-content">
+                    <h2 class="card-title">Ventilation Action Schedule (Next 8 Hours) • Target Comfort: 19°C - 21°C</h2>
+                    <div class="analytics-table-wrapper">
+                        <table class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Predicted Indoor Temp</th>
+                                    <th>Forecast Outdoor Temp</th>
+                                    <th>Difference (Out - In)</th>
+                                    <th>Action Recommendation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ventilation-schedule-body">
+                                <tr>
+                                    <td colspan="5" class="loading-cell">Calculating schedule...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 

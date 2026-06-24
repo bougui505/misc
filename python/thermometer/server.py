@@ -192,6 +192,9 @@ def get_history(period):
     elif period == '24h':
         start_time = now - 86400
         interval = 300  # 5-minute groups
+    elif period in ('compare', 'anomaly'):
+        start_time = now - 2 * 86400
+        interval = 300  # 5-minute groups
     elif period == '7d':
         start_time = now - 7 * 86400
         interval = 3600  # 1-hour groups
