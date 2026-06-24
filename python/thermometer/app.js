@@ -298,7 +298,7 @@ function drawChart(historyData) {
                 const date = new Date(ts * 1000);
                 const hour = date.getHours();
                 const cloudCover = outdoorCloudPoints[idx];
-                const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
+                const solarBias = (hour >= 10 && hour <= 16) ? 4.0 * (1.0 - cloudCover / 100.0) : 0.0;
                 effectiveOutdoorData[idx] = parseFloat((outTemp + solarBias).toFixed(2));
             }
         }
@@ -314,7 +314,7 @@ function drawChart(historyData) {
             const outTemp = effectiveOutdoorData[idx];
             
             if (prevIndoor !== null && outTemp !== null) {
-                predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.03).toFixed(2));
+                predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.05).toFixed(2));
             }
         }
         
@@ -335,9 +335,9 @@ function drawChart(historyData) {
                     const prevPred = simulatedPrediction[idx - 1];
                     const outTemp = effectiveOutdoorData[idx];
                     if (prevPred !== null && outTemp !== null) {
-                        simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
+                        simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.05;
                     } else if (prevPred !== null) {
-                        simulatedPrediction[idx] = prevPred + 0.03;
+                        simulatedPrediction[idx] = prevPred + 0.05;
                     }
                 }
             }
@@ -885,7 +885,7 @@ function calculateClimateInsights(history7d) {
             if (outTemp !== null) {
                 if (h > 0) {
                     // Predict step only for future hours
-                    currentPred = currentPred + 0.05 * (outTemp - currentPred) + 0.03;
+                    currentPred = currentPred + 0.05 * (outTemp - currentPred) + 0.05;
                 }
                 
                 const delta = outTemp - currentPred;
@@ -909,7 +909,7 @@ function calculateClimateInsights(history7d) {
                 let isOpen = false;
                 
                 const hour = dateObj.getHours();
-                const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
+                const solarBias = (hour >= 10 && hour <= 16) ? 4.0 * (1.0 - cloudCover / 100.0) : 0.0;
                 const effectiveOut = outTemp + solarBias;
                 
                 if (currentPred < COMFORT_MIN) {
