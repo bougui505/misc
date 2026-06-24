@@ -234,7 +234,7 @@ function drawChart(historyData) {
             color1 = activeColor;
             color2 = '#60a5fa'; // Sleek sky blue for yesterday
         }
-    } else if (currentPeriod === 'ventilation') {
+    } else if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
         const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
         // Round refNow to the nearest hour
         const nowHourTS = Math.round(refNow / 3600) * 3600;
@@ -301,33 +301,48 @@ function drawChart(historyData) {
                 predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.03).toFixed(2));
             }
         }
-        
-        dataset1 = actualIndoor;
-        dataset2 = predictedIndoor;
-        dataset3 = outdoorDataPoints;
-        label1 = 'Indoor Temp (Actual)';
-        label2 = 'Indoor Temp (Predicted)';
-        label3 = 'Outdoor Temp (Forecast)';
-        color1 = '#06b6d4'; // Cool Teal for Indoor Actual
-        color2 = '#06b6d4'; // Cool Teal for Indoor Predicted
-        color3 = '#f59e0b'; // Amber for Outdoor Forecast
-        
-        // Calculate comfort window actions to highlight on the plot background
-        const COMFORT_MIN = 19.0;
-        const COMFORT_MAX = 21.0;
-        dataset4 = new Array(totalHours).fill(0);
-        dataset4Colors = new Array(totalHours).fill('rgba(0,0,0,0)');
-        for (let idx = 0; idx < totalHours; idx++) {
-            const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
-            const outTemp = outdoorDataPoints[idx];
-            if (inTemp !== null && outTemp !== null) {
-                let isOpen = false;
-                if (inTemp < COMFORT_MIN) {
-                    isOpen = outTemp > inTemp;
-                } else if (inTemp > COMFORT_MAX) {
-                    isOpen = outTemp < inTemp;
-                } else {
-                    isOpen = outTemp >= COMFORT_MIN && outTemp <= COMFORT_MAX;
+          if (currentPeriod === 'ventilation_deviation') {
+            const deviations = new Array(totalHours).fill(null);
+            for (let idx = 0; idx < totalHours; idx++) {
+                const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
+                const outTemp = outdoorDataPoints[idx];
+                if (inTemp !== null && outTemp !== null) {
+                    deviations[idx] = parseFloat((outTemp - inTemp).toFixed(2));
+                }
+            }
+            dataset1 = deviations;
+            dataset2 = null;
+            label1 = "Ventilation Temp Deviation (Outdoor - Indoor)";
+        } else {
+            dataset1 = actualIndoor;
+            dataset2 = predictedIndoor;
+            dataset3 = outdoorDataPoints;
+            label1 = 'Indoor Temp (Actual)';
+            label2 = 'Indoor Temp (Predicted)';
+            label3 = 'Outdoor Temp (Forecast)';
+            color1 = '#06b6d4'; // Cool Teal for Indoor Actual
+            color2 = '#06b6d4'; // Cool Teal for Indoor Predicted
+            color3 = '#f59e0b'; // Amber for Outdoor Forecast
+            
+            // Calculate comfort window actions to highlight on the plot background
+            const COMFORT_MIN = 19.0;
+            const COMFORT_MAX = 21.0;
+            dataset4 = new Array(totalHours).fill(0);
+            dataset4Colors = new Array(totalHours).fill('rgba(0,0,0,0)');
+            for (let idx = 0; idx < totalHours; idx++) {
+                const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
+                const outTemp = outdoorDataPoints[idx];
+                if (inTemp !== null && outTemp !== null) {
+                    let isOpen = false;
+                    if (inTemp < COMFORT_MIN) {
+                        isOpen = outTemp > inTemp;
+                    } else if (inTemp > COMFORT_MAX) {
+                        isOpen = outTemp < inTemp;
+                    } else {
+                        isOpen = outTemp >= COMFORT_MIN && outTemp <= COMFORT_MAX;
+                    }
+                    dataset4[idx] = 1;
+                    dataset4Colors[idx] = isOpen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.04)';
                 }
             }
         }
@@ -357,9 +372,9 @@ function drawChart(historyData) {
 
     // Prepare datasets array dynamically
     const chartDatasets = [];
-    if (currentPeriod === 'anomaly') {
-        const borderColors = dataset1.map(v => v >= 0 ? '#ef4444' : '#3b82f6');
-        const backgroundColors = dataset1.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)');
+    if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+        const borderColors = dataset1.map(v => v !== null ? (v >= 0 ? '#ef4444' : '#3b82f6') : 'transparent');
+        const backgroundColors = dataset1.map(v => v !== null ? (v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)') : 'rgba(0,0,0,0)');
         
         chartDatasets.push({
             label: label1,
@@ -474,9 +489,9 @@ function drawChart(historyData) {
         // Update the existing chart smoothly in-place without blinking
         chartInstance.data.labels = labels;
         
-        if (currentPeriod === 'anomaly') {
-            const borderColors = dataset1.map(v => v >= 0 ? '#ef4444' : '#3b82f6');
-            const backgroundColors = dataset1.map(v => v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)');
+        if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+            const borderColors = dataset1.map(v => v !== null ? (v >= 0 ? '#ef4444' : '#3b82f6') : 'transparent');
+            const backgroundColors = dataset1.map(v => v !== null ? (v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)') : 'rgba(0,0,0,0)');
             
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
@@ -515,7 +530,7 @@ function drawChart(historyData) {
         activeChartPeriod = currentPeriod;
         // Create chart configuration
         chartInstance = new Chart(ctx, {
-            type: currentPeriod === 'anomaly' ? 'bar' : 'line',
+            type: (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') ? 'bar' : 'line',
             data: {
                 labels: labels,
                 datasets: chartDatasets
@@ -549,9 +564,9 @@ function drawChart(historyData) {
                         callbacks: {
                             label: function(context) {
                                 const val = context.parsed.y;
-                                if (currentPeriod === 'anomaly') {
+                                 if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
                                      return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
-                                }
+                                 }
                                 const label = context.dataset.label || '';
                                 return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
                             }
@@ -582,9 +597,9 @@ function drawChart(historyData) {
                             color: '#9ca3af',
                             font: { family: 'Outfit', size: 11 },
                             callback: function(value) {
-                                if (currentPeriod === 'anomaly') {
-                                    return (value >= 0 ? '+' : '') + value.toFixed(1) + '°C';
-                                }
+                                 if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+                                     return (value >= 0 ? '+' : '') + value.toFixed(1) + '°C';
+                                 }
                                 return value.toFixed(1) + '°C';
                             }
                         }
@@ -629,7 +644,7 @@ async function loadHistory(period) {
         let fetchPeriod = period;
         let outdoorData = null;
         
-        if (period === 'ventilation') {
+        if (period === 'ventilation' || period === 'ventilation_deviation') {
             fetchPeriod = '24h';
             // Fetch outdoor forecast from Open-Meteo for Paris coordinates
             try {
@@ -653,7 +668,7 @@ async function loadHistory(period) {
         
         updateSummaryStats(historyData);
         
-        if (period === 'ventilation') {
+        if (period === 'ventilation' || period === 'ventilation_deviation') {
             // Match each indoor reading with the closest hourly outdoor forecast reading
             if (outdoorData && outdoorData.hourly) {
                 const hourlyTimes = outdoorData.hourly.time;
