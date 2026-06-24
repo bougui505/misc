@@ -397,8 +397,21 @@ function drawChart(historyData) {
     // Prepare datasets array dynamically
     const chartDatasets = [];
     if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
-        const borderColors = dataset1.map(v => v !== null ? (v >= 0 ? '#ef4444' : '#3b82f6') : 'transparent');
-        const backgroundColors = dataset1.map(v => v !== null ? (v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)') : 'rgba(0,0,0,0)');
+        const numPastHours = 24;
+        const borderColors = dataset1.map((v, idx) => {
+            if (v === null) return 'transparent';
+            if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                return v >= 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+            }
+            return v >= 0 ? '#ef4444' : '#3b82f6';
+        });
+        const backgroundColors = dataset1.map((v, idx) => {
+            if (v === null) return 'rgba(0,0,0,0)';
+            if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                return v >= 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)';
+            }
+            return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
+        });
         
         chartDatasets.push({
             label: label1,
@@ -514,8 +527,21 @@ function drawChart(historyData) {
         chartInstance.data.labels = labels;
         
         if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
-            const borderColors = dataset1.map(v => v !== null ? (v >= 0 ? '#ef4444' : '#3b82f6') : 'transparent');
-            const backgroundColors = dataset1.map(v => v !== null ? (v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)') : 'rgba(0,0,0,0)');
+            const numPastHours = 24;
+            const borderColors = dataset1.map((v, idx) => {
+                if (v === null) return 'transparent';
+                if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                    return v >= 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+                }
+                return v >= 0 ? '#ef4444' : '#3b82f6';
+            });
+            const backgroundColors = dataset1.map((v, idx) => {
+                if (v === null) return 'rgba(0,0,0,0)';
+                if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                    return v >= 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)';
+                }
+                return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
+            });
             
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
