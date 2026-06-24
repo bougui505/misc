@@ -156,12 +156,30 @@ body {
 /* Grid Dashboard Layout */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: 1.1fr 1.1fr 1.1fr 1fr;
     gap: 1.5rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .stats-panel {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+    }
+    .chart-card {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .stats-panel {
         grid-template-columns: 1fr;
     }
 }
@@ -449,3 +467,146 @@ code {
     font-family: monospace;
     font-size: 0.85em;
 }
+
+/* Humidity Gauge Card */
+.humidity-hero-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 240px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.humidity-hero-card .card-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
+    background: #06b6d4;
+    filter: blur(70px);
+    opacity: 0.2;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.humidity-hero-card .card-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.humidity-display {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.humidity-value {
+    font-size: 5.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    background: linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.75) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.humidity-unit {
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: #06b6d4;
+    margin-top: 0.6rem;
+    margin-left: 0.25rem;
+}
+
+.humidity-meta {
+    display: flex;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Feels Like Card */
+.feels-like-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 240px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.feels-like-card .card-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
+    background: #a855f7; /* Purple for Feels Like */
+    filter: blur(70px);
+    opacity: 0.2;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.feels-like-card .card-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.feels-like-display {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.feels-like-value {
+    font-size: 5.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    background: linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.75) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feels-like-unit {
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: #a855f7; /* Purple */
+    margin-top: 0.6rem;
+    margin-left: 0.25rem;
+}
+
+.feels-like-meta {
+    display: flex;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+

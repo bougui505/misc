@@ -8,6 +8,9 @@ let chartInstance = null;
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
 const lastUpdateEl = document.getElementById('last-update');
+const currentHumidityEl = document.getElementById('current-humidity');
+const humidityLastUpdateEl = document.getElementById('humidity-last-update');
+const currentFeelsLikeEl = document.getElementById('current-feels-like');
 const statusDotEl = document.getElementById('status-dot');
 const statusTextEl = document.getElementById('status-text');
 const tempCardEl = document.getElementById('temp-card');
@@ -16,6 +19,14 @@ const statMinEl = document.getElementById('stat-min');
 const statAvgEl = document.getElementById('stat-avg');
 const timeframeButtons = document.querySelectorAll('.btn-timeframe');
 const devicePathEl = document.getElementById('device-path');
+
+// Calculate feels-like (Australian Apparent Temperature formula)
+function calculateFeelsLike(temp, humidity) {
+    if (temp === null || humidity === null || isNaN(temp) || isNaN(humidity)) return null;
+    // Water vapor pressure (e) in hPa using Magnus-Tetens approximation
+    const e = (humidity / 100.0) * 6.105 * Math.exp((17.27 * temp) / (237.7 + temp));
+    return temp + 0.33 * e - 4.00;
+}
 
 // Helper to determine temperature range and update theme colors
 function updateThemeForTemperature(temp) {
@@ -59,7 +70,7 @@ function formatTimestamp(unixSecs, period) {
     }
 }
 
-// Fetch and update the real-time current temperature
+// Fetch and update the real-time current temperature and humidity
 async function fetchCurrentTemp() {
     try {
         const response = await fetch('/api/current');
@@ -68,12 +79,28 @@ async function fetchCurrentTemp() {
         const data = await response.json();
         
         if (data.status === 'connected' && data.temperature !== null) {
-            // Update value
+            // Update values
             currentTempEl.textContent = data.temperature.toFixed(1);
+            if (data.humidity !== null && data.humidity !== undefined) {
+                currentHumidityEl.textContent = data.humidity.toFixed(1);
+                
+                // Calculate and update Feels Like
+                const feelsLike = calculateFeelsLike(data.temperature, data.humidity);
+                if (feelsLike !== null) {
+                    currentFeelsLikeEl.textContent = feelsLike.toFixed(1);
+                } else {
+                    currentFeelsLikeEl.textContent = '--.-';
+                }
+            } else {
+                currentHumidityEl.textContent = '--.-';
+                currentFeelsLikeEl.textContent = '--.-';
+            }
             
             // Format last update time
             const lastTime = new Date(data.timestamp * 1000);
-            lastUpdateEl.textContent = lastTime.toLocaleTimeString();
+            const timeStr = lastTime.toLocaleTimeString();
+            lastUpdateEl.textContent = timeStr;
+            humidityLastUpdateEl.textContent = timeStr;
             
             // Update online state
             statusDotEl.className = 'status-dot online pulses';
@@ -87,17 +114,20 @@ async function fetchCurrentTemp() {
             statusTextEl.textContent = data.error || 'Sensor Disconnected';
             
             // Keep previous values but show they are stale
-            lastUpdateEl.textContent = data.timestamp ? `Stale (${new Date(data.timestamp * 1000).toLocaleTimeString()})` : 'Disconnected';
+            const staleTime = data.timestamp ? `Stale (${new Date(data.timestamp * 1000).toLocaleTimeString()})` : 'Disconnected';
+            lastUpdateEl.textContent = staleTime;
+            humidityLastUpdateEl.textContent = staleTime;
+            currentFeelsLikeEl.textContent = '--.-';
         }
         
     } catch (error) {
-        console.error('Error fetching current temperature:', error);
+        console.error('Error fetching current temperature and humidity:', error);
         statusDotEl.className = 'status-dot offline';
         statusTextEl.textContent = 'Server Offline';
     }
 }
 
-// Calculate summary stats for the data points
+// Calculate summary stats for the data points (Temperature stats)
 function updateSummaryStats(data) {
     if (!data || data.length === 0) {
         statMaxEl.textContent = '--.-°C';
@@ -122,21 +152,36 @@ function drawChart(historyData) {
     
     const labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
     const temps = historyData.map(d => d.temperature);
+    const feelsLikes = historyData.map(d => {
+        const feels = calculateFeelsLike(d.temperature, d.humidity);
+        return feels !== null ? parseFloat(feels.toFixed(2)) : d.temperature;
+    });
     
-    // Create modern glowing area gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    // Create modern glowing area gradients
+    const tempGradient = ctx.createLinearGradient(0, 0, 0, 300);
     const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--temp-active').trim() || '#10b981';
     
-    gradient.addColorStop(0, hexToRgbA(activeColor, 0.25));
-    gradient.addColorStop(0.5, hexToRgbA(activeColor, 0.08));
-    gradient.addColorStop(1, hexToRgbA(activeColor, 0.0));
+    tempGradient.addColorStop(0, hexToRgbA(activeColor, 0.25));
+    tempGradient.addColorStop(0.5, hexToRgbA(activeColor, 0.08));
+    tempGradient.addColorStop(1, hexToRgbA(activeColor, 0.0));
+
+    const feelsGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    const feelsColor = '#a855f7';
+    feelsGradient.addColorStop(0, hexToRgbA(feelsColor, 0.25));
+    feelsGradient.addColorStop(0.5, hexToRgbA(feelsColor, 0.08));
+    feelsGradient.addColorStop(1, hexToRgbA(feelsColor, 0.0));
 
     if (chartInstance) {
         // Update existing chart to prevent re-creation flicker
         chartInstance.data.labels = labels;
         chartInstance.data.datasets[0].data = temps;
         chartInstance.data.datasets[0].borderColor = activeColor;
-        chartInstance.data.datasets[0].backgroundColor = gradient;
+        chartInstance.data.datasets[0].backgroundColor = tempGradient;
+        
+        chartInstance.data.datasets[1].data = feelsLikes;
+        chartInstance.data.datasets[1].borderColor = feelsColor;
+        chartInstance.data.datasets[1].backgroundColor = feelsGradient;
+        
         chartInstance.update();
     } else {
         // Create chart configuration
@@ -144,33 +189,62 @@ function drawChart(historyData) {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Temperature',
-                    data: temps,
-                    borderColor: activeColor,
-                    backgroundColor: gradient,
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: (context) => {
-                        // Only draw point circles if there are few items on chart
-                        const count = context.chart.data.datasets[0].data.length;
-                        return count < 40 ? 3.5 : 0;
+                datasets: [
+                    {
+                        label: 'Temperature',
+                        data: temps,
+                        borderColor: activeColor,
+                        backgroundColor: tempGradient,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        yAxisID: 'y',
+                        pointRadius: (context) => {
+                            const count = context.chart.data.datasets[0].data.length;
+                            return count < 40 ? 3.5 : 0;
+                        },
+                        pointBackgroundColor: activeColor,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: activeColor,
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2
                     },
-                    pointBackgroundColor: activeColor,
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1.5,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: activeColor,
-                    pointHoverBorderColor: '#ffffff',
-                    pointHoverBorderWidth: 2
-                }]
+                    {
+                        label: 'Feels Like',
+                        data: feelsLikes,
+                        borderColor: feelsColor,
+                        backgroundColor: feelsGradient,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        yAxisID: 'y',
+                        pointRadius: (context) => {
+                            const count = context.chart.data.datasets[1].data.length;
+                            return count < 40 ? 3.5 : 0;
+                        },
+                        pointBackgroundColor: feelsColor,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: feelsColor,
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 12 }
+                        }
+                    },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
@@ -182,10 +256,15 @@ function drawChart(historyData) {
                         borderColor: 'rgba(255, 255, 255, 0.1)',
                         borderWidth: 1,
                         padding: 10,
-                        displayColors: false,
+                        displayColors: true,
                         callbacks: {
                             label: function(context) {
-                                return `Temperature: ${context.parsed.y.toFixed(1)}°C`;
+                                const val = context.parsed.y;
+                                if (context.datasetIndex === 0) {
+                                    return `Temperature: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
+                                } else {
+                                    return `Feels Like: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
+                                }
                             }
                         }
                     }
@@ -203,6 +282,9 @@ function drawChart(historyData) {
                         }
                     },
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         grid: {
                             color: 'rgba(255, 255, 255, 0.04)',
                             drawBorder: false

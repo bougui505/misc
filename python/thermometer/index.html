@@ -51,6 +51,38 @@
                 </div>
             </section>
 
+            <!-- Humidity Gauge Card -->
+            <section class="card humidity-hero-card" id="humidity-card">
+                <div class="card-bg-glow"></div>
+                <div class="card-content">
+                    <h2 class="card-title">Current Humidity</h2>
+                    <div class="humidity-display">
+                        <span class="humidity-value" id="current-humidity">--.-</span>
+                        <span class="humidity-unit">%</span>
+                    </div>
+                    <div class="humidity-meta">
+                        <span class="meta-label">Last updated:</span>
+                        <span class="meta-value" id="humidity-last-update">Never</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feels Like Temperature Card -->
+            <section class="card feels-like-card" id="feels-like-card">
+                <div class="card-bg-glow"></div>
+                <div class="card-content">
+                    <h2 class="card-title">Feels Like</h2>
+                    <div class="feels-like-display">
+                        <span class="feels-like-value" id="current-feels-like">--.-</span>
+                        <span class="feels-like-unit">°C</span>
+                    </div>
+                    <div class="feels-like-meta">
+                        <span class="meta-label">Calculated:</span>
+                        <span class="meta-value" id="feels-like-type">Apparent Temp</span>
+                    </div>
+                </div>
+            </section>
+
             <!-- Stats Column -->
             <section class="stats-panel">
                 <!-- Max Card -->
@@ -61,7 +93,7 @@
                         </svg>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Maximum</span>
+                        <span class="stat-label">Maximum Temp</span>
                         <span class="stat-value" id="stat-max">--.-°C</span>
                     </div>
                 </div>
@@ -74,7 +106,7 @@
                         </svg>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Average</span>
+                        <span class="stat-label">Average Temp</span>
                         <span class="stat-value" id="stat-avg">--.-°C</span>
                     </div>
                 </div>
@@ -87,7 +119,7 @@
                         </svg>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Minimum</span>
+                        <span class="stat-label">Minimum Temp</span>
                         <span class="stat-value" id="stat-min">--.-°C</span>
                     </div>
                 </div>
@@ -96,7 +128,7 @@
             <!-- Chart Card -->
             <section class="card chart-card">
                 <header class="chart-header">
-                    <h2 class="card-title">Temperature Trend</h2>
+                    <h2 class="card-title">Temperature & Feels Like Trends</h2>
                     <div class="timeframe-selector">
                         <button class="btn-timeframe" data-period="1h">1 Hour</button>
                         <button class="btn-timeframe active" data-period="24h">24 Hours</button>

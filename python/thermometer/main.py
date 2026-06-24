@@ -81,7 +81,7 @@ while True:
             temperature_precedente = temperature
             
             # Console debug print
-            print(f"\r{heures:02d}:{minutes:02d}:{secondes:02d} | Temp: {temperature:.1f}°C | Tendance: {trend.upper()}", end="")
+            print(f"\r{heures:02d}:{minutes:02d}:{secondes:02d} | Temp: {temperature:.1f}°C | Humidite: {humidite:.1f}% | Tendance: {trend.upper()}", end="")
             
         except OSError:
             print("\r[Erreur de lecture AM2302]", end="")

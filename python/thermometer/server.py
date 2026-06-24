@@ -21,49 +21,63 @@ SERIAL_PORT = '/dev/ttyACM0'
 # Global state to share latest reading with API
 latest_reading = {
     "temperature": None,
+    "humidity": None,
     "timestamp": None,
     "status": "disconnected",
     "error": "Starting up..."
 }
 
-def parse_temp(line):
+def parse_serial_line(line):
     """
-    Parses a line of text to extract a floating point temperature.
+    Parses a line of text to extract temperature and humidity.
     Supports formats like:
-      - '00:14:06 | Temp: 30.1°C | Tendance: STABLE'
-      - 'Temp: 23.5 C'
+      - '00:14:06 | Temp: 30.1°C | Humidite: 45.2% | Tendance: STABLE'
+      - 'Temp: 23.5 C | Humidite: 45.2%'
       - 't = 22.4'
       - '23.4' (raw number)
     """
     line = line.strip()
     if not line:
-        return None
+        return None, None
         
-    # Pattern 1: Look for temp/temperature key-value pairs (e.g. Temp: 23.5 or t = 22.4)
-    # This avoids matching timestamps (e.g., "00:14:06") or tracebacks
-    match = re.search(r'(?:temp|temperature|t)\s*[:=]\s*([-+]?\d*\.\d+|\d+)', line, re.IGNORECASE)
-    if match:
+    temp = None
+    humidity = None
+    
+    # Match temperature
+    temp_match = re.search(r'(?:temp|temperature|t)\s*[:=]\s*([-+]?\d*\.\d+|\d+)', line, re.IGNORECASE)
+    if temp_match:
         try:
-            val = float(match.group(1))
+            val = float(temp_match.group(1))
             if -40.0 <= val <= 80.0:
-                return val
+                temp = val
         except ValueError:
             pass
             
-    # Pattern 2: Fallback to matching if the entire line is just a float (for raw output devices)
-    match_raw = re.match(r'^[-+]?\d*\.\d+|[-+]?\d+$', line)
-    if match_raw:
+    # Match humidity
+    hum_match = re.search(r'(?:humidite|humidity|h|hum)\s*[:=]\s*([-+]?\d*\.\d+|\d+)', line, re.IGNORECASE)
+    if hum_match:
         try:
-            val = float(match_raw.group())
-            if -40.0 <= val <= 80.0:
-                return val
+            val = float(hum_match.group(1))
+            if 0.0 <= val <= 100.0:
+                humidity = val
         except ValueError:
             pass
             
-    return None
+    # Fallback to matching if the entire line is just a float (for raw output devices)
+    if temp is None:
+        match_raw = re.match(r'^[-+]?\d*\.\d+|[-+]?\d+$', line)
+        if match_raw:
+            try:
+                val = float(match_raw.group())
+                if -40.0 <= val <= 80.0:
+                    temp = val
+            except ValueError:
+                pass
+            
+    return temp, humidity
 
 def db_init():
-    """Initializes the SQLite database structure."""
+    """Initializes the SQLite database structure and handles migrations."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
@@ -75,6 +89,14 @@ def db_init():
     cursor.execute('''
         CREATE INDEX IF NOT EXISTS idx_timestamp ON readings(timestamp)
     ''')
+    
+    # Try to add humidity column if it doesn't already exist
+    try:
+        cursor.execute("ALTER TABLE readings ADD COLUMN humidity REAL")
+    except sqlite3.OperationalError:
+        # Column already exists, safe to ignore
+        pass
+        
     conn.commit()
     conn.close()
 
@@ -124,12 +146,13 @@ def serial_reader_thread():
                         line = line_bytes.decode('utf-8', errors='ignore').strip()
                         if line:
                             print(f"[*] Raw serial line: {repr(line)}")
-                            temp = parse_temp(line)
+                            temp, hum = parse_serial_line(line)
                             if temp is not None:
                                 now = int(time.time())
                                 
                                 # Update global status
                                 latest_reading["temperature"] = temp
+                                latest_reading["humidity"] = hum
                                 latest_reading["timestamp"] = now
                                 latest_reading["status"] = "connected"
                                 latest_reading["error"] = None
@@ -139,8 +162,8 @@ def serial_reader_thread():
                                     conn = sqlite3.connect(DB_PATH)
                                     cursor = conn.cursor()
                                     cursor.execute(
-                                        "INSERT INTO readings (timestamp, temperature) VALUES (?, ?)",
-                                        (now, temp)
+                                        "INSERT INTO readings (timestamp, temperature, humidity) VALUES (?, ?, ?)",
+                                        (now, temp, hum)
                                     )
                                     conn.commit()
                                     conn.close()
@@ -156,7 +179,7 @@ def serial_reader_thread():
 
 def get_history(period):
     """
-    Retrieves historical temperature readings with downsampling to keep charts fast.
+    Retrieves historical temperature & humidity readings with downsampling.
     - 1h: raw values
     - 24h: 5-minute averages
     - 7d: 1-hour averages
@@ -180,7 +203,7 @@ def get_history(period):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT (timestamp / ?) * ? AS group_time, AVG(temperature)
+            SELECT (timestamp / ?) * ? AS group_time, AVG(temperature), AVG(humidity)
             FROM readings
             WHERE timestamp >= ?
             GROUP BY group_time
@@ -195,7 +218,8 @@ def get_history(period):
             if row[1] is not None:
                 history.append({
                     "timestamp": row[0],
-                    "temperature": round(row[1], 2)
+                    "temperature": round(row[1], 2),
+                    "humidity": round(row[2], 2) if row[2] is not None else None
                 })
         return history
     except Exception as e:
