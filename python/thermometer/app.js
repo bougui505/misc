@@ -247,6 +247,7 @@ function drawChart(historyData) {
         const actualIndoor = new Array(totalHours).fill(null);
         const predictedIndoor = new Array(totalHours).fill(null);
         const outdoorDataPoints = new Array(totalHours).fill(null);
+        const outdoorCloudPoints = new Array(totalHours).fill(0);
         
         const getIsoHourString = (dateObj) => {
             const yyyy = dateObj.getFullYear();
@@ -270,6 +271,9 @@ function drawChart(historyData) {
                 const fIdx = outdoorForecast.hourly.time.indexOf(iso);
                 if (fIdx !== -1) {
                     outdoorDataPoints[idx] = outdoorForecast.hourly.temperature_2m[fIdx];
+                    if (outdoorForecast.hourly.cloud_cover) {
+                        outdoorCloudPoints[idx] = outdoorForecast.hourly.cloud_cover[fIdx];
+                    }
                 }
             }
             
@@ -360,7 +364,8 @@ function drawChart(historyData) {
                     const ts = nowHourTS + (idx - numPastHours) * 3600;
                     const date = new Date(ts * 1000);
                     const hour = date.getHours();
-                    const solarBias = (hour >= 10 && hour <= 16) ? 2.5 : 0.0;
+                    const cloudCover = outdoorCloudPoints[idx];
+                    const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
                     const effectiveOut = outTemp + solarBias;
                     
                     let isOpen = false;
@@ -706,7 +711,7 @@ async function loadHistory(period) {
             try {
                 const lat = 48.8566;
                 const lon = 2.3522;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,cloud_cover&timezone=auto`;
                 const response = await fetch(url);
                 if (response.ok) {
                     outdoorData = await response.json();
@@ -862,10 +867,14 @@ function calculateClimateInsights(history7d) {
             const timeStr = `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
             
             let outTemp = null;
+            let cloudCover = 0;
             const iso = getIsoHourString(dateObj);
             const fIdx = outdoorForecast.hourly.time.indexOf(iso);
             if (fIdx !== -1) {
                 outTemp = outdoorForecast.hourly.temperature_2m[fIdx];
+                if (outdoorForecast.hourly.cloud_cover) {
+                    cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
+                }
             }
             
             if (outTemp !== null) {
@@ -895,7 +904,7 @@ function calculateClimateInsights(history7d) {
                 let isOpen = false;
                 
                 const hour = dateObj.getHours();
-                const solarBias = (hour >= 10 && hour <= 16) ? 2.5 : 0.0;
+                const solarBias = (hour >= 10 && hour <= 16) ? 3.0 * (1.0 - cloudCover / 100.0) : 0.0;
                 const effectiveOut = outTemp + solarBias;
                 
                 if (currentPred < COMFORT_MIN) {
@@ -1087,7 +1096,7 @@ async function init() {
     try {
         const lat = 48.8566;
         const lon = 2.3522;
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,cloud_cover&timezone=auto`;
         const response = await fetch(url);
         if (response.ok) {
             outdoorForecast = await response.json();
