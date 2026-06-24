@@ -31,6 +31,42 @@ function calculateFeelsLike(temp, humidity) {
     return temp + 0.33 * e - 4.00;
 }
 
+// Calculate solar bias using month-based seasonal scaling and cloud cover
+function getSolarParameters(date, cloudCover) {
+    if (!date) return 0.0;
+    const month = date.getMonth(); // 0-indexed (0: Jan, 1: Feb, 2: Mar, etc.)
+    const hourFraction = date.getHours() + date.getMinutes() / 60.0;
+    
+    let startHour, endHour, maxBias;
+    
+    // Summer: May-Aug (months 4, 5, 6, 7)
+    if (month >= 4 && month <= 7) {
+        startHour = 13.0;
+        endHour = 19.0;
+        maxBias = 4.0;
+    } 
+    // Spring/Autumn: Mar-Apr (months 2, 3) & Sep-Oct (months 8, 9)
+    else if (month === 2 || month === 3 || month === 8 || month === 9) {
+        startHour = 12.5; // 12:50 represented as 12.5
+        endHour = 18.0;   // 18:00
+        maxBias = 4.5;
+    } 
+    // Winter: Nov-Feb (months 10, 11, 0, 1)
+    else {
+        startHour = 13.0;
+        endHour = 16.5;   // 16:30 represented as 16.5
+        maxBias = 2.5;
+    }
+    
+    if (hourFraction >= startHour && hourFraction <= endHour) {
+        const cloudFactor = 1.0 - (cloudCover || 0) / 100.0;
+        return maxBias * cloudFactor;
+    }
+    
+    return 0.0;
+}
+
+
 // Helper to determine temperature range and update theme colors
 function updateThemeForTemperature(temp) {
     if (temp === null || isNaN(temp)) return;
@@ -296,9 +332,8 @@ function drawChart(historyData) {
             if (outTemp !== null) {
                 const ts = nowHourTS + (idx - numPastHours) * 3600;
                 const date = new Date(ts * 1000);
-                const hour = date.getHours();
                 const cloudCover = outdoorCloudPoints[idx];
-                const solarBias = (hour >= 13 && hour <= 19) ? 4.0 * (1.0 - cloudCover / 100.0) : 0.0;
+                const solarBias = getSolarParameters(date, cloudCover);
                 effectiveOutdoorData[idx] = parseFloat((outTemp + solarBias).toFixed(2));
             }
         }
@@ -917,8 +952,7 @@ function calculateClimateInsights(history7d) {
                 const COMFORT_MAX = 21.0;
                 let isOpen = false;
                 
-                const hour = dateObj.getHours();
-                const solarBias = (hour >= 13 && hour <= 19) ? 4.0 * (1.0 - cloudCover / 100.0) : 0.0;
+                const solarBias = getSolarParameters(dateObj, cloudCover);
                 const effectiveOut = outTemp + solarBias;
                 
                 if (currentPred < COMFORT_MIN) {
