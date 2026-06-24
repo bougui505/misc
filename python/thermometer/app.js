@@ -321,21 +321,22 @@ function drawChart(historyData) {
                     if (prevPred !== null && outTemp !== null) {
                         simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
                     } else if (prevPred !== null) {
-                        // Fallback if outdoor forecast is temporarily missing
                         simulatedPrediction[idx] = prevPred + 0.03;
                     }
                 }
             }
             
             const deviations = new Array(totalHours).fill(null);
-            for (let idx = 0; idx <= numPastHours; idx++) {
-                if (actualIndoor[idx] !== null && simulatedPrediction[idx] !== null) {
-                    deviations[idx] = parseFloat((actualIndoor[idx] - simulatedPrediction[idx]).toFixed(2));
+            for (let idx = 0; idx < totalHours; idx++) {
+                const inTemp = idx <= numPastHours ? simulatedPrediction[idx] : predictedIndoor[idx];
+                const outTemp = outdoorDataPoints[idx];
+                if (inTemp !== null && outTemp !== null) {
+                    deviations[idx] = parseFloat((outTemp - inTemp).toFixed(2));
                 }
             }
             dataset1 = deviations;
             dataset2 = null;
-            label1 = "Model Deviation (Actual Measurement - Closed-Window Prediction)";
+            label1 = "Ventilation Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
