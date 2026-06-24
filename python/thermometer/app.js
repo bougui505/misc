@@ -303,13 +303,27 @@ function drawChart(historyData) {
         }
           if (currentPeriod === 'ventilation_deviation') {
             const simulatedPrediction = new Array(totalHours).fill(null);
-            simulatedPrediction[0] = actualIndoor[0];
             
-            for (let idx = 1; idx <= numPastHours; idx++) {
-                const prevPred = simulatedPrediction[idx - 1];
-                const outTemp = outdoorDataPoints[idx];
-                if (prevPred !== null && outTemp !== null) {
-                    simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
+            // Find the first valid actual indoor reading to initialize the simulation
+            let firstValidIdx = -1;
+            for (let idx = 0; idx <= numPastHours; idx++) {
+                if (actualIndoor[idx] !== null) {
+                    firstValidIdx = idx;
+                    break;
+                }
+            }
+            
+            if (firstValidIdx !== -1) {
+                simulatedPrediction[firstValidIdx] = actualIndoor[firstValidIdx];
+                for (let idx = firstValidIdx + 1; idx <= numPastHours; idx++) {
+                    const prevPred = simulatedPrediction[idx - 1];
+                    const outTemp = outdoorDataPoints[idx];
+                    if (prevPred !== null && outTemp !== null) {
+                        simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.03;
+                    } else if (prevPred !== null) {
+                        // Fallback if outdoor forecast is temporarily missing
+                        simulatedPrediction[idx] = prevPred + 0.03;
+                    }
                 }
             }
             
