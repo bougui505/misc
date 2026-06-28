@@ -543,11 +543,11 @@ function drawChart(historyData) {
                 return count < 40 ? 3.5 : 0;
             },
             pointBackgroundColor: color1,
-            pointBorderColor: '#ffffff',
+            pointBorderColor: color1,
             pointBorderWidth: 1.5,
             pointHoverRadius: 6,
             pointHoverBackgroundColor: color1,
-            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderColor: color1,
             pointHoverBorderWidth: 2,
             spanGaps: true,
             pointStyle: 'line'
@@ -567,11 +567,11 @@ function drawChart(historyData) {
                 return count < 40 ? 3.5 : 0;
             },
             pointBackgroundColor: color2,
-            pointBorderColor: '#ffffff',
+            pointBorderColor: color2,
             pointBorderWidth: 1.5,
             pointHoverRadius: 6,
             pointHoverBackgroundColor: color2,
-            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderColor: color2,
             pointHoverBorderWidth: 2,
             spanGaps: true,
             pointStyle: 'line'
