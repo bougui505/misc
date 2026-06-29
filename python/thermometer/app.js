@@ -338,7 +338,8 @@ const forecastExtremaPlugin = {
             ctx.fill();
             
             // Draw a pill text badge above the point
-            const text = `${label}: ${val.toFixed(1)}°C`;
+            const timeLabel = chart.data.labels[idx];
+            const text = `${label}: ${val.toFixed(1)}°C @ ${timeLabel}`;
             ctx.font = 'bold 9px Outfit, sans-serif';
             const textWidth = ctx.measureText(text).width;
             const padX = 4;
