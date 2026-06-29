@@ -658,12 +658,12 @@ code {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.ventilation-schedule-card {
+.forecast-schedule-card {
     grid-column: 1 / -1;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.ventilation-schedule-card .card-bg-glow {
+.forecast-schedule-card .card-bg-glow {
     position: absolute;
     top: 50%;
     left: 50%;

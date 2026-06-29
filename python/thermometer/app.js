@@ -202,11 +202,11 @@ function updateSummaryStats(data) {
     statAvgEl.textContent = `${avg.toFixed(1)}°C`;
 }
 
-// Custom plugin to draw a vertical line representing "Now" on ventilation/deviation charts
+// Custom plugin to draw a vertical line representing "Now" on forecast/deviation charts
 const verticalLinePlugin = {
     id: 'verticalLine',
     afterDraw: (chart) => {
-        if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
+        if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
             const ctx = chart.ctx;
             const xAxis = chart.scales.x;
             const yAxis = chart.scales.y;
@@ -334,12 +334,12 @@ function drawChart(historyData) {
             color1 = activeColor;
             color2 = '#60a5fa'; // Sleek sky blue for yesterday
         }
-    } else if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
+    } else if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
         const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
         const lastIndoor = historyData.length > 0 ? historyData[historyData.length - 1].temperature : 20.0;
         
-        // Sync and render the ventilation schedule table with the chart's current data and time anchor
-        renderVentilationSchedule(lastIndoor, refNow);
+        // Sync and render the forecast schedule table with the chart's current data and time anchor
+        renderForecastSchedule(lastIndoor, refNow, historyData);
         
         // Round refNow to the nearest hour
         const nowHourTS = Math.round(refNow / 3600) * 3600;
@@ -411,6 +411,7 @@ function drawChart(historyData) {
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
         // 4. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
+        let currentSlope = getLatestTemperatureSlope(historyData);
         for (let offset = 1; offset <= numFutureHours; offset++) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
@@ -418,11 +419,11 @@ function drawChart(historyData) {
             const outTemp = effectiveOutdoorData[idx];
             
             if (prevIndoor !== null && outTemp !== null) {
-                predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.05).toFixed(2));
+                currentSlope *= 0.7; // Decay the momentum/slope factor hourly
+                predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.05 + currentSlope).toFixed(2));
             }
         }
-        
-        if (currentPeriod === 'ventilation_deviation') {
+           if (currentPeriod === 'forecast_deviation') {
             const simulatedPrediction = new Array(totalHours).fill(null);
             
             let firstValidIdx = -1;
@@ -456,7 +457,7 @@ function drawChart(historyData) {
             }
             dataset1 = deviations;
             dataset2 = null;
-            label1 = "Ventilation Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
+            label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
@@ -508,26 +509,26 @@ function drawChart(historyData) {
     tempGradient.addColorStop(0, hexToRgbA(color1, 0.25));
     tempGradient.addColorStop(0.5, hexToRgbA(color1, 0.08));
     tempGradient.addColorStop(1, hexToRgbA(color1, 0.0));
-
+ 
     const feelsGradient = ctx.createLinearGradient(0, 0, 0, 300);
     feelsGradient.addColorStop(0, hexToRgbA(color2, 0.25));
     feelsGradient.addColorStop(0.5, hexToRgbA(color2, 0.08));
     feelsGradient.addColorStop(1, hexToRgbA(color2, 0.0));
-
+ 
     // Prepare datasets array dynamically
     const chartDatasets = [];
-    if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+    if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
         const numPastHours = 24;
         const borderColors = dataset1.map((v, idx) => {
             if (v === null) return 'transparent';
-            if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+            if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
                 return v >= 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)';
             }
             return v >= 0 ? '#ef4444' : '#3b82f6';
         });
         const backgroundColors = dataset1.map((v, idx) => {
             if (v === null) return 'rgba(0,0,0,0)';
-            if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+            if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
                 return v >= 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)';
             }
             return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
@@ -542,7 +543,7 @@ function drawChart(historyData) {
             borderRadius: 4,
             yAxisID: 'y'
         });
-    } else if (currentPeriod === 'ventilation') {
+    } else if (currentPeriod === 'forecast') {
         // Shaded background bar chart to highlight action recommendation regions
         chartDatasets.push({
             type: 'bar',
@@ -651,18 +652,18 @@ function drawChart(historyData) {
         // Update the existing chart smoothly in-place without blinking
         chartInstance.data.labels = labels;
         
-        if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+        if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
             const numPastHours = 24;
             const borderColors = dataset1.map((v, idx) => {
                 if (v === null) return 'transparent';
-                if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
                     return v >= 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)';
                 }
                 return v >= 0 ? '#ef4444' : '#3b82f6';
             });
             const backgroundColors = dataset1.map((v, idx) => {
                 if (v === null) return 'rgba(0,0,0,0)';
-                if (currentPeriod === 'ventilation_deviation' && idx > numPastHours) {
+                if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
                     return v >= 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)';
                 }
                 return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
@@ -672,7 +673,7 @@ function drawChart(historyData) {
             chartInstance.data.datasets[0].label = label1;
             chartInstance.data.datasets[0].borderColor = borderColors;
             chartInstance.data.datasets[0].backgroundColor = backgroundColors;
-        } else if (currentPeriod === 'ventilation') {
+        } else if (currentPeriod === 'forecast') {
             chartInstance.data.datasets[0].data = dataset4;
             chartInstance.data.datasets[0].backgroundColor = dataset4Colors;
             
@@ -705,7 +706,7 @@ function drawChart(historyData) {
         activeChartPeriod = currentPeriod;
         // Create chart configuration
         chartInstance = new Chart(ctx, {
-            type: (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') ? 'bar' : 'line',
+            type: (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') ? 'bar' : 'line',
             data: {
                 labels: labels,
                 datasets: chartDatasets
@@ -745,7 +746,7 @@ function drawChart(historyData) {
                                     return null;
                                 }
                                 const val = context.parsed.y;
-                                 if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+                                 if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
                                      return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
                                  }
                                 return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
@@ -777,7 +778,7 @@ function drawChart(historyData) {
                             color: '#9ca3af',
                             font: { family: 'Outfit', size: 11 },
                             callback: function(value) {
-                                 if (currentPeriod === 'anomaly' || currentPeriod === 'ventilation_deviation') {
+                                 if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
                                      return (value >= 0 ? '+' : '') + value.toFixed(1) + '°C';
                                  }
                                 return value.toFixed(1) + '°C';
@@ -914,7 +915,7 @@ function drawHumidityChart(historyData) {
             label1 = "Today's Humidity";
             label2 = "Yesterday's Humidity";
         }
-    } else if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
+    } else if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
         const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
         const nowHourTS = Math.round(refNow / 3600) * 3600;
         
@@ -928,7 +929,7 @@ function drawHumidityChart(historyData) {
         for (let idx = 0; idx < totalHours; idx++) {
             const hourOffset = idx - numPastHours;
             const hourTS = nowHourTS + hourOffset * 3600;
-            labels[idx] = formatTimestamp(hourTS, 'ventilation');
+            labels[idx] = formatTimestamp(hourTS, 'forecast');
         }
         
         historyData.forEach(d => {
@@ -1116,15 +1117,9 @@ function drawHumidityChart(historyData) {
     }
 }
 
-// Estimate the temperature gradient and update the dashboard trend indicator
-function updateTemperatureGradient(historyData) {
-    const trendContainer = document.getElementById('temp-trend-container');
-    const trendArrow = document.getElementById('temp-trend-arrow');
-    const trendValue = document.getElementById('temp-trend-value');
-    if (!trendContainer || !trendArrow || !trendValue || !historyData || historyData.length < 2) {
-        if (trendContainer) trendContainer.style.display = 'none';
-        return;
-    }
+// Helper to calculate the latest temperature slope (°C/hour)
+function getLatestTemperatureSlope(historyData) {
+    if (!historyData || historyData.length < 2) return 0;
     
     // Sort historyData by timestamp ascending just in case
     const sortedData = [...historyData].sort((a, b) => a.timestamp - b.timestamp);
@@ -1133,23 +1128,15 @@ function updateTemperatureGradient(historyData) {
     
     // Filter data points from the last 1 hour (3600 seconds)
     const oneHourAgo = latestTime - 3600;
-    const pointsInLastHour = sortedData.filter(d => d.timestamp >= oneHourAgo);
+    let points = sortedData.filter(d => d.timestamp >= oneHourAgo);
     
-    if (pointsInLastHour.length < 2) {
-        // Fallback to last 2 hours if we don't have enough data points in the last 1 hour
+    if (points.length < 2) {
+        // Fallback to last 2 hours
         const twoHoursAgo = latestTime - 7200;
-        const pointsInLastTwoHours = sortedData.filter(d => d.timestamp >= twoHoursAgo);
-        if (pointsInLastTwoHours.length < 2) {
-            trendContainer.style.display = 'none';
-            return;
-        }
-        calculateAndDisplayGradient(pointsInLastTwoHours, trendContainer, trendArrow, trendValue);
-    } else {
-        calculateAndDisplayGradient(pointsInLastHour, trendContainer, trendArrow, trendValue);
+        points = sortedData.filter(d => d.timestamp >= twoHoursAgo);
+        if (points.length < 2) return 0;
     }
-}
-
-function calculateAndDisplayGradient(points, container, arrowEl, valueEl) {
+    
     const n = points.length;
     const t0 = points[0].timestamp;
     
@@ -1174,6 +1161,20 @@ function calculateAndDisplayGradient(points, container, arrowEl, valueEl) {
             slope = (points[n - 1].temperature - points[0].temperature) / dt;
         }
     }
+    return slope;
+}
+
+// Estimate the temperature gradient and update the dashboard trend indicator
+function updateTemperatureGradient(historyData) {
+    const trendContainer = document.getElementById('temp-trend-container');
+    const trendArrow = document.getElementById('temp-trend-arrow');
+    const trendValue = document.getElementById('temp-trend-value');
+    if (!trendContainer || !trendArrow || !trendValue || !historyData || historyData.length < 2) {
+        if (trendContainer) trendContainer.style.display = 'none';
+        return;
+    }
+    
+    const slope = getLatestTemperatureSlope(historyData);
     
     // Choose trend arrow based on threshold (steady if change is within +/- 0.1°C/h)
     const threshold = 0.1; 
@@ -1188,13 +1189,13 @@ function calculateAndDisplayGradient(points, container, arrowEl, valueEl) {
         arrowClass = 'falling';
     }
     
-    arrowEl.textContent = arrow;
-    arrowEl.className = `trend-arrow ${arrowClass}`;
+    trendArrow.textContent = arrow;
+    trendArrow.className = `trend-arrow ${arrowClass}`;
     
     const sign = slope >= 0 ? '+' : '';
-    valueEl.textContent = `${sign}${slope.toFixed(2)}°C/h`;
+    trendValue.textContent = `${sign}${slope.toFixed(2)}°C/h`;
     
-    container.style.display = 'flex';
+    trendContainer.style.display = 'flex';
 }
 
 
@@ -1226,7 +1227,7 @@ async function loadHistory(period) {
         let fetchPeriod = period;
         let outdoorData = null;
         
-        if (period === 'ventilation' || period === 'ventilation_deviation') {
+        if (period === 'forecast' || period === 'forecast_deviation') {
             fetchPeriod = '24h';
             // Fetch outdoor forecast from Open-Meteo for Rue Sarrette coordinates
             try {
@@ -1248,7 +1249,7 @@ async function loadHistory(period) {
         
         updateSummaryStats(historyData);
         
-        if (period === 'ventilation' || period === 'ventilation_deviation') {
+        if (period === 'forecast' || period === 'forecast_deviation') {
             // Match each indoor reading with the closest hourly outdoor forecast reading
             if (outdoorData && outdoorData.hourly) {
                 const hourlyTimes = outdoorData.hourly.time;
@@ -1288,9 +1289,9 @@ timeframeButtons.forEach(btn => {
     });
 });
 
-// Render Ventilation Schedule (Next 8 Hours) synced with the given reference time and indoor temp
-function renderVentilationSchedule(lastIndoor, referenceTimestamp) {
-    const scheduleBody = document.getElementById('ventilation-schedule-body');
+// Render Forecast Schedule (Next 8 Hours) synced with the given reference time and indoor temp
+function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
+    const scheduleBody = document.getElementById('forecast-schedule-body');
     if (scheduleBody && outdoorForecast && outdoorForecast.hourly) {
         scheduleBody.innerHTML = '';
         const nowHourTS = Math.round(referenceTimestamp / 3600) * 3600;
@@ -1305,6 +1306,7 @@ function renderVentilationSchedule(lastIndoor, referenceTimestamp) {
         
         // Loop for the next 8 hours (starting at the current hour)
         let currentPred = lastIndoor;
+        let currentSlope = getLatestTemperatureSlope(historyData);
         for (let h = 0; h < 8; h++) {
             const ts = nowHourTS + h * 3600;
             const dateObj = new Date(ts * 1000);
@@ -1327,11 +1329,12 @@ function renderVentilationSchedule(lastIndoor, referenceTimestamp) {
                 const effectiveOut = outTemp + solarBias;
                 
                 if (h > 0) {
-                    // Predict step only for future hours using effective outdoor temperature (with solar bias)
-                    currentPred = currentPred + 0.05 * (effectiveOut - currentPred) + 0.05;
+                    currentSlope *= 0.7; // Decay slope over time
+                    // Predict step only for future hours using effective outdoor temperature (with solar bias) and slope
+                    currentPred = currentPred + 0.05 * (effectiveOut - currentPred) + 0.05 + currentSlope;
                 }
                 
-                // Calculate delta using effective outdoor temp to align with the Ventilation Deviation plot
+                // Calculate delta using effective outdoor temp to align with the Forecast Deviation plot
                 const delta = effectiveOut - currentPred;
                 const pct = Math.min((Math.abs(delta) / 10) * 50, 50); // Scale 10°C to 50% max width
                 const barSide = delta < 0 ? `right: 50%; width: ${pct}%;` : `left: 50%; width: ${pct}%;`;
@@ -1453,13 +1456,13 @@ function calculateClimateInsights(history7d) {
         });
     }
 
-    // 1.5. Render Ventilation Schedule (Next 8 Hours)
+    // 1.5. Render Forecast Schedule (Next 8 Hours)
     const lastRecord = history7d[history7d.length - 1];
     if (lastRecord) {
-        renderVentilationSchedule(lastRecord.temperature, lastRecord.timestamp);
+        renderForecastSchedule(lastRecord.temperature, lastRecord.timestamp, history7d);
     }
     
-    // 2. Determine Best Ventilation Time (coolest hour)
+    // 2. Determine Best Airing/Forecast Time (coolest hour)
     let coolestHour = '07';
     let minHourlyAvg = Infinity;
     Object.keys(hourlyData).forEach(hour => {
@@ -1471,12 +1474,12 @@ function calculateClimateInsights(history7d) {
         }
     });
     
-    const ventilationEl = document.getElementById('insight-ventilation');
-    if (ventilationEl) {
+    const forecastEl = document.getElementById('insight-forecast');
+    if (forecastEl) {
         const startHour = parseInt(coolestHour);
         const endHour = (startHour + 2) % 24;
         const pad = (h) => String(h).padStart(2, '0');
-        ventilationEl.innerHTML = `Open windows between <strong>${pad(startHour)}:00 and ${pad(endHour)}:00</strong> when indoor temperature drops to its daily low (avg <strong>${minHourlyAvg.toFixed(1)}°C</strong>).`;
+        forecastEl.innerHTML = `Open windows between <strong>${pad(startHour)}:00 and ${pad(endHour)}:00</strong> when indoor temperature drops to its daily low (avg <strong>${minHourlyAvg.toFixed(1)}°C</strong>).`;
     }
     
     // 3. Calculate Correlation Coefficient & Linear Regression Line

@@ -139,8 +139,8 @@
                         <button class="btn-timeframe active" data-period="24h">24 Hours</button>
                         <button class="btn-timeframe" data-period="compare">Yesterday vs Today</button>
                         <button class="btn-timeframe" data-period="anomaly">Today vs. Yesterday Deviation</button>
-                        <button class="btn-timeframe" data-period="ventilation">Ventilation Guide</button>
-                        <button class="btn-timeframe" data-period="ventilation_deviation">Ventilation Deviation</button>
+                        <button class="btn-timeframe" data-period="forecast">Forecast</button>
+                        <button class="btn-timeframe" data-period="forecast_deviation">Forecast Deviation</button>
                         <button class="btn-timeframe" data-period="7d">7 Days</button>
                     </div>
                 </header>
@@ -188,11 +188,11 @@
                     </div>
             </section>
 
-            <!-- Ventilation Schedule Card -->
-            <section class="card ventilation-schedule-card">
+            <!-- Forecast Schedule Card -->
+            <section class="card forecast-schedule-card">
                 <div class="card-bg-glow"></div>
                 <div class="card-content">
-                    <h2 class="card-title">Ventilation Action Schedule (Next 8 Hours) • Target Comfort: 19°C - 21°C</h2>
+                    <h2 class="card-title">Forecast Action Schedule (Next 8 Hours) • Target Comfort: 19°C - 21°C</h2>
                     <div class="analytics-table-wrapper">
                         <table class="analytics-table">
                             <thead>
@@ -202,7 +202,7 @@
                                     <th>Action Recommendation</th>
                                 </tr>
                             </thead>
-                            <tbody id="ventilation-schedule-body">
+                            <tbody id="forecast-schedule-body">
                                 <tr>
                                     <td colspan="3" class="loading-cell">Calculating schedule...</td>
                                 </tr>
