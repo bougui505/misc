@@ -796,6 +796,61 @@ function drawChart(historyData) {
     }
 }
 
+// Custom plugin to draw horizontal bands representing comfort/dry/humid zones
+const humidityBandsPlugin = {
+    id: 'humidityBands',
+    beforeDraw: (chart) => {
+        if (currentPeriod === 'anomaly') return;
+        const ctx = chart.ctx;
+        const xAxis = chart.scales.x;
+        const yAxis = chart.scales.y;
+        if (!yAxis) return;
+        
+        ctx.save();
+        
+        const y60 = yAxis.getPixelForValue(60);
+        const y30 = yAxis.getPixelForValue(30);
+        const yTop = yAxis.top;
+        const yBottom = yAxis.bottom;
+        const xLeft = xAxis.left;
+        const xRight = xAxis.right;
+        
+        // Humid zone (> 60% RH) - soft blue/cyan
+        if (y60 > yTop) {
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.04)'; 
+            ctx.fillRect(xLeft, yTop, xRight - xLeft, y60 - yTop);
+            
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('HUMID (>60%)', xLeft + 10, yTop + 14);
+        }
+        
+        // Ideal zone (30% - 60% RH) - soft green
+        const idealTop = Math.max(y60, yTop);
+        const idealBottom = Math.min(y30, yBottom);
+        if (idealBottom > idealTop) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.03)'; 
+            ctx.fillRect(xLeft, idealTop, xRight - xLeft, idealBottom - idealTop);
+            
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('IDEAL (30%-60%)', xLeft + 10, idealTop + 14);
+        }
+        
+        // Dry zone (< 30% RH) - soft orange
+        if (y30 < yBottom) {
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.04)'; 
+            ctx.fillRect(xLeft, y30, xRight - xLeft, yBottom - y30);
+            
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('DRY (<30%)', xLeft + 10, y30 + 14);
+        }
+        
+        ctx.restore();
+    }
+};
+
 // Draw or update the Chart.js line graph for Relative Humidity
 function drawHumidityChart(historyData) {
     if (humidityChartInstance && activeHumidityChartPeriod !== currentPeriod) {
@@ -988,6 +1043,7 @@ function drawHumidityChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
+            plugins: [humidityBandsPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
