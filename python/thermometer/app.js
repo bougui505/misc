@@ -1116,6 +1116,87 @@ function drawHumidityChart(historyData) {
     }
 }
 
+// Estimate the temperature gradient and update the dashboard trend indicator
+function updateTemperatureGradient(historyData) {
+    const trendContainer = document.getElementById('temp-trend-container');
+    const trendArrow = document.getElementById('temp-trend-arrow');
+    const trendValue = document.getElementById('temp-trend-value');
+    if (!trendContainer || !trendArrow || !trendValue || !historyData || historyData.length < 2) {
+        if (trendContainer) trendContainer.style.display = 'none';
+        return;
+    }
+    
+    // Sort historyData by timestamp ascending just in case
+    const sortedData = [...historyData].sort((a, b) => a.timestamp - b.timestamp);
+    const latest = sortedData[sortedData.length - 1];
+    const latestTime = latest.timestamp;
+    
+    // Filter data points from the last 1 hour (3600 seconds)
+    const oneHourAgo = latestTime - 3600;
+    const pointsInLastHour = sortedData.filter(d => d.timestamp >= oneHourAgo);
+    
+    if (pointsInLastHour.length < 2) {
+        // Fallback to last 2 hours if we don't have enough data points in the last 1 hour
+        const twoHoursAgo = latestTime - 7200;
+        const pointsInLastTwoHours = sortedData.filter(d => d.timestamp >= twoHoursAgo);
+        if (pointsInLastTwoHours.length < 2) {
+            trendContainer.style.display = 'none';
+            return;
+        }
+        calculateAndDisplayGradient(pointsInLastTwoHours, trendContainer, trendArrow, trendValue);
+    } else {
+        calculateAndDisplayGradient(pointsInLastHour, trendContainer, trendArrow, trendValue);
+    }
+}
+
+function calculateAndDisplayGradient(points, container, arrowEl, valueEl) {
+    const n = points.length;
+    const t0 = points[0].timestamp;
+    
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (let i = 0; i < n; i++) {
+        // Convert timestamp to hours relative to t0
+        const x = (points[i].timestamp - t0) / 3600; 
+        const y = points[i].temperature;
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumX2 += x * x;
+    }
+    
+    const denom = (n * sumX2 - sumX * sumX);
+    let slope = 0; // °C per hour
+    if (denom !== 0) {
+        slope = (n * sumXY - sumX * sumY) / denom;
+    } else {
+        const dt = (points[n - 1].timestamp - points[0].timestamp) / 3600;
+        if (dt > 0) {
+            slope = (points[n - 1].temperature - points[0].temperature) / dt;
+        }
+    }
+    
+    // Choose trend arrow based on threshold (steady if change is within +/- 0.1°C/h)
+    const threshold = 0.1; 
+    let arrow = '→';
+    let arrowClass = 'steady';
+    
+    if (slope > threshold) {
+        arrow = '↑';
+        arrowClass = 'rising';
+    } else if (slope < -threshold) {
+        arrow = '↓';
+        arrowClass = 'falling';
+    }
+    
+    arrowEl.textContent = arrow;
+    arrowEl.className = `trend-arrow ${arrowClass}`;
+    
+    const sign = slope >= 0 ? '+' : '';
+    valueEl.textContent = `${sign}${slope.toFixed(2)}°C/h`;
+    
+    container.style.display = 'flex';
+}
+
 
 // Convert Hex colors to RGBA for standard canvas gradients
 function hexToRgbA(hex, alpha) {
@@ -1189,6 +1270,7 @@ async function loadHistory(period) {
         
         drawChart(historyData);
         drawHumidityChart(historyData);
+        updateTemperatureGradient(historyData);
         
     } catch (error) {
         console.error('Error fetching historical temperature:', error);

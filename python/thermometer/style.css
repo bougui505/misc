@@ -284,6 +284,37 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
+.temp-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    margin-top: 0.6rem;
+}
+
+.trend-arrow {
+    font-size: 1.1rem;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.trend-arrow.rising {
+    color: #ef4444; /* Warm / Rising */
+}
+
+.trend-arrow.falling {
+    color: #3b82f6; /* Cool / Falling */
+}
+
+.trend-arrow.steady {
+    color: var(--text-muted);
+}
+
 .meta-value {
     color: var(--text-secondary);
     font-weight: 500;
