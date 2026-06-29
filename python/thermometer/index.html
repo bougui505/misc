@@ -197,9 +197,23 @@
                             </div>
                             <div class="insight-item">
                                 <div class="insight-icon">🎯</div>
-                                <div class="insight-text">
+                                <div class="insight-text" style="width: 100%;">
                                     <h4>Forecast Model Accuracy</h4>
                                     <p id="insight-accuracy">Tracking forecast accuracy...</p>
+                                    
+                                    <details class="formula-details">
+                                        <summary>Show Forecast Equation</summary>
+                                        <div class="formula-box">
+                                            T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + 0.05 &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + slope(t) + bias
+                                        </div>
+                                        <ul class="formula-legend">
+                                            <li><strong>T<sub>in</sub>(t):</strong> Predicted Indoor Temp</li>
+                                            <li><strong>T<sub>out</sub>(t):</strong> Effective Outdoor Temp (with solar-gain bias)</li>
+                                            <li><strong>0.05:</strong> Convective transfer insulation rate</li>
+                                            <li><strong>slope(t):</strong> Thermal momentum (decaying: &times;0.7/h)</li>
+                                            <li><strong>bias:</strong> Dynamic offset correction (derived from error logs)</li>
+                                        </ul>
+                                    </details>
                                 </div>
                             </div>
                         </div>
