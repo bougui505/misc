@@ -2,6 +2,8 @@
 
 // Configuration
 const POLL_INTERVAL = 2000; // 2 seconds
+const LATITUDE = 48.8285;  // Rue Sarrette, 75014 Paris
+const LONGITUDE = 2.3315; // Rue Sarrette, 75014 Paris
 let currentPeriod = '24h';
 let chartInstance = null;
 let activeChartPeriod = null;
@@ -198,6 +200,66 @@ function updateSummaryStats(data) {
     statAvgEl.textContent = `${avg.toFixed(1)}°C`;
 }
 
+// Custom plugin to draw a vertical line representing "Now" on ventilation/deviation charts
+const verticalLinePlugin = {
+    id: 'verticalLine',
+    afterDraw: (chart) => {
+        if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const yAxis = chart.scales.y;
+            
+            // The current time is at index 24 (numPastHours)
+            const index = 24;
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data || !meta.data[index]) return;
+            const x = meta.data[index].x;
+            const yTop = yAxis.top;
+            const yBottom = yAxis.bottom;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.75)'; // Semi-transparent Red
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]); // Dashed line
+            ctx.moveTo(x, yTop);
+            ctx.lineTo(x, yBottom);
+            ctx.stroke();
+            
+            // Draw a red "NOW" badge at the top of the line
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 9px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const text = 'NOW';
+            const textWidth = ctx.measureText(text).width;
+            const padX = 5;
+            const padY = 3;
+            const badgeW = textWidth + padX * 2;
+            const badgeH = 13;
+            const badgeX = x - badgeW / 2;
+            const badgeY = yTop - badgeH - 3;
+            
+            // Background pill
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
+            } else {
+                ctx.rect(badgeX, badgeY, badgeW, badgeH);
+            }
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            
+            // Text inside pill
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(text, x, badgeY + badgeH / 2 + 0.5);
+            
+            ctx.restore();
+        }
+    }
+};
+
 // Draw or update the Chart.js line graph
 function drawChart(historyData) {
     // If the timeframe has switched, destroy the old chart so we can reconstruct datasets cleanly
@@ -272,6 +334,11 @@ function drawChart(historyData) {
         }
     } else if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
         const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+        const lastIndoor = historyData.length > 0 ? historyData[historyData.length - 1].temperature : 20.0;
+        
+        // Sync and render the ventilation schedule table with the chart's current data and time anchor
+        renderVentilationSchedule(lastIndoor, refNow);
+        
         // Round refNow to the nearest hour
         const nowHourTS = Math.round(refNow / 3600) * 3600;
         
@@ -641,6 +708,7 @@ function drawChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
+            plugins: [verticalLinePlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -756,11 +824,9 @@ async function loadHistory(period) {
         
         if (period === 'ventilation' || period === 'ventilation_deviation') {
             fetchPeriod = '24h';
-            // Fetch outdoor forecast from Open-Meteo for Paris coordinates
+            // Fetch outdoor forecast from Open-Meteo for Rue Sarrette coordinates
             try {
-                const lat = 48.8566;
-                const lon = 2.3522;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,cloud_cover&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto`;
                 const response = await fetch(url);
                 if (response.ok) {
                     outdoorData = await response.json();
@@ -815,6 +881,97 @@ timeframeButtons.forEach(btn => {
         loadHistory(currentPeriod);
     });
 });
+
+// Render Ventilation Schedule (Next 8 Hours) synced with the given reference time and indoor temp
+function renderVentilationSchedule(lastIndoor, referenceTimestamp) {
+    const scheduleBody = document.getElementById('ventilation-schedule-body');
+    if (scheduleBody && outdoorForecast && outdoorForecast.hourly) {
+        scheduleBody.innerHTML = '';
+        const nowHourTS = Math.round(referenceTimestamp / 3600) * 3600;
+        
+        const getIsoHourString = (d) => {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}T${hh}:00`;
+        };
+        
+        // Loop for the next 8 hours (starting at the current hour)
+        let currentPred = lastIndoor;
+        for (let h = 0; h < 8; h++) {
+            const ts = nowHourTS + h * 3600;
+            const dateObj = new Date(ts * 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            const timeStr = `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
+            
+            let outTemp = null;
+            let cloudCover = 0;
+            const iso = getIsoHourString(dateObj);
+            const fIdx = outdoorForecast.hourly.time.indexOf(iso);
+            if (fIdx !== -1) {
+                outTemp = outdoorForecast.hourly.temperature_2m[fIdx];
+                if (outdoorForecast.hourly.cloud_cover) {
+                    cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
+                }
+            }
+            
+            if (outTemp !== null) {
+                const solarBias = getSolarParameters(dateObj, cloudCover);
+                const effectiveOut = outTemp + solarBias;
+                
+                if (h > 0) {
+                    // Predict step only for future hours using effective outdoor temperature (with solar bias)
+                    currentPred = currentPred + 0.05 * (effectiveOut - currentPred) + 0.05;
+                }
+                
+                // Calculate delta using effective outdoor temp to align with the Ventilation Deviation plot
+                const delta = effectiveOut - currentPred;
+                const pct = Math.min((Math.abs(delta) / 10) * 50, 50); // Scale 10°C to 50% max width
+                const barSide = delta < 0 ? `right: 50%; width: ${pct}%;` : `left: 50%; width: ${pct}%;`;
+                const barClass = delta < 0 ? 'cool' : 'warm';
+                const sign = delta > 0 ? '+' : '';
+                
+                const deltaHtml = `
+                    <div class="delta-bar-container">
+                        <span class="delta-bar-label">${sign}${delta.toFixed(1)}°C</span>
+                        <div class="delta-bar-track">
+                            <div class="delta-bar-fill ${barClass}" style="${barSide}"></div>
+                            <div class="delta-bar-center"></div>
+                        </div>
+                    </div>
+                `;
+                
+                const COMFORT_MIN = 19.0;
+                const COMFORT_MAX = 21.0;
+                let isOpen = false;
+                
+                if (currentPred < COMFORT_MIN) {
+                    // Indoor is too cold: open only if outdoor is warmer than indoor to help heat the room
+                    isOpen = effectiveOut > currentPred;
+                } else if (currentPred > COMFORT_MAX) {
+                    // Indoor is too hot: open only if outdoor is cooler than indoor to help cool the room
+                    isOpen = effectiveOut < currentPred;
+                } else {
+                    // Indoor is in comfort range: open only if outdoor air is also comfortable to maintain state
+                    isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
+                }
+                
+                const verdict = isOpen 
+                    ? '<span style="color:var(--success);font-weight:bold;">🔓 OPEN</span>' 
+                    : '<span style="color:var(--danger);font-weight:bold;">🔒 CLOSE</span>';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${timeStr}</strong></td>
+                    <td>${deltaHtml}</td>
+                    <td>${verdict}</td>
+                `;
+                scheduleBody.appendChild(tr);
+            }
+        }
+    }
+}
 
 // Calculate and display historical insights
 function calculateClimateInsights(history7d) {
@@ -891,94 +1048,9 @@ function calculateClimateInsights(history7d) {
     }
 
     // 1.5. Render Ventilation Schedule (Next 8 Hours)
-    const scheduleBody = document.getElementById('ventilation-schedule-body');
-    if (scheduleBody && outdoorForecast && outdoorForecast.hourly) {
-        scheduleBody.innerHTML = '';
-        const nowTS = Math.floor(Date.now() / 1000);
-        const nowHourTS = Math.round(nowTS / 3600) * 3600;
-        
-        let lastIndoor = history7d[history7d.length - 1].temperature;
-        
-        const getIsoHourString = (d) => {
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            const hh = String(d.getHours()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}T${hh}:00`;
-        };
-        
-        // Loop for the next 8 hours (starting at the current hour)
-        let currentPred = lastIndoor;
-        for (let h = 0; h < 8; h++) {
-            const ts = nowHourTS + h * 3600;
-            const dateObj = new Date(ts * 1000);
-            const pad = (n) => String(n).padStart(2, '0');
-            const timeStr = `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
-            
-            let outTemp = null;
-            let cloudCover = 0;
-            const iso = getIsoHourString(dateObj);
-            const fIdx = outdoorForecast.hourly.time.indexOf(iso);
-            if (fIdx !== -1) {
-                outTemp = outdoorForecast.hourly.temperature_2m[fIdx];
-                if (outdoorForecast.hourly.cloud_cover) {
-                    cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
-                }
-            }
-            
-            if (outTemp !== null) {
-                if (h > 0) {
-                    // Predict step only for future hours
-                    currentPred = currentPred + 0.05 * (outTemp - currentPred) + 0.05;
-                }
-                
-                const delta = outTemp - currentPred;
-                const pct = Math.min((Math.abs(delta) / 10) * 50, 50); // Scale 10°C to 50% max width
-                const barSide = delta < 0 ? `right: 50%; width: ${pct}%;` : `left: 50%; width: ${pct}%;`;
-                const barClass = delta < 0 ? 'cool' : 'warm';
-                const sign = delta > 0 ? '+' : '';
-                
-                const deltaHtml = `
-                    <div class="delta-bar-container">
-                        <span class="delta-bar-label">${sign}${delta.toFixed(1)}°C</span>
-                        <div class="delta-bar-track">
-                            <div class="delta-bar-fill ${barClass}" style="${barSide}"></div>
-                            <div class="delta-bar-center"></div>
-                        </div>
-                    </div>
-                `;
-                
-                const COMFORT_MIN = 19.0;
-                const COMFORT_MAX = 21.0;
-                let isOpen = false;
-                
-                const solarBias = getSolarParameters(dateObj, cloudCover);
-                const effectiveOut = outTemp + solarBias;
-                
-                if (currentPred < COMFORT_MIN) {
-                    // Indoor is too cold: open only if outdoor is warmer than indoor to help heat the room
-                    isOpen = effectiveOut > currentPred;
-                } else if (currentPred > COMFORT_MAX) {
-                    // Indoor is too hot: open only if outdoor is cooler than indoor to help cool the room
-                    isOpen = effectiveOut < currentPred;
-                } else {
-                    // Indoor is in comfort range: open only if outdoor air is also comfortable to maintain state
-                    isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
-                }
-                
-                const verdict = isOpen 
-                    ? '<span style="color:var(--success);font-weight:bold;">🔓 OPEN</span>' 
-                    : '<span style="color:var(--danger);font-weight:bold;">🔒 CLOSE</span>';
-                
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${timeStr}</strong></td>
-                    <td>${deltaHtml}</td>
-                    <td>${verdict}</td>
-                `;
-                scheduleBody.appendChild(tr);
-            }
-        }
+    const lastRecord = history7d[history7d.length - 1];
+    if (lastRecord) {
+        renderVentilationSchedule(lastRecord.temperature, lastRecord.timestamp);
     }
     
     // 2. Determine Best Ventilation Time (coolest hour)
@@ -1138,11 +1210,9 @@ async function init() {
     // Initial fetch of status and temperature
     await fetchCurrentTemp();
     
-    // Fetch outdoor forecast immediately on startup for Paris to ensure it's available for insights
+    // Fetch outdoor forecast immediately on startup for Rue Sarrette to ensure it's available for insights
     try {
-        const lat = 48.8566;
-        const lon = 2.3522;
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,cloud_cover&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto`;
         const response = await fetch(url);
         if (response.ok) {
             outdoorForecast = await response.json();
