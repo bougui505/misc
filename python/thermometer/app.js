@@ -281,7 +281,7 @@ const forecastExtremaPlugin = {
             dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
             dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
         } else if (currentPeriod === '24h') {
-            dsActual = chart.data.datasets.find(ds => ds.label === "Today's Temperature");
+            dsActual = chart.data.datasets.find(ds => ds.label === "Temperature");
         }
         
         if (!dsActual) return;
