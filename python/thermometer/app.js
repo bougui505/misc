@@ -1809,6 +1809,19 @@ function optimizeInsulationRate(historyData) {
     return optimizedVal;
 }
 
+// Get a natural language interpretation of the convective insulation rate coefficient
+function getInsulationInterpretation(alpha) {
+    if (alpha <= 0.03) {
+        return "Excellent insulation";
+    } else if (alpha <= 0.06) {
+        return "Good standard insulation";
+    } else if (alpha <= 0.09) {
+        return "Moderate/Drafty insulation";
+    } else {
+        return "Poor insulation / open windows";
+    }
+}
+
 // Update the parameter equation text inside the details summary block
 function updateFormulaUI(alpha, slope, bias) {
     const mathBox = document.getElementById('formula-math-box');
@@ -1816,9 +1829,10 @@ function updateFormulaUI(alpha, slope, bias) {
         mathBox.innerHTML = `T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + <strong>${alpha.toFixed(3)}</strong> &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + slope(t) + bias`;
     }
     
+    const interpretation = getInsulationInterpretation(alpha);
     const alphaParamEl = document.getElementById('formula-param-alpha');
     if (alphaParamEl) {
-        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized. Lower = better insulation, higher = drafts/open windows)`;
+        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized: <strong>${interpretation}</strong>)`;
     }
 }
 
