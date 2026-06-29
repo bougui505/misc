@@ -267,7 +267,7 @@ const verticalLinePlugin = {
 const forecastExtremaPlugin = {
     id: 'forecastExtrema',
     afterDraw: (chart) => {
-        if (currentPeriod !== 'forecast' && currentPeriod !== '24h') return;
+        if (currentPeriod !== 'forecast' && currentPeriod !== '24h' && currentPeriod !== '7d') return;
         const ctx = chart.ctx;
         const xAxis = chart.scales.x;
         const yAxis = chart.scales.y;
@@ -280,7 +280,7 @@ const forecastExtremaPlugin = {
         if (currentPeriod === 'forecast') {
             dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
             dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
-        } else if (currentPeriod === '24h') {
+        } else if (currentPeriod === '24h' || currentPeriod === '7d') {
             dsActual = chart.data.datasets.find(ds => ds.label === "Temperature");
         }
         
@@ -352,8 +352,8 @@ const forecastExtremaPlugin = {
             
             // Draw a pill text badge above the point
             const timeLabel = chart.data.labels[idx];
-            const hourOnly = timeLabel.split(' ').pop();
-            const text = `${label}: ${val.toFixed(1)}°C @ ${hourOnly}`;
+            const displayTime = (currentPeriod === '7d') ? timeLabel : timeLabel.split(' ').pop();
+            const text = `${label}: ${val.toFixed(1)}°C @ ${displayTime}`;
             ctx.font = 'bold 9px Outfit, sans-serif';
             const textWidth = ctx.measureText(text).width;
             const padX = 4;
