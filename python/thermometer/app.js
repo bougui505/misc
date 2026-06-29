@@ -7,6 +7,8 @@ const LONGITUDE = 2.3315; // Rue Sarrette, 75014 Paris
 let currentPeriod = '24h';
 let chartInstance = null;
 let activeChartPeriod = null;
+let humidityChartInstance = null;
+let activeHumidityChartPeriod = null;
 let correlationChartInstance = null;
 let outdoorForecast = null;
 
@@ -794,6 +796,271 @@ function drawChart(historyData) {
     }
 }
 
+// Draw or update the Chart.js line graph for Relative Humidity
+function drawHumidityChart(historyData) {
+    if (humidityChartInstance && activeHumidityChartPeriod !== currentPeriod) {
+        humidityChartInstance.destroy();
+        humidityChartInstance = null;
+    }
+    
+    const canvas = document.getElementById('humidityChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    let labels, dataset1, dataset2;
+    let label1, label2;
+    let color1 = '#3b82f6'; // Sleek blue for humidity
+    let color2 = '#60a5fa'; // Lighter blue for compare/yesterday
+    
+    if (currentPeriod === 'compare' || currentPeriod === 'anomaly') {
+        const now = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+        const numBuckets = 288; // 24 hours / 5 min
+        const bucketSize = 300; // 5 min in seconds
+
+        const todayHums = new Array(numBuckets).fill(null);
+        const yesterdayHums = new Array(numBuckets).fill(null);
+        labels = new Array(numBuckets);
+
+        for (let i = 0; i < numBuckets; i++) {
+            const ts = now - i * bucketSize;
+            labels[numBuckets - 1 - i] = formatTimestamp(ts, '24h');
+        }
+
+        historyData.forEach(d => {
+            const age = now - d.timestamp;
+            if (d.humidity !== null && d.humidity !== undefined) {
+                if (age >= 0 && age < 86400) {
+                    const bucketIdx = Math.floor(age / bucketSize);
+                    if (bucketIdx >= 0 && bucketIdx < numBuckets) {
+                        todayHums[numBuckets - 1 - bucketIdx] = d.humidity;
+                    }
+                } else if (age >= 86400 && age < 2 * 86400) {
+                    const bucketIdx = Math.floor((age - 86400) / bucketSize);
+                    if (bucketIdx >= 0 && bucketIdx < numBuckets) {
+                        yesterdayHums[numBuckets - 1 - bucketIdx] = d.humidity;
+                    }
+                }
+            }
+        });
+        
+        if (currentPeriod === 'anomaly') {
+            const anomalies = new Array(numBuckets).fill(null);
+            for (let i = 0; i < numBuckets; i++) {
+                if (todayHums[i] !== null && yesterdayHums[i] !== null) {
+                    anomalies[i] = parseFloat((todayHums[i] - yesterdayHums[i]).toFixed(2));
+                }
+            }
+            dataset1 = anomalies;
+            dataset2 = null;
+            label1 = "Today's Humidity Deviation from Yesterday";
+        } else {
+            dataset1 = todayHums;
+            dataset2 = yesterdayHums;
+            label1 = "Today's Humidity";
+            label2 = "Yesterday's Humidity";
+        }
+    } else if (currentPeriod === 'ventilation' || currentPeriod === 'ventilation_deviation') {
+        const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+        const nowHourTS = Math.round(refNow / 3600) * 3600;
+        
+        const numPastHours = 24;
+        const numFutureHours = 24;
+        const totalHours = numPastHours + numFutureHours + 1; // 49 hours total
+        
+        labels = new Array(totalHours);
+        const actualIndoor = new Array(totalHours).fill(null);
+        
+        for (let idx = 0; idx < totalHours; idx++) {
+            const hourOffset = idx - numPastHours;
+            const hourTS = nowHourTS + hourOffset * 3600;
+            labels[idx] = formatTimestamp(hourTS, 'ventilation');
+        }
+        
+        historyData.forEach(d => {
+            if (d.humidity !== null && d.humidity !== undefined) {
+                const diffSecs = d.timestamp - nowHourTS;
+                const hourOffset = Math.round(diffSecs / 3600);
+                const idx = hourOffset + numPastHours;
+                if (idx >= 0 && idx < totalHours) {
+                    actualIndoor[idx] = d.humidity;
+                }
+            }
+        });
+        
+        dataset1 = actualIndoor;
+        dataset2 = null;
+        label1 = 'Indoor Humidity (Actual)';
+    } else {
+        labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
+        dataset1 = historyData.map(d => d.humidity);
+        dataset2 = null;
+        label1 = 'Relative Humidity';
+    }
+    
+    const humGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    humGradient.addColorStop(0, hexToRgbA(color1, 0.25));
+    humGradient.addColorStop(0.5, hexToRgbA(color1, 0.08));
+    humGradient.addColorStop(1, hexToRgbA(color1, 0.0));
+
+    const compareGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    compareGradient.addColorStop(0, hexToRgbA(color2, 0.25));
+    compareGradient.addColorStop(0.5, hexToRgbA(color2, 0.08));
+    compareGradient.addColorStop(1, hexToRgbA(color2, 0.0));
+
+    const chartDatasets = [];
+    if (currentPeriod === 'anomaly') {
+        const borderColors = dataset1.map(v => {
+            if (v === null) return 'transparent';
+            return v >= 0 ? '#ef4444' : '#3b82f6';
+        });
+        const backgroundColors = dataset1.map(v => {
+            if (v === null) return 'rgba(0,0,0,0)';
+            return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
+        });
+        
+        chartDatasets.push({
+            label: label1,
+            data: dataset1,
+            borderColor: borderColors,
+            backgroundColor: backgroundColors,
+            borderWidth: 1.5,
+            borderRadius: 4
+        });
+    } else {
+        chartDatasets.push({
+            label: label1,
+            data: dataset1,
+            borderColor: color1,
+            backgroundColor: humGradient,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointRadius: (context) => {
+                const count = context.chart.data.datasets[0].data.length;
+                return count < 40 ? 3.5 : 0;
+            },
+            pointBackgroundColor: color1,
+            pointBorderColor: color1,
+            pointBorderWidth: 1.5,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: color1,
+            pointHoverBorderColor: color1,
+            pointHoverBorderWidth: 2,
+            spanGaps: true,
+            pointStyle: 'line'
+        });
+        
+        if (dataset2) {
+            chartDatasets.push({
+                label: label2,
+                data: dataset2,
+                borderColor: color2,
+                backgroundColor: compareGradient,
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointRadius: (context) => {
+                    const count = context.chart.data.datasets[1].data.length;
+                    return count < 40 ? 3.5 : 0;
+                },
+                pointBackgroundColor: color2,
+                pointBorderColor: color2,
+                pointBorderWidth: 1.5,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: color2,
+                pointHoverBorderColor: color2,
+                pointHoverBorderWidth: 2,
+                spanGaps: true,
+                pointStyle: 'line'
+            });
+        }
+    }
+    
+    if (humidityChartInstance) {
+        humidityChartInstance.data.labels = labels;
+        humidityChartInstance.data.datasets = chartDatasets;
+        humidityChartInstance.update('none');
+    } else {
+        activeHumidityChartPeriod = currentPeriod;
+        humidityChartInstance = new Chart(ctx, {
+            type: (currentPeriod === 'anomaly') ? 'bar' : 'line',
+            data: {
+                labels: labels,
+                datasets: chartDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 12 },
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        titleColor: '#f3f4f6',
+                        bodyColor: '#e5e7eb',
+                        titleFont: { family: 'Outfit', weight: '600', size: 13 },
+                        bodyFont: { family: 'Outfit', size: 13 },
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const val = context.parsed.y;
+                                if (currentPeriod === 'anomaly') {
+                                    return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
+                                }
+                                return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.03)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 11 },
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.04)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 11 },
+                            callback: function(value) {
+                                if (currentPeriod === 'anomaly') {
+                                    return (value >= 0 ? '+' : '') + value.toFixed(0) + '%';
+                                }
+                                return value.toFixed(0) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+
 // Convert Hex colors to RGBA for standard canvas gradients
 function hexToRgbA(hex, alpha) {
     if (!hex || typeof hex !== 'string') return `rgba(16,185,129,${alpha})`;
@@ -865,6 +1132,7 @@ async function loadHistory(period) {
         }
         
         drawChart(historyData);
+        drawHumidityChart(historyData);
         
     } catch (error) {
         console.error('Error fetching historical temperature:', error);
