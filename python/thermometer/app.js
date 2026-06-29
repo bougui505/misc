@@ -263,6 +263,116 @@ const verticalLinePlugin = {
     }
 };
 
+// Custom plugin to draw highlights and labels on the indoor temperature extrema (max and min) in forecast mode
+const forecastExtremaPlugin = {
+    id: 'forecastExtrema',
+    afterDraw: (chart) => {
+        if (currentPeriod !== 'forecast') return;
+        const ctx = chart.ctx;
+        const xAxis = chart.scales.x;
+        const yAxis = chart.scales.y;
+        if (!yAxis || !xAxis) return;
+        
+        // Find datasets representing indoor temperatures
+        const dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
+        const dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
+        if (!dsActual || !dsPredicted) return;
+        
+        // Construct combined internal temperatures
+        const dataLength = chart.data.labels.length;
+        let maxVal = -Infinity, minVal = Infinity;
+        let maxIdx = -1, minIdx = -1;
+        
+        for (let i = 0; i < dataLength; i++) {
+            const act = dsActual.data[i];
+            const pred = dsPredicted.data[i];
+            const val = (act !== null && act !== undefined) ? act : pred;
+            
+            if (val !== null && val !== undefined) {
+                if (val > maxVal) {
+                    maxVal = val;
+                    maxIdx = i;
+                }
+                if (val < minVal) {
+                    minVal = val;
+                    minIdx = i;
+                }
+            }
+        }
+        
+        if (maxIdx === -1 || minIdx === -1) return;
+        
+        // Draw highlights
+        ctx.save();
+        ctx.font = 'bold 10px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        const drawIndicator = (idx, val, label, color) => {
+            const dsIndex = idx > 24 ? chart.data.datasets.indexOf(dsPredicted) : chart.data.datasets.indexOf(dsActual);
+            if (dsIndex === -1) return;
+            
+            const meta = chart.getDatasetMeta(dsIndex);
+            if (!meta || !meta.data || !meta.data[idx]) return;
+            
+            const x = meta.data[idx].x;
+            const y = yAxis.getPixelForValue(val);
+            
+            // Draw glowing background dot
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, 2 * Math.PI);
+            ctx.fillStyle = color + '22'; // 13% opacity
+            ctx.fill();
+            
+            // Draw outer ring
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // Draw center dot
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            
+            // Draw a pill text badge above the point
+            const text = `${label}: ${val.toFixed(1)}°C`;
+            ctx.font = 'bold 9px Outfit, sans-serif';
+            const textWidth = ctx.measureText(text).width;
+            const padX = 4;
+            const padY = 2;
+            const badgeW = textWidth + padX * 2;
+            const badgeH = 12;
+            const badgeX = x - badgeW / 2;
+            const badgeY = y - badgeH - 5;
+            
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
+            } else {
+                ctx.rect(badgeX, badgeY, badgeW, badgeH);
+            }
+            ctx.fillStyle = 'rgba(17, 24, 39, 0.85)';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, badgeY + badgeH / 2 + 0.5);
+        };
+        
+        // Highlight MAX and MIN
+        drawIndicator(maxIdx, maxVal, 'MAX', '#ef4444');
+        drawIndicator(minIdx, minVal, 'MIN', '#3b82f6');
+        
+        ctx.restore();
+    }
+};
+
 // Draw or update the Chart.js line graph
 function drawChart(historyData) {
     // If the timeframe has switched, destroy the old chart so we can reconstruct datasets cleanly
@@ -728,7 +838,7 @@ function drawChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
-            plugins: [verticalLinePlugin],
+            plugins: [verticalLinePlugin, forecastExtremaPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
