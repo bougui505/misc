@@ -1403,6 +1403,13 @@ async function loadHistory(period) {
             }
         }
         
+        // Update the live slope parameter inside the equation legend on load
+        const currentSlope = getLatestTemperatureSlope(historyData);
+        const slopeParamEl = document.getElementById('formula-param-slope');
+        if (slopeParamEl) {
+            slopeParamEl.innerHTML = `<strong>slope(t):</strong> Thermal momentum (currently <strong>${(currentSlope >= 0 ? '+' : '') + currentSlope.toFixed(2)}°C/h</strong>, decaying: &times;0.7/h)`;
+        }
+        
         drawChart(historyData);
         drawHumidityChart(historyData);
         updateTemperatureGradient(historyData);
