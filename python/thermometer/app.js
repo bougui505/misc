@@ -524,6 +524,7 @@ function drawChart(historyData) {
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
         // 4. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
+        const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
         let currentSlope = getLatestTemperatureSlope(historyData);
         
         const slopeParamEl = document.getElementById('formula-param-slope');
@@ -538,7 +539,7 @@ function drawChart(historyData) {
             
             if (prevIndoor !== null && outTemp !== null) {
                 currentSlope *= 0.7; // Decay the momentum/slope factor hourly
-                predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.05 + currentSlope).toFixed(2));
+                predictedIndoor[idx] = parseFloat((prevIndoor + alpha * (outTemp - prevIndoor) + 0.05 + currentSlope).toFixed(2));
             }
         }
         
@@ -574,7 +575,7 @@ function drawChart(historyData) {
                     const prevPred = simulatedPrediction[idx - 1];
                     const outTemp = effectiveOutdoorData[idx];
                     if (prevPred !== null && outTemp !== null) {
-                        simulatedPrediction[idx] = prevPred + 0.05 * (outTemp - prevPred) + 0.05;
+                        simulatedPrediction[idx] = prevPred + alpha * (outTemp - prevPred) + 0.05;
                     } else if (prevPred !== null) {
                         simulatedPrediction[idx] = prevPred + 0.05;
                     }
@@ -1410,6 +1411,14 @@ async function loadHistory(period) {
             slopeParamEl.innerHTML = `<strong>slope(t):</strong> Thermal momentum (currently <strong>${(currentSlope >= 0 ? '+' : '') + currentSlope.toFixed(2)}°C/h</strong>, decaying: &times;0.7/h)`;
         }
         
+        // Run insulation optimization and update UI
+        let alpha = 0.05;
+        if (historyData && historyData.length > 0) {
+            alpha = optimizeInsulationRate(historyData);
+        }
+        const biasCorrection = getHistoricalBiasCorrection();
+        updateFormulaUI(alpha, currentSlope, biasCorrection);
+        
         drawChart(historyData);
         drawHumidityChart(historyData);
         updateTemperatureGradient(historyData);
@@ -1756,6 +1765,60 @@ function calculateClimateInsights(history7d) {
                 }
             }
         });
+    }
+}
+
+// Run parameter optimization on 24h history to find the best-fitting insulation rate (alpha)
+function optimizeInsulationRate(historyData) {
+    const validPoints = historyData.filter(d => d.temperature !== null && d.outdoorTemperature !== null);
+    if (validPoints.length < 12) return 0.05; // Fallback to default if insufficient data
+    
+    let bestAlpha = 0.05;
+    let minMSE = Infinity;
+    
+    // Sort points chronologically
+    const sortedPoints = [...validPoints].sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Test alpha values from 0.01 to 0.15 in steps of 0.005
+    for (let alpha = 0.01; alpha <= 0.15; alpha += 0.005) {
+        let sumSquaredError = 0;
+        let count = 0;
+        
+        let simulatedT = sortedPoints[0].temperature;
+        for (let i = 1; i < sortedPoints.length; i++) {
+            const dt = (sortedPoints[i].timestamp - sortedPoints[i - 1].timestamp) / 3600; // time gap in hours
+            const outTemp = sortedPoints[i].outdoorTemperature;
+            
+            // Recursive prediction step based on the convective model (scaled by dt)
+            simulatedT = simulatedT + alpha * dt * (outTemp - simulatedT) + 0.05 * dt;
+            
+            const actualT = sortedPoints[i].temperature;
+            sumSquaredError += Math.pow(simulatedT - actualT, 2);
+            count++;
+        }
+        
+        const mse = sumSquaredError / count;
+        if (mse < minMSE) {
+            minMSE = mse;
+            bestAlpha = alpha;
+        }
+    }
+    
+    const optimizedVal = parseFloat(bestAlpha.toFixed(4));
+    localStorage.setItem('optimized_insulation_rate', optimizedVal.toString());
+    return optimizedVal;
+}
+
+// Update the parameter equation text inside the details summary block
+function updateFormulaUI(alpha, slope, bias) {
+    const mathBox = document.getElementById('formula-math-box');
+    if (mathBox) {
+        mathBox.innerHTML = `T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + <strong>${alpha.toFixed(3)}</strong> &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + slope(t) + bias`;
+    }
+    
+    const alphaParamEl = document.getElementById('formula-param-alpha');
+    if (alphaParamEl) {
+        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized)`;
     }
 }
 

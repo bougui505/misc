@@ -203,13 +203,13 @@
                                     
                                     <details class="formula-details">
                                         <summary>Show Forecast Equation</summary>
-                                        <div class="formula-box">
+                                        <div class="formula-box" id="formula-math-box">
                                             T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + 0.05 &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + slope(t) + bias
                                         </div>
                                         <ul class="formula-legend">
                                             <li><strong>T<sub>in</sub>(t):</strong> Predicted Indoor Temp</li>
                                             <li><strong>T<sub>out</sub>(t):</strong> Effective Outdoor Temp (with solar-gain bias)</li>
-                                            <li><strong>0.05:</strong> Convective transfer insulation rate</li>
+                                            <li id="formula-param-alpha"><strong>0.05:</strong> Convective transfer insulation rate</li>
                                             <li id="formula-param-slope"><strong>slope(t):</strong> Thermal momentum (decaying: &times;0.7/h)</li>
                                             <li id="formula-param-bias"><strong>bias:</strong> Dynamic offset correction (derived from error logs)</li>
                                         </ul>
