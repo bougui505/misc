@@ -263,20 +263,28 @@ const verticalLinePlugin = {
     }
 };
 
-// Custom plugin to draw highlights and labels on the indoor temperature extrema (max and min) in forecast mode
+// Custom plugin to draw highlights and labels on the indoor temperature extrema (max and min) in forecast or 24h mode
 const forecastExtremaPlugin = {
     id: 'forecastExtrema',
     afterDraw: (chart) => {
-        if (currentPeriod !== 'forecast') return;
+        if (currentPeriod !== 'forecast' && currentPeriod !== '24h') return;
         const ctx = chart.ctx;
         const xAxis = chart.scales.x;
         const yAxis = chart.scales.y;
         if (!yAxis || !xAxis) return;
         
         // Find datasets representing indoor temperatures
-        const dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
-        const dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
-        if (!dsActual || !dsPredicted) return;
+        let dsActual = null;
+        let dsPredicted = null;
+        
+        if (currentPeriod === 'forecast') {
+            dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
+            dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
+        } else if (currentPeriod === '24h') {
+            dsActual = chart.data.datasets.find(ds => ds.label === "Today's Temperature");
+        }
+        
+        if (!dsActual) return;
         
         // Construct combined internal temperatures
         const dataLength = chart.data.labels.length;
@@ -285,7 +293,7 @@ const forecastExtremaPlugin = {
         
         for (let i = 0; i < dataLength; i++) {
             const act = dsActual.data[i];
-            const pred = dsPredicted.data[i];
+            const pred = dsPredicted ? dsPredicted.data[i] : null;
             const val = (act !== null && act !== undefined) ? act : pred;
             
             if (val !== null && val !== undefined) {
@@ -309,7 +317,12 @@ const forecastExtremaPlugin = {
         ctx.textBaseline = 'bottom';
         
         const drawIndicator = (idx, val, label, color) => {
-            const dsIndex = idx > 24 ? chart.data.datasets.indexOf(dsPredicted) : chart.data.datasets.indexOf(dsActual);
+            let targetDs = dsActual;
+            if (currentPeriod === 'forecast' && idx > 24 && dsPredicted) {
+                targetDs = dsPredicted;
+            }
+            
+            const dsIndex = chart.data.datasets.indexOf(targetDs);
             if (dsIndex === -1) return;
             
             const meta = chart.getDatasetMeta(dsIndex);
