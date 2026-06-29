@@ -424,6 +424,17 @@ function drawChart(historyData) {
             }
         }
         
+        // 5. Apply dynamic bias correction to forecast points
+        const biasCorrection = getHistoricalBiasCorrection();
+        if (biasCorrection !== 0) {
+            for (let offset = 1; offset <= numFutureHours; offset++) {
+                const idx = offset + numPastHours;
+                if (predictedIndoor[idx] !== null) {
+                    predictedIndoor[idx] = parseFloat((predictedIndoor[idx] + biasCorrection).toFixed(2));
+                }
+            }
+        }
+        
         // Evaluate and save the forecast accuracy
         if (currentPeriod === 'forecast') {
             saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, refNow);
@@ -1300,6 +1311,7 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
     if (scheduleBody && outdoorForecast && outdoorForecast.hourly) {
         scheduleBody.innerHTML = '';
         const nowHourTS = Math.round(referenceTimestamp / 3600) * 3600;
+        const biasCorrection = getHistoricalBiasCorrection();
         
         const getIsoHourString = (d) => {
             const yyyy = d.getFullYear();
@@ -1339,8 +1351,11 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                     currentPred = currentPred + 0.05 * (effectiveOut - currentPred) + 0.05 + currentSlope;
                 }
                 
+                // Apply bias correction to future predictions
+                const correctedPred = h > 0 ? (currentPred + biasCorrection) : currentPred;
+                
                 // Calculate delta using effective outdoor temp to align with the Forecast Deviation plot
-                const delta = effectiveOut - currentPred;
+                const delta = effectiveOut - correctedPred;
                 const pct = Math.min((Math.abs(delta) / 10) * 50, 50); // Scale 10°C to 50% max width
                 const barSide = delta < 0 ? `right: 50%; width: ${pct}%;` : `left: 50%; width: ${pct}%;`;
                 const barClass = delta < 0 ? 'cool' : 'warm';
@@ -1360,12 +1375,12 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                 const COMFORT_MAX = 21.0;
                 let isOpen = false;
                 
-                if (currentPred < COMFORT_MIN) {
+                if (correctedPred < COMFORT_MIN) {
                     // Indoor is too cold: open only if outdoor is warmer than indoor to help heat the room
-                    isOpen = effectiveOut > currentPred;
-                } else if (currentPred > COMFORT_MAX) {
+                    isOpen = effectiveOut > correctedPred;
+                } else if (correctedPred > COMFORT_MAX) {
                     // Indoor is too hot: open only if outdoor is cooler than indoor to help cool the room
-                    isOpen = effectiveOut < currentPred;
+                    isOpen = effectiveOut < correctedPred;
                 } else {
                     // Indoor is in comfort range: open only if outdoor air is also comfortable to maintain state
                     isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
@@ -1684,6 +1699,28 @@ function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, ref
     renderAccuracyUI();
 }
 
+// Helper to get the average historical forecast error (mean error) to correct predictions dynamically
+function getHistoricalBiasCorrection() {
+    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
+    if (errorsLog.length < 3) return 0; // Require at least 3 evaluations to avoid premature adjustments
+    
+    let sumMaxErr = 0;
+    let sumMinErr = 0;
+    errorsLog.forEach(e => {
+        sumMaxErr += e.errMax;
+        sumMinErr += e.errMin;
+    });
+    
+    const avgMaxErr = sumMaxErr / errorsLog.length;
+    const avgMinErr = sumMinErr / errorsLog.length;
+    
+    // Average the peak and low errors to find the general shift
+    const correction = (avgMaxErr + avgMinErr) / 2;
+    
+    // Cap correction to a maximum of +/- 2.0°C to keep predictions stable and safe
+    return Math.max(-2.0, Math.min(2.0, correction));
+}
+
 // Render the accuracy metrics in the UI
 function renderAccuracyUI() {
     const accuracyEl = document.getElementById('insight-accuracy');
@@ -1705,7 +1742,14 @@ function renderAccuracyUI() {
     const avgMaxErr = sumAbsMaxErr / errorsLog.length;
     const avgMinErr = sumAbsMinErr / errorsLog.length;
     
-    accuracyEl.innerHTML = `Over the last <strong>${errorsLog.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.`;
+    const biasCorrection = getHistoricalBiasCorrection();
+    let biasInfo = '';
+    if (biasCorrection !== 0) {
+        const direction = biasCorrection > 0 ? 'adding' : 'subtracting';
+        biasInfo = `<br><span style="font-size:0.8rem;color:var(--text-muted);">Dynamic bias correction active: ${direction} <strong>${Math.abs(biasCorrection).toFixed(2)}°C</strong> to predictions.</span>`;
+    }
+    
+    accuracyEl.innerHTML = `Over the last <strong>${errorsLog.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.${biasInfo}`;
 }
 
 // Initialization
