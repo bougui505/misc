@@ -677,7 +677,9 @@ code {
 }
 
 .analytics-layout {
-    display: block;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 2rem;
     margin-top: 0.5rem;
 }
 

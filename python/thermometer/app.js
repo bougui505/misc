@@ -423,6 +423,11 @@ function drawChart(historyData) {
                 predictedIndoor[idx] = parseFloat((prevIndoor + 0.05 * (outTemp - prevIndoor) + 0.05 + currentSlope).toFixed(2));
             }
         }
+        
+        // Evaluate and save the forecast accuracy
+        if (currentPeriod === 'forecast') {
+            saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, refNow);
+        }
            if (currentPeriod === 'forecast_deviation') {
             const simulatedPrediction = new Array(totalHours).fill(null);
             
@@ -1614,8 +1619,99 @@ function calculateClimateInsights(history7d) {
     }
 }
 
+// Helper to save current forecast and evaluate the accuracy of previous forecasts
+function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, refNow) {
+    const lastForecastStr = localStorage.getItem('last_forecast');
+    if (lastForecastStr) {
+        try {
+            const lastForecast = JSON.parse(lastForecastStr);
+            const timeDiff = refNow - lastForecast.timestamp;
+            
+            // We evaluate if at least 24 hours have elapsed
+            if (timeDiff >= 24 * 3600) {
+                const evalStart = lastForecast.timestamp;
+                const evalEnd = lastForecast.timestamp + 24 * 3600;
+                
+                // Find actual temperatures in this 24-hour window
+                const actualsInRange = historyData
+                    .filter(d => d.timestamp >= evalStart && d.timestamp <= evalEnd)
+                    .map(d => d.temperature);
+                
+                // Only evaluate if we have sufficient readings in that 24h period (at least 12 readings)
+                if (actualsInRange.length >= 12) {
+                    const actualMax = Math.max(...actualsInRange);
+                    const actualMin = Math.min(...actualsInRange);
+                    
+                    const errMax = actualMax - lastForecast.predictedMax;
+                    const errMin = actualMin - lastForecast.predictedMin;
+                    
+                    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
+                    errorsLog.push({
+                        timestamp: refNow,
+                        errMax: parseFloat(errMax.toFixed(2)),
+                        errMin: parseFloat(errMin.toFixed(2))
+                    });
+                    
+                    // Keep last 30 runs to show moving accuracy
+                    if (errorsLog.length > 30) {
+                        errorsLog.shift();
+                    }
+                    localStorage.setItem('forecast_errors', JSON.stringify(errorsLog));
+                    localStorage.removeItem('last_forecast'); // Remove so we don't re-evaluate
+                }
+            }
+        } catch (e) {
+            console.error("Error evaluating past forecast:", e);
+        }
+    }
+    
+    // Save current forecast if we don't have an active one (or if we just evaluated the last one)
+    if (!localStorage.getItem('last_forecast')) {
+        const futurePredictions = predictedIndoor.slice(numPastHours).filter(v => v !== null && v !== undefined);
+        if (futurePredictions.length > 0) {
+            const predictedMax = Math.max(...futurePredictions);
+            const predictedMin = Math.min(...futurePredictions);
+            
+            const newForecast = {
+                timestamp: refNow,
+                predictedMax: parseFloat(predictedMax.toFixed(2)),
+                predictedMin: parseFloat(predictedMin.toFixed(2))
+            };
+            localStorage.setItem('last_forecast', JSON.stringify(newForecast));
+        }
+    }
+    
+    renderAccuracyUI();
+}
+
+// Render the accuracy metrics in the UI
+function renderAccuracyUI() {
+    const accuracyEl = document.getElementById('insight-accuracy');
+    if (!accuracyEl) return;
+    
+    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
+    if (errorsLog.length === 0) {
+        accuracyEl.innerHTML = `Model accuracy tracking started. Average error metrics will appear after 24 hours of data logging.`;
+        return;
+    }
+    
+    let sumAbsMaxErr = 0;
+    let sumAbsMinErr = 0;
+    errorsLog.forEach(e => {
+        sumAbsMaxErr += Math.abs(e.errMax);
+        sumAbsMinErr += Math.abs(e.errMin);
+    });
+    
+    const avgMaxErr = sumAbsMaxErr / errorsLog.length;
+    const avgMinErr = sumAbsMinErr / errorsLog.length;
+    
+    accuracyEl.innerHTML = `Over the last <strong>${errorsLog.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.`;
+}
+
 // Initialization
 async function init() {
+    renderAccuracyUI(); // Render stored values immediately on load
+    
     // Initial fetch of status and temperature
     await fetchCurrentTemp();
     
