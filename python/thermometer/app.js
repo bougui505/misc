@@ -525,6 +525,11 @@ function drawChart(historyData) {
         
         // 4. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
         let currentSlope = getLatestTemperatureSlope(historyData);
+        
+        const slopeParamEl = document.getElementById('formula-param-slope');
+        if (slopeParamEl) {
+            slopeParamEl.innerHTML = `<strong>slope(t):</strong> Thermal momentum (currently <strong>${(currentSlope >= 0 ? '+' : '') + currentSlope.toFixed(2)}°C/h</strong>, decaying: &times;0.7/h)`;
+        }
         for (let offset = 1; offset <= numFutureHours; offset++) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
@@ -1878,6 +1883,12 @@ function renderAccuracyUI() {
     if (biasCorrection !== 0) {
         const direction = biasCorrection > 0 ? 'adding' : 'subtracting';
         biasInfo = `<br><span style="font-size:0.8rem;color:var(--text-muted);">Dynamic bias correction active: ${direction} <strong>${Math.abs(biasCorrection).toFixed(2)}°C</strong> to predictions.</span>`;
+    }
+    
+    // Update the live bias parameter in the equation legend
+    const biasParamEl = document.getElementById('formula-param-bias');
+    if (biasParamEl) {
+        biasParamEl.innerHTML = `<strong>bias:</strong> Dynamic offset correction (currently <strong>${(biasCorrection >= 0 ? '+' : '') + biasCorrection.toFixed(2)}°C</strong>, derived from error logs)`;
     }
     
     accuracyEl.innerHTML = `Over the last <strong>${forecastErrorsList.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.${biasInfo}`;
