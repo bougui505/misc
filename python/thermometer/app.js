@@ -11,6 +11,7 @@ let humidityChartInstance = null;
 let activeHumidityChartPeriod = null;
 let correlationChartInstance = null;
 let outdoorForecast = null;
+let forecastErrorsList = [];
 
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
@@ -1635,7 +1636,7 @@ function calculateClimateInsights(history7d) {
 }
 
 // Helper to save current forecast and evaluate the accuracy of previous forecasts
-function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, refNow) {
+async function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, refNow) {
     const lastForecastStr = localStorage.getItem('last_forecast');
     if (lastForecastStr) {
         try {
@@ -1660,19 +1661,26 @@ function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, ref
                     const errMax = actualMax - lastForecast.predictedMax;
                     const errMin = actualMin - lastForecast.predictedMin;
                     
-                    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
-                    errorsLog.push({
-                        timestamp: refNow,
-                        errMax: parseFloat(errMax.toFixed(2)),
-                        errMin: parseFloat(errMin.toFixed(2))
-                    });
-                    
-                    // Keep last 30 runs to show moving accuracy
-                    if (errorsLog.length > 30) {
-                        errorsLog.shift();
+                    // POST the evaluation result to the server
+                    try {
+                        const response = await fetch('/api/log-forecast-error', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                timestamp: refNow,
+                                errMax: parseFloat(errMax.toFixed(2)),
+                                errMin: parseFloat(errMin.toFixed(2))
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            localStorage.removeItem('last_forecast'); // Remove so we don't re-evaluate
+                            // Re-fetch forecast errors list to update global state and UI
+                            await fetchForecastErrors();
+                        }
+                    } catch (apiErr) {
+                        console.error("Failed to POST forecast error to server:", apiErr);
                     }
-                    localStorage.setItem('forecast_errors', JSON.stringify(errorsLog));
-                    localStorage.removeItem('last_forecast'); // Remove so we don't re-evaluate
                 }
             }
         } catch (e) {
@@ -1699,20 +1707,32 @@ function saveAndEvaluateForecast(historyData, predictedIndoor, numPastHours, ref
     renderAccuracyUI();
 }
 
+// Fetch forecast errors from the server
+async function fetchForecastErrors() {
+    try {
+        const response = await fetch('/api/forecast-errors');
+        if (response.ok) {
+            forecastErrorsList = await response.json();
+            renderAccuracyUI();
+        }
+    } catch (err) {
+        console.error("Error fetching forecast errors list:", err);
+    }
+}
+
 // Helper to get the average historical forecast error (mean error) to correct predictions dynamically
 function getHistoricalBiasCorrection() {
-    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
-    if (errorsLog.length < 3) return 0; // Require at least 3 evaluations to avoid premature adjustments
+    if (forecastErrorsList.length < 3) return 0; // Require at least 3 evaluations to avoid premature adjustments
     
     let sumMaxErr = 0;
     let sumMinErr = 0;
-    errorsLog.forEach(e => {
+    forecastErrorsList.forEach(e => {
         sumMaxErr += e.errMax;
         sumMinErr += e.errMin;
     });
     
-    const avgMaxErr = sumMaxErr / errorsLog.length;
-    const avgMinErr = sumMinErr / errorsLog.length;
+    const avgMaxErr = sumMaxErr / forecastErrorsList.length;
+    const avgMinErr = sumMinErr / forecastErrorsList.length;
     
     // Average the peak and low errors to find the general shift
     const correction = (avgMaxErr + avgMinErr) / 2;
@@ -1726,21 +1746,20 @@ function renderAccuracyUI() {
     const accuracyEl = document.getElementById('insight-accuracy');
     if (!accuracyEl) return;
     
-    const errorsLog = JSON.parse(localStorage.getItem('forecast_errors') || '[]');
-    if (errorsLog.length === 0) {
+    if (forecastErrorsList.length === 0) {
         accuracyEl.innerHTML = `Model accuracy tracking started. Average error metrics will appear after 24 hours of data logging.`;
         return;
     }
     
     let sumAbsMaxErr = 0;
     let sumAbsMinErr = 0;
-    errorsLog.forEach(e => {
+    forecastErrorsList.forEach(e => {
         sumAbsMaxErr += Math.abs(e.errMax);
         sumAbsMinErr += Math.abs(e.errMin);
     });
     
-    const avgMaxErr = sumAbsMaxErr / errorsLog.length;
-    const avgMinErr = sumAbsMinErr / errorsLog.length;
+    const avgMaxErr = sumAbsMaxErr / forecastErrorsList.length;
+    const avgMinErr = sumAbsMinErr / forecastErrorsList.length;
     
     const biasCorrection = getHistoricalBiasCorrection();
     let biasInfo = '';
@@ -1749,12 +1768,12 @@ function renderAccuracyUI() {
         biasInfo = `<br><span style="font-size:0.8rem;color:var(--text-muted);">Dynamic bias correction active: ${direction} <strong>${Math.abs(biasCorrection).toFixed(2)}°C</strong> to predictions.</span>`;
     }
     
-    accuracyEl.innerHTML = `Over the last <strong>${errorsLog.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.${biasInfo}`;
+    accuracyEl.innerHTML = `Over the last <strong>${forecastErrorsList.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.${biasInfo}`;
 }
 
 // Initialization
 async function init() {
-    renderAccuracyUI(); // Render stored values immediately on load
+    await fetchForecastErrors(); // Initial fetch of forecast errors from database
     
     // Initial fetch of status and temperature
     await fetchCurrentTemp();

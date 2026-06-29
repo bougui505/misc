@@ -97,6 +97,15 @@ def db_init():
         # Column already exists, safe to ignore
         pass
         
+    # Create forecast_errors table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS forecast_errors (
+            timestamp INTEGER PRIMARY KEY,
+            err_max REAL NOT NULL,
+            err_min REAL NOT NULL
+        )
+    ''')
+        
     conn.commit()
     conn.close()
 
@@ -229,6 +238,37 @@ def get_history(period):
         print(f"[!] Error fetching history from database: {e}")
         return []
 
+def log_forecast_error(timestamp, err_max, err_min):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO forecast_errors (timestamp, err_max, err_min)
+            VALUES (?, ?, ?)
+        ''', (timestamp, err_max, err_min))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[!] Error logging forecast error: {e}")
+
+def get_forecast_errors(limit=30):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT timestamp, err_max, err_min FROM forecast_errors
+            ORDER BY timestamp DESC LIMIT ?
+        ''', (limit,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        errors = [{"timestamp": r[0], "errMax": r[1], "errMin": r[2]} for r in rows]
+        errors.reverse()
+        return errors
+    except Exception as e:
+        print(f"[!] Error fetching forecast errors: {e}")
+        return []
+
 class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
     """Handler for API endpoints and serving static frontend assets."""
     
@@ -247,6 +287,8 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
         elif path == '/api/history':
             period = query.get('period', ['24h'])[0]
             self.send_json(get_history(period))
+        elif path == '/api/forecast-errors':
+            self.send_json(get_forecast_errors())
         # Route static files
         elif path in ('/', '/index.html'):
             self.serve_file('index.html', 'text/html')
@@ -258,6 +300,26 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
             self.serve_file('chart.js', 'application/javascript')
         else:
             self.send_error(404, "File not found")
+
+    def do_POST(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+        
+        if path == '/api/log-forecast-error':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                timestamp = int(data.get('timestamp'))
+                err_max = float(data.get('errMax'))
+                err_min = float(data.get('errMin'))
+                
+                log_forecast_error(timestamp, err_max, err_min)
+                self.send_json({"status": "success"})
+            except Exception as e:
+                self.send_error(400, f"Invalid request body: {e}")
+        else:
+            self.send_error(404, "Not found")
 
     def send_json(self, data):
         try:
