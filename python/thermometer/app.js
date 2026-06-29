@@ -1818,7 +1818,7 @@ function updateFormulaUI(alpha, slope, bias) {
     
     const alphaParamEl = document.getElementById('formula-param-alpha');
     if (alphaParamEl) {
-        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized)`;
+        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized. Lower = better insulation, higher = drafts/open windows)`;
     }
 }
 
