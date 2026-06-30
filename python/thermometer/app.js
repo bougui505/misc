@@ -1021,6 +1021,74 @@ const humidityBandsPlugin = {
     }
 };
 
+// Custom plugin to draw horizontal bands representing insulation zones
+const insulationBandsPlugin = {
+    id: 'insulationBands',
+    beforeDraw: (chart) => {
+        const ctx = chart.ctx;
+        const xAxis = chart.scales.x;
+        const yAxis = chart.scales.y;
+        if (!yAxis) return;
+        
+        ctx.save();
+        
+        const y03 = yAxis.getPixelForValue(0.03);
+        const y06 = yAxis.getPixelForValue(0.06);
+        const y09 = yAxis.getPixelForValue(0.09);
+        const yTop = yAxis.top;
+        const yBottom = yAxis.bottom;
+        const xLeft = xAxis.left;
+        const xRight = xAxis.right;
+        
+        // Excellent: <= 0.03 (Green)
+        const excellentTop = Math.max(y03, yTop);
+        if (excellentTop < yBottom) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.03)'; 
+            ctx.fillRect(xLeft, excellentTop, xRight - xLeft, yBottom - excellentTop);
+            
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('EXCELLENT (≤0.03)', xLeft + 10, yBottom - 6);
+        }
+        
+        // Good: 0.03 - 0.06 (Blue/Teal)
+        const goodTop = Math.max(y06, yTop);
+        const goodBottom = Math.min(y03, yBottom);
+        if (goodBottom > goodTop) {
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.03)'; 
+            ctx.fillRect(xLeft, goodTop, xRight - xLeft, goodBottom - goodTop);
+            
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('GOOD (0.03-0.06)', xLeft + 10, goodBottom - 6);
+        }
+        
+        // Moderate/Drafty: 0.06 - 0.09 (Orange)
+        const modTop = Math.max(y09, yTop);
+        const modBottom = Math.min(y06, yBottom);
+        if (modBottom > modTop) {
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.03)'; 
+            ctx.fillRect(xLeft, modTop, xRight - xLeft, modBottom - modTop);
+            
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('DRAFTY (0.06-0.09)', xLeft + 10, modBottom - 6);
+        }
+        
+        // Poor/Open: > 0.09 (Red)
+        if (y09 > yTop) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.03)'; 
+            ctx.fillRect(xLeft, yTop, xRight - xLeft, y09 - yTop);
+            
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            ctx.font = '500 10px Outfit, sans-serif';
+            ctx.fillText('POOR / OPEN (>0.09)', xLeft + 10, y09 - 6);
+        }
+        
+        ctx.restore();
+    }
+};
+
 // Draw or update the Chart.js line graph for Relative Humidity
 function drawHumidityChart(historyData) {
     if (humidityChartInstance && activeHumidityChartPeriod !== currentPeriod) {
@@ -2092,6 +2160,7 @@ async function drawInsulationChart() {
                         pointHoverRadius: 5
                     }]
                 },
+                plugins: [insulationBandsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
