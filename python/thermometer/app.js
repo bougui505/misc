@@ -2250,7 +2250,7 @@ async function drawInsulationChart(historyData) {
                     scales: {
                         x: {
                             grid: { color: 'rgba(255, 255, 255, 0.02)', drawBorder: false },
-                            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 10 }, maxTicksLimit: 6 }
+                            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 11 }, maxTicksLimit: 8 }
                         },
                         y: {
                             min: 0.0,
