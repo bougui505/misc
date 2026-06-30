@@ -1379,7 +1379,7 @@ async function loadHistory(period) {
             fetchPeriod = '24h';
             // Fetch outdoor forecast from Open-Meteo for Rue Sarrette coordinates
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
                 const response = await fetch(url);
                 if (response.ok) {
                     outdoorData = await response.json();
@@ -2000,7 +2000,7 @@ async function init() {
     
     // Fetch outdoor forecast immediately on startup for Rue Sarrette to ensure it's available for insights
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
         const response = await fetch(url);
         if (response.ok) {
             outdoorForecast = await response.json();
