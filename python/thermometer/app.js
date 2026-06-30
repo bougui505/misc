@@ -400,7 +400,7 @@ function drawChart(historyData) {
     
     const ctx = document.getElementById('tempChart').getContext('2d');
     
-    let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5;
+    let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5, dataset6, dataset7;
     let label1, label2, label3, label5;
     let color1, color2, color3, color5;
     
@@ -609,10 +609,33 @@ function drawChart(historyData) {
             dataset2 = null;
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
+            let avgMaxErr = 0.5;
+            let avgMinErr = 0.5;
+            if (forecastErrorsList && forecastErrorsList.length > 0) {
+                let sumAbsMaxErr = 0;
+                let sumAbsMinErr = 0;
+                forecastErrorsList.forEach(e => {
+                    sumAbsMaxErr += Math.abs(e.errMax);
+                    sumAbsMinErr += Math.abs(e.errMin);
+                });
+                avgMaxErr = sumAbsMaxErr / forecastErrorsList.length;
+                avgMinErr = sumAbsMinErr / forecastErrorsList.length;
+            }
+            
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
             dataset3 = effectiveOutdoorData;
             dataset5 = outdoorDataPoints;
+            dataset6 = new Array(totalHours).fill(null);
+            dataset7 = new Array(totalHours).fill(null);
+            
+            for (let idx = 0; idx < totalHours; idx++) {
+                if (idx >= numPastHours && predictedIndoor[idx] !== null) {
+                    dataset6[idx] = parseFloat((predictedIndoor[idx] - avgMinErr).toFixed(2));
+                    dataset7[idx] = parseFloat((predictedIndoor[idx] + avgMaxErr).toFixed(2));
+                }
+            }
+            
             label1 = 'Indoor Temp (Actual)';
             label2 = 'Indoor Temp (Predicted)';
             label3 = 'Outdoor Temp (Forecast)';
@@ -739,6 +762,33 @@ function drawChart(historyData) {
             pointStyle: 'line'
         });
         chartDatasets.push({
+            label: 'Forecast Lower Bound',
+            data: dataset6,
+            borderColor: 'transparent',
+            borderWidth: 0,
+            fill: false,
+            tension: 0.3,
+            yAxisID: 'y',
+            pointRadius: 0,
+            spanGaps: true,
+            order: 1,
+            pointStyle: 'line'
+        });
+        chartDatasets.push({
+            label: 'Forecast Uncertainty',
+            data: dataset7,
+            borderColor: 'transparent',
+            borderWidth: 0,
+            backgroundColor: 'rgba(6, 182, 212, 0.06)',
+            fill: '-1',
+            tension: 0.3,
+            yAxisID: 'y',
+            pointRadius: 0,
+            spanGaps: true,
+            order: 1,
+            pointStyle: 'line'
+        });
+        chartDatasets.push({
             label: label3,
             data: dataset3,
             borderColor: color3,
@@ -850,11 +900,15 @@ function drawChart(historyData) {
             chartInstance.data.datasets[2].data = dataset2;
             chartInstance.data.datasets[2].label = label2;
             
-            chartInstance.data.datasets[3].data = dataset3;
-            chartInstance.data.datasets[3].label = label3;
+            chartInstance.data.datasets[3].data = dataset6;
             
-            chartInstance.data.datasets[4].data = dataset5;
-            chartInstance.data.datasets[4].label = label5;
+            chartInstance.data.datasets[4].data = dataset7;
+            
+            chartInstance.data.datasets[5].data = dataset3;
+            chartInstance.data.datasets[5].label = label3;
+            
+            chartInstance.data.datasets[6].data = dataset5;
+            chartInstance.data.datasets[6].label = label5;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
@@ -893,7 +947,7 @@ function drawChart(historyData) {
                             font: { family: 'Outfit', size: 12 },
                             usePointStyle: true,
                             filter: function(item, chartData) {
-                                return item.text !== 'Action Suggestion';
+                                 return item.text !== 'Action Suggestion' && item.text !== 'Forecast Lower Bound';
                             }
                         }
                     },
@@ -911,10 +965,19 @@ function drawChart(historyData) {
                         displayColors: true,
                         callbacks: {
                             label: function(context) {
-                                const label = context.dataset.label || '';
-                                if (label === 'Action Suggestion') {
-                                    return null;
-                                }
+                                 const label = context.dataset.label || '';
+                                 if (label === 'Action Suggestion' || label === 'Forecast Lower Bound') {
+                                     return null;
+                                 }
+                                 if (label === 'Forecast Uncertainty') {
+                                     const index = context.dataIndex;
+                                     const lowVal = context.chart.data.datasets[3].data[index];
+                                     const highVal = context.chart.data.datasets[4].data[index];
+                                     if (lowVal !== null && highVal !== null) {
+                                         return `Forecast Uncertainty: ${lowVal.toFixed(1)}°C to ${highVal.toFixed(1)}°C`;
+                                     }
+                                     return null;
+                                 }
                                 const val = context.parsed.y;
                                  if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
                                      return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
