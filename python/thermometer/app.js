@@ -2184,7 +2184,13 @@ async function drawInsulationChart() {
                             min: 0.0,
                             max: 0.2,
                             grid: { color: 'rgba(255, 255, 255, 0.02)', drawBorder: false },
-                            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 10 } }
+                            ticks: { 
+                                color: '#9ca3af', 
+                                font: { family: 'Outfit', size: 10 },
+                                callback: function(value) {
+                                    return value.toFixed(2) + ' h⁻¹';
+                                }
+                            }
                         }
                     }
                 }
