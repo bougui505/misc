@@ -779,7 +779,7 @@ function drawChart(historyData) {
             data: dataset7,
             borderColor: 'transparent',
             borderWidth: 0,
-            backgroundColor: 'rgba(6, 182, 212, 0.06)',
+            backgroundColor: 'rgba(6, 182, 212, 0.15)',
             fill: '-1',
             tension: 0.3,
             yAxisID: 'y',
