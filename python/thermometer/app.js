@@ -1463,11 +1463,13 @@ function hexToRgbA(hex, alpha) {
 async function loadHistory(period) {
     try {
         let fetchPeriod = period;
-        let outdoorData = null;
-        
         if (period === 'forecast' || period === 'forecast_deviation') {
             fetchPeriod = '24h';
-            // Fetch outdoor forecast from Open-Meteo for Rue Sarrette coordinates
+        }
+        let outdoorData = outdoorForecast;
+        
+        // Fetch outdoor forecast if not already cached
+        if (!outdoorData) {
             try {
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
                 const response = await fetch(url);
@@ -1487,32 +1489,30 @@ async function loadHistory(period) {
         
         updateSummaryStats(historyData);
         
-        if (period === 'forecast' || period === 'forecast_deviation') {
-            // Match each indoor reading with the closest hourly outdoor forecast reading
-            if (outdoorData && outdoorData.hourly) {
-                const hourlyTimes = outdoorData.hourly.time;
-                const hourlyTemps = outdoorData.hourly.temperature_2m;
-                const hourlyClouds = outdoorData.hourly.cloud_cover || [];
+        // Match each indoor reading with the closest hourly outdoor forecast reading
+        if (outdoorData && outdoorData.hourly) {
+            const hourlyTimes = outdoorData.hourly.time;
+            const hourlyTemps = outdoorData.hourly.temperature_2m;
+            const hourlyClouds = outdoorData.hourly.cloud_cover || [];
+            
+            historyData.forEach(d => {
+                const dateObj = new Date(d.timestamp * 1000);
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const hh = String(dateObj.getHours()).padStart(2, '0');
+                const isoStr = `${yyyy}-${mm}-${dd}T${hh}:00`;
                 
-                historyData.forEach(d => {
-                    const dateObj = new Date(d.timestamp * 1000);
-                    const yyyy = dateObj.getFullYear();
-                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-                    const dd = String(dateObj.getDate()).padStart(2, '0');
-                    const hh = String(dateObj.getHours()).padStart(2, '0');
-                    const isoStr = `${yyyy}-${mm}-${dd}T${hh}:00`;
-                    
-                    const idx = hourlyTimes.indexOf(isoStr);
-                    if (idx !== -1) {
-                        const outTemp = hourlyTemps[idx];
-                        const cloudCover = hourlyClouds[idx] !== undefined ? hourlyClouds[idx] : 0;
-                        const solarBias = getSolarParameters(dateObj, cloudCover);
-                        d.outdoorTemperature = parseFloat((outTemp + solarBias).toFixed(2));
-                    } else {
-                        d.outdoorTemperature = null;
-                    }
-                });
-            }
+                const idx = hourlyTimes.indexOf(isoStr);
+                if (idx !== -1) {
+                    const outTemp = hourlyTemps[idx];
+                    const cloudCover = hourlyClouds[idx] !== undefined ? hourlyClouds[idx] : 0;
+                    const solarBias = getSolarParameters(dateObj, cloudCover);
+                    d.outdoorTemperature = parseFloat((outTemp + solarBias).toFixed(2));
+                } else {
+                    d.outdoorTemperature = null;
+                }
+            });
         }
         
         // Update the live slope parameter inside the equation legend on load
