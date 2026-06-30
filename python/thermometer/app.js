@@ -10,6 +10,7 @@ let activeChartPeriod = null;
 let humidityChartInstance = null;
 let activeHumidityChartPeriod = null;
 let insulationChartInstance = null;
+let activeInsulationChartPeriod = null;
 let correlationChartInstance = null;
 let outdoorForecast = null;
 let forecastErrorsList = [];
@@ -1537,7 +1538,7 @@ async function loadHistory(period) {
         
         drawChart(historyData);
         drawHumidityChart(historyData);
-        drawInsulationChart();
+        drawInsulationChart(historyData);
         updateTemperatureGradient(historyData);
         
     } catch (error) {
@@ -2119,7 +2120,12 @@ async function logInsulationRate(alpha) {
     }
 }
 
-async function drawInsulationChart() {
+async function drawInsulationChart(historyData) {
+    if (insulationChartInstance && activeInsulationChartPeriod !== currentPeriod) {
+        insulationChartInstance.destroy();
+        insulationChartInstance = null;
+    }
+    
     const canvas = document.getElementById('insulationChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -2127,16 +2133,72 @@ async function drawInsulationChart() {
     try {
         const response = await fetch('/api/insulation-rates');
         if (!response.ok) throw new Error('API returned error');
-        const data = await response.json();
+        const rates = await response.json();
         
-        if (data.length === 0) {
+        if (rates.length === 0) {
             return;
         }
         
-        const labels = data.map(d => formatTimestamp(d.timestamp, '7d'));
-        const dataset = data.map(d => d.insulationRate);
+        let labels, dataset;
+        if (currentPeriod === 'compare' || currentPeriod === 'anomaly') {
+            const now = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+            const numBuckets = 288; // 24 hours / 5 min
+            const bucketSize = 300; // 5 min in seconds
+            
+            labels = new Array(numBuckets);
+            dataset = new Array(numBuckets).fill(null);
+            
+            for (let i = 0; i < numBuckets; i++) {
+                const ts = now - (numBuckets - 1 - i) * bucketSize;
+                labels[i] = formatTimestamp(ts, '24h');
+                
+                let lastKnownRate = 0.05;
+                let rateIdx = 0;
+                while (rateIdx < rates.length && rates[rateIdx].timestamp <= ts) {
+                    lastKnownRate = rates[rateIdx].insulationRate;
+                    rateIdx++;
+                }
+                dataset[i] = lastKnownRate;
+            }
+        } else if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
+            const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+            const nowHourTS = Math.round(refNow / 3600) * 3600;
+            
+            const numPastHours = 24;
+            const numFutureHours = 24;
+            const totalHours = numPastHours + numFutureHours + 1; // 49 hours total
+            
+            labels = new Array(totalHours);
+            dataset = new Array(totalHours).fill(null);
+            
+            for (let idx = 0; idx < totalHours; idx++) {
+                const hourTS = nowHourTS + (idx - numPastHours) * 3600;
+                labels[idx] = formatTimestamp(hourTS, 'forecast');
+                
+                let lastKnownRate = 0.05;
+                let rateIdx = 0;
+                while (rateIdx < rates.length && rates[rateIdx].timestamp <= hourTS) {
+                    lastKnownRate = rates[rateIdx].insulationRate;
+                    rateIdx++;
+                }
+                dataset[idx] = lastKnownRate;
+            }
+        } else {
+            // standard periods (1h, 24h, 7d)
+            labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
+            
+            let lastKnownRate = 0.05;
+            let rateIdx = 0;
+            dataset = historyData.map(d => {
+                while (rateIdx < rates.length && rates[rateIdx].timestamp <= d.timestamp) {
+                    lastKnownRate = rates[rateIdx].insulationRate;
+                    rateIdx++;
+                }
+                return lastKnownRate;
+            });
+        }
         
-        const latestRate = dataset[dataset.length - 1];
+        const latestRate = rates[rates.length - 1].insulationRate;
         const statusEl = document.getElementById('insulation-status');
         if (statusEl) {
             statusEl.textContent = `${latestRate.toFixed(4)} h⁻¹: ${getInsulationInterpretation(latestRate)}`;
@@ -2152,6 +2214,7 @@ async function drawInsulationChart() {
             insulationChartInstance.data.datasets[0].data = dataset;
             insulationChartInstance.update('none');
         } else {
+            activeInsulationChartPeriod = currentPeriod;
             insulationChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
