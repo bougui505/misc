@@ -398,9 +398,9 @@ function drawChart(historyData) {
     
     const ctx = document.getElementById('tempChart').getContext('2d');
     
-    let labels, dataset1, dataset2, dataset4, dataset4Colors;
-    let label1, label2;
-    let color1, color2;
+    let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5;
+    let label1, label2, label3, label5;
+    let color1, color2, color3, color5;
     
     const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--temp-active').trim() || '#10b981';
     const feelsColor = '#a855f7';
@@ -610,12 +610,15 @@ function drawChart(historyData) {
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
             dataset3 = effectiveOutdoorData;
+            dataset5 = outdoorDataPoints;
             label1 = 'Indoor Temp (Actual)';
             label2 = 'Indoor Temp (Predicted)';
             label3 = 'Outdoor Temp (Forecast)';
+            label5 = 'Outdoor Temp (Raw)';
             color1 = '#06b6d4'; // Cool Teal for Indoor Actual
             color2 = '#06b6d4'; // Cool Teal for Indoor Predicted
             color3 = '#f59e0b'; // Amber for Outdoor Forecast
+            color5 = '#f59e0b'; // Amber for Outdoor Raw
             
             // Calculate comfort window actions to highlight on the plot background
             const COMFORT_MIN = 19.0;
@@ -746,6 +749,20 @@ function drawChart(historyData) {
             order: 1,
             pointStyle: 'line'
         });
+        chartDatasets.push({
+            label: label5,
+            data: dataset5,
+            borderColor: color5,
+            borderWidth: 1.5,
+            borderDash: [3, 4],
+            fill: false,
+            tension: 0.3,
+            yAxisID: 'y',
+            pointRadius: 2,
+            spanGaps: true,
+            order: 1,
+            pointStyle: 'circle'
+        });
     } else {
         chartDatasets.push({
             label: label1,
@@ -833,6 +850,9 @@ function drawChart(historyData) {
             
             chartInstance.data.datasets[3].data = dataset3;
             chartInstance.data.datasets[3].label = label3;
+            
+            chartInstance.data.datasets[4].data = dataset5;
+            chartInstance.data.datasets[4].label = label5;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
