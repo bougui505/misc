@@ -1873,7 +1873,7 @@ function updateFormulaUI(alpha, slope, bias) {
     const interpretation = getInsulationInterpretation(alpha);
     const alphaParamEl = document.getElementById('formula-param-alpha');
     if (alphaParamEl) {
-        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)}:</strong> Convective transfer insulation rate (optimized: <strong>${interpretation}</strong>)`;
+        alphaParamEl.innerHTML = `<strong>${alpha.toFixed(3)} h⁻¹:</strong> Convective transfer insulation rate (optimized: <strong>${interpretation}</strong>)`;
     }
 }
 
@@ -2062,7 +2062,7 @@ async function drawInsulationChart() {
         const latestRate = dataset[dataset.length - 1];
         const statusEl = document.getElementById('insulation-status');
         if (statusEl) {
-            statusEl.textContent = `${latestRate.toFixed(4)}: ${getInsulationInterpretation(latestRate)}`;
+            statusEl.textContent = `${latestRate.toFixed(4)} h⁻¹: ${getInsulationInterpretation(latestRate)}`;
         }
         
         const color = '#10b981'; // Green color for insulation
@@ -2101,7 +2101,7 @@ async function drawInsulationChart() {
                             callbacks: {
                                 label: function(context) {
                                     const val = context.parsed.y;
-                                    return `Insulation Rate: ${val.toFixed(4)} (${getInsulationInterpretation(val)})`;
+                                    return `Insulation Rate: ${val.toFixed(4)} h⁻¹ (${getInsulationInterpretation(val)})`;
                                 }
                             }
                         }
