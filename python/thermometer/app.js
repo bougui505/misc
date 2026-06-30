@@ -1491,6 +1491,7 @@ async function loadHistory(period) {
             if (outdoorData && outdoorData.hourly) {
                 const hourlyTimes = outdoorData.hourly.time;
                 const hourlyTemps = outdoorData.hourly.temperature_2m;
+                const hourlyClouds = outdoorData.hourly.cloud_cover || [];
                 
                 historyData.forEach(d => {
                     const dateObj = new Date(d.timestamp * 1000);
@@ -1501,7 +1502,14 @@ async function loadHistory(period) {
                     const isoStr = `${yyyy}-${mm}-${dd}T${hh}:00`;
                     
                     const idx = hourlyTimes.indexOf(isoStr);
-                    d.outdoorTemperature = idx !== -1 ? hourlyTemps[idx] : null;
+                    if (idx !== -1) {
+                        const outTemp = hourlyTemps[idx];
+                        const cloudCover = hourlyClouds[idx] !== undefined ? hourlyClouds[idx] : 0;
+                        const solarBias = getSolarParameters(dateObj, cloudCover);
+                        d.outdoorTemperature = parseFloat((outTemp + solarBias).toFixed(2));
+                    } else {
+                        d.outdoorTemperature = null;
+                    }
                 });
             }
         }
