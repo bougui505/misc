@@ -1575,6 +1575,7 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
         // Loop for the next 8 hours (starting at the current hour)
         let currentPred = lastIndoor;
         let currentSlope = getLatestTemperatureSlope(historyData);
+        const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
         for (let h = 0; h < 8; h++) {
             const ts = nowHourTS + h * 3600;
             const dateObj = new Date(ts * 1000);
@@ -1599,7 +1600,7 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                 if (h > 0) {
                     currentSlope *= 0.7; // Decay slope over time
                     // Predict step only for future hours using effective outdoor temperature (with solar bias) and slope
-                    currentPred = currentPred + 0.05 * (effectiveOut - currentPred) + 0.05 + currentSlope;
+                    currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05 + currentSlope;
                 }
                 
                 // Apply bias correction to future predictions
