@@ -105,6 +105,14 @@ def db_init():
             err_min REAL NOT NULL
         )
     ''')
+    
+    # Create insulation_rates table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS insulation_rates (
+            timestamp INTEGER PRIMARY KEY,
+            insulation_rate REAL NOT NULL
+        )
+    ''')
         
     conn.commit()
     conn.close()
@@ -269,6 +277,37 @@ def get_forecast_errors(limit=30):
         print(f"[!] Error fetching forecast errors: {e}")
         return []
 
+def log_insulation_rate(timestamp, rate):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO insulation_rates (timestamp, insulation_rate)
+            VALUES (?, ?)
+        ''', (timestamp, rate))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[!] Error logging insulation rate: {e}")
+
+def get_insulation_rates(limit=100):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT timestamp, insulation_rate FROM insulation_rates
+            ORDER BY timestamp DESC LIMIT ?
+        ''', (limit,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        rates = [{"timestamp": r[0], "insulationRate": r[1]} for r in rows]
+        rates.reverse()
+        return rates
+    except Exception as e:
+        print(f"[!] Error fetching insulation rates: {e}")
+        return []
+
 class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
     """Handler for API endpoints and serving static frontend assets."""
     
@@ -289,6 +328,8 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_json(get_history(period))
         elif path == '/api/forecast-errors':
             self.send_json(get_forecast_errors())
+        elif path == '/api/insulation-rates':
+            self.send_json(get_insulation_rates())
         # Route static files
         elif path in ('/', '/index.html'):
             self.serve_file('index.html', 'text/html')
@@ -315,6 +356,18 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
                 err_min = float(data.get('errMin'))
                 
                 log_forecast_error(timestamp, err_max, err_min)
+                self.send_json({"status": "success"})
+            except Exception as e:
+                self.send_error(400, f"Invalid request body: {e}")
+        elif path == '/api/log-insulation-rate':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                timestamp = int(data.get('timestamp'))
+                rate = float(data.get('insulationRate'))
+                
+                log_insulation_rate(timestamp, rate)
                 self.send_json({"status": "success"})
             except Exception as e:
                 self.send_error(400, f"Invalid request body: {e}")

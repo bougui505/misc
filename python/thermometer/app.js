@@ -9,6 +9,7 @@ let chartInstance = null;
 let activeChartPeriod = null;
 let humidityChartInstance = null;
 let activeHumidityChartPeriod = null;
+let insulationChartInstance = null;
 let correlationChartInstance = null;
 let outdoorForecast = null;
 let forecastErrorsList = [];
@@ -1448,12 +1449,19 @@ async function loadHistory(period) {
         let alpha = 0.05;
         if (historyData && historyData.length > 0) {
             alpha = optimizeInsulationRate(historyData);
+            
+            // Log to server if calculated from real outdoor temp points
+            const validPoints = historyData.filter(d => d.temperature !== null && d.outdoorTemperature !== null);
+            if (validPoints.length >= 12) {
+                logInsulationRate(alpha);
+            }
         }
         const biasCorrection = getHistoricalBiasCorrection();
         updateFormulaUI(alpha, currentSlope, biasCorrection);
         
         drawChart(historyData);
         drawHumidityChart(historyData);
+        drawInsulationChart();
         updateTemperatureGradient(historyData);
         
     } catch (error) {
@@ -2009,6 +2017,107 @@ function renderAccuracyUI() {
     }
     
     accuracyEl.innerHTML = `Over the last <strong>${forecastErrorsList.length}</strong> runs, the 24h forecast model is accurate within <strong style="color:#ef4444;">±${avgMaxErr.toFixed(2)}°C</strong> for peaks and <strong style="color:#3b82f6;">±${avgMinErr.toFixed(2)}°C</strong> for daily lows.${biasInfo}`;
+}
+
+async function logInsulationRate(alpha) {
+    const lastLogTime = parseInt(localStorage.getItem('last_insulation_log_time') || '0');
+    const lastLogVal = parseFloat(localStorage.getItem('last_insulation_log_val') || '0');
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Log if it changed or if 1 hour has passed
+    if (Math.abs(alpha - lastLogVal) > 0.0001 || (now - lastLogTime) > 3600) {
+        try {
+            const response = await fetch('/api/log-insulation-rate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ timestamp: now, insulationRate: alpha })
+            });
+            if (response.ok) {
+                localStorage.setItem('last_insulation_log_time', now.toString());
+                localStorage.setItem('last_insulation_log_val', alpha.toString());
+            }
+        } catch (err) {
+            console.error("Error logging insulation rate to server:", err);
+        }
+    }
+}
+
+async function drawInsulationChart() {
+    const canvas = document.getElementById('insulationChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        const response = await fetch('/api/insulation-rates');
+        if (!response.ok) throw new Error('API returned error');
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            return;
+        }
+        
+        const labels = data.map(d => formatTimestamp(d.timestamp, '7d'));
+        const dataset = data.map(d => d.insulationRate);
+        
+        const color = '#10b981'; // Green color for insulation
+        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, hexToRgbA(color, 0.2));
+        gradient.addColorStop(1, hexToRgbA(color, 0.0));
+        
+        if (insulationChartInstance) {
+            insulationChartInstance.data.labels = labels;
+            insulationChartInstance.data.datasets[0].data = dataset;
+            insulationChartInstance.update('none');
+        } else {
+            insulationChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Insulation Rate (alpha)',
+                        data: dataset,
+                        borderColor: color,
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 2,
+                        pointBackgroundColor: color,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.parsed.y;
+                                    return `Insulation Rate: ${val.toFixed(4)} (${getInsulationInterpretation(val)})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.02)', drawBorder: false },
+                            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 10 }, maxTicksLimit: 6 }
+                        },
+                        y: {
+                            min: 0.0,
+                            max: 0.2,
+                            grid: { color: 'rgba(255, 255, 255, 0.02)', drawBorder: false },
+                            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error drawing insulation chart:", err);
+    }
 }
 
 // Initialization
