@@ -476,6 +476,19 @@ function drawChart(historyData) {
         const numFutureHours = 24;
         const totalHours = numPastHours + numFutureHours + 1; // 49 hours total (24 past, now, 24 future)
         
+        let avgMaxErr = 0.5;
+        let avgMinErr = 0.5;
+        if (forecastErrorsList && forecastErrorsList.length > 0) {
+            let sumAbsMaxErr = 0;
+            let sumAbsMinErr = 0;
+            forecastErrorsList.forEach(e => {
+                sumAbsMaxErr += Math.abs(e.errMax);
+                sumAbsMinErr += Math.abs(e.errMin);
+            });
+            avgMaxErr = sumAbsMaxErr / forecastErrorsList.length;
+            avgMinErr = sumAbsMinErr / forecastErrorsList.length;
+        }
+        
         labels = new Array(totalHours);
         const actualIndoor = new Array(totalHours).fill(null);
         const predictedIndoor = new Array(totalHours).fill(null);
@@ -605,23 +618,19 @@ function drawChart(historyData) {
                     deviations[idx] = parseFloat((outTemp - inTemp).toFixed(2));
                 }
             }
+            
             dataset1 = deviations;
             dataset2 = null;
+            dataset6 = new Array(totalHours).fill(null);
+            dataset7 = new Array(totalHours).fill(null);
+            for (let idx = 0; idx < totalHours; idx++) {
+                if (idx >= numPastHours && deviations[idx] !== null) {
+                    dataset6[idx] = parseFloat((deviations[idx] - avgMaxErr).toFixed(2));
+                    dataset7[idx] = parseFloat((deviations[idx] + avgMinErr).toFixed(2));
+                }
+            }
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
-            let avgMaxErr = 0.5;
-            let avgMinErr = 0.5;
-            if (forecastErrorsList && forecastErrorsList.length > 0) {
-                let sumAbsMaxErr = 0;
-                let sumAbsMinErr = 0;
-                forecastErrorsList.forEach(e => {
-                    sumAbsMaxErr += Math.abs(e.errMax);
-                    sumAbsMinErr += Math.abs(e.errMin);
-                });
-                avgMaxErr = sumAbsMaxErr / forecastErrorsList.length;
-                avgMinErr = sumAbsMinErr / forecastErrorsList.length;
-            }
-            
             dataset1 = actualIndoor;
             dataset2 = predictedIndoor;
             dataset3 = effectiveOutdoorData;
@@ -711,14 +720,48 @@ function drawChart(historyData) {
         });
         
         chartDatasets.push({
+            type: 'bar',
             label: label1,
             data: dataset1,
             borderColor: borderColors,
             backgroundColor: backgroundColors,
             borderWidth: 1.5,
             borderRadius: 4,
-            yAxisID: 'y'
+            yAxisID: 'y',
+            order: 2
         });
+        
+        if (currentPeriod === 'forecast_deviation') {
+            chartDatasets.push({
+                type: 'line',
+                label: 'Deviation Lower Bound',
+                data: dataset6,
+                borderColor: 'transparent',
+                borderWidth: 0,
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+            chartDatasets.push({
+                type: 'line',
+                label: 'Deviation Uncertainty',
+                data: dataset7,
+                borderColor: 'transparent',
+                borderWidth: 0,
+                backgroundColor: 'rgba(156, 163, 175, 0.15)', // Gray uncertainty shading matching opacity
+                fill: '-1',
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+        }
     } else if (currentPeriod === 'forecast') {
         // Shaded background bar chart to highlight action recommendation regions
         chartDatasets.push({
@@ -890,6 +933,11 @@ function drawChart(historyData) {
             chartInstance.data.datasets[0].label = label1;
             chartInstance.data.datasets[0].borderColor = borderColors;
             chartInstance.data.datasets[0].backgroundColor = backgroundColors;
+            
+            if (currentPeriod === 'forecast_deviation') {
+                chartInstance.data.datasets[1].data = dataset6;
+                chartInstance.data.datasets[2].data = dataset7;
+            }
         } else if (currentPeriod === 'forecast') {
             chartInstance.data.datasets[0].data = dataset4;
             chartInstance.data.datasets[0].backgroundColor = dataset4Colors;
@@ -947,8 +995,10 @@ function drawChart(historyData) {
                             font: { family: 'Outfit', size: 12 },
                             usePointStyle: true,
                             filter: function(item, chartData) {
-                                 return item.text !== 'Action Suggestion' && item.text !== 'Forecast Lower Bound';
-                            }
+                                 return item.text !== 'Action Suggestion' && 
+                                        item.text !== 'Forecast Lower Bound' && 
+                                        item.text !== 'Deviation Lower Bound';
+                             }
                         }
                     },
                     tooltip: {
@@ -966,7 +1016,7 @@ function drawChart(historyData) {
                         callbacks: {
                             label: function(context) {
                                  const label = context.dataset.label || '';
-                                 if (label === 'Action Suggestion' || label === 'Forecast Lower Bound') {
+                                 if (label === 'Action Suggestion' || label === 'Forecast Lower Bound' || label === 'Deviation Lower Bound') {
                                      return null;
                                  }
                                  if (label === 'Forecast Uncertainty') {
@@ -975,6 +1025,15 @@ function drawChart(historyData) {
                                      const highVal = context.chart.data.datasets[4].data[index];
                                      if (lowVal !== null && highVal !== null) {
                                          return `Forecast Uncertainty: ${lowVal.toFixed(1)}°C to ${highVal.toFixed(1)}°C`;
+                                     }
+                                     return null;
+                                 }
+                                 if (label === 'Deviation Uncertainty') {
+                                     const index = context.dataIndex;
+                                     const lowVal = context.chart.data.datasets[1].data[index];
+                                     const highVal = context.chart.data.datasets[2].data[index];
+                                     if (lowVal !== null && highVal !== null) {
+                                         return `Deviation Uncertainty: ${lowVal.toFixed(1)}°C to ${highVal.toFixed(1)}°C`;
                                      }
                                      return null;
                                  }
