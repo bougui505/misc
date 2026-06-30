@@ -2059,6 +2059,12 @@ async function drawInsulationChart() {
         const labels = data.map(d => formatTimestamp(d.timestamp, '7d'));
         const dataset = data.map(d => d.insulationRate);
         
+        const latestRate = dataset[dataset.length - 1];
+        const statusEl = document.getElementById('insulation-status');
+        if (statusEl) {
+            statusEl.textContent = `${latestRate.toFixed(4)}: ${getInsulationInterpretation(latestRate)}`;
+        }
+        
         const color = '#10b981'; // Green color for insulation
         const gradient = ctx.createLinearGradient(0, 0, 0, 200);
         gradient.addColorStop(0, hexToRgbA(color, 0.2));
