@@ -2139,26 +2139,59 @@ async function drawInsulationChart(historyData) {
             return;
         }
         
-        let labels, dataset;
+        let labels, dataset1, dataset2;
+        let label1, label2;
+        let color1 = '#10b981'; // Green for insulation (Today)
+        let color2 = '#34d399'; // Lighter Green for Yesterday
+        
         if (currentPeriod === 'compare' || currentPeriod === 'anomaly') {
             const now = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
             const numBuckets = 288; // 24 hours / 5 min
             const bucketSize = 300; // 5 min in seconds
             
             labels = new Array(numBuckets);
-            dataset = new Array(numBuckets).fill(null);
+            const todayRates = new Array(numBuckets).fill(null);
+            const yesterdayRates = new Array(numBuckets).fill(null);
             
             for (let i = 0; i < numBuckets; i++) {
-                const ts = now - (numBuckets - 1 - i) * bucketSize;
-                labels[i] = formatTimestamp(ts, '24h');
+                const tsToday = now - (numBuckets - 1 - i) * bucketSize;
+                const tsYesterday = tsToday - 86400;
+                labels[i] = formatTimestamp(tsToday, '24h');
                 
-                let lastKnownRate = 0.05;
-                let rateIdx = 0;
-                while (rateIdx < rates.length && rates[rateIdx].timestamp <= ts) {
-                    lastKnownRate = rates[rateIdx].insulationRate;
-                    rateIdx++;
+                // Match today's rate
+                let lastKnownToday = 0.05;
+                let rateIdxToday = 0;
+                while (rateIdxToday < rates.length && rates[rateIdxToday].timestamp <= tsToday) {
+                    lastKnownToday = rates[rateIdxToday].insulationRate;
+                    rateIdxToday++;
                 }
-                dataset[i] = lastKnownRate;
+                todayRates[i] = lastKnownToday;
+                
+                // Match yesterday's rate
+                let lastKnownYesterday = 0.05;
+                let rateIdxYesterday = 0;
+                while (rateIdxYesterday < rates.length && rates[rateIdxYesterday].timestamp <= tsYesterday) {
+                    lastKnownYesterday = rates[rateIdxYesterday].insulationRate;
+                    rateIdxYesterday++;
+                }
+                yesterdayRates[i] = lastKnownYesterday;
+            }
+            
+            if (currentPeriod === 'anomaly') {
+                const anomalies = new Array(numBuckets).fill(null);
+                for (let i = 0; i < numBuckets; i++) {
+                    if (todayRates[i] !== null && yesterdayRates[i] !== null) {
+                        anomalies[i] = parseFloat((todayRates[i] - yesterdayRates[i]).toFixed(4));
+                    }
+                }
+                dataset1 = anomalies;
+                dataset2 = null;
+                label1 = "Today's Insulation Rate Deviation from Yesterday";
+            } else {
+                dataset1 = todayRates;
+                dataset2 = yesterdayRates;
+                label1 = "Today's Insulation Rate";
+                label2 = "Yesterday's Insulation Rate";
             }
         } else if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
             const refNow = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
@@ -2169,7 +2202,9 @@ async function drawInsulationChart(historyData) {
             const totalHours = numPastHours + numFutureHours + 1; // 49 hours total
             
             labels = new Array(totalHours);
-            dataset = new Array(totalHours).fill(null);
+            dataset1 = new Array(totalHours).fill(null);
+            dataset2 = null;
+            label1 = 'Insulation Rate (alpha)';
             
             for (let idx = 0; idx < totalHours; idx++) {
                 const hourTS = nowHourTS + (idx - numPastHours) * 3600;
@@ -2181,15 +2216,17 @@ async function drawInsulationChart(historyData) {
                     lastKnownRate = rates[rateIdx].insulationRate;
                     rateIdx++;
                 }
-                dataset[idx] = lastKnownRate;
+                dataset1[idx] = lastKnownRate;
             }
         } else {
             // standard periods (1h, 24h, 7d)
             labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
+            label1 = 'Insulation Rate (alpha)';
+            dataset2 = null;
             
             let lastKnownRate = 0.05;
             let rateIdx = 0;
-            dataset = historyData.map(d => {
+            dataset1 = historyData.map(d => {
                 while (rateIdx < rates.length && rates[rateIdx].timestamp <= d.timestamp) {
                     lastKnownRate = rates[rateIdx].insulationRate;
                     rateIdx++;
@@ -2204,14 +2241,50 @@ async function drawInsulationChart(historyData) {
             statusEl.textContent = `${latestRate.toFixed(4)} h⁻¹: ${getInsulationInterpretation(latestRate)}`;
         }
         
-        const color = '#10b981'; // Green color for insulation
-        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-        gradient.addColorStop(0, hexToRgbA(color, 0.2));
-        gradient.addColorStop(1, hexToRgbA(color, 0.0));
+        const gradient1 = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient1.addColorStop(0, hexToRgbA(color1, 0.2));
+        gradient1.addColorStop(1, hexToRgbA(color1, 0.0));
+        
+        const gradient2 = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient2.addColorStop(0, hexToRgbA(color2, 0.15));
+        gradient2.addColorStop(1, hexToRgbA(color2, 0.0));
+        
+        const chartDatasets = [];
+        chartDatasets.push({
+            label: label1,
+            data: dataset1,
+            borderColor: color1,
+            backgroundColor: gradient1,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            pointRadius: (context) => {
+                const count = context.chart.data.datasets[0].data.length;
+                return count < 40 ? 2 : 0;
+            },
+            pointBackgroundColor: color1,
+            pointHoverRadius: 5
+        });
+        
+        if (dataset2) {
+            chartDatasets.push({
+                label: label2,
+                data: dataset2,
+                borderColor: color2,
+                backgroundColor: gradient2,
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0,
+                pointBackgroundColor: color2,
+                pointHoverRadius: 5
+            });
+        }
         
         if (insulationChartInstance) {
             insulationChartInstance.data.labels = labels;
-            insulationChartInstance.data.datasets[0].data = dataset;
+            insulationChartInstance.data.datasets = chartDatasets;
             insulationChartInstance.update('none');
         } else {
             activeInsulationChartPeriod = currentPeriod;
@@ -2219,18 +2292,7 @@ async function drawInsulationChart(historyData) {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Insulation Rate (alpha)',
-                        data: dataset,
-                        borderColor: color,
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 2,
-                        pointBackgroundColor: color,
-                        pointHoverRadius: 5
-                    }]
+                    datasets: chartDatasets
                 },
                 plugins: [insulationBandsPlugin],
                 options: {
