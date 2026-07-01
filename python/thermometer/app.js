@@ -694,8 +694,19 @@ function drawChart(historyData) {
                 for (let idx = firstValidIdx + 1; idx <= numPastHours; idx++) {
                     const prevPred = simulatedPrediction[idx - 1];
                     const outTemp = effectiveOutdoorData[idx];
+                    
+                    // Lookup actual hourly alpha rate for this specific timestamp
+                    let currentAlpha = alpha;
+                    if (insulationRatesList && insulationRatesList.length > 0) {
+                        const targetTS = nowHourTS - (numPastHours - idx) * 3600;
+                        const match = insulationRatesList.find(r => Math.abs(r.timestamp - targetTS) < 1800);
+                        if (match) {
+                            currentAlpha = match.insulationRate;
+                        }
+                    }
+                    
                     if (prevPred !== null && outTemp !== null) {
-                        simulatedPrediction[idx] = prevPred + alpha * (outTemp - prevPred) + 0.05;
+                        simulatedPrediction[idx] = prevPred + currentAlpha * (outTemp - prevPred) + 0.05;
                     } else if (prevPred !== null) {
                         simulatedPrediction[idx] = prevPred + 0.05;
                     }
