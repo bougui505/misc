@@ -970,6 +970,51 @@ function drawChart(historyData) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onHover: (event, activeElements, chart) => {
+                    const hoverEl = document.getElementById('temp-hover-details');
+                    if (!hoverEl) return;
+                    
+                    if (activeElements.length > 0) {
+                        const index = activeElements[0].index;
+                        const label = chart.data.labels[index];
+                        
+                        let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
+                        const datasetStrings = [];
+                        chart.data.datasets.forEach(dataset => {
+                            const val = dataset.data[index];
+                            const name = dataset.label || '';
+                            if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound') {
+                                return;
+                            }
+                            if (val !== null && val !== undefined) {
+                                if (name === 'Forecast Uncertainty') {
+                                    const low = chart.data.datasets[3].data[index];
+                                    const high = chart.data.datasets[4].data[index];
+                                    if (low !== null && high !== null) {
+                                        datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(6,182,212,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                    }
+                                } else if (name === 'Deviation Uncertainty') {
+                                    const low = chart.data.datasets[1].data[index];
+                                    const high = chart.data.datasets[2].data[index];
+                                    if (low !== null && high !== null) {
+                                        datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(156,163,175,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                    }
+                                } else {
+                                    const color = dataset.borderColor;
+                                    let formattedVal = val.toFixed(1) + '°C';
+                                    if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
+                                        formattedVal = (val >= 0 ? '+' : '') + val.toFixed(2) + '°C';
+                                    }
+                                    datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:${color}"></span>${name}: <strong>${formattedVal}</strong></span>`);
+                                }
+                            }
+                        });
+                        hoverEl.innerHTML = details + datasetStrings.join(' | ');
+                        hoverEl.style.opacity = '1';
+                    } else {
+                        hoverEl.style.opacity = '0';
+                    }
+                },
                 plugins: {
                     legend: {
                         display: true,
@@ -985,48 +1030,7 @@ function drawChart(historyData) {
                         }
                     },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                        titleColor: '#f3f4f6',
-                        bodyColor: '#e5e7eb',
-                        titleFont: { family: 'Outfit', weight: '600', size: 13 },
-                        bodyFont: { family: 'Outfit', size: 13 },
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        padding: 10,
-                        displayColors: true,
-                        callbacks: {
-                            label: function(context) {
-                                 const label = context.dataset.label || '';
-                                 if (label === 'Action Suggestion' || label === 'Forecast Lower Bound' || label === 'Deviation Lower Bound') {
-                                     return null;
-                                 }
-                                 if (label === 'Forecast Uncertainty') {
-                                     const index = context.dataIndex;
-                                     const lowVal = context.chart.data.datasets[3].data[index];
-                                     const highVal = context.chart.data.datasets[4].data[index];
-                                     if (lowVal !== null && highVal !== null) {
-                                         return `Forecast Uncertainty: ${lowVal.toFixed(1)}°C to ${highVal.toFixed(1)}°C`;
-                                     }
-                                     return null;
-                                 }
-                                 if (label === 'Deviation Uncertainty') {
-                                     const index = context.dataIndex;
-                                     const lowVal = context.chart.data.datasets[1].data[index];
-                                     const highVal = context.chart.data.datasets[2].data[index];
-                                     if (lowVal !== null && highVal !== null) {
-                                         return `Deviation Uncertainty: ${lowVal.toFixed(1)}°C to ${highVal.toFixed(1)}°C`;
-                                     }
-                                     return null;
-                                 }
-                                const val = context.parsed.y;
-                                 if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
-                                     return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}°C`;
-                                 }
-                                return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}°C`;
-                            }
-                        }
+                        enabled: false
                     }
                 },
                 scales: {
@@ -1391,6 +1395,34 @@ function drawHumidityChart(historyData) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onHover: (event, activeElements, chart) => {
+                    const hoverEl = document.getElementById('humidity-hover-details');
+                    if (!hoverEl) return;
+                    
+                    if (activeElements.length > 0) {
+                        const index = activeElements[0].index;
+                        const label = chart.data.labels[index];
+                        
+                        let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
+                        const datasetStrings = [];
+                        chart.data.datasets.forEach(dataset => {
+                            const val = dataset.data[index];
+                            const name = dataset.label || '';
+                            if (val !== null && val !== undefined) {
+                                const color = dataset.borderColor;
+                                let formattedVal = val.toFixed(1) + '%';
+                                if (currentPeriod === 'anomaly') {
+                                    formattedVal = (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+                                }
+                                datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:${color}"></span>${name}: <strong>${formattedVal}</strong></span>`);
+                            }
+                        });
+                        hoverEl.innerHTML = details + datasetStrings.join(' | ');
+                        hoverEl.style.opacity = '1';
+                    } else {
+                        hoverEl.style.opacity = '0';
+                    }
+                },
                 plugins: {
                     legend: {
                         display: true,
@@ -1401,27 +1433,7 @@ function drawHumidityChart(historyData) {
                         }
                     },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                        titleColor: '#f3f4f6',
-                        bodyColor: '#e5e7eb',
-                        titleFont: { family: 'Outfit', weight: '600', size: 13 },
-                        bodyFont: { family: 'Outfit', size: 13 },
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        padding: 10,
-                        displayColors: true,
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.dataset.label || '';
-                                const val = context.parsed.y;
-                                if (currentPeriod === 'anomaly') {
-                                    return `Deviation: ${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
-                                }
-                                return `${label}: ${val !== null && val !== undefined ? val.toFixed(1) : '--.-'}%`;
-                            }
-                        }
+                        enabled: false
                     }
                 },
                 scales: {
@@ -2435,15 +2447,34 @@ async function drawInsulationChart(historyData) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onHover: (event, activeElements, chart) => {
+                        const hoverEl = document.getElementById('insulation-hover-details');
+                        if (!hoverEl) return;
+                        
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const label = chart.data.labels[index];
+                            
+                            let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
+                            const datasetStrings = [];
+                            chart.data.datasets.forEach(dataset => {
+                                const val = dataset.data[index];
+                                const name = dataset.label || '';
+                                if (val !== null && val !== undefined) {
+                                    const color = dataset.borderColor;
+                                    datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:${color}"></span>${name}: <strong>${val.toFixed(4)} h⁻¹</strong> (${getInsulationInterpretation(val)})</span>`);
+                                }
+                            });
+                            hoverEl.innerHTML = details + datasetStrings.join(' | ');
+                            hoverEl.style.opacity = '1';
+                        } else {
+                            hoverEl.style.opacity = '0';
+                        }
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed.y;
-                                    return `Insulation Rate: ${val.toFixed(4)} h⁻¹ (${getInsulationInterpretation(val)})`;
-                                }
-                            }
+                            enabled: false
                         }
                     },
                     scales: {

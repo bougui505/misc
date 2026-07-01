@@ -877,3 +877,29 @@ code {
     margin-bottom: 0.25rem;
 }
 
+/* Hover details in chart headers */
+.hover-details {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-left: 1.5rem;
+    font-weight: normal;
+    text-transform: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    vertical-align: middle;
+}
+.hover-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.hover-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+

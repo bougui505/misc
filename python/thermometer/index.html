@@ -133,7 +133,7 @@
             <!-- Chart Card -->
             <section class="card chart-card">
                 <header class="chart-header">
-                    <h2 class="card-title">Temperature & Feels Like Trends</h2>
+                    <h2 class="card-title">Temperature & Feels Like Trends <span id="temp-hover-details" class="hover-details"></span></h2>
                     <div class="timeframe-selector">
                         <button class="btn-timeframe" data-period="1h">1 Hour</button>
                         <button class="btn-timeframe active" data-period="24h">24 Hours</button>
@@ -152,7 +152,7 @@
             <!-- Humidity Chart Card -->
             <section class="card chart-card">
                 <header class="chart-header">
-                    <h2 class="card-title">Relative Humidity Trends</h2>
+                    <h2 class="card-title">Relative Humidity Trends <span id="humidity-hover-details" class="hover-details"></span></h2>
                 </header>
                 <div class="chart-wrapper">
                     <canvas id="humidityChart"></canvas>
@@ -162,7 +162,7 @@
             <!-- Insulation Rate Chart Card -->
             <section class="card chart-card">
                 <header class="chart-header">
-                    <h2 class="card-title">Insulation Rate Trend (<span id="insulation-status" style="font-weight: 500; color: #10b981;">Calibrating...</span>)</h2>
+                    <h2 class="card-title">Insulation Rate Trend <span id="insulation-hover-details" class="hover-details"></span> (<span id="insulation-status" style="font-weight: 500; color: #10b981;">Calibrating...</span>)</h2>
                 </header>
                 <div class="chart-wrapper">
                     <canvas id="insulationChart"></canvas>
