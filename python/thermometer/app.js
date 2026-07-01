@@ -2367,13 +2367,13 @@ function optimizeInsulationRate(historyData) {
         let sumSquaredError = 0;
         let count = 0;
         
-        let simulatedT = sortedPoints[0].temperature;
         for (let i = 1; i < sortedPoints.length; i++) {
             const dt = (sortedPoints[i].timestamp - sortedPoints[i - 1].timestamp) / 3600; // time gap in hours
             const outTemp = sortedPoints[i].outdoorTemperature;
             
-            // Recursive prediction step based on the convective model (scaled by dt)
-            simulatedT = simulatedT + alpha * dt * (outTemp - simulatedT) + 0.05 * dt;
+            // Rolling 1-hour-ahead prediction (anchor to previous actual temperature to prevent cumulative drift)
+            const prevActualT = sortedPoints[i - 1].temperature;
+            const simulatedT = prevActualT + alpha * dt * (outTemp - prevActualT) + 0.05 * dt;
             
             const actualT = sortedPoints[i].temperature;
             sumSquaredError += Math.pow(simulatedT - actualT, 2);
