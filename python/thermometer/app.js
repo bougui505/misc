@@ -1691,6 +1691,19 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
         const nowHourTS = Math.round(referenceTimestamp / 3600) * 3600;
         const biasCorrection = getHistoricalBiasCorrection();
         
+        let avgMaxErr = 0.5;
+        let avgMinErr = 0.5;
+        if (forecastErrorsList && forecastErrorsList.length > 0) {
+            let sumAbsMaxErr = 0;
+            let sumAbsMinErr = 0;
+            forecastErrorsList.forEach(e => {
+                sumAbsMaxErr += Math.abs(e.errMax);
+                sumAbsMinErr += Math.abs(e.errMin);
+            });
+            avgMaxErr = sumAbsMaxErr / forecastErrorsList.length;
+            avgMinErr = sumAbsMinErr / forecastErrorsList.length;
+        }
+        
         const getIsoHourString = (d) => {
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -1752,22 +1765,32 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                 
                 const COMFORT_MIN = 19.0;
                 const COMFORT_MAX = 21.0;
-                let isOpen = false;
                 
-                if (correctedPred < COMFORT_MIN) {
-                    // Indoor is too cold: open only if outdoor is warmer than indoor to help heat the room
-                    isOpen = effectiveOut > correctedPred;
-                } else if (correctedPred > COMFORT_MAX) {
-                    // Indoor is too hot: open only if outdoor is cooler than indoor to help cool the room
-                    isOpen = effectiveOut < correctedPred;
+                const checkDecision = (indoorTemp) => {
+                    if (indoorTemp < COMFORT_MIN) {
+                        return effectiveOut > indoorTemp;
+                    } else if (indoorTemp > COMFORT_MAX) {
+                        return effectiveOut < indoorTemp;
+                    } else {
+                        return effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
+                    }
+                };
+                
+                const factor = Math.sqrt(h / 24.0);
+                const hMinErr = avgMinErr * factor;
+                const hMaxErr = avgMaxErr * factor;
+                
+                const isOpenMin = checkDecision(correctedPred - hMinErr);
+                const isOpenMax = checkDecision(correctedPred + hMaxErr);
+                
+                let verdict = '';
+                if (isOpenMin === isOpenMax) {
+                    verdict = isOpenMin 
+                        ? '<span style="color:var(--success);font-weight:bold;">🔓 OPEN</span>' 
+                        : '<span style="color:var(--danger);font-weight:bold;">🔒 CLOSE</span>';
                 } else {
-                    // Indoor is in comfort range: open only if outdoor air is also comfortable to maintain state
-                    isOpen = effectiveOut >= COMFORT_MIN && effectiveOut <= COMFORT_MAX;
+                    verdict = '<span style="color:#9ca3af;font-weight:bold;">⚠️ UNCERTAIN</span>';
                 }
-                
-                const verdict = isOpen 
-                    ? '<span style="color:var(--success);font-weight:bold;">🔓 OPEN</span>' 
-                    : '<span style="color:var(--danger);font-weight:bold;">🔒 CLOSE</span>';
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
