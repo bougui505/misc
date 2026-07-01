@@ -12,8 +12,8 @@ let activeHumidityChartPeriod = null;
 let insulationChartInstance = null;
 let activeInsulationChartPeriod = null;
 let correlationChartInstance = null;
-let outdoorForecast = null;
 let forecastErrorsList = [];
+let insulationRatesList = [];
 
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
@@ -622,8 +622,19 @@ function drawChart(historyData) {
             for (let idx = firstValidIdx + 1; idx <= numPastHours; idx++) {
                 const prevPred = predictedIndoor[idx - 1];
                 const outTemp = effectiveOutdoorData[idx];
+                
+                // Lookup actual hourly alpha rate for this specific timestamp
+                let currentAlpha = alpha;
+                if (insulationRatesList && insulationRatesList.length > 0) {
+                    const targetTS = nowHourTS - (numPastHours - idx) * 3600;
+                    const match = insulationRatesList.find(r => Math.abs(r.timestamp - targetTS) < 1800);
+                    if (match) {
+                        currentAlpha = match.insulationRate;
+                    }
+                }
+                
                 if (prevPred !== null && outTemp !== null) {
-                    predictedIndoor[idx] = parseFloat((prevPred + alpha * (outTemp - prevPred) + 0.05).toFixed(2));
+                    predictedIndoor[idx] = parseFloat((prevPred + currentAlpha * (outTemp - prevPred) + 0.05).toFixed(2));
                 } else if (prevPred !== null) {
                     predictedIndoor[idx] = parseFloat((prevPred + 0.05).toFixed(2));
                 }
@@ -1943,6 +1954,16 @@ async function loadHistory(period) {
         if (!response.ok) throw new Error('API returned history error status');
         
         const historyData = await response.json();
+        
+        // Fetch historical insulation rates
+        try {
+            const ratesResponse = await fetch('/api/insulation-rates');
+            if (ratesResponse.ok) {
+                insulationRatesList = await ratesResponse.json();
+            }
+        } catch (ratesErr) {
+            console.error("Error fetching insulation rates inside loadHistory:", ratesErr);
+        }
         
         updateSummaryStats(historyData);
         
