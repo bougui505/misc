@@ -472,6 +472,8 @@ body {
 
 .chart-wrapper.scatter-active {
     height: 520px;
+    max-width: 520px;
+    margin: 0 auto;
 }
 
 /* Information Box */
