@@ -268,7 +268,7 @@ const verticalLinePlugin = {
 // Custom plugin to draw highlights and labels on the indoor temperature extrema (max and min) in forecast or 24h mode
 const forecastExtremaPlugin = {
     id: 'forecastExtrema',
-    afterDraw: (chart) => {
+    afterDatasetsDraw: (chart) => {
         if (currentPeriod !== 'forecast' && currentPeriod !== '24h' && currentPeriod !== '7d') return;
         const ctx = chart.ctx;
         const xAxis = chart.scales.x;
