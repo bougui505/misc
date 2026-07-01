@@ -1179,7 +1179,7 @@ function drawChart(historyData) {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    mode: 'index',
+                    mode: (currentPeriod === 'scatter') ? 'nearest' : 'index',
                     intersect: false
                 },
                 onHover: (event, activeElements, chart) => {
@@ -1187,7 +1187,18 @@ function drawChart(historyData) {
                     if (!hoverEl) return;
                     
                     if (activeElements.length > 0) {
-                        const index = activeElements[0].index;
+                        let activeEl = activeElements[0];
+                        if (currentPeriod === 'scatter') {
+                            const scatterEl = activeElements.find(el => el.datasetIndex === 4);
+                            if (!scatterEl) {
+                                chart.hoveredIndex = null;
+                                hoverEl.style.opacity = '0';
+                                return;
+                            }
+                            activeEl = scatterEl;
+                        }
+                        
+                        const index = activeEl.index;
                         const label = chart.data.labels[index];
                         chart.hoveredIndex = index;
                         
