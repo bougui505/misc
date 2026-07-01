@@ -243,7 +243,7 @@ const hoverIndicatorPlugin = {
             if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound' ||
                 name === 'Forecast Uncertainty' || name === 'Deviation Uncertainty' ||
                 name.includes('Morning') || name.includes('Afternoon') || name.includes('Evening') || name.includes('Night') ||
-                name.includes('Trend') || name.includes('Equilibrium')) {
+                name.includes('Trend') || name.includes('Equilibrium') || name.includes('Cycle')) {
                 return;
             }
             
@@ -822,6 +822,9 @@ function drawChart(historyData) {
             { x: scatterMax, y: scatterMax }
         ];
         
+        // dataset7 will hold the recent daily cycle (last 24h chronological path)
+        dataset7 = validPoints.slice(-24).map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
+        
         label1 = `Trend (Slope: ${slope.toFixed(3)} °C/°C, Pearson R: ${r.toFixed(3)})`;
         color1 = '#ef4444'; // Red for trend line
     } else {
@@ -928,6 +931,22 @@ function drawChart(historyData) {
             pointRadius: 0,
             showLine: true,
             order: 0
+        });
+
+        // Trailing Daily Cycle (Last 24h)
+        chartDatasets.push({
+            type: 'line',
+            label: 'Recent Daily Cycle (Last 24h)',
+            data: dataset7,
+            borderColor: 'rgba(6, 182, 212, 0.75)', // Cyan trace line
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 3,
+            pointBackgroundColor: 'rgba(6, 182, 212, 0.95)',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1,
+            showLine: true,
+            order: 3
         });
     } else if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
         const numPastHours = 24;
@@ -1185,7 +1204,7 @@ function drawChart(historyData) {
             chartInstance.data.datasets[6].data = dataset5;
             chartInstance.data.datasets[6].label = label5;
         } else if (currentPeriod === 'scatter') {
-            // Update the scatter points (index 4) and the trend line (index 5)
+            // Update the scatter points (index 4), trend line (index 5), diagonal line (index 6), and daily cycle (index 7)
             chartInstance.data.datasets[4].data = dataset1;
             chartInstance.data.datasets[4].backgroundColor = dataset3;
             chartInstance.data.datasets[4].pointBackgroundColor = dataset3;
@@ -1194,6 +1213,8 @@ function drawChart(historyData) {
             chartInstance.data.datasets[5].label = label1;
             
             chartInstance.data.datasets[6].data = dataset6;
+            
+            chartInstance.data.datasets[7].data = dataset7;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
