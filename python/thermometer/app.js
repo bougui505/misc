@@ -2073,16 +2073,18 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                 const hMinErr = avgMinErr * factor;
                 const hMaxErr = avgMaxErr * factor;
                 
-                const isOpenMin = checkDecision(correctedPred - hMinErr);
-                const isOpenMax = checkDecision(correctedPred + hMaxErr);
+                const lowT = correctedPred - hMinErr;
+                const highT = correctedPred + hMaxErr;
                 
                 let verdict = '';
-                if (isOpenMin === isOpenMax) {
-                    verdict = isOpenMin 
+                // Trigger uncertainty only when the outdoor temperature overlaps/enters the indoor uncertainty region
+                if (effectiveOut >= lowT && effectiveOut <= highT) {
+                    verdict = '<span style="color:#9ca3af;font-weight:bold;">⚠️ UNCERTAIN</span>';
+                } else {
+                    const baseDecision = checkDecision(correctedPred);
+                    verdict = baseDecision 
                         ? '<span style="color:var(--success);font-weight:bold;">🔓 OPEN</span>' 
                         : '<span style="color:var(--danger);font-weight:bold;">🔒 CLOSE</span>';
-                } else {
-                    verdict = '<span style="color:#9ca3af;font-weight:bold;">⚠️ UNCERTAIN</span>';
                 }
                 
                 const tr = document.createElement('tr');
