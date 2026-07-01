@@ -205,6 +205,71 @@ function updateSummaryStats(data) {
     statAvgEl.textContent = `${avg.toFixed(1)}°C`;
 }
 
+// Custom plugin to draw vertical cursor line and active points on hover
+const hoverIndicatorPlugin = {
+    id: 'hoverIndicator',
+    afterDatasetsDraw: (chart) => {
+        const index = chart.hoveredIndex;
+        if (index === null || index === undefined) return;
+        
+        const ctx = chart.ctx;
+        const xAxis = chart.scales.x;
+        const yAxis = chart.scales.y;
+        if (!yAxis || !xAxis) return;
+        
+        const meta0 = chart.getDatasetMeta(0);
+        if (!meta0 || !meta0.data || !meta0.data[index]) return;
+        
+        const x = meta0.data[index].x;
+        const yTop = yAxis.top;
+        const yBottom = yAxis.bottom;
+        
+        ctx.save();
+        
+        // 1. Draw vertical dotted cursor line
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(x, yTop);
+        ctx.lineTo(x, yBottom);
+        ctx.stroke();
+        
+        // 2. Draw solid pinpoint dots on active curves
+        chart.data.datasets.forEach((dataset, dsIdx) => {
+            const name = dataset.label || '';
+            // Skip helper/uncertainty datasets
+            if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound' ||
+                name === 'Forecast Uncertainty' || name === 'Deviation Uncertainty') {
+                return;
+            }
+            
+            const meta = chart.getDatasetMeta(dsIdx);
+            if (!meta || !meta.data || !meta.data[index] || meta.hidden) return;
+            
+            const val = dataset.data[index];
+            if (val === null || val === undefined) return;
+            
+            const yVal = yAxis.getPixelForValue(val);
+            const color = dataset.borderColor || '#06b6d4';
+            
+            // Outer white ring
+            ctx.beginPath();
+            ctx.arc(x, yVal, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            
+            // Inner color dot
+            ctx.beginPath();
+            ctx.arc(x, yVal, 3.5, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        });
+        
+        ctx.restore();
+    }
+};
+
 // Custom plugin to draw a vertical line representing "Now" on forecast/deviation charts
 const verticalLinePlugin = {
     id: 'verticalLine',
@@ -966,7 +1031,7 @@ function drawChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
-            plugins: [verticalLinePlugin, forecastExtremaPlugin],
+             plugins: [verticalLinePlugin, forecastExtremaPlugin, hoverIndicatorPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -981,6 +1046,7 @@ function drawChart(historyData) {
                     if (activeElements.length > 0) {
                         const index = activeElements[0].index;
                         const label = chart.data.labels[index];
+                        chart.hoveredIndex = index;
                         
                         let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
                         const datasetStrings = [];
@@ -1016,6 +1082,7 @@ function drawChart(historyData) {
                         hoverEl.innerHTML = details + datasetStrings.join(' | ');
                         hoverEl.style.opacity = '1';
                     } else {
+                        chart.hoveredIndex = null;
                         hoverEl.style.opacity = '0';
                     }
                 },
@@ -1395,7 +1462,7 @@ function drawHumidityChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
-            plugins: [humidityBandsPlugin],
+            plugins: [humidityBandsPlugin, hoverIndicatorPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -1410,6 +1477,7 @@ function drawHumidityChart(historyData) {
                     if (activeElements.length > 0) {
                         const index = activeElements[0].index;
                         const label = chart.data.labels[index];
+                        chart.hoveredIndex = index;
                         
                         let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
                         const datasetStrings = [];
@@ -1428,6 +1496,7 @@ function drawHumidityChart(historyData) {
                         hoverEl.innerHTML = details + datasetStrings.join(' | ');
                         hoverEl.style.opacity = '1';
                     } else {
+                        chart.hoveredIndex = null;
                         hoverEl.style.opacity = '0';
                     }
                 },
@@ -2451,7 +2520,7 @@ async function drawInsulationChart(historyData) {
                     labels: labels,
                     datasets: chartDatasets
                 },
-                plugins: [insulationBandsPlugin],
+                plugins: [insulationBandsPlugin, hoverIndicatorPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -2466,6 +2535,7 @@ async function drawInsulationChart(historyData) {
                         if (activeElements.length > 0) {
                             const index = activeElements[0].index;
                             const label = chart.data.labels[index];
+                            chart.hoveredIndex = index;
                             
                             let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
                             const datasetStrings = [];
@@ -2480,6 +2550,7 @@ async function drawInsulationChart(historyData) {
                             hoverEl.innerHTML = details + datasetStrings.join(' | ');
                             hoverEl.style.opacity = '1';
                         } else {
+                            chart.hoveredIndex = null;
                             hoverEl.style.opacity = '0';
                         }
                     },
