@@ -208,7 +208,7 @@ function updateSummaryStats(data) {
 // Custom plugin to draw a vertical line representing "Now" on forecast/deviation charts
 const verticalLinePlugin = {
     id: 'verticalLine',
-    afterDraw: (chart) => {
+    afterDatasetsDraw: (chart) => {
         if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
             const ctx = chart.ctx;
             const xAxis = chart.scales.x;
