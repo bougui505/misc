@@ -451,6 +451,7 @@ function drawChart(historyData) {
     let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5, dataset6, dataset7;
     let label1, label2, label3, label5;
     let color1, color2, color3, color5;
+    let scatterMin = undefined, scatterMax = undefined;
     
     const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--temp-active').trim() || '#10b981';
     const feelsColor = '#a855f7';
@@ -794,11 +795,11 @@ function drawChart(historyData) {
         
         // dataset6 will hold the diagonal y = x line points
         const ins = validPoints.map(p => p.temperature);
-        const absoluteMin = Math.min(minX, ...ins) - 1;
-        const absoluteMax = Math.max(maxX, ...ins) + 1;
+        scatterMin = Math.min(minX, ...ins) - 1;
+        scatterMax = Math.max(maxX, ...ins) + 1;
         dataset6 = [
-            { x: absoluteMin, y: absoluteMin },
-            { x: absoluteMax, y: absoluteMax }
+            { x: scatterMin, y: scatterMin },
+            { x: scatterMax, y: scatterMax }
         ];
         
         label1 = `Trend (Coupling Rate: ${slope.toFixed(3)} °C/°C)`;
@@ -1202,7 +1203,8 @@ function drawChart(historyData) {
              plugins: [verticalLinePlugin, forecastExtremaPlugin, hoverIndicatorPlugin],
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: (currentPeriod === 'scatter') ? true : false,
+                aspectRatio: (currentPeriod === 'scatter') ? 1 : undefined,
                 interaction: {
                     mode: (currentPeriod === 'scatter') ? 'nearest' : 'index',
                     intersect: false
@@ -1302,6 +1304,8 @@ function drawChart(historyData) {
                 scales: {
                     x: {
                         type: (currentPeriod === 'scatter') ? 'linear' : undefined,
+                        min: (currentPeriod === 'scatter') ? scatterMin : undefined,
+                        max: (currentPeriod === 'scatter') ? scatterMax : undefined,
                         grid: {
                             color: 'rgba(255, 255, 255, 0.03)',
                             drawBorder: false
@@ -1328,6 +1332,8 @@ function drawChart(historyData) {
                         type: 'linear',
                         display: true,
                         position: 'left',
+                        min: (currentPeriod === 'scatter') ? scatterMin : undefined,
+                        max: (currentPeriod === 'scatter') ? scatterMax : undefined,
                         title: {
                             display: currentPeriod === 'scatter',
                             text: 'Indoor Temperature (°C)',
