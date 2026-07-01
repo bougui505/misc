@@ -1265,7 +1265,8 @@ function drawChart(historyData) {
                             filter: function(item, chartData) {
                                  return item.text !== 'Action Suggestion' && 
                                         item.text !== 'Forecast Lower Bound' && 
-                                        item.text !== 'Deviation Lower Bound';
+                                        item.text !== 'Deviation Lower Bound' &&
+                                        item.text !== 'Indoor vs Outdoor Correlation';
                              }
                         }
                     },
