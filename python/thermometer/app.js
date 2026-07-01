@@ -250,7 +250,10 @@ const hoverIndicatorPlugin = {
             const val = dataset.data[index];
             if (val === null || val === undefined) return;
             
-            const yVal = yAxis.getPixelForValue(val);
+            const yValNum = (typeof val === 'object' && val !== null) ? val.y : val;
+            if (yValNum === null || yValNum === undefined || isNaN(yValNum)) return;
+            
+            const yVal = yAxis.getPixelForValue(yValNum);
             const color = dataset.borderColor || '#06b6d4';
             
             // Outer white ring
@@ -745,6 +748,14 @@ function drawChart(historyData) {
                 }
             }
         }
+    } else if (currentPeriod === 'scatter') {
+        labels = new Array(historyData.length).fill('');
+        dataset1 = historyData
+            .filter(d => d.outdoorTemperature !== null && d.temperature !== null)
+            .map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
+        dataset2 = null;
+        label1 = 'Thermal Coupling (In vs Out)';
+        color1 = '#06b6d4';
     } else {
         labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
         dataset1 = historyData.map(d => d.temperature);
@@ -771,7 +782,23 @@ function drawChart(historyData) {
  
     // Prepare datasets array dynamically
     const chartDatasets = [];
-    if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
+    if (currentPeriod === 'scatter') {
+        chartDatasets.push({
+            type: 'scatter',
+            label: label1,
+            data: dataset1,
+            borderColor: color1,
+            backgroundColor: 'rgba(6, 182, 212, 0.22)',
+            borderWidth: 1.5,
+            pointRadius: 4.5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: color1,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1,
+            pointHoverBorderWidth: 2,
+            order: 1
+        });
+    } else if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
         const numPastHours = 24;
         const borderColors = dataset1.map((v, idx) => {
             if (v === null) return 'transparent';
@@ -1026,6 +1053,10 @@ function drawChart(historyData) {
             
             chartInstance.data.datasets[6].data = dataset5;
             chartInstance.data.datasets[6].label = label5;
+        } else if (currentPeriod === 'scatter') {
+            chartInstance.data.datasets[0].data = dataset1;
+            chartInstance.data.datasets[0].label = label1;
+            chartInstance.data.datasets[0].borderColor = color1;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
@@ -1047,7 +1078,7 @@ function drawChart(historyData) {
         activeChartPeriod = currentPeriod;
         // Create chart configuration
         chartInstance = new Chart(ctx, {
-            type: (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') ? 'bar' : 'line',
+            type: (currentPeriod === 'scatter') ? 'scatter' : ((currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') ? 'bar' : 'line'),
             data: {
                 labels: labels,
                 datasets: chartDatasets
@@ -1069,37 +1100,52 @@ function drawChart(historyData) {
                         const label = chart.data.labels[index];
                         chart.hoveredIndex = index;
                         
-                        let details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
+                        let details;
                         const datasetStrings = [];
-                        chart.data.datasets.forEach(dataset => {
-                            const val = dataset.data[index];
-                            const name = dataset.label || '';
-                            if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound') {
-                                return;
+                        
+                        if (currentPeriod === 'scatter') {
+                            const point = chart.data.datasets[0].data[index];
+                            if (point && historyData[index]) {
+                                const record = historyData[index];
+                                const labelStr = formatTimestamp(record.timestamp, '7d');
+                                details = `<span style="font-weight: 500; color: #f3f4f6;">${labelStr}</span> — `;
+                                datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:#f59e0b"></span>Outdoor: <strong>${point.x.toFixed(1)}°C</strong></span>`);
+                                datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:#06b6d4"></span>Indoor: <strong>${point.y.toFixed(1)}°C</strong></span>`);
+                            } else {
+                                details = '';
                             }
-                            if (val !== null && val !== undefined) {
-                                if (name === 'Forecast Uncertainty') {
-                                    const low = chart.data.datasets[3].data[index];
-                                    const high = chart.data.datasets[4].data[index];
-                                    if (low !== null && high !== null) {
-                                        datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(6,182,212,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
-                                    }
-                                } else if (name === 'Deviation Uncertainty') {
-                                    const low = chart.data.datasets[1].data[index];
-                                    const high = chart.data.datasets[2].data[index];
-                                    if (low !== null && high !== null) {
-                                        datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(156,163,175,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
-                                    }
-                                } else {
-                                    const color = dataset.borderColor;
-                                    let formattedVal = val.toFixed(1) + '°C';
-                                    if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
-                                        formattedVal = (val >= 0 ? '+' : '') + val.toFixed(2) + '°C';
-                                    }
-                                    datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:${color}"></span>${name}: <strong>${formattedVal}</strong></span>`);
+                        } else {
+                            details = `<span style="font-weight: 500; color: #f3f4f6;">${label}</span> — `;
+                            chart.data.datasets.forEach(dataset => {
+                                const val = dataset.data[index];
+                                const name = dataset.label || '';
+                                if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound') {
+                                    return;
                                 }
-                            }
-                        });
+                                if (val !== null && val !== undefined) {
+                                    if (name === 'Forecast Uncertainty') {
+                                        const low = chart.data.datasets[3].data[index];
+                                        const high = chart.data.datasets[4].data[index];
+                                        if (low !== null && high !== null) {
+                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(6,182,212,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                        }
+                                    } else if (name === 'Deviation Uncertainty') {
+                                        const low = chart.data.datasets[1].data[index];
+                                        const high = chart.data.datasets[2].data[index];
+                                        if (low !== null && high !== null) {
+                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(156,163,175,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                        }
+                                    } else {
+                                        const color = dataset.borderColor;
+                                        let formattedVal = val.toFixed(1) + '°C';
+                                        if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
+                                            formattedVal = (val >= 0 ? '+' : '') + val.toFixed(2) + '°C';
+                                        }
+                                        datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:${color}"></span>${name}: <strong>${formattedVal}</strong></span>`);
+                                    }
+                                }
+                            });
+                        }
                         hoverEl.innerHTML = details + datasetStrings.join(' | ');
                         hoverEl.style.opacity = '1';
                     } else {
@@ -1127,6 +1173,7 @@ function drawChart(historyData) {
                 },
                 scales: {
                     x: {
+                        type: (currentPeriod === 'scatter') ? 'linear' : undefined,
                         grid: {
                             color: 'rgba(255, 255, 255, 0.03)',
                             drawBorder: false
@@ -1134,13 +1181,31 @@ function drawChart(historyData) {
                         ticks: {
                             color: '#9ca3af',
                             font: { family: 'Outfit', size: 11 },
-                            maxTicksLimit: 8
+                            maxTicksLimit: 8,
+                            callback: function(value) {
+                                if (currentPeriod === 'scatter') {
+                                    return value.toFixed(1) + '°C';
+                                }
+                                return this.getLabelForValue(value);
+                            }
+                        },
+                        title: {
+                            display: currentPeriod === 'scatter',
+                            text: 'Outdoor Temperature (°C)',
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 12 }
                         }
                     },
                     y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
+                        title: {
+                            display: currentPeriod === 'scatter',
+                            text: 'Indoor Temperature (°C)',
+                            color: '#9ca3af',
+                            font: { family: 'Outfit', size: 12 }
+                        },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.04)',
                             drawBorder: false
@@ -1680,6 +1745,8 @@ async function loadHistory(period) {
         let fetchPeriod = period;
         if (period === 'forecast' || period === 'forecast_deviation') {
             fetchPeriod = '24h';
+        } else if (period === 'scatter') {
+            fetchPeriod = '7d';
         }
         let outdoorData = outdoorForecast;
         
