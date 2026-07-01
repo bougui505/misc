@@ -777,11 +777,11 @@ function drawChart(historyData) {
         dataset1 = validPoints.map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
         dataset2 = null;
         
-        // Compute Linear Regression (y = mx + c)
-        let slope = 0, intercept = 0;
+        // Compute Linear Regression (y = mx + c) and Pearson Correlation Coefficient (R)
+        let slope = 0, intercept = 0, r = 0;
         if (validPoints.length > 1) {
             const n = validPoints.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
             validPoints.forEach(p => {
                 const xVal = p.outdoorTemperature;
                 const yVal = p.temperature;
@@ -789,9 +789,18 @@ function drawChart(historyData) {
                 sumY += yVal;
                 sumXY += xVal * yVal;
                 sumXX += xVal * xVal;
+                sumYY += yVal * yVal;
             });
-            slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-            intercept = (sumY - slope * sumX) / n;
+            const denominator = n * sumXX - sumX * sumX;
+            if (denominator !== 0) {
+                slope = (n * sumXY - sumX * sumY) / denominator;
+                intercept = (sumY - slope * sumX) / n;
+            }
+            
+            const rDenom = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
+            if (rDenom !== 0) {
+                r = (n * sumXY - sumX * sumY) / rDenom;
+            }
         }
         
         const outs = validPoints.map(p => p.outdoorTemperature);
@@ -813,7 +822,7 @@ function drawChart(historyData) {
             { x: scatterMax, y: scatterMax }
         ];
         
-        label1 = `Trend (Coupling Rate: ${slope.toFixed(3)} °C/°C)`;
+        label1 = `Trend (Slope: ${slope.toFixed(3)} °C/°C, Pearson R: ${r.toFixed(3)})`;
         color1 = '#ef4444'; // Red for trend line
     } else {
         labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
