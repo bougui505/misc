@@ -792,6 +792,15 @@ function drawChart(historyData) {
             { x: maxX, y: parseFloat((slope * maxX + intercept).toFixed(2)) }
         ];
         
+        // dataset6 will hold the diagonal y = x line points
+        const ins = validPoints.map(p => p.temperature);
+        const absoluteMin = Math.min(minX, ...ins) - 1;
+        const absoluteMax = Math.max(maxX, ...ins) + 1;
+        dataset6 = [
+            { x: absoluteMin, y: absoluteMin },
+            { x: absoluteMax, y: absoluteMax }
+        ];
+        
         label1 = `Trend (Coupling Rate: ${slope.toFixed(3)} °C/°C)`;
         color1 = '#ef4444'; // Red for trend line
     } else {
@@ -884,6 +893,20 @@ function drawChart(historyData) {
             pointRadius: 0,
             showLine: true,
             order: 1
+        });
+
+        // Diagonal Line (y = x)
+        chartDatasets.push({
+            type: 'line',
+            label: 'Equilibrium (T_in = T_out)',
+            data: dataset6,
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderWidth: 1.25,
+            borderDash: [4, 4],
+            fill: false,
+            pointRadius: 0,
+            showLine: true,
+            order: 0
         });
     } else if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
         const numPastHours = 24;
@@ -1148,6 +1171,8 @@ function drawChart(historyData) {
             
             chartInstance.data.datasets[5].data = dataset5;
             chartInstance.data.datasets[5].label = label1;
+            
+            chartInstance.data.datasets[6].data = dataset6;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
