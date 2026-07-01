@@ -970,6 +970,10 @@ function drawChart(historyData) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 onHover: (event, activeElements, chart) => {
                     const hoverEl = document.getElementById('temp-hover-details');
                     if (!hoverEl) return;
@@ -1395,6 +1399,10 @@ function drawHumidityChart(historyData) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 onHover: (event, activeElements, chart) => {
                     const hoverEl = document.getElementById('humidity-hover-details');
                     if (!hoverEl) return;
@@ -2447,6 +2455,10 @@ async function drawInsulationChart(historyData) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     onHover: (event, activeElements, chart) => {
                         const hoverEl = document.getElementById('insulation-hover-details');
                         if (!hoverEl) return;
