@@ -625,8 +625,10 @@ function drawChart(historyData) {
             dataset7 = new Array(totalHours).fill(null);
             for (let idx = 0; idx < totalHours; idx++) {
                 if (idx >= numPastHours && deviations[idx] !== null) {
-                    dataset6[idx] = parseFloat((deviations[idx] - avgMaxErr).toFixed(2));
-                    dataset7[idx] = parseFloat((deviations[idx] + avgMinErr).toFixed(2));
+                    const h = idx - numPastHours;
+                    const factor = Math.sqrt(h / 24.0);
+                    dataset6[idx] = parseFloat((deviations[idx] - avgMaxErr * factor).toFixed(2));
+                    dataset7[idx] = parseFloat((deviations[idx] + avgMinErr * factor).toFixed(2));
                 }
             }
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
@@ -640,8 +642,10 @@ function drawChart(historyData) {
             
             for (let idx = 0; idx < totalHours; idx++) {
                 if (idx >= numPastHours && predictedIndoor[idx] !== null) {
-                    dataset6[idx] = parseFloat((predictedIndoor[idx] - avgMinErr).toFixed(2));
-                    dataset7[idx] = parseFloat((predictedIndoor[idx] + avgMaxErr).toFixed(2));
+                    const h = idx - numPastHours;
+                    const factor = Math.sqrt(h / 24.0);
+                    dataset6[idx] = parseFloat((predictedIndoor[idx] - avgMinErr * factor).toFixed(2));
+                    dataset7[idx] = parseFloat((predictedIndoor[idx] + avgMaxErr * factor).toFixed(2));
                 }
             }
             
