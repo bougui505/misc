@@ -231,34 +231,13 @@ const verticalLinePlugin = {
             ctx.lineTo(x, yBottom);
             ctx.stroke();
             
-            // Draw a red "NOW" badge at the top of the line
+            // Draw the current time text below the chart, aligned with the x tick labels
+            const timeLabel = chart.data.labels[index];
             ctx.fillStyle = '#ef4444';
-            ctx.font = 'bold 9px Outfit, sans-serif';
+            ctx.font = 'bold 11px Outfit, sans-serif';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            const text = 'NOW';
-            const textWidth = ctx.measureText(text).width;
-            const padX = 5;
-            const padY = 3;
-            const badgeW = textWidth + padX * 2;
-            const badgeH = 13;
-            const badgeX = x - badgeW / 2;
-            const badgeY = yTop - badgeH - 3;
-            
-            // Background pill
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
-            } else {
-                ctx.rect(badgeX, badgeY, badgeW, badgeH);
-            }
-            ctx.fillStyle = '#ef4444';
-            ctx.fill();
-            
-            // Text inside pill
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(text, x, badgeY + badgeH / 2 + 0.5);
+            ctx.textBaseline = 'top';
+            ctx.fillText(timeLabel, x, yBottom + 8);
             
             ctx.restore();
         }
