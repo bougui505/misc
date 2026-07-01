@@ -217,10 +217,11 @@ const hoverIndicatorPlugin = {
         const yAxis = chart.scales.y;
         if (!yAxis || !xAxis) return;
         
-        const meta0 = chart.getDatasetMeta(0);
-        if (!meta0 || !meta0.data || !meta0.data[index]) return;
+        const activeDsIdx = (currentPeriod === 'scatter') ? 4 : 0;
+        const activeMeta = chart.getDatasetMeta(activeDsIdx);
+        if (!activeMeta || !activeMeta.data || !activeMeta.data[index]) return;
         
-        const x = meta0.data[index].x;
+        const x = activeMeta.data[index].x;
         const yTop = yAxis.top;
         const yBottom = yAxis.bottom;
         
@@ -749,13 +750,50 @@ function drawChart(historyData) {
             }
         }
     } else if (currentPeriod === 'scatter') {
-        labels = new Array(historyData.length).fill('');
-        dataset1 = historyData
-            .filter(d => d.outdoorTemperature !== null && d.temperature !== null)
-            .map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
+        const validPoints = historyData.filter(d => d.outdoorTemperature !== null && d.temperature !== null);
+        labels = new Array(validPoints.length).fill('');
+        
+        // Color points by time of day to show diurnal hysteresis loops and solar gain
+        dataset3 = validPoints.map(d => {
+            const hour = new Date(d.timestamp * 1000).getHours();
+            if (hour >= 12 && hour < 18) return '#f97316'; // Afternoon: Orange
+            if (hour >= 6 && hour < 12) return '#10b981';  // Morning: Emerald Green
+            if (hour >= 18 && hour < 24) return '#8b5cf6'; // Evening: Purple
+            return '#3b82f6';                              // Night: Blue
+        });
+
+        dataset1 = validPoints.map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
         dataset2 = null;
-        label1 = 'Thermal Coupling (In vs Out)';
-        color1 = '#06b6d4';
+        
+        // Compute Linear Regression (y = mx + c)
+        let slope = 0, intercept = 0;
+        if (validPoints.length > 1) {
+            const n = validPoints.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            validPoints.forEach(p => {
+                const xVal = p.outdoorTemperature;
+                const yVal = p.temperature;
+                sumX += xVal;
+                sumY += yVal;
+                sumXY += xVal * yVal;
+                sumXX += xVal * xVal;
+            });
+            slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            intercept = (sumY - slope * sumX) / n;
+        }
+        
+        const outs = validPoints.map(p => p.outdoorTemperature);
+        const minX = Math.min(...outs);
+        const maxX = Math.max(...outs);
+        
+        // dataset5 will hold the fit line points
+        dataset5 = [
+            { x: minX, y: parseFloat((slope * minX + intercept).toFixed(2)) },
+            { x: maxX, y: parseFloat((slope * maxX + intercept).toFixed(2)) }
+        ];
+        
+        label1 = `Trend (Coupling Rate: ${slope.toFixed(3)} °C/°C)`;
+        color1 = '#ef4444'; // Red for trend line
     } else {
         labels = historyData.map(d => formatTimestamp(d.timestamp, currentPeriod));
         dataset1 = historyData.map(d => d.temperature);
@@ -783,19 +821,68 @@ function drawChart(historyData) {
     // Prepare datasets array dynamically
     const chartDatasets = [];
     if (currentPeriod === 'scatter') {
+        // Legend Keys (dummy datasets)
         chartDatasets.push({
             type: 'scatter',
-            label: label1,
+            label: 'Morning (6:00 - 12:00)',
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: '#10b981',
+            pointRadius: 4.5
+        });
+        chartDatasets.push({
+            type: 'scatter',
+            label: 'Afternoon (12:00 - 18:00)',
+            data: [],
+            borderColor: '#f97316',
+            backgroundColor: '#f97316',
+            pointRadius: 4.5
+        });
+        chartDatasets.push({
+            type: 'scatter',
+            label: 'Evening (18:00 - 24:00)',
+            data: [],
+            borderColor: '#8b5cf6',
+            backgroundColor: '#8b5cf6',
+            pointRadius: 4.5
+        });
+        chartDatasets.push({
+            type: 'scatter',
+            label: 'Night (0:00 - 6:00)',
+            data: [],
+            borderColor: '#3b82f6',
+            backgroundColor: '#3b82f6',
+            pointRadius: 4.5
+        });
+
+        // Scatter Points
+        chartDatasets.push({
+            type: 'scatter',
+            label: 'Indoor vs Outdoor Correlation',
             data: dataset1,
-            borderColor: color1,
-            backgroundColor: 'rgba(6, 182, 212, 0.22)',
-            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.12)',
+            backgroundColor: dataset3,
+            borderWidth: 0.5,
             pointRadius: 4.5,
             pointHoverRadius: 7,
-            pointBackgroundColor: color1,
+            pointBackgroundColor: dataset3,
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1,
             pointHoverBorderWidth: 2,
+            order: 2
+        });
+
+        // Fit Line
+        chartDatasets.push({
+            type: 'line',
+            label: label1,
+            data: dataset5,
+            borderColor: '#ef4444',
+            borderWidth: 1.75,
+            borderDash: [6, 4],
+            fill: false,
+            pointRadius: 0,
+            showLine: true,
             order: 1
         });
     } else if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
@@ -1054,9 +1141,13 @@ function drawChart(historyData) {
             chartInstance.data.datasets[6].data = dataset5;
             chartInstance.data.datasets[6].label = label5;
         } else if (currentPeriod === 'scatter') {
-            chartInstance.data.datasets[0].data = dataset1;
-            chartInstance.data.datasets[0].label = label1;
-            chartInstance.data.datasets[0].borderColor = color1;
+            // Update the scatter points (index 4) and the trend line (index 5)
+            chartInstance.data.datasets[4].data = dataset1;
+            chartInstance.data.datasets[4].backgroundColor = dataset3;
+            chartInstance.data.datasets[4].pointBackgroundColor = dataset3;
+            
+            chartInstance.data.datasets[5].data = dataset5;
+            chartInstance.data.datasets[5].label = label1;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
@@ -1104,7 +1195,7 @@ function drawChart(historyData) {
                         const datasetStrings = [];
                         
                         if (currentPeriod === 'scatter') {
-                            const point = chart.data.datasets[0].data[index];
+                            const point = chart.data.datasets[4].data[index];
                             if (point && historyData[index]) {
                                 const record = historyData[index];
                                 const labelStr = formatTimestamp(record.timestamp, '7d');
