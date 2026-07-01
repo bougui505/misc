@@ -239,9 +239,11 @@ const hoverIndicatorPlugin = {
         // 2. Draw solid pinpoint dots on active curves
         chart.data.datasets.forEach((dataset, dsIdx) => {
             const name = dataset.label || '';
-            // Skip helper/uncertainty datasets
+            // Skip helper/uncertainty/legend/trend/equilibrium datasets
             if (name === 'Action Suggestion' || name === 'Forecast Lower Bound' || name === 'Deviation Lower Bound' ||
-                name === 'Forecast Uncertainty' || name === 'Deviation Uncertainty') {
+                name === 'Forecast Uncertainty' || name === 'Deviation Uncertainty' ||
+                name.includes('Morning') || name.includes('Afternoon') || name.includes('Evening') || name.includes('Night') ||
+                name.includes('Trend') || name.includes('Equilibrium')) {
                 return;
             }
             
