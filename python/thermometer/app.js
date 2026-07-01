@@ -445,6 +445,15 @@ function drawChart(historyData) {
         chartInstance.destroy();
         chartInstance = null;
     }
+
+    const wrapper = document.querySelector('.chart-wrapper');
+    if (wrapper) {
+        if (currentPeriod === 'scatter') {
+            wrapper.classList.add('scatter-active');
+        } else {
+            wrapper.classList.remove('scatter-active');
+        }
+    }
     
     const ctx = document.getElementById('tempChart').getContext('2d');
     
