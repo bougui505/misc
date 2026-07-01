@@ -2334,8 +2334,30 @@ function optimizeInsulationRate(historyData) {
     const validPoints = historyData.filter(d => d.temperature !== null && d.outdoorTemperature !== null);
     if (validPoints.length < 12) return 0.05; // Fallback to default if insufficient data
     
+    // 1. Calculate static linear coupling slope & intercept (Baseline Model)
+    let slope = 0, intercept = 0;
+    const n = validPoints.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    validPoints.forEach(p => {
+        const xVal = p.outdoorTemperature;
+        const yVal = p.temperature;
+        sumX += xVal;
+        sumY += yVal;
+        sumXY += xVal * yVal;
+        sumXX += xVal * xVal;
+    });
+    const denominator = n * sumXX - sumX * sumX;
+    if (denominator !== 0) {
+        slope = (n * sumXY - sumX * sumY) / denominator;
+        intercept = (sumY - slope * sumX) / n;
+    }
+    
+    // Calculate alphaPrior using the physical relation: alpha ≈ 0.2618 * m / sqrt(1 - m^2)
+    const alphaPrior = 0.2618 * Math.abs(slope) / Math.sqrt(Math.max(0.01, 1 - slope * slope));
+    
     let bestAlpha = 0.05;
     let minMSE = Infinity;
+    let minMSEWithoutPenalty = Infinity;
     
     // Sort points chronologically
     const sortedPoints = [...validPoints].sort((a, b) => a.timestamp - b.timestamp);
@@ -2359,9 +2381,35 @@ function optimizeInsulationRate(historyData) {
         }
         
         const mse = sumSquaredError / count;
-        if (mse < minMSE) {
-            minMSE = mse;
+        // Prior regularization: penalize alpha when it drifts far from the physical coupling slope estimate
+        const regularization = 0.05 * Math.pow(alpha - alphaPrior, 2);
+        const loss = mse + regularization;
+        
+        if (loss < minMSE) {
+            minMSE = loss;
+            minMSEWithoutPenalty = mse;
             bestAlpha = alpha;
+        }
+    }
+    
+    // Calculate Static Linear Baseline Model MSE
+    let baselineSumSE = 0;
+    validPoints.forEach(p => {
+        const predY = slope * p.outdoorTemperature + intercept;
+        baselineSumSE += Math.pow(p.temperature - predY, 2);
+    });
+    const baselineMSE = baselineSumSE / n;
+    
+    // Calculate relative improvement
+    const improvement = ((baselineMSE - minMSEWithoutPenalty) / baselineMSE) * 100;
+    
+    // Update the UI Benchmark item
+    const benchmarkEl = document.getElementById('formula-param-benchmark');
+    if (benchmarkEl) {
+        if (improvement > 0) {
+            benchmarkEl.innerHTML = `<strong>Model Fit:</strong> Physics model has <strong>${improvement.toFixed(1)}% less error</strong> than static linear baseline (MSE: ${minMSEWithoutPenalty.toFixed(3)} vs ${baselineMSE.toFixed(3)})`;
+        } else {
+            benchmarkEl.innerHTML = `<strong>Model Fit:</strong> Physics model error: <strong>${minMSEWithoutPenalty.toFixed(3)} MSE</strong> (static linear baseline: ${baselineMSE.toFixed(3)} MSE)`;
         }
     }
     
