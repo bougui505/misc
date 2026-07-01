@@ -1704,6 +1704,15 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
             avgMinErr = sumAbsMinErr / forecastErrorsList.length;
         }
         
+        console.log("DEBUG renderForecastSchedule:", {
+            avgMaxErr,
+            avgMinErr,
+            forecastErrorsLength: forecastErrorsList.length,
+            biasCorrection,
+            referenceTimestamp,
+            historyDataLength: historyData ? historyData.length : 0
+        });
+        
         const getIsoHourString = (d) => {
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
