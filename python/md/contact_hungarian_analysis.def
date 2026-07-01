@@ -1,0 +1,32 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%files
+contact_hungarian_analysis.py /app/
+
+%post
+    # Install system dependencies
+    apt-get update && apt-get install -y \
+        gcc \
+        g++ \
+        build-essential \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Create working directory
+    mkdir -p /app
+    cd /app
+
+    # Install Python dependencies
+    pip install --no-cache-dir \
+        MDAnalysis \
+        numpy \
+        scipy \
+        typer \
+        tqdm
+
+%environment
+    export PYTHONPATH=/app:$PYTHONPATH
+    export PATH=/app:$PATH
+
+%runscript
+    python /app/contact_hungarian_analysis.py "$@"
