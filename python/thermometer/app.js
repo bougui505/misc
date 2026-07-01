@@ -592,11 +592,32 @@ function drawChart(historyData) {
             }
         }
         
-        // 3. Connect predicted line to the last actual reading at index 24 (Now)
+        // 3. Populate past predicted indoor temperatures (simulation) to show model fit/prediction error
+        const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
+        let firstValidIdx = -1;
+        for (let idx = 0; idx <= numPastHours; idx++) {
+            if (actualIndoor[idx] !== null) {
+                firstValidIdx = idx;
+                break;
+            }
+        }
+        if (firstValidIdx !== -1) {
+            predictedIndoor[firstValidIdx] = actualIndoor[firstValidIdx];
+            for (let idx = firstValidIdx + 1; idx <= numPastHours; idx++) {
+                const prevPred = predictedIndoor[idx - 1];
+                const outTemp = effectiveOutdoorData[idx];
+                if (prevPred !== null && outTemp !== null) {
+                    predictedIndoor[idx] = parseFloat((prevPred + alpha * (outTemp - prevPred) + 0.05).toFixed(2));
+                } else if (prevPred !== null) {
+                    predictedIndoor[idx] = parseFloat((prevPred + 0.05).toFixed(2));
+                }
+            }
+        }
+
+        // 4. Connect predicted line to the last actual reading at index 24 (Now) for future projection
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
-        // 4. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
-        const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
+        // 5. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
         let currentSlope = getLatestTemperatureSlope(historyData);
         
         const slopeParamEl = document.getElementById('formula-param-slope');
@@ -606,7 +627,7 @@ function drawChart(historyData) {
         for (let offset = 1; offset <= numFutureHours; offset++) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
-            const prevIndoor = (offset === 1) ? actualIndoor[numPastHours] : predictedIndoor[prevIdx];
+            const prevIndoor = predictedIndoor[prevIdx];
             const outTemp = effectiveOutdoorData[idx];
             
             if (prevIndoor !== null && outTemp !== null) {
