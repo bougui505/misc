@@ -13,6 +13,19 @@ import multiprocessing
 import os
 
 import MDAnalysis
+try:
+    from MDAnalysis.guesser.tables import vdwradii
+except ImportError:
+    from MDAnalysis.topology.tables import vdwradii
+
+# Update vdwradii for robustness (support case-insensitive lookups and missing elements like Fe)
+for k, v in list(vdwradii.items()):
+    vdwradii[k.lower()] = v
+    vdwradii[k.capitalize()] = v
+for element, radius in [('Fe', 1.8), ('Zn', 1.39), ('Cl', 1.75)]:
+    for k in (element.upper(), element.lower(), element.capitalize()):
+        vdwradii[k] = radius
+
 import numpy as np
 import typer
 from MDAnalysis.core.groups import AtomGroup
