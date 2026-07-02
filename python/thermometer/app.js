@@ -217,7 +217,7 @@ const hoverIndicatorPlugin = {
         const yAxis = chart.scales.y;
         if (!yAxis || !xAxis) return;
         
-        const activeDsIdx = (currentPeriod === 'scatter') ? 4 : 0;
+        const activeDsIdx = (currentPeriod === 'scatter') ? 5 : 0;
         const activeMeta = chart.getDatasetMeta(activeDsIdx);
         if (!activeMeta || !activeMeta.data || !activeMeta.data[index]) return;
         
@@ -876,6 +876,19 @@ function drawChart(historyData) {
     // Prepare datasets array dynamically
     const chartDatasets = [];
     if (currentPeriod === 'scatter') {
+        const numPoints = dataset1.length;
+        const pointRadii = new Array(numPoints).fill(4.5);
+        const pointHoverRadii = new Array(numPoints).fill(7);
+        const pointBorderWidths = new Array(numPoints).fill(1);
+        const pointBorderColors = new Array(numPoints).fill('#ffffff');
+        
+        if (numPoints > 0) {
+            pointRadii[numPoints - 1] = 8;
+            pointHoverRadii[numPoints - 1] = 10;
+            pointBorderWidths[numPoints - 1] = 2.5;
+            pointBorderColors[numPoints - 1] = '#ef4444'; // Red border for Now
+        }
+
         // Legend Keys (dummy datasets)
         chartDatasets.push({
             type: 'scatter',
@@ -909,6 +922,15 @@ function drawChart(historyData) {
             backgroundColor: '#3b82f6',
             pointRadius: 4.5
         });
+        chartDatasets.push({
+            type: 'scatter',
+            label: 'Current Condition (Now)',
+            data: [],
+            borderColor: '#ef4444',
+            backgroundColor: '#ffffff',
+            pointRadius: 6,
+            pointBorderWidth: 2
+        });
 
         // Scatter Points
         chartDatasets.push({
@@ -918,12 +940,12 @@ function drawChart(historyData) {
             borderColor: 'rgba(255,255,255,0.12)',
             backgroundColor: dataset3,
             borderWidth: 0.5,
-            pointRadius: 4.5,
-            pointHoverRadius: 7,
+            pointRadius: pointRadii,
+            pointHoverRadius: pointHoverRadii,
             pointBackgroundColor: dataset3,
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1,
-            pointHoverBorderWidth: 2,
+            pointBorderColor: pointBorderColors,
+            pointBorderWidth: pointBorderWidths,
+            pointHoverBorderWidth: 3,
             order: 2
         });
 
@@ -1226,17 +1248,34 @@ function drawChart(historyData) {
             chartInstance.data.datasets[6].data = dataset5;
             chartInstance.data.datasets[6].label = label5;
         } else if (currentPeriod === 'scatter') {
-            // Update the scatter points (index 4), trend line (index 5), diagonal line (index 6), and daily cycle (index 7)
-            chartInstance.data.datasets[4].data = dataset1;
-            chartInstance.data.datasets[4].backgroundColor = dataset3;
-            chartInstance.data.datasets[4].pointBackgroundColor = dataset3;
+            const numPoints = dataset1.length;
+            const pointRadii = new Array(numPoints).fill(4.5);
+            const pointHoverRadii = new Array(numPoints).fill(7);
+            const pointBorderWidths = new Array(numPoints).fill(1);
+            const pointBorderColors = new Array(numPoints).fill('#ffffff');
             
-            chartInstance.data.datasets[5].data = dataset5;
-            chartInstance.data.datasets[5].label = label1;
+            if (numPoints > 0) {
+                pointRadii[numPoints - 1] = 8;
+                pointHoverRadii[numPoints - 1] = 10;
+                pointBorderWidths[numPoints - 1] = 2.5;
+                pointBorderColors[numPoints - 1] = '#ef4444';
+            }
             
-            chartInstance.data.datasets[6].data = dataset6;
+            // Update the scatter points (index 5), trend line (index 6), diagonal line (index 7), and daily cycle (index 8)
+            chartInstance.data.datasets[5].data = dataset1;
+            chartInstance.data.datasets[5].backgroundColor = dataset3;
+            chartInstance.data.datasets[5].pointBackgroundColor = dataset3;
+            chartInstance.data.datasets[5].pointRadius = pointRadii;
+            chartInstance.data.datasets[5].pointHoverRadius = pointHoverRadii;
+            chartInstance.data.datasets[5].pointBorderColor = pointBorderColors;
+            chartInstance.data.datasets[5].pointBorderWidth = pointBorderWidths;
             
-            chartInstance.data.datasets[7].data = dataset7;
+            chartInstance.data.datasets[6].data = dataset5;
+            chartInstance.data.datasets[6].label = label1;
+            
+            chartInstance.data.datasets[7].data = dataset6;
+            
+            chartInstance.data.datasets[8].data = dataset7;
         } else {
             chartInstance.data.datasets[0].data = dataset1;
             chartInstance.data.datasets[0].label = label1;
@@ -1279,7 +1318,7 @@ function drawChart(historyData) {
                     if (activeElements.length > 0) {
                         let activeEl = activeElements[0];
                         if (currentPeriod === 'scatter') {
-                            const scatterEl = activeElements.find(el => el.datasetIndex === 4);
+                            const scatterEl = activeElements.find(el => el.datasetIndex === 5);
                             if (!scatterEl) {
                                 chart.hoveredIndex = null;
                                 hoverEl.style.opacity = '0';
@@ -1296,7 +1335,7 @@ function drawChart(historyData) {
                         const datasetStrings = [];
                         
                         if (currentPeriod === 'scatter') {
-                            const point = chart.data.datasets[4].data[index];
+                            const point = chart.data.datasets[5].data[index];
                             if (point && point.timestamp) {
                                 const labelStr = formatTimestamp(point.timestamp, '7d');
                                 details = `<span style="font-weight: 500; color: #f3f4f6;">${labelStr}</span> — `;
