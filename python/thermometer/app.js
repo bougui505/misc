@@ -634,12 +634,6 @@ function drawChart(historyData) {
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
         // 5. Recursive thermal prediction for future hours using effective (solar-gain) outdoor temperatures
-        let currentSlope = getLatestTemperatureSlope(historyData);
-        
-        const slopeParamEl = document.getElementById('formula-param-slope');
-        if (slopeParamEl) {
-            slopeParamEl.innerHTML = `<strong>slope(t):</strong> Thermal momentum (currently <strong>${(currentSlope >= 0 ? '+' : '') + currentSlope.toFixed(2)}°C/h</strong>, decaying: &times;0.7/h)`;
-        }
         for (let offset = 1; offset <= numFutureHours; offset++) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
@@ -647,8 +641,7 @@ function drawChart(historyData) {
             const outTemp = effectiveOutdoorData[idx];
             
             if (prevIndoor !== null && outTemp !== null) {
-                currentSlope *= 0.7; // Decay the momentum/slope factor hourly
-                predictedIndoor[idx] = parseFloat((prevIndoor + alpha * (outTemp - prevIndoor) + 0.05 + currentSlope).toFixed(2));
+                predictedIndoor[idx] = parseFloat((prevIndoor + alpha * (outTemp - prevIndoor) + 0.05).toFixed(2));
             }
         }
         
@@ -2019,14 +2012,7 @@ async function loadHistory(period) {
             });
         }
         
-        // Update the live slope parameter inside the equation legend on load
-        const currentSlope = getLatestTemperatureSlope(historyData);
-        const slopeParamEl = document.getElementById('formula-param-slope');
-        if (slopeParamEl) {
-            slopeParamEl.innerHTML = `<strong>slope(t):</strong> Thermal momentum (currently <strong>${(currentSlope >= 0 ? '+' : '') + currentSlope.toFixed(2)}°C/h</strong>, decaying: &times;0.7/h)`;
-        }
-        
-        // Run insulation optimization and update UI
+        // Update UI
         let alpha = 0.05;
         if (historyData && historyData.length > 0) {
             alpha = optimizeInsulationRate(historyData);
@@ -2038,7 +2024,7 @@ async function loadHistory(period) {
             }
         }
         const biasCorrection = getHistoricalBiasCorrection();
-        updateFormulaUI(alpha, currentSlope, biasCorrection);
+        updateFormulaUI(alpha, biasCorrection);
         
         drawChart(historyData);
         drawHumidityChart(historyData);
@@ -2125,9 +2111,8 @@ function renderForecastSchedule(lastIndoor, referenceTimestamp, historyData) {
                 const effectiveOut = outTemp + solarBias;
                 
                 if (h > 0) {
-                    currentSlope *= 0.7; // Decay slope over time
-                    // Predict step only for future hours using effective outdoor temperature (with solar bias) and slope
-                    currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05 + currentSlope;
+                    // Predict step only for future hours using effective outdoor temperature (with solar bias)
+                    currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05;
                 }
                 
                 // Apply bias correction to future predictions
@@ -2528,10 +2513,10 @@ function getInsulationInterpretation(alpha) {
 }
 
 // Update the parameter equation text inside the details summary block
-function updateFormulaUI(alpha, slope, bias) {
+function updateFormulaUI(alpha, bias) {
     const mathBox = document.getElementById('formula-math-box');
     if (mathBox) {
-        mathBox.innerHTML = `T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + <strong>${alpha.toFixed(3)}</strong> &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + slope(t) + bias`;
+        mathBox.innerHTML = `T<sub>in</sub>(t) = T<sub>in</sub>(t-1) + <strong>${alpha.toFixed(3)}</strong> &times; [T<sub>out</sub>(t) - T<sub>in</sub>(t-1)] + 0.05 + bias`;
     }
     
     const interpretation = getInsulationInterpretation(alpha);
