@@ -796,7 +796,7 @@ function drawChart(historyData) {
             return '#3b82f6';                              // Night: Blue
         });
 
-        dataset1 = validPoints.map(d => ({ x: d.outdoorTemperature, y: d.temperature }));
+        dataset1 = validPoints.map(d => ({ x: d.outdoorTemperature, y: d.temperature, timestamp: d.timestamp }));
         dataset2 = null;
         
         // Compute Linear Regression (y = mx + c) and Pearson Correlation Coefficient (R)
@@ -1297,9 +1297,8 @@ function drawChart(historyData) {
                         
                         if (currentPeriod === 'scatter') {
                             const point = chart.data.datasets[4].data[index];
-                            if (point && historyData[index]) {
-                                const record = historyData[index];
-                                const labelStr = formatTimestamp(record.timestamp, '7d');
+                            if (point && point.timestamp) {
+                                const labelStr = formatTimestamp(point.timestamp, '7d');
                                 details = `<span style="font-weight: 500; color: #f3f4f6;">${labelStr}</span> — `;
                                 datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:#f59e0b"></span>Outdoor: <strong>${point.x.toFixed(1)}°C</strong></span>`);
                                 datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:#06b6d4"></span>Indoor: <strong>${point.y.toFixed(1)}°C</strong></span>`);
