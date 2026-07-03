@@ -19,25 +19,10 @@ led_zones = [blue, green, yellow, red]
 # Button configuration on GP18 (pin 24)
 pin_bouton = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
 display_enabled = True
-last_interrupt_time = 0
-
-def toggle_display(pin):
-    global display_enabled, last_interrupt_time
-    current_time = time.ticks_ms()
-    # 200ms software debounce
-    if time.ticks_diff(current_time, last_interrupt_time) > 200:
-        display_enabled = not display_enabled
-        last_interrupt_time = current_time
-        if not display_enabled:
-            # Instantly turn off all LEDs
-            blue.value(0); green.value(0); yellow.value(0); red.value(0)
-
-# Attach interrupt to button GP18 falling edge
-pin_bouton.irq(trigger=machine.Pin.IRQ_FALLING, handler=toggle_display)
+last_bouton_state = 1
 
 temperature_precedente = None
 trend = "stable"
-sensor_timer = 0 
 
 def get_zone_index(temp):
     """Returns the index (0 to 3) of the current temperature zone"""
@@ -73,14 +58,30 @@ def update_predictive_leds(temp, current_trend, blink_state):
 print("Démarrage du thermomètre prédictif persistant...")
 
 blink = 0
+loop_tick = 0
 
 while True:
-    # Heartbeat loop running every 0.5s for snappy LED blinking
-    time.sleep(0.5)
-    blink = 1 - blink 
+    time.sleep(0.05) # Snappy 50ms tick loop
+    loop_tick = (loop_tick + 1) % 200
     
-    # --- SENSOR SAMPLING (Every 10 seconds) ---
-    if sensor_timer == 0:
+    # --- POLL BUTTON STATE (Every 50ms) ---
+    bouton_state = pin_bouton.value()
+    if bouton_state != last_bouton_state:
+        time.sleep(0.01) # 10ms debounce
+        if pin_bouton.value() == bouton_state:
+            last_bouton_state = bouton_state
+            if bouton_state == 0: # Pressed (Transition High -> Low)
+                display_enabled = not display_enabled
+                if not display_enabled:
+                    # Instantly turn off all LEDs when disabled
+                    blue.value(0); green.value(0); yellow.value(0); red.value(0)
+    
+    # --- HEARTBEAT & BLINK (Every 0.5s -> 10 ticks) ---
+    if loop_tick % 10 == 0:
+        blink = 1 - blink
+    
+    # --- SENSOR SAMPLING (Every 10 seconds -> 200 ticks) ---
+    if loop_tick == 0:
         try:
             capteur.measure()
             temperature = capteur.temperature()
@@ -95,7 +96,6 @@ while True:
                     trend = "up"
                 elif temperature < temperature_precedente:
                     trend = "down"
-                # Si la température est identique, 'trend' reste inchangé ("up" ou "down")
             
             temperature_precedente = temperature
             
@@ -105,11 +105,9 @@ while True:
         except OSError:
             print("\r[Erreur de lecture AM2302]", end="")
             
-    # --- REFRESH LED DISPLAY ---
-    if temperature_precedente is not None:
+    # --- REFRESH LED DISPLAY (Every 0.5s blink cycle) ---
+    if loop_tick % 10 == 0 and temperature_precedente is not None:
         if display_enabled:
             update_predictive_leds(temperature, trend, blink)
         else:
             blue.value(0); green.value(0); yellow.value(0); red.value(0)
-        
-    sensor_timer = (sensor_timer + 1) % 20
