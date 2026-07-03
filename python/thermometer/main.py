@@ -16,10 +16,12 @@ red = machine.Pin(19, machine.Pin.OUT)
 # Ordered list of LEDs from coldest to hottest
 led_zones = [blue, green, yellow, red]
 
-# Button configuration on GP18 (pin 24)
-pin_bouton = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
+# Button configurations (PULL_UP to GND)
+pin_off = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
+pin_on = machine.Pin(7, machine.Pin.IN, machine.Pin.PULL_UP)
 display_enabled = True
-last_bouton_state = 1
+last_off_state = 1
+last_on_state = 1
 
 temperature_precedente = None
 trend = "stable"
@@ -64,17 +66,26 @@ while True:
     time.sleep(0.05) # Snappy 50ms tick loop
     loop_tick = (loop_tick + 1) % 200
     
-    # --- POLL BUTTON STATE (Every 50ms) ---
-    bouton_state = pin_bouton.value()
-    if bouton_state != last_bouton_state:
+    # --- POLL BUTTON STATES (Every 50ms) ---
+    # Check OFF Button (GP18)
+    off_val = pin_off.value()
+    if off_val != last_off_state:
         time.sleep(0.01) # 10ms debounce
-        if pin_bouton.value() == bouton_state:
-            last_bouton_state = bouton_state
-            if bouton_state == 0: # Pressed (Transition High -> Low)
-                display_enabled = not display_enabled
-                if not display_enabled:
-                    # Instantly turn off all LEDs when disabled
-                    blue.value(0); green.value(0); yellow.value(0); red.value(0)
+        if pin_off.value() == off_val:
+            last_off_state = off_val
+            if off_val == 0: # Pressed
+                display_enabled = False
+                # Instantly turn off all LEDs
+                blue.value(0); green.value(0); yellow.value(0); red.value(0)
+                
+    # Check ON Button (GP07)
+    on_val = pin_on.value()
+    if on_val != last_on_state:
+        time.sleep(0.01) # 10ms debounce
+        if pin_on.value() == on_val:
+            last_on_state = on_val
+            if on_val == 0: # Pressed
+                display_enabled = True
     
     # --- HEARTBEAT & BLINK (Every 0.5s -> 10 ticks) ---
     if loop_tick % 10 == 0:
