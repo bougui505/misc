@@ -16,6 +16,25 @@ red = machine.Pin(19, machine.Pin.OUT)
 # Ordered list of LEDs from coldest to hottest
 led_zones = [blue, green, yellow, red]
 
+# Button configuration on GP18 (pin 24)
+pin_bouton = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
+display_enabled = True
+last_interrupt_time = 0
+
+def toggle_display(pin):
+    global display_enabled, last_interrupt_time
+    current_time = time.ticks_ms()
+    # 200ms software debounce
+    if time.ticks_diff(current_time, last_interrupt_time) > 200:
+        display_enabled = not display_enabled
+        last_interrupt_time = current_time
+        if not display_enabled:
+            # Instantly turn off all LEDs
+            blue.value(0); green.value(0); yellow.value(0); red.value(0)
+
+# Attach interrupt to button GP18 falling edge
+pin_bouton.irq(trigger=machine.Pin.IRQ_FALLING, handler=toggle_display)
+
 temperature_precedente = None
 trend = "stable"
 sensor_timer = 0 
@@ -88,6 +107,9 @@ while True:
             
     # --- REFRESH LED DISPLAY ---
     if temperature_precedente is not None:
-        update_predictive_leds(temperature, trend, blink)
+        if display_enabled:
+            update_predictive_leds(temperature, trend, blink)
+        else:
+            blue.value(0); green.value(0); yellow.value(0); red.value(0)
         
     sensor_timer = (sensor_timer + 1) % 20
