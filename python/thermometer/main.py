@@ -16,12 +16,12 @@ red = machine.Pin(19, machine.Pin.OUT)
 # Ordered list of LEDs from coldest to hottest
 led_zones = [blue, green, yellow, red]
 
-# Button configurations (PULL_UP to GND)
-pin_off = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
-pin_on = machine.Pin(7, machine.Pin.IN, machine.Pin.PULL_UP)
+# Button configurations (PULL_DOWN to 3.3V)
+pin_off = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_DOWN)
+pin_on = machine.Pin(7, machine.Pin.IN, machine.Pin.PULL_DOWN)
 display_enabled = True
-last_off_state = 1
-last_on_state = 1
+last_off_state = 0
+last_on_state = 0
 
 temperature_precedente = None
 trend = "stable"
@@ -73,7 +73,7 @@ while True:
         time.sleep(0.01) # 10ms debounce
         if pin_off.value() == off_val:
             last_off_state = off_val
-            if off_val == 0: # Pressed
+            if off_val == 1: # Pressed (Transition Low -> High)
                 display_enabled = False
                 # Instantly turn off all LEDs
                 blue.value(0); green.value(0); yellow.value(0); red.value(0)
@@ -85,7 +85,7 @@ while True:
         time.sleep(0.01) # 10ms debounce
         if pin_on.value() == on_val:
             last_on_state = on_val
-            if on_val == 0: # Pressed
+            if on_val == 1: # Pressed (Transition Low -> High)
                 display_enabled = True
                 print("BUTTON: GP07 pressed - Display ON")
     
