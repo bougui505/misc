@@ -162,7 +162,10 @@ def serial_reader_thread():
                         
                         line = line_bytes.decode('utf-8', errors='ignore').strip()
                         if line:
-                            print(f"[*] Raw serial line: {repr(line)}")
+                            if "BUTTON:" in line:
+                                print(f"[DEBUG] Pico Button Event: {line}")
+                            else:
+                                print(f"[*] Raw serial line: {repr(line)}")
                             temp, hum = parse_serial_line(line)
                             if temp is not None:
                                 now = int(time.time())

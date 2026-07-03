@@ -77,6 +77,7 @@ while True:
                 display_enabled = False
                 # Instantly turn off all LEDs
                 blue.value(0); green.value(0); yellow.value(0); red.value(0)
+                print("BUTTON: GP18 pressed - Display OFF")
                 
     # Check ON Button (GP07)
     on_val = pin_on.value()
@@ -86,6 +87,7 @@ while True:
             last_on_state = on_val
             if on_val == 0: # Pressed
                 display_enabled = True
+                print("BUTTON: GP07 pressed - Display ON")
     
     # --- HEARTBEAT & BLINK (Every 0.5s -> 10 ticks) ---
     if loop_tick % 10 == 0:
