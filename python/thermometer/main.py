@@ -16,8 +16,8 @@ red = machine.Pin(19, machine.Pin.OUT)
 # Ordered list of LEDs from coldest to hottest
 led_zones = [blue, green, yellow, red]
 
-# Button configuration on GP18 (pin 24)
-pin_bouton = machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP)
+# Button configuration on GP07 (pin 10)
+pin_bouton = machine.Pin(7, machine.Pin.IN, machine.Pin.PULL_UP)
 display_enabled = True
 last_bouton_state = 1
 
