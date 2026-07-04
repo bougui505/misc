@@ -276,6 +276,50 @@ const hoverIndicatorPlugin = {
     }
 };
 
+// Custom plugin to draw a discrete solar radiation horizontal timeline bar at the top of the chart
+const solarRadiationBarPlugin = {
+    id: 'solarRadiationBar',
+    afterDatasetsDraw: (chart) => {
+        if (currentPeriod === 'scatter') return;
+        const ctx = chart.ctx;
+        const yAxis = chart.scales.y;
+        const xAxis = chart.scales.x;
+        const meta = chart.getDatasetMeta(0);
+        const solarBiases = chart.solarBiases;
+        if (!yAxis || !xAxis || !meta || !meta.data || meta.data.length === 0 || !solarBiases) return;
+        
+        ctx.save();
+        
+        const yTop = yAxis.top;
+        const height = 5;
+        
+        for (let idx = 0; idx < meta.data.length; idx++) {
+            if (!meta.data[idx]) continue;
+            const xVal = meta.data[idx].x;
+            const bias = solarBiases[idx] || 0.0;
+            
+            // Calculate segment width
+            let width = 15;
+            if (idx > 0 && meta.data[idx - 1]) {
+                width = Math.abs(xVal - meta.data[idx - 1].x);
+            } else if (idx < meta.data.length - 1 && meta.data[idx + 1]) {
+                width = Math.abs(meta.data[idx + 1].x - xVal);
+            }
+            
+            if (bias > 0) {
+                // Opacity is proportional to solar bias (max is around 4.5)
+                const opacity = Math.min(bias / 4.5, 1.0);
+                
+                // Draw amber block for solar radiation
+                ctx.fillStyle = `rgba(245, 158, 11, ${opacity * 0.75})`;
+                ctx.fillRect(xVal - width / 2, yTop, width, height);
+            }
+        }
+        
+        ctx.restore();
+    }
+};
+
 // Custom plugin to draw a vertical line representing "Now" on forecast/deviation charts
 const verticalLinePlugin = {
     id: 'verticalLine',
@@ -459,7 +503,7 @@ function drawChart(historyData) {
     
     const ctx = document.getElementById('tempChart').getContext('2d');
     
-    let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5, dataset6, dataset7;
+    let labels, dataset1, dataset2, dataset3, dataset4, dataset4Colors, dataset5, dataset6, dataset7, solarBiases = null;
     let label1, label2, label3, label5;
     let color1, color2, color3, color5;
     let scatterMin = undefined, scatterMax = undefined;
@@ -597,6 +641,7 @@ function drawChart(historyData) {
         
         // Pre-calculate effective outdoor temperatures adjusting for south-facing solar load
         const effectiveOutdoorData = new Array(totalHours).fill(null);
+        solarBiases = new Array(totalHours).fill(0);
         for (let idx = 0; idx < totalHours; idx++) {
             const outTemp = outdoorDataPoints[idx];
             if (outTemp !== null) {
@@ -604,6 +649,7 @@ function drawChart(historyData) {
                 const date = new Date(ts * 1000);
                 const cloudCover = outdoorCloudPoints[idx];
                 const solarBias = getSolarParameters(date, cloudCover);
+                solarBiases[idx] = solarBias;
                 effectiveOutdoorData[idx] = parseFloat((outTemp + solarBias).toFixed(2));
             }
         }
@@ -830,6 +876,44 @@ function drawChart(historyData) {
         label2 = 'Feels Like';
         color1 = activeColor;
         color2 = feelsColor;
+    }
+    
+    // Compute solarBiases for the current period to draw the solar radiation timeline bar
+    if (currentPeriod !== 'scatter' && outdoorForecast && outdoorForecast.hourly) {
+        const hourlyTimes = outdoorForecast.hourly.time;
+        const hourlyClouds = outdoorForecast.hourly.cloud_cover || [];
+        
+        if (currentPeriod === 'forecast' || currentPeriod === 'forecast_deviation') {
+            // Already calculated and set in the forecast outdoor data loop
+        } else if (currentPeriod === 'compare' || currentPeriod === 'anomaly') {
+            const now = historyData.length > 0 ? historyData[historyData.length - 1].timestamp : Math.floor(Date.now() / 1000);
+            const numBuckets = 288;
+            const bucketSize = 300;
+            solarBiases = new Array(numBuckets).fill(0);
+            for (let idx = 0; idx < numBuckets; idx++) {
+                const tsToday = now - (numBuckets - 1 - idx) * bucketSize;
+                const dateObj = new Date(tsToday * 1000);
+                const pad = (n) => String(n).padStart(2, '0');
+                const iso = `${dateObj.getFullYear()}-${pad(dateObj.getMonth()+1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:00`;
+                const fIdx = hourlyTimes.indexOf(iso);
+                const cloudCover = fIdx !== -1 ? (hourlyClouds[fIdx] !== undefined ? hourlyClouds[fIdx] : 0) : 0;
+                solarBiases[idx] = getSolarParameters(dateObj, cloudCover);
+            }
+        } else {
+            // For '24h' and '7d'
+            solarBiases = new Array(historyData.length).fill(0);
+            for (let idx = 0; idx < historyData.length; idx++) {
+                const ts = historyData[idx].timestamp;
+                const dateObj = new Date(ts * 1000);
+                const pad = (n) => String(n).padStart(2, '0');
+                const iso = `${dateObj.getFullYear()}-${pad(dateObj.getMonth()+1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:00`;
+                const fIdx = hourlyTimes.indexOf(iso);
+                const cloudCover = fIdx !== -1 ? (hourlyClouds[fIdx] !== undefined ? hourlyClouds[fIdx] : 0) : 0;
+                solarBiases[idx] = getSolarParameters(dateObj, cloudCover);
+            }
+        }
+    } else {
+        solarBiases = null;
     }
     
     // Create modern glowing area gradients
@@ -1262,6 +1346,7 @@ function drawChart(historyData) {
             chartInstance.data.datasets[1].pointHoverBackgroundColor = color2;
         }
         
+        chartInstance.solarBiases = solarBiases;
         chartInstance.update('none'); // Update without animation during ticks to prevent blinking
     } else {
         activeChartPeriod = currentPeriod;
@@ -1272,7 +1357,7 @@ function drawChart(historyData) {
                 labels: labels,
                 datasets: chartDatasets
             },
-             plugins: [verticalLinePlugin, forecastExtremaPlugin, hoverIndicatorPlugin],
+             plugins: [verticalLinePlugin, forecastExtremaPlugin, hoverIndicatorPlugin, solarRadiationBarPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: (currentPeriod === 'scatter') ? true : false,
@@ -1435,6 +1520,7 @@ function drawChart(historyData) {
                 }
             }
         });
+        chartInstance.solarBiases = solarBiases;
     }
 }
 
