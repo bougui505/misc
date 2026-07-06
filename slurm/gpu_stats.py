@@ -4,28 +4,20 @@ import sys
 import re
 from collections import Counter, defaultdict
 
-# GPU speed rank/performance rating (higher is faster/more performant)
-# Based on FP32 / Tensor Core compute power and generation:
-# 1. l40s: NVIDIA L40S (~91.6 TFLOPS FP32, Ada Lovelace)
-# 2. A100: NVIDIA A100 (~19.5 TFLOPS FP32, but high-bandwidth memory & 312 Tensor TFLOPS)
-# 3. A40: NVIDIA A40 (~37.4 TFLOPS FP32, Ampere)
-# 4. rtx6000: NVIDIA RTX 6000 (~16.3 TFLOPS FP32, Turing)
-# 5. 2g.48gb+gfx: MIG (Multi-Instance GPU) slice of A100/H100 (48GB VRAM, fraction of GPU)
-GPU_SPEED_RANK = {
-    'l40s': 50,
-    'A100': 40,
-    'A40': 30,
-    'rtx6000': 20,
-    '2g.48gb+gfx': 10
+# GPU performance specs (FP32 TFLOPS) used to calculate speedup and sort inventory.
+# 1. l40s: NVIDIA L40S (~91.6 TFLOPS)
+# 2. A40: NVIDIA A40 (~37.4 TFLOPS)
+# 3. A100: NVIDIA A100 (~19.5 TFLOPS FP32)
+# 4. rtx6000: NVIDIA RTX 6000 (~16.3 TFLOPS)
+# 5. 2g.48gb+gfx: MIG (Multi-Instance GPU) slice (~5.5 TFLOPS)
+GPU_FP32_TFLOPS = {
+    'l40s': 91.6,
+    'A40': 37.4,
+    'A100': 19.5,
+    'rtx6000': 16.3,
+    '2g.48gb+gfx': 5.5
 }
 
-GPU_SPEED_DESC = {
-    'l40s': '5.62x speedup',
-    'A100': '1.20x speedup',
-    'A40': '2.29x speedup',
-    'rtx6000': '1.00x baseline',
-    '2g.48gb+gfx': '0.34x slice'
-}
 
 
 
@@ -143,18 +135,26 @@ def main():
         
     print("\n[GPU Inventory] (sorted by GPU speed, fastest first)")
     total_gpus = 0
-    # Sort by speed rank descending, and alphabetically for ties
+    # Sort by FP32 TFLOPS descending, and alphabetically for ties
     sorted_inventory = sorted(
         gpu_inventory.items(),
-        key=lambda x: (GPU_SPEED_RANK.get(x[0], 0), x[0]),
+        key=lambda x: (GPU_FP32_TFLOPS.get(x[0], 0.0), x[0]),
         reverse=True
     )
+    baseline_perf = GPU_FP32_TFLOPS.get('rtx6000', 16.3)
     for model, count in sorted_inventory:
-        desc = GPU_SPEED_DESC.get(model, 'unknown speed')
+        perf = GPU_FP32_TFLOPS.get(model, 0.0)
+        speedup = perf / baseline_perf if baseline_perf else 0.0
+        if model == 'rtx6000':
+            desc = "1.00x baseline"
+        elif 'slice' in model or model == '2g.48gb+gfx':
+            desc = f"{speedup:.2f}x slice"
+        else:
+            desc = f"{speedup:.2f}x speedup"
         print(f"  • {model:<12} ({desc:<14}): {count} total")
         total_gpus += count
-
     print(f"  • Total GPUs  : {total_gpus}")
+
 
     
     print("\n[Queue Load]")
