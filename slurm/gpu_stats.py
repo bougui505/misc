@@ -19,6 +19,15 @@ GPU_SPEED_RANK = {
     '2g.48gb+gfx': 10
 }
 
+GPU_SPEED_DESC = {
+    'l40s': '5.62x speedup',
+    'A100': '1.20x speedup',
+    'A40': '2.29x speedup',
+    'rtx6000': '1.00x baseline',
+    '2g.48gb+gfx': '0.34x slice'
+}
+
+
 
 def run_ssh_command(cmd):
     try:
@@ -141,8 +150,10 @@ def main():
         reverse=True
     )
     for model, count in sorted_inventory:
-        print(f"  • {model:<12}: {count} total")
+        desc = GPU_SPEED_DESC.get(model, 'unknown speed')
+        print(f"  • {model:<12} ({desc:<14}): {count} total")
         total_gpus += count
+
     print(f"  • Total GPUs  : {total_gpus}")
 
     
