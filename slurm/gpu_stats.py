@@ -18,6 +18,15 @@ GPU_FP32_TFLOPS = {
     '2g.48gb+gfx': 5.5
 }
 
+GPU_MEM = {
+    'l40s': '48GB',
+    'A40': '48GB',
+    'A100': '40GB/80GB',
+    'rtx6000': '24GB',
+    '2g.48gb+gfx': '48GB slice'
+}
+
+
 
 
 
@@ -145,14 +154,16 @@ def main():
     for model, count in sorted_inventory:
         perf = GPU_FP32_TFLOPS.get(model, 0.0)
         speedup = perf / baseline_perf if baseline_perf else 0.0
+        mem = GPU_MEM.get(model, 'unknown VRAM')
         if model == 'rtx6000':
-            desc = "1.00x baseline"
+            desc = f"{mem}, 1.00x baseline"
         elif 'slice' in model or model == '2g.48gb+gfx':
-            desc = f"{speedup:.2f}x slice"
+            desc = f"{mem}, {speedup:.2f}x slice"
         else:
-            desc = f"{speedup:.2f}x speedup"
-        print(f"  • {model:<12} ({desc:<14}): {count} total")
+            desc = f"{mem}, {speedup:.2f}x speedup"
+        print(f"  • {model:<12} ({desc:<24}): {count} total")
         total_gpus += count
+
     print(f"  • Total GPUs  : {total_gpus}")
 
 
