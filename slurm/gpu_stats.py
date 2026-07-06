@@ -4,6 +4,22 @@ import sys
 import re
 from collections import Counter, defaultdict
 
+# GPU speed rank/performance rating (higher is faster/more performant)
+# Based on FP32 / Tensor Core compute power and generation:
+# 1. l40s: NVIDIA L40S (~91.6 TFLOPS FP32, Ada Lovelace)
+# 2. A100: NVIDIA A100 (~19.5 TFLOPS FP32, but high-bandwidth memory & 312 Tensor TFLOPS)
+# 3. A40: NVIDIA A40 (~37.4 TFLOPS FP32, Ampere)
+# 4. rtx6000: NVIDIA RTX 6000 (~16.3 TFLOPS FP32, Turing)
+# 5. 2g.48gb+gfx: MIG (Multi-Instance GPU) slice of A100/H100 (48GB VRAM, fraction of GPU)
+GPU_SPEED_RANK = {
+    'l40s': 50,
+    'A100': 40,
+    'A40': 30,
+    'rtx6000': 20,
+    '2g.48gb+gfx': 10
+}
+
+
 def run_ssh_command(cmd):
     try:
         res = subprocess.run(
@@ -116,12 +132,19 @@ def main():
     for state, count in sorted(node_states.items()):
         print(f"  • {state.capitalize():<12}: {count} node(s)")
         
-    print("\n[GPU Inventory]")
+    print("\n[GPU Inventory] (sorted by GPU speed, fastest first)")
     total_gpus = 0
-    for model, count in sorted(gpu_inventory.items()):
+    # Sort by speed rank descending, and alphabetically for ties
+    sorted_inventory = sorted(
+        gpu_inventory.items(),
+        key=lambda x: (GPU_SPEED_RANK.get(x[0], 0), x[0]),
+        reverse=True
+    )
+    for model, count in sorted_inventory:
         print(f"  • {model:<12}: {count} total")
         total_gpus += count
     print(f"  • Total GPUs  : {total_gpus}")
+
     
     print("\n[Queue Load]")
     print(f"  • Running Jobs: {running_jobs}")
