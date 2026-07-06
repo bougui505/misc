@@ -14,7 +14,24 @@ The inventory in `gpu_stats.py` is sorted by GPU speed based on the following hi
 | **4** | **rtx6000** | Turing | 24 GB GDDR6 | ~16.3 TFLOPS | ~130.5 TFLOPS Tensor | Workstation rendering, local/smaller AI development |
 | **5** | **2g.48gb+gfx** | Ampere / Hopper | 48 GB (Slice) | Variable (Slice) | Multi-Instance GPU (MIG) slice (2/7ths compute) | Light/partitioned GPU compute & graphics |
 
+
+## Speedup Ratio Analysis
+
+Using the standard workstation GPU **NVIDIA RTX 6000** (Turing, 16.3 TFLOPS FP32) as the baseline (1.0x), the speedup ratios for each model in the inventory are:
+
+| GPU Model | Count | FP32 Performance | Speedup Ratio (vs rtx6000) |
+| :--- | :--- | :--- | :--- |
+| **l40s** | 15 | 91.6 TFLOPS | **5.62x** |
+| **A40** | 56 | 37.4 TFLOPS | **2.29x** |
+| **A100** | 23 | 19.5 TFLOPS | **1.20x** (Up to **19.1x** using Tensor Cores) |
+| **rtx6000** | 2 | 16.3 TFLOPS | **1.00x** (Baseline) |
+| **2g.48gb+gfx** | 12 | ~5.5 TFLOPS | **0.34x** |
+
+### Cluster Weighted Average Speedup
+Based on the current inventory distribution of **108 GPUs**, the weighted average FP32 speedup of the entire cluster is **2.28x** relative to the baseline `rtx6000` (or **6.75x** relative to the `2g.48gb+gfx` slice).
+
 ---
+
 
 ## Detailed Model Overview
 
