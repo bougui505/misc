@@ -75,11 +75,20 @@ def process_single_file_to_parquet(file_path, out_parquet_path):
     current_record = {}
     count = 0
     
+    proc = None
     if file_path == '-':
         import sys
         fh = sys.stdin
     elif file_path.endswith('.gz'):
-        fh = gzip.open(file_path, 'rt', encoding='utf-8', errors='ignore')
+        import subprocess
+        has_pigz = False
+        try:
+            has_pigz = subprocess.run(['which', 'pigz'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        except Exception:
+            pass
+        decompressor = 'pigz' if has_pigz else 'gzip'
+        proc = subprocess.Popen([decompressor, '-dc', file_path], stdout=subprocess.PIPE, text=True, bufsize=262144, encoding='utf-8', errors='ignore')
+        fh = proc.stdout
     else:
         fh = open(file_path, 'r', encoding='utf-8', errors='ignore')
         
@@ -101,6 +110,9 @@ def process_single_file_to_parquet(file_path, out_parquet_path):
     finally:
         if file_path != '-':
             fh.close()
+        if proc:
+            proc.terminate()
+            proc.wait()
             
     if current_record:
         current_record['rowid'] = count + 1
@@ -332,7 +344,7 @@ if mode == 'to':
                 self.current_fh = None
                 self.processed_bytes_prev_files = 0
                 
-                if files and all(f != '-' for f in files):
+                if files and all(f != '-' for f in files) and not any(f.endswith('.gz') for f in files):
                     try:
                         self.total_bytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
                         if self.total_bytes > 0:
@@ -481,9 +493,17 @@ if mode == 'to':
                             reporter.update(is_record=False)
                 else:
                     file_size = os.path.getsize(f) if os.path.exists(f) else 0
+                    proc = None
                     if f.endswith('.gz'):
-                        import gzip
-                        fh = gzip.open(f, 'rt', encoding='utf-8', errors='ignore')
+                        import subprocess
+                        has_pigz = False
+                        try:
+                            has_pigz = subprocess.run(['which', 'pigz'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                        except Exception:
+                            pass
+                        decompressor = 'pigz' if has_pigz else 'gzip'
+                        proc = subprocess.Popen([decompressor, '-dc', f], stdout=subprocess.PIPE, text=True, bufsize=262144, encoding='utf-8', errors='ignore')
+                        fh = proc.stdout
                     else:
                         fh = open(f, 'r', encoding='utf-8', errors='ignore')
                         
@@ -509,7 +529,11 @@ if mode == 'to':
                                     current_record[parts[0]] = parts[1]
                                 reporter.update(is_record=False)
                     finally:
-                        fh.close()
+                        if not f.endswith('.gz'):
+                            fh.close()
+                        if proc:
+                            proc.terminate()
+                            proc.wait()
                     prev_bytes += file_size
                     
         if current_record:
