@@ -174,13 +174,11 @@ if mode == 'to':
             sys.stderr.flush()
 
     chunk_size = 100000
-    temp_jsonl_path = db_path + ".tmp.jsonl"
+    temp_dir = db_path + ".tmp_parts"
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_jsonl_path = os.path.join(temp_dir, "temp.jsonl")
     temp_parquet_files = []
     
-    if os.path.exists(temp_jsonl_path):
-        try: os.remove(temp_jsonl_path)
-        except: pass
-        
     current_records = []
     count = 0
     part_idx = 0
@@ -193,7 +191,7 @@ if mode == 'to':
             for r in records_list:
                 jsonl_file.write(json.dumps(r) + '\n')
                 
-        part_path = f"{db_path}_part_{part_idx}.parquet"
+        part_path = os.path.join(temp_dir, f"part_{part_idx}.parquet")
         temp_parquet_files.append(part_path)
         
         conn = duckdb.connect(':memory:')
@@ -279,10 +277,10 @@ if mode == 'to':
         conn.execute(f"COPY (SELECT * FROM read_parquet({temp_parquet_files}, union_by_name=True)) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
         conn.close()
         
-        for temp_file in temp_parquet_files:
-            if os.path.exists(temp_file):
-                try: os.remove(temp_file)
-                except: pass
+    import shutil
+    if os.path.exists(temp_dir):
+        try: shutil.rmtree(temp_dir)
+        except: pass
         
     reporter.finish()
 
