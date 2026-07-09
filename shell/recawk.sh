@@ -119,47 +119,192 @@ def process_single_file_to_parquet(file_path, out_parquet_path):
         try: os.remove(temp_db_path)
         except: pass
 
+def process_chunk_to_parquet(file_path, start_offset, end_offset, out_parquet_path):
+    import duckdb
+    import os
+    
+    temp_db_path = out_parquet_path + ".tmp"
+    if os.path.exists(temp_db_path):
+        try: os.remove(temp_db_path)
+        except: pass
+        
+    conn = duckdb.connect(temp_db_path)
+    conn.execute("CREATE TABLE records (rowid INTEGER)")
+    
+    known_cols = {'rowid'}
+    batch = []
+    batch_size = 20000
+    
+    def flush_batch(batch_data):
+        if not batch_data:
+            return
+        batch_keys = set()
+        for r in batch_data:
+            batch_keys.update(r.keys())
+            
+        new_cols = batch_keys - known_cols
+        for col in new_cols:
+            conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
+            known_cols.add(col)
+            
+        cols_in_order = [c for c in known_cols if c != 'rowid']
+        col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
+        placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
+        
+        insert_data = []
+        for r in batch_data:
+            row_vals = [r.get('rowid')]
+            for c in cols_in_order:
+                row_vals.append(r.get(c))
+            insert_data.append(row_vals)
+            
+        conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
+        batch_data.clear()
+
+    current_record = {}
+    count = start_offset
+    
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as fh:
+        fh.seek(start_offset)
+        while fh.tell() < end_offset:
+            line = fh.readline()
+            if not line:
+                break
+            line_clean = line.rstrip('\r\n')
+            if line_clean == "--":
+                if current_record:
+                    current_record['rowid'] = count + 1
+                    batch.append(dict(current_record))
+                    current_record.clear()
+                    count += 1
+                    if len(batch) >= batch_size:
+                        flush_batch(batch)
+            else:
+                if '=' in line_clean:
+                    parts = line_clean.split('=', 1)
+                    current_record[parts[0]] = parts[1]
+                    
+    if current_record:
+        current_record['rowid'] = count + 1
+        batch.append(dict(current_record))
+        
+    flush_batch(batch)
+    
+    if os.path.exists(out_parquet_path):
+        try: os.remove(out_parquet_path)
+        except: pass
+        
+    conn.execute(f"COPY records TO '{out_parquet_path}' (FORMAT 'PARQUET')")
+    conn.close()
+    
+    if os.path.exists(temp_db_path):
+        try: os.remove(temp_db_path)
+        except: pass
+
 mode = sys.argv[1]
 
 if mode == 'to':
     db_path = sys.argv[2]
     files = sys.argv[3:]
     
-    # Filter files that actually exist (or is stdin)
     valid_files = []
     for f in files:
         if f == '-' or os.path.exists(f):
             valid_files.append(f)
             
-    num_workers = min(len(valid_files), os.cpu_count() or 1)
+    num_workers = os.cpu_count() or 1
     
-    # We only parallelize if there are multiple valid files
-    if len(valid_files) > 1 and num_workers > 1:
+    single_file_parallel = False
+    if len(valid_files) == 1 and valid_files[0] != '-' and not valid_files[0].endswith('.gz'):
+        file_path = valid_files[0]
+        file_size = os.path.getsize(file_path)
+        # Parallelize if file is > 5 MB and we have multiple cores
+        if file_size > 5 * 1024 * 1024 and num_workers > 1:
+            single_file_parallel = True
+
+    if (len(valid_files) > 1 and num_workers > 1) or single_file_parallel:
         temp_parquet_files = []
         tasks = []
-        for i, f in enumerate(valid_files):
-            temp_out = f"{db_path}_part_{i}.parquet"
-            temp_parquet_files.append(temp_out)
-            tasks.append((f, temp_out))
-            
-        sys.stderr.write(f"Converting {len(valid_files)} files in parallel using {num_workers} processes...\n")
-        sys.stderr.flush()
         
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = {executor.submit(process_single_file_to_parquet, t[0], t[1]): t[0] for t in tasks}
-            completed = 0
-            for future in as_completed(futures):
-                f_name = futures[future]
-                try:
-                    future.result()
-                    completed += 1
-                    sys.stderr.write(f" -> [{completed}/{len(valid_files)}] Finished: {f_name}\n")
-                    sys.stderr.flush()
-                except Exception as e:
-                    sys.stderr.write(f"Error converting {f_name}: {e}\n")
-                    sys.stderr.flush()
-                    sys.exit(1)
-                    
+        if single_file_parallel:
+            file_path = valid_files[0]
+            
+            def find_chunk_boundaries(path, num_chunks):
+                f_size = os.path.getsize(path)
+                c_size = f_size // num_chunks
+                bounds = [0]
+                with open(path, 'rb') as f:
+                    for idx in range(1, num_chunks):
+                        offset = idx * c_size
+                        f.seek(offset)
+                        found = False
+                        while True:
+                            line = f.readline()
+                            if not line:
+                                break
+                            if line.rstrip(b'\r\n') == b'--':
+                                bounds.append(f.tell())
+                                found = True
+                                break
+                        if not found:
+                            bounds.append(f_size)
+                bounds.append(f_size)
+                unique = []
+                for b in bounds:
+                    if not unique or b > unique[-1]:
+                        unique.append(b)
+                return unique
+                
+            boundaries = find_chunk_boundaries(file_path, num_workers)
+            actual_chunks = len(boundaries) - 1
+            sys.stderr.write(f"Converting single file in parallel using {actual_chunks} workers...\n")
+            sys.stderr.flush()
+            
+            for i in range(actual_chunks):
+                temp_out = f"{db_path}_part_{i}.parquet"
+                temp_parquet_files.append(temp_out)
+                tasks.append((file_path, boundaries[i], boundaries[i+1], temp_out))
+                
+            with ProcessPoolExecutor(max_workers=actual_chunks) as executor:
+                futures = {executor.submit(process_chunk_to_parquet, t[0], t[1], t[2], t[3]): i for i, t in enumerate(tasks)}
+                completed = 0
+                for future in as_completed(futures):
+                    chunk_idx = futures[future]
+                    try:
+                        future.result()
+                        completed += 1
+                        sys.stderr.write(f" -> [{completed}/{actual_chunks}] Finished chunk {chunk_idx + 1}\n")
+                        sys.stderr.flush()
+                    except Exception as e:
+                        sys.stderr.write(f"Error converting chunk {chunk_idx + 1}: {e}\n")
+                        sys.stderr.flush()
+                        sys.exit(1)
+        else:
+            # Multi-file parallelization
+            workers = min(len(valid_files), num_workers)
+            for i, f in enumerate(valid_files):
+                temp_out = f"{db_path}_part_{i}.parquet"
+                temp_parquet_files.append(temp_out)
+                tasks.append((f, temp_out))
+                
+            sys.stderr.write(f"Converting {len(valid_files)} files in parallel using {workers} processes...\n")
+            sys.stderr.flush()
+            
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                futures = {executor.submit(process_single_file_to_parquet, t[0], t[1]): t[0] for t in tasks}
+                completed = 0
+                for future in as_completed(futures):
+                    f_name = futures[future]
+                    try:
+                        future.result()
+                        completed += 1
+                        sys.stderr.write(f" -> [{completed}/{len(valid_files)}] Finished: {f_name}\n")
+                        sys.stderr.flush()
+                    except Exception as e:
+                        sys.stderr.write(f"Error converting {f_name}: {e}\n")
+                        sys.stderr.flush()
+                        sys.exit(1)
+                        
         sys.stderr.write("Merging Parquet parts into final database...\n")
         sys.stderr.flush()
         
