@@ -16,6 +16,291 @@ DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 MYTMP=$(mktemp -d)  # Temporary directory for the current script. Use it to put temporary files.
 trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
+cat << 'EOF' > "$MYTMP/helper.py"
+import sys
+import sqlite3
+import os
+import time
+
+mode = sys.argv[1]
+
+if mode == 'to':
+    db_path = sys.argv[2]
+    files = sys.argv[3:]
+    
+    class ProgressReporter:
+        def __init__(self, files):
+            self.files = files
+            self.use_percentage = False
+            self.total_bytes = 0
+            self.record_count = 0
+            self.last_update_time = 0
+            self.current_fh = None
+            self.processed_bytes_prev_files = 0
+            
+            if files and all(f != '-' for f in files):
+                try:
+                    self.total_bytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+                    if self.total_bytes > 0:
+                        self.use_percentage = True
+                except Exception:
+                    self.use_percentage = False
+
+        def set_fh(self, fh, prev_bytes):
+            self.current_fh = fh
+            self.processed_bytes_prev_files = prev_bytes
+
+        def update(self, is_record=False):
+            if is_record:
+                self.record_count += 1
+            
+            now = time.time()
+            if now - self.last_update_time >= 0.2:
+                self.print_progress()
+                self.last_update_time = now
+
+        def print_progress(self):
+            sys.stderr.write("\r\033[K")
+            if self.use_percentage and self.current_fh:
+                offset = 0
+                fh = self.current_fh
+                try:
+                    if hasattr(fh, 'buffer'):
+                        buf = fh.buffer
+                        if hasattr(buf, 'fileobj'):
+                            offset = buf.fileobj.tell()
+                        elif hasattr(buf, 'tell'):
+                            offset = buf.tell()
+                    elif hasattr(fh, 'tell'):
+                        offset = fh.tell()
+                except Exception:
+                    pass
+                
+                processed = self.processed_bytes_prev_files + offset
+                pct = min(100.0, (processed / self.total_bytes) * 100)
+                bar_width = 30
+                filled = int(bar_width * pct / 100)
+                bar = '█' * filled + '░' * (bar_width - filled)
+                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
+            else:
+                sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
+            sys.stderr.flush()
+
+        def print_final_progress(self):
+            sys.stderr.write("\r\033[K")
+            bar_width = 30
+            bar = '█' * bar_width
+            sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
+            sys.stderr.flush()
+
+        def finish(self):
+            if self.use_percentage:
+                self.print_final_progress()
+            else:
+                self.print_progress()
+            sys.stderr.write("\nDone!\n")
+            sys.stderr.flush()
+
+    is_gz = db_path.endswith('.gz')
+    if is_gz:
+        temp_db_dir = os.environ.get('MYTMP', '/tmp')
+        temp_db = os.path.join(temp_db_dir, 'temp_create.db')
+        if os.path.exists(temp_db):
+            try: os.remove(temp_db)
+            except: pass
+        active_db = temp_db
+    else:
+        active_db = db_path
+
+    conn = sqlite3.connect(active_db)
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS records (rowid INTEGER PRIMARY KEY AUTOINCREMENT)")
+    conn.commit()
+
+    known_cols = set()
+    cursor.execute("PRAGMA table_info(records)")
+    for row in cursor.fetchall():
+        known_cols.add(row[1])
+
+    current_record = {}
+    cursor.execute("BEGIN TRANSACTION")
+    count = 0
+    
+    reporter = ProgressReporter(files)
+    prev_bytes = 0
+    
+    if not files:
+        for line in sys.stdin:
+            line_clean = line.rstrip('\r\n')
+            if line_clean == "--":
+                if current_record:
+                    new_cols = set(current_record.keys()) - known_cols
+                    for col in new_cols:
+                        cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
+                        known_cols.add(col)
+                    cols = ', '.join(f'"{k}"' for k in current_record.keys())
+                    placeholders = ', '.join('?' for _ in current_record)
+                    cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                    current_record.clear()
+                    count += 1
+                    reporter.update(is_record=True)
+                    if count % 20000 == 0:
+                        conn.commit()
+                        cursor.execute("BEGIN TRANSACTION")
+                else:
+                    reporter.update(is_record=False)
+            else:
+                if '=' in line_clean:
+                    parts = line_clean.split('=', 1)
+                    current_record[parts[0]] = parts[1]
+                reporter.update(is_record=False)
+    else:
+        for f in files:
+            if f == '-':
+                for line in sys.stdin:
+                    line_clean = line.rstrip('\r\n')
+                    if line_clean == "--":
+                        if current_record:
+                            new_cols = set(current_record.keys()) - known_cols
+                            for col in new_cols:
+                                cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
+                                known_cols.add(col)
+                            cols = ', '.join(f'"{k}"' for k in current_record.keys())
+                            placeholders = ', '.join('?' for _ in current_record)
+                            cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                            current_record.clear()
+                            count += 1
+                            reporter.update(is_record=True)
+                            if count % 20000 == 0:
+                                conn.commit()
+                                cursor.execute("BEGIN TRANSACTION")
+                        else:
+                            reporter.update(is_record=False)
+                    else:
+                        if '=' in line_clean:
+                            parts = line_clean.split('=', 1)
+                            current_record[parts[0]] = parts[1]
+                        reporter.update(is_record=False)
+            else:
+                file_size = os.path.getsize(f) if os.path.exists(f) else 0
+                if f.endswith('.gz'):
+                    import gzip
+                    fh = gzip.open(f, 'rt', encoding='utf-8', errors='ignore')
+                else:
+                    fh = open(f, 'r', encoding='utf-8', errors='ignore')
+                    
+                reporter.set_fh(fh, prev_bytes)
+                
+                try:
+                    for line in fh:
+                        line_clean = line.rstrip('\r\n')
+                        if line_clean == "--":
+                            if current_record:
+                                new_cols = set(current_record.keys()) - known_cols
+                                for col in new_cols:
+                                    cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
+                                    known_cols.add(col)
+                                cols = ', '.join(f'"{k}"' for k in current_record.keys())
+                                placeholders = ', '.join('?' for _ in current_record)
+                                cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                                current_record.clear()
+                                count += 1
+                                reporter.update(is_record=True)
+                                if count % 20000 == 0:
+                                    conn.commit()
+                                    cursor.execute("BEGIN TRANSACTION")
+                            else:
+                                reporter.update(is_record=False)
+                        else:
+                            if '=' in line_clean:
+                                parts = line_clean.split('=', 1)
+                                current_record[parts[0]] = parts[1]
+                            reporter.update(is_record=False)
+                finally:
+                    fh.close()
+                prev_bytes += file_size
+                
+    if current_record:
+        new_cols = set(current_record.keys()) - known_cols
+        for col in new_cols:
+            cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
+            known_cols.add(col)
+        cols = ', '.join(f'"{k}"' for k in current_record.keys())
+        placeholders = ', '.join('?' for _ in current_record)
+        cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+        reporter.update(is_record=True)
+        
+    conn.commit()
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_records_rowid ON records(rowid)")
+    conn.commit()
+    conn.close()
+    reporter.finish()
+    
+    if is_gz:
+        import gzip
+        import shutil
+        if os.path.exists(db_path):
+            try: os.remove(db_path)
+            except: pass
+        with open(temp_db, 'rb') as f_in:
+            with gzip.open(db_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        try: os.remove(temp_db)
+        except: pass
+
+elif mode == 'from':
+    db_path = sys.argv[2]
+    where_clause = sys.argv[3] if sys.argv[3] != 'NONE' else None
+    used_fields_str = sys.argv[4] if len(sys.argv) > 4 else ''
+    
+    cols_to_query = [f.strip() for f in used_fields_str.split(',') if f.strip()] if used_fields_str else None
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='records'")
+    if not cursor.fetchone():
+        sys.stderr.write("Error: 'records' table not found in database.\n")
+        sys.exit(1)
+        
+    cursor.execute("PRAGMA table_info(records)")
+    all_cols = [row[1] for row in cursor.fetchall() if row[1] != 'rowid']
+    
+    if cols_to_query:
+        cols = [c for c in cols_to_query if c in all_cols]
+    else:
+        cols = all_cols
+        
+    if not cols:
+        cursor.execute("SELECT count(*) FROM records")
+        count = cursor.fetchone()[0]
+        for _ in range(count):
+            print("--")
+        sys.exit(0)
+        
+    col_selectors = ', '.join(f'"{c}"' for c in cols)
+    query = f'SELECT {col_selectors} FROM records'
+    if where_clause:
+        query += f' WHERE {where_clause}'
+        
+    cursor.execute(query)
+    
+    try:
+        while True:
+            rows = cursor.fetchmany(1000)
+            if not rows:
+                break
+            for row in rows:
+                for col_name, val in zip(cols, row):
+                    if val is not None:
+                        sys.stdout.write(f"{col_name}={val}\n")
+                sys.stdout.write("--\n")
+    except BrokenPipeError:
+        pass
+    finally:
+        conn.close()
+EOF
+
 function usage () {
     cat << EOF
 Usage: recawk [OPTIONS] 'AWK_SCRIPT' [FILES]
@@ -31,6 +316,8 @@ Options:
   --torec SEP          Convert column-based files (e.g., CSV/TSV) to rec format
   --tocsv              Convert rec format to CSV (first record defines columns)
   -v VAR=VAL           Pass a variable to the AWK script
+  --todb               Convert rec format to compressed SQLite database (uses input file basename)
+  -w, --where CLAUSE   SQL WHERE clause to filter records when querying a database
 
 Record Format:
   Records are separated by '--' on a line by itself.
@@ -53,21 +340,21 @@ AWK Integration:
 
 Performance Optimizations:
   - Smart Filtering: recawk detects used fields (e.g., rec["tmscore"]) and pre-filters
-    the input using 'grep' to significantly speed up processing of large files.
+    the input using 'grep' or SQL column-selects to significantly speed up processing.
   - Pair with pigz: For maximum speed on .gz files, use: pigz -dc file.rec.gz | recawk ...
 
 Examples:
   # Extract a single field from a compressed file
   zcat data.rec.gz | recawk '{print rec["tmscore"]}'
 
-  # Compute correlation between two fields
-  cat data.rec | recawk '{x[nr]=rec["x"]; y[nr]=rec["y"]} END {print spearman(x,y,nr)}'
+  # Convert data to compressed SQLite database (automatically outputs to data.db.gz)
+  recawk --todb data.rec
 
-  # Sample 100 random records
-  recawk --sample 100 data.rec
+  # Query database seamlessly
+  recawk '{print rec["tmscore"]}' data.db.gz
 
-  # Convert CSV to rec format
-  cat data.csv | recawk --torec ","
+  # Query database with database-level filtering
+  recawk -w "tmscore > 0.8" '{print rec["tmscore"]}' data.db.gz
 EOF
 }
 
@@ -78,19 +365,27 @@ SAMPLE=0
 TOREC=0
 KEYS=0
 TOCSV=0
-case $1 in
-    -h|--help) usage; exit 0 ;;
-    -v) shift; V=$1; shift ;;
-    -n|--nrec) GETNREC=1 ;;
-    -e|--est-nrec) ESTNREC=1 ;;
-    -s|--sample) SAMPLE=$2; shift ;;
-    --torec) TOREC=$2; shift ;;
-    --keys) KEYS=1 ;;
-    --tocsv) TOCSV=1 ;;
-esac
+TODB=0
+WHERE=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) usage; exit 0 ;;
+        -v) V=$2; shift 2 ;;
+        -n|--nrec) GETNREC=1; shift ;;
+        -e|--est-nrec) ESTNREC=1; shift ;;
+        -s|--sample) SAMPLE=$2; shift 2 ;;
+        --torec) TOREC=$2; shift 2 ;;
+        --keys) KEYS=1; shift ;;
+        --tocsv) TOCSV=1; shift ;;
+        --todb) TODB=1; shift ;;
+        -w|--where) WHERE=$2; shift 2 ;;
+        *) break ;;
+    esac
+done
 
 getnrec(){
-    grep -c "^--$" $1
+    gzip -dfc "$1" 2>/dev/null | grep -c "^--$"
 }
 
 estnrec(){
@@ -165,13 +460,64 @@ print(f\"Estimated records:     {est_records:,.0f} (average {avg_lines_per_recor
 "
 }
 
+if [[ $TODB -eq 1 ]]; then
+    INPUT_FILE=""
+    for arg in "$@"; do
+        if [[ -f "$arg" ]]; then
+            INPUT_FILE="$arg"
+            break
+        fi
+    done
+    if [[ -z $INPUT_FILE ]]; then
+        INPUT_FILE="$1"
+    fi
+    
+    if [[ -z $INPUT_FILE || "$INPUT_FILE" == "-" ]]; then
+        DB_FILE="output.db.gz"
+    else
+        DIR=$(dirname "$INPUT_FILE")
+        BASE=$(basename "$INPUT_FILE")
+        NAME="${BASE%.*}"
+        if [[ "$BASE" =~ \.rec\.gz$ ]]; then
+            NAME="${BASE%.rec.gz}"
+        elif [[ "$NAME" == *.rec ]]; then
+            NAME="${NAME%.rec}"
+        fi
+        DB_FILE="$DIR/$NAME.db.gz"
+    fi
+    python3 "$MYTMP/helper.py" to "$DB_FILE" "$@"
+    exit 0
+fi
+
 if [ "$#" -eq 0 ]; then
     usage; exit 0
 fi
 
-CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
-ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
-FILENAMES="${@:2}"
+if [[ $GETNREC -eq 1 || $ESTNREC -eq 1 || $KEYS -eq 1 || $TOCSV -eq 1 || $TODB -eq 1 || $TOREC != 0 || $SAMPLE -gt 0 ]]; then
+    CMD=""
+    ENDCMD=""
+    FILENAMES="$@"
+else
+    CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
+    ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
+    FILENAMES="${@:2}"
+fi
+
+# Detect if input is a SQLite database
+IS_DB=0
+IS_DB_GZ=0
+QUERY_DB_FILE=""
+if [[ -n $FILENAMES && -f "$FILENAMES" ]]; then
+    if [[ "$FILENAMES" =~ \.db\.gz$ || "$FILENAMES" =~ \.sqlite\.gz$ ]]; then
+        IS_DB=1
+        IS_DB_GZ=1
+        QUERY_DB_FILE="$MYTMP/query.db"
+        gzip -dc "$FILENAMES" > "$QUERY_DB_FILE"
+    elif [[ "$FILENAMES" =~ \.(db|sqlite)$ ]] || head -c 15 "$FILENAMES" 2>/dev/null | grep -q "SQLite format 3"; then
+        IS_DB=1
+        QUERY_DB_FILE="$FILENAMES"
+    fi
+fi
 
 # Smart field filtering
 FILTER=""
@@ -188,85 +534,148 @@ if [[ $TOREC == 0 && $KEYS == 0 && $TOCSV == 0 ]]; then
 fi
 
 AWK_BIN="gawk"
-# echo "Using $AWK_BIN" >&2
 
 if [[ $GETNREC -eq 1 ]]; then
-    getnrec $FILENAMES
+    if [[ $IS_DB -eq 1 ]]; then
+        sqlite3 "$QUERY_DB_FILE" "SELECT count(*) FROM records"
+    else
+        getnrec $FILENAMES
+    fi
     exit 0
 fi
 
 if [[ $ESTNREC -eq 1 ]]; then
-    estnrec $FILENAMES
+    if [[ $IS_DB -eq 1 ]]; then
+        local count
+        count=$(sqlite3 "$QUERY_DB_FILE" "SELECT count(*) FROM records")
+        echo "Database file: '$FILENAMES'"
+        echo "Exact records: $count"
+    else
+        estnrec $FILENAMES
+    fi
     exit 0
 fi
 
 if [[ $KEYS -eq 1 ]]; then
-    gawk -F"=" '{
-        if (FNR==1){
-            fnr=0
+    if [[ $IS_DB -eq 1 ]]; then
+        sqlite3 "$QUERY_DB_FILE" "PRAGMA table_info(records)" | cut -d'|' -f2 | grep -v "^rowid$"
+    else
+        gawk -F"=" '{
+            if (FNR==1){
+                fnr=0
+            }
+            if ($0=="--"){
+                fnr+=1
+            }
+            else{
+                keys[$1]=1
+            }
         }
-        if ($0=="--"){
-            fnr+=1
-        }
-        else{
-            keys[$1]=1
-        }
-    }
-    END{
-        for (k in keys){
-            print k
-        }
-    }' $FILENAMES
+        END{
+            for (k in keys){
+                print k
+            }
+        }' $FILENAMES
+    fi
     exit 0
 fi
 
 if [[ $TOCSV -eq 1 ]]; then
-    gawk '
-    BEGIN {
-        first = 1
-    }
-    {
-        if (FNR == 1) {
-            fnr = 0
+    if [[ $IS_DB -eq 1 ]]; then
+        python3 "$MYTMP/helper.py" from "$QUERY_DB_FILE" "NONE" "" | gawk '
+        BEGIN {
+            first = 1
         }
-        if ($0 == "--") {
-            if (first) {
-                # Print header
+        {
+            if (FNR == 1) {
+                fnr = 0
+            }
+            if ($0 == "--") {
+                if (first) {
+                    # Print header
+                    for (i = 1; i <= nkeys; i++) {
+                        printf "%s", keys[i]
+                        if (i < nkeys) printf ","
+                    }
+                    printf "\n"
+                    first = 0
+                }
+                # Print values for current record
                 for (i = 1; i <= nkeys; i++) {
-                    printf "%s", keys[i]
+                    key = keys[i]
+                    printf "%s", rec[key]
                     if (i < nkeys) printf ","
                 }
                 printf "\n"
-                first = 0
-            }
-            # Print values for current record
-            for (i = 1; i <= nkeys; i++) {
-                key = keys[i]
-                printf "%s", rec[key]
-                if (i < nkeys) printf ","
-            }
-            printf "\n"
-            delete rec
-        } else {
-            # Store key-value pairs
-            idx = index($0, "=")
-            key = substr($0, 1, idx - 1)
-            value = substr($0, idx + 1)
-            rec[key] = value
-            # Add key to keys array if not already present
-            found = 0
-            for (i = 1; i <= nkeys; i++) {
-                if (keys[i] == key) {
-                    found = 1
-                    break
+                delete rec
+            } else {
+                # Store key-value pairs
+                idx = index($0, "=")
+                key = substr($0, 1, idx - 1)
+                value = substr($0, idx + 1)
+                rec[key] = value
+                # Add key to keys array if not already present
+                found = 0
+                for (i = 1; i <= nkeys; i++) {
+                    if (keys[i] == key) {
+                        found = 1
+                        break
+                    }
+                }
+                if (!found) {
+                    keys[++nkeys] = key
                 }
             }
-            if (!found) {
-                keys[++nkeys] = key
+        }
+        '
+    else
+        gawk '
+        BEGIN {
+            first = 1
+        }
+        {
+            if (FNR == 1) {
+                fnr = 0
+            }
+            if ($0 == "--") {
+                if (first) {
+                    # Print header
+                    for (i = 1; i <= nkeys; i++) {
+                        printf "%s", keys[i]
+                        if (i < nkeys) printf ","
+                    }
+                    printf "\n"
+                    first = 0
+                }
+                # Print values for current record
+                for (i = 1; i <= nkeys; i++) {
+                    key = keys[i]
+                    printf "%s", rec[key]
+                    if (i < nkeys) printf ","
+                }
+                printf "\n"
+                delete rec
+            } else {
+                # Store key-value pairs
+                idx = index($0, "=")
+                key = substr($0, 1, idx - 1)
+                value = substr($0, idx + 1)
+                rec[key] = value
+                # Add key to keys array if not already present
+                found = 0
+                for (i = 1; i <= nkeys; i++) {
+                    if (keys[i] == key) {
+                        found = 1
+                        break
+                    }
+                }
+                if (!found) {
+                    keys[++nkeys] = key
+                }
             }
         }
-    }
-    ' "$FILENAMES"
+        ' "$FILENAMES"
+    fi
     exit 0
 fi
 
@@ -314,7 +723,6 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-  # We no longer need to cat to a temp file or run getnrec!
     # We change the CMD to store the record in a reservoir instead of printing immediately.
     V="SAMPLE=$SAMPLE"
     # We wrap the user's command to run only at the END on the sampled records
@@ -487,12 +895,26 @@ ${AWK_MAIN_LOOP_END}
 ${ENDCMD}
 }"
 
-if [[ -n $FILTER ]]; then
-    if [[ -z $FILENAMES ]]; then
-        grep -E "$FILTER" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
-    else
-        grep -E "$FILTER" $FILENAMES | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+if [[ $IS_DB -eq 1 ]]; then
+    USED_FIELDS_CSV=""
+    if [[ -n $USED_FIELDS ]] && ! echo "$1" | grep -qE "printrec|field\s+in\s+rec"; then
+        USED_FIELDS_CSV=$(echo "$USED_FIELDS" | paste -sd, -)
     fi
+    
+    WHERE_CLAUSE="NONE"
+    if [[ -n $WHERE ]]; then
+        WHERE_CLAUSE="$WHERE"
+    fi
+    
+    python3 "$MYTMP/helper.py" from "$QUERY_DB_FILE" "$WHERE_CLAUSE" "$USED_FIELDS_CSV" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
 else
-    $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT" $FILENAMES
+    if [[ -n $FILTER ]]; then
+        if [[ -z $FILENAMES ]]; then
+            grep -E "$FILTER" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+        else
+            grep -E "$FILTER" $FILENAMES | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+        fi
+    else
+        $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT" $FILENAMES
+    fi
 fi
