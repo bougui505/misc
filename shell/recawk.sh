@@ -173,81 +173,116 @@ if mode == 'to':
             sys.stderr.write("\nDone!\n")
             sys.stderr.flush()
 
+    chunk_size = 100000
     temp_jsonl_path = db_path + ".tmp.jsonl"
+    temp_parquet_files = []
+    
     if os.path.exists(temp_jsonl_path):
         try: os.remove(temp_jsonl_path)
         except: pass
         
+    current_records = []
+    count = 0
+    part_idx = 0
+    
+    def flush_chunk_to_parquet(records_list):
+        global part_idx
+        if not records_list:
+            return
+        with open(temp_jsonl_path, 'w', encoding='utf-8', errors='ignore') as jsonl_file:
+            for r in records_list:
+                jsonl_file.write(json.dumps(r) + '\n')
+                
+        part_path = f"{db_path}_part_{part_idx}.parquet"
+        temp_parquet_files.append(part_path)
+        
+        conn = duckdb.connect(':memory:')
+        conn.execute(f"COPY (SELECT * FROM read_json_auto('{temp_jsonl_path}')) TO '{part_path}' (FORMAT 'PARQUET')")
+        conn.close()
+        
+        if os.path.exists(temp_jsonl_path):
+            try: os.remove(temp_jsonl_path)
+            except: pass
+            
+        records_list.clear()
+        part_idx += 1
+
     reporter = ProgressReporter(valid_files)
     current_record = {}
-    count = 0
     
-    with open(temp_jsonl_path, 'w', encoding='utf-8', errors='ignore') as jsonl_file:
-        if not valid_files:
-            for line in sys.stdin:
-                line_len = len(line)
-                line_clean = line.rstrip('\r\n')
-                if line_clean == "--":
-                    if current_record:
-                        current_record['rowid'] = count + 1
-                        jsonl_file.write(json.dumps(current_record) + '\n')
-                        current_record.clear()
-                        count += 1
-                        reporter.update(line_len, is_record=True)
-                    else:
-                        reporter.update(line_len, is_record=False)
+    if not valid_files:
+        for line in sys.stdin:
+            line_len = len(line)
+            line_clean = line.rstrip('\r\n')
+            if line_clean == "--":
+                if current_record:
+                    current_record['rowid'] = count + 1
+                    current_records.append(dict(current_record))
+                    current_record.clear()
+                    count += 1
+                    reporter.update(line_len, is_record=True)
+                    if len(current_records) >= chunk_size:
+                        flush_chunk_to_parquet(current_records)
                 else:
-                    if '=' in line_clean:
-                        parts = line_clean.split('=', 1)
-                        current_record[parts[0]] = parts[1]
                     reporter.update(line_len, is_record=False)
-        else:
-            for f in valid_files:
-                fh, proc = open_file_decompressed(f)
-                try:
-                    for line in fh:
-                        line_len = len(line)
-                        line_clean = line.rstrip('\r\n')
-                        if line_clean == "--":
-                            if current_record:
-                                current_record['rowid'] = count + 1
-                                jsonl_file.write(json.dumps(current_record) + '\n')
-                                current_record.clear()
-                                count += 1
-                                reporter.update(line_len, is_record=True)
-                            else:
-                                reporter.update(line_len, is_record=False)
+            else:
+                if '=' in line_clean:
+                    parts = line_clean.split('=', 1)
+                    current_record[parts[0]] = parts[1]
+                reporter.update(line_len, is_record=False)
+    else:
+        for f in valid_files:
+            fh, proc = open_file_decompressed(f)
+            try:
+                for line in fh:
+                    line_len = len(line)
+                    line_clean = line.rstrip('\r\n')
+                    if line_clean == "--":
+                        if current_record:
+                            current_record['rowid'] = count + 1
+                            current_records.append(dict(current_record))
+                            current_record.clear()
+                            count += 1
+                            reporter.update(line_len, is_record=True)
+                            if len(current_records) >= chunk_size:
+                                flush_chunk_to_parquet(current_records)
                         else:
-                            if '=' in line_clean:
-                                parts = line_clean.split('=', 1)
-                                current_record[parts[0]] = parts[1]
                             reporter.update(line_len, is_record=False)
-                finally:
-                    if f != '-':
-                        fh.close()
-                    if proc:
-                        proc.terminate()
-                        proc.wait()
-                        
-        if current_record:
-            current_record['rowid'] = count + 1
-            jsonl_file.write(json.dumps(current_record) + '\n')
-            reporter.update(0, is_record=True)
-            
+                    else:
+                        if '=' in line_clean:
+                            parts = line_clean.split('=', 1)
+                            current_record[parts[0]] = parts[1]
+                        reporter.update(line_len, is_record=False)
+            finally:
+                if f != '-':
+                    fh.close()
+                if proc:
+                    proc.terminate()
+                    proc.wait()
+                    
+    if current_record:
+        current_record['rowid'] = count + 1
+        current_records.append(dict(current_record))
+        reporter.update(0, is_record=True)
+        
+    flush_chunk_to_parquet(current_records)
+        
     if os.path.exists(db_path):
         try: os.remove(db_path)
         except: pass
         
-    sys.stderr.write("\nWriting final Parquet file...\n")
-    sys.stderr.flush()
-    
-    conn = duckdb.connect(':memory:')
-    conn.execute(f"COPY (SELECT * FROM read_json_auto('{temp_jsonl_path}')) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
-    conn.close()
-    
-    if os.path.exists(temp_jsonl_path):
-        try: os.remove(temp_jsonl_path)
-        except: pass
+    if temp_parquet_files:
+        sys.stderr.write("\nWriting final Parquet file...\n")
+        sys.stderr.flush()
+        
+        conn = duckdb.connect(':memory:')
+        conn.execute(f"COPY (SELECT * FROM read_parquet({temp_parquet_files}, union_by_name=True)) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
+        conn.close()
+        
+        for temp_file in temp_parquet_files:
+            if os.path.exists(temp_file):
+                try: os.remove(temp_file)
+                except: pass
         
     reporter.finish()
 
