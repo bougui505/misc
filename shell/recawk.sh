@@ -20,6 +20,7 @@ cat << 'EOF' > "$MYTMP/helper.py"
 import sys
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 try:
     import duckdb
@@ -28,90 +29,16 @@ except ImportError:
     sys.stderr.write("Please install it using: pip install duckdb\n")
     sys.exit(1)
 
-mode = sys.argv[1]
-
-if mode == 'to':
-    db_path = sys.argv[2]
-    files = sys.argv[3:]
+def process_single_file_to_parquet(file_path, out_parquet_path):
+    import duckdb
+    import gzip
+    import os
     
-    class ProgressReporter:
-        def __init__(self, files):
-            self.files = files
-            self.use_percentage = False
-            self.total_bytes = 0
-            self.record_count = 0
-            self.last_update_time = 0
-            self.current_fh = None
-            self.processed_bytes_prev_files = 0
-            
-            if files and all(f != '-' for f in files):
-                try:
-                    self.total_bytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
-                    if self.total_bytes > 0:
-                        self.use_percentage = True
-                except Exception:
-                    self.use_percentage = False
-
-        def set_fh(self, fh, prev_bytes):
-            self.current_fh = fh
-            self.processed_bytes_prev_files = prev_bytes
-
-        def update(self, is_record=False):
-            if is_record:
-                self.record_count += 1
-            
-            now = time.time()
-            if now - self.last_update_time >= 0.2:
-                self.print_progress()
-                self.last_update_time = now
-
-        def print_progress(self):
-            sys.stderr.write("\r\033[K")
-            if self.use_percentage and self.current_fh:
-                offset = 0
-                fh = self.current_fh
-                try:
-                    if hasattr(fh, 'buffer'):
-                        buf = fh.buffer
-                        if hasattr(buf, 'fileobj'):
-                            offset = buf.fileobj.tell()
-                        elif hasattr(buf, 'tell'):
-                            offset = buf.tell()
-                    elif hasattr(fh, 'tell'):
-                        offset = fh.tell()
-                except Exception:
-                    pass
-                
-                processed = self.processed_bytes_prev_files + offset
-                pct = min(100.0, (processed / self.total_bytes) * 100)
-                bar_width = 30
-                filled = int(bar_width * pct / 100)
-                bar = '█' * filled + '░' * (bar_width - filled)
-                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
-            else:
-                sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
-            sys.stderr.flush()
-
-        def print_final_progress(self):
-            sys.stderr.write("\r\033[K")
-            bar_width = 30
-            bar = '█' * bar_width
-            sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
-            sys.stderr.flush()
-
-        def finish(self):
-            if self.use_percentage:
-                self.print_final_progress()
-            else:
-                self.print_progress()
-            sys.stderr.write("\nDone!\n")
-            sys.stderr.flush()
-
-    temp_db_path = db_path + ".tmp"
+    temp_db_path = out_parquet_path + ".tmp"
     if os.path.exists(temp_db_path):
         try: os.remove(temp_db_path)
         except: pass
-
+        
     conn = duckdb.connect(temp_db_path)
     conn.execute("CREATE TABLE records (rowid INTEGER)")
     
@@ -148,11 +75,16 @@ if mode == 'to':
     current_record = {}
     count = 0
     
-    reporter = ProgressReporter(files)
-    prev_bytes = 0
-    
-    if not files:
-        for line in sys.stdin:
+    if file_path == '-':
+        import sys
+        fh = sys.stdin
+    elif file_path.endswith('.gz'):
+        fh = gzip.open(file_path, 'rt', encoding='utf-8', errors='ignore')
+    else:
+        fh = open(file_path, 'r', encoding='utf-8', errors='ignore')
+        
+    try:
+        for line in fh:
             line_clean = line.rstrip('\r\n')
             if line_clean == "--":
                 if current_record:
@@ -160,49 +92,231 @@ if mode == 'to':
                     batch.append(dict(current_record))
                     current_record.clear()
                     count += 1
-                    reporter.update(is_record=True)
                     if len(batch) >= batch_size:
                         flush_batch(batch)
-                else:
-                    reporter.update(is_record=False)
             else:
                 if '=' in line_clean:
                     parts = line_clean.split('=', 1)
                     current_record[parts[0]] = parts[1]
-                reporter.update(is_record=False)
-    else:
-        for f in files:
-            if f == '-':
-                for line in sys.stdin:
-                    line_clean = line.rstrip('\r\n')
-                    if line_clean == "--":
-                        if current_record:
-                            current_record['rowid'] = count + 1
-                            batch.append(dict(current_record))
-                            current_record.clear()
-                            count += 1
-                            reporter.update(is_record=True)
-                            if len(batch) >= batch_size:
-                                flush_batch(batch)
-                        else:
-                            reporter.update(is_record=False)
-                    else:
-                        if '=' in line_clean:
-                            parts = line_clean.split('=', 1)
-                            current_record[parts[0]] = parts[1]
-                        reporter.update(is_record=False)
-            else:
-                file_size = os.path.getsize(f) if os.path.exists(f) else 0
-                if f.endswith('.gz'):
-                    import gzip
-                    fh = gzip.open(f, 'rt', encoding='utf-8', errors='ignore')
-                else:
-                    fh = open(f, 'r', encoding='utf-8', errors='ignore')
-                    
-                reporter.set_fh(fh, prev_bytes)
-                
+    finally:
+        if file_path != '-':
+            fh.close()
+            
+    if current_record:
+        current_record['rowid'] = count + 1
+        batch.append(dict(current_record))
+        
+    flush_batch(batch)
+    
+    if os.path.exists(out_parquet_path):
+        try: os.remove(out_parquet_path)
+        except: pass
+        
+    conn.execute(f"COPY records TO '{out_parquet_path}' (FORMAT 'PARQUET')")
+    conn.close()
+    
+    if os.path.exists(temp_db_path):
+        try: os.remove(temp_db_path)
+        except: pass
+
+mode = sys.argv[1]
+
+if mode == 'to':
+    db_path = sys.argv[2]
+    files = sys.argv[3:]
+    
+    # Filter files that actually exist (or is stdin)
+    valid_files = []
+    for f in files:
+        if f == '-' or os.path.exists(f):
+            valid_files.append(f)
+            
+    num_workers = min(len(valid_files), os.cpu_count() or 1)
+    
+    # We only parallelize if there are multiple valid files
+    if len(valid_files) > 1 and num_workers > 1:
+        temp_parquet_files = []
+        tasks = []
+        for i, f in enumerate(valid_files):
+            temp_out = f"{db_path}_part_{i}.parquet"
+            temp_parquet_files.append(temp_out)
+            tasks.append((f, temp_out))
+            
+        sys.stderr.write(f"Converting {len(valid_files)} files in parallel using {num_workers} processes...\n")
+        sys.stderr.flush()
+        
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = {executor.submit(process_single_file_to_parquet, t[0], t[1]): t[0] for t in tasks}
+            completed = 0
+            for future in as_completed(futures):
+                f_name = futures[future]
                 try:
-                    for line in fh:
+                    future.result()
+                    completed += 1
+                    sys.stderr.write(f" -> [{completed}/{len(valid_files)}] Finished: {f_name}\n")
+                    sys.stderr.flush()
+                except Exception as e:
+                    sys.stderr.write(f"Error converting {f_name}: {e}\n")
+                    sys.stderr.flush()
+                    sys.exit(1)
+                    
+        sys.stderr.write("Merging Parquet parts into final database...\n")
+        sys.stderr.flush()
+        
+        conn = duckdb.connect(':memory:')
+        conn.execute(f"COPY (SELECT * FROM read_parquet({temp_parquet_files}, union_by_name=True)) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
+        conn.close()
+        
+        for temp_file in temp_parquet_files:
+            if os.path.exists(temp_file):
+                try: os.remove(temp_file)
+                except: pass
+                
+        sys.stderr.write("Done!\n")
+        sys.stderr.flush()
+        
+    else:
+        # Sequential version with smooth progress bar
+        class ProgressReporter:
+            def __init__(self, files):
+                self.files = files
+                self.use_percentage = False
+                self.total_bytes = 0
+                self.record_count = 0
+                self.last_update_time = 0
+                self.current_fh = None
+                self.processed_bytes_prev_files = 0
+                
+                if files and all(f != '-' for f in files):
+                    try:
+                        self.total_bytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+                        if self.total_bytes > 0:
+                            self.use_percentage = True
+                    except Exception:
+                        self.use_percentage = False
+
+            def set_fh(self, fh, prev_bytes):
+                self.current_fh = fh
+                self.processed_bytes_prev_files = prev_bytes
+
+            def update(self, is_record=False):
+                if is_record:
+                    self.record_count += 1
+                
+                now = time.time()
+                if now - self.last_update_time >= 0.2:
+                    self.print_progress()
+                    self.last_update_time = now
+
+            def print_progress(self):
+                sys.stderr.write("\r\033[K")
+                if self.use_percentage and self.current_fh:
+                    offset = 0
+                    fh = self.current_fh
+                    try:
+                        if hasattr(fh, 'buffer'):
+                            buf = fh.buffer
+                            if hasattr(buf, 'fileobj'):
+                                offset = buf.fileobj.tell()
+                            elif hasattr(buf, 'tell'):
+                                offset = buf.tell()
+                        elif hasattr(fh, 'tell'):
+                            offset = fh.tell()
+                    except Exception:
+                        pass
+                    
+                    processed = self.processed_bytes_prev_files + offset
+                    pct = min(100.0, (processed / self.total_bytes) * 100)
+                    bar_width = 30
+                    filled = int(bar_width * pct / 100)
+                    bar = '█' * filled + '░' * (bar_width - filled)
+                    sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
+                else:
+                    sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
+                sys.stderr.flush()
+
+            def print_final_progress(self):
+                sys.stderr.write("\r\033[K")
+                bar_width = 30
+                bar = '█' * bar_width
+                sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
+                sys.stderr.flush()
+
+            def finish(self):
+                if self.use_percentage:
+                    self.print_final_progress()
+                else:
+                    self.print_progress()
+                sys.stderr.write("\nDone!\n")
+                sys.stderr.flush()
+
+        temp_db_path = db_path + ".tmp"
+        if os.path.exists(temp_db_path):
+            try: os.remove(temp_db_path)
+            except: pass
+
+        conn = duckdb.connect(temp_db_path)
+        conn.execute("CREATE TABLE records (rowid INTEGER)")
+        
+        known_cols = {'rowid'}
+        batch = []
+        batch_size = 20000
+        
+        def flush_batch(batch_data):
+            if not batch_data:
+                return
+            batch_keys = set()
+            for r in batch_data:
+                batch_keys.update(r.keys())
+                
+            new_cols = batch_keys - known_cols
+            for col in new_cols:
+                conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
+                known_cols.add(col)
+                
+            cols_in_order = [c for c in known_cols if c != 'rowid']
+            col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
+            placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
+            
+            insert_data = []
+            for r in batch_data:
+                row_vals = [r.get('rowid')]
+                for c in cols_in_order:
+                    row_vals.append(r.get(c))
+                insert_data.append(row_vals)
+                
+            conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
+            batch_data.clear()
+
+        current_record = {}
+        count = 0
+        
+        reporter = ProgressReporter(valid_files)
+        prev_bytes = 0
+        
+        if not valid_files:
+            for line in sys.stdin:
+                line_clean = line.rstrip('\r\n')
+                if line_clean == "--":
+                    if current_record:
+                        current_record['rowid'] = count + 1
+                        batch.append(dict(current_record))
+                        current_record.clear()
+                        count += 1
+                        reporter.update(is_record=True)
+                        if len(batch) >= batch_size:
+                            flush_batch(batch)
+                    else:
+                        reporter.update(is_record=False)
+                else:
+                    if '=' in line_clean:
+                        parts = line_clean.split('=', 1)
+                        current_record[parts[0]] = parts[1]
+                    reporter.update(is_record=False)
+        else:
+            for f in valid_files:
+                if f == '-':
+                    for line in sys.stdin:
                         line_clean = line.rstrip('\r\n')
                         if line_clean == "--":
                             if current_record:
@@ -220,29 +334,58 @@ if mode == 'to':
                                 parts = line_clean.split('=', 1)
                                 current_record[parts[0]] = parts[1]
                             reporter.update(is_record=False)
-                finally:
-                    fh.close()
-                prev_bytes += file_size
-                
-    if current_record:
-        current_record['rowid'] = count + 1
-        batch.append(dict(current_record))
-        reporter.update(is_record=True)
+                else:
+                    file_size = os.path.getsize(f) if os.path.exists(f) else 0
+                    if f.endswith('.gz'):
+                        import gzip
+                        fh = gzip.open(f, 'rt', encoding='utf-8', errors='ignore')
+                    else:
+                        fh = open(f, 'r', encoding='utf-8', errors='ignore')
+                        
+                    reporter.set_fh(fh, prev_bytes)
+                    
+                    try:
+                        for line in fh:
+                            line_clean = line.rstrip('\r\n')
+                            if line_clean == "--":
+                                if current_record:
+                                    current_record['rowid'] = count + 1
+                                    batch.append(dict(current_record))
+                                    current_record.clear()
+                                    count += 1
+                                    reporter.update(is_record=True)
+                                    if len(batch) >= batch_size:
+                                        flush_batch(batch)
+                                else:
+                                    reporter.update(is_record=False)
+                            else:
+                                if '=' in line_clean:
+                                    parts = line_clean.split('=', 1)
+                                    current_record[parts[0]] = parts[1]
+                                reporter.update(is_record=False)
+                    finally:
+                        fh.close()
+                    prev_bytes += file_size
+                    
+        if current_record:
+            current_record['rowid'] = count + 1
+            batch.append(dict(current_record))
+            reporter.update(is_record=True)
+            
+        flush_batch(batch)
         
-    flush_batch(batch)
-    
-    if os.path.exists(db_path):
-        try: os.remove(db_path)
-        except: pass
+        if os.path.exists(db_path):
+            try: os.remove(db_path)
+            except: pass
+            
+        conn.execute(f"COPY records TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
+        conn.close()
         
-    conn.execute(f"COPY records TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
-    conn.close()
-    
-    if os.path.exists(temp_db_path):
-        try: os.remove(temp_db_path)
-        except: pass
-        
-    reporter.finish()
+        if os.path.exists(temp_db_path):
+            try: os.remove(temp_db_path)
+            except: pass
+            
+        reporter.finish()
 
 elif mode == 'from':
     db_path = sys.argv[2]
