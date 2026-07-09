@@ -18,9 +18,15 @@ trap 'rm -rf "$MYTMP"' EXIT INT  # Will be removed at the end of the script
 
 cat << 'EOF' > "$MYTMP/helper.py"
 import sys
-import sqlite3
 import os
 import time
+
+try:
+    import duckdb
+except ImportError:
+    sys.stderr.write("Error: 'duckdb' Python package is required for Parquet support.\n")
+    sys.stderr.write("Please install it using: pip install duckdb\n")
+    sys.exit(1)
 
 mode = sys.argv[1]
 
@@ -101,29 +107,45 @@ if mode == 'to':
             sys.stderr.write("\nDone!\n")
             sys.stderr.flush()
 
-    is_gz = db_path.endswith('.gz')
-    if is_gz:
-        temp_db_dir = os.environ.get('MYTMP', '/tmp')
-        temp_db = os.path.join(temp_db_dir, 'temp_create.db')
-        if os.path.exists(temp_db):
-            try: os.remove(temp_db)
-            except: pass
-        active_db = temp_db
-    else:
-        active_db = db_path
+    temp_db_path = db_path + ".tmp"
+    if os.path.exists(temp_db_path):
+        try: os.remove(temp_db_path)
+        except: pass
 
-    conn = sqlite3.connect(active_db)
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS records (rowid INTEGER PRIMARY KEY AUTOINCREMENT)")
-    conn.commit()
-
-    known_cols = set()
-    cursor.execute("PRAGMA table_info(records)")
-    for row in cursor.fetchall():
-        known_cols.add(row[1])
+    conn = duckdb.connect(temp_db_path)
+    conn.execute("CREATE TABLE records (rowid INTEGER)")
+    
+    known_cols = {'rowid'}
+    batch = []
+    batch_size = 20000
+    
+    def flush_batch(batch_data):
+        if not batch_data:
+            return
+        batch_keys = set()
+        for r in batch_data:
+            batch_keys.update(r.keys())
+            
+        new_cols = batch_keys - known_cols
+        for col in new_cols:
+            conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
+            known_cols.add(col)
+            
+        cols_in_order = [c for c in known_cols if c != 'rowid']
+        col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
+        placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
+        
+        insert_data = []
+        for r in batch_data:
+            row_vals = [r.get('rowid')]
+            for c in cols_in_order:
+                row_vals.append(r.get(c))
+            insert_data.append(row_vals)
+            
+        conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
+        batch_data.clear()
 
     current_record = {}
-    cursor.execute("BEGIN TRANSACTION")
     count = 0
     
     reporter = ProgressReporter(files)
@@ -134,19 +156,13 @@ if mode == 'to':
             line_clean = line.rstrip('\r\n')
             if line_clean == "--":
                 if current_record:
-                    new_cols = set(current_record.keys()) - known_cols
-                    for col in new_cols:
-                        cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
-                        known_cols.add(col)
-                    cols = ', '.join(f'"{k}"' for k in current_record.keys())
-                    placeholders = ', '.join('?' for _ in current_record)
-                    cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                    current_record['rowid'] = count + 1
+                    batch.append(dict(current_record))
                     current_record.clear()
                     count += 1
                     reporter.update(is_record=True)
-                    if count % 20000 == 0:
-                        conn.commit()
-                        cursor.execute("BEGIN TRANSACTION")
+                    if len(batch) >= batch_size:
+                        flush_batch(batch)
                 else:
                     reporter.update(is_record=False)
             else:
@@ -161,19 +177,13 @@ if mode == 'to':
                     line_clean = line.rstrip('\r\n')
                     if line_clean == "--":
                         if current_record:
-                            new_cols = set(current_record.keys()) - known_cols
-                            for col in new_cols:
-                                cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
-                                known_cols.add(col)
-                            cols = ', '.join(f'"{k}"' for k in current_record.keys())
-                            placeholders = ', '.join('?' for _ in current_record)
-                            cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                            current_record['rowid'] = count + 1
+                            batch.append(dict(current_record))
                             current_record.clear()
                             count += 1
                             reporter.update(is_record=True)
-                            if count % 20000 == 0:
-                                conn.commit()
-                                cursor.execute("BEGIN TRANSACTION")
+                            if len(batch) >= batch_size:
+                                flush_batch(batch)
                         else:
                             reporter.update(is_record=False)
                     else:
@@ -196,19 +206,13 @@ if mode == 'to':
                         line_clean = line.rstrip('\r\n')
                         if line_clean == "--":
                             if current_record:
-                                new_cols = set(current_record.keys()) - known_cols
-                                for col in new_cols:
-                                    cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
-                                    known_cols.add(col)
-                                cols = ', '.join(f'"{k}"' for k in current_record.keys())
-                                placeholders = ', '.join('?' for _ in current_record)
-                                cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+                                current_record['rowid'] = count + 1
+                                batch.append(dict(current_record))
                                 current_record.clear()
                                 count += 1
                                 reporter.update(is_record=True)
-                                if count % 20000 == 0:
-                                    conn.commit()
-                                    cursor.execute("BEGIN TRANSACTION")
+                                if len(batch) >= batch_size:
+                                    flush_batch(batch)
                             else:
                                 reporter.update(is_record=False)
                         else:
@@ -221,32 +225,24 @@ if mode == 'to':
                 prev_bytes += file_size
                 
     if current_record:
-        new_cols = set(current_record.keys()) - known_cols
-        for col in new_cols:
-            cursor.execute(f'ALTER TABLE records ADD COLUMN "{col}" TEXT')
-            known_cols.add(col)
-        cols = ', '.join(f'"{k}"' for k in current_record.keys())
-        placeholders = ', '.join('?' for _ in current_record)
-        cursor.execute(f'INSERT INTO records ({cols}) VALUES ({placeholders})', list(current_record.values()))
+        current_record['rowid'] = count + 1
+        batch.append(dict(current_record))
         reporter.update(is_record=True)
         
-    conn.commit()
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_records_rowid ON records(rowid)")
-    conn.commit()
-    conn.close()
-    reporter.finish()
+    flush_batch(batch)
     
-    if is_gz:
-        import gzip
-        import shutil
-        if os.path.exists(db_path):
-            try: os.remove(db_path)
-            except: pass
-        with open(temp_db, 'rb') as f_in:
-            with gzip.open(db_path, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        try: os.remove(temp_db)
+    if os.path.exists(db_path):
+        try: os.remove(db_path)
         except: pass
+        
+    conn.execute(f"COPY records TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
+    conn.close()
+    
+    if os.path.exists(temp_db_path):
+        try: os.remove(temp_db_path)
+        except: pass
+        
+    reporter.finish()
 
 elif mode == 'from':
     db_path = sys.argv[2]
@@ -255,39 +251,37 @@ elif mode == 'from':
     
     cols_to_query = [f.strip() for f in used_fields_str.split(',') if f.strip()] if used_fields_str else None
     
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    conn = duckdb.connect(':memory:')
     
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='records'")
-    if not cursor.fetchone():
-        sys.stderr.write("Error: 'records' table not found in database.\n")
+    try:
+        cursor = conn.execute(f"DESCRIBE SELECT * FROM '{db_path}'")
+        all_cols = [row[0] for row in cursor.fetchall() if row[0] != 'rowid']
+    except Exception as e:
+        sys.stderr.write(f"Error reading Parquet file: {e}\n")
         sys.exit(1)
         
-    cursor.execute("PRAGMA table_info(records)")
-    all_cols = [row[1] for row in cursor.fetchall() if row[1] != 'rowid']
-    
     if cols_to_query:
         cols = [c for c in cols_to_query if c in all_cols]
     else:
         cols = all_cols
         
     if not cols:
-        cursor.execute("SELECT count(*) FROM records")
+        cursor = conn.execute(f"SELECT count(*) FROM '{db_path}'")
         count = cursor.fetchone()[0]
         for _ in range(count):
             print("--")
         sys.exit(0)
         
     col_selectors = ', '.join(f'"{c}"' for c in cols)
-    query = f'SELECT {col_selectors} FROM records'
+    query = f"SELECT {col_selectors} FROM '{db_path}'"
     if where_clause:
         query += f' WHERE {where_clause}'
         
-    cursor.execute(query)
+    res = conn.execute(query)
     
     try:
         while True:
-            rows = cursor.fetchmany(1000)
+            rows = res.fetchmany(1000)
             if not rows:
                 break
             for row in rows:
@@ -316,8 +310,8 @@ Options:
   --torec SEP          Convert column-based files (e.g., CSV/TSV) to rec format
   --tocsv              Convert rec format to CSV (first record defines columns)
   -v VAR=VAL           Pass a variable to the AWK script
-  --todb               Convert rec format to compressed SQLite database (uses input file basename)
-  -w, --where CLAUSE   SQL WHERE clause to filter records when querying a database
+  --todb               Convert rec format to Parquet database (uses input file basename)
+  -w, --where CLAUSE   SQL WHERE clause to filter records when querying a Parquet database
 
 Record Format:
   Records are separated by '--' on a line by itself.
@@ -347,14 +341,14 @@ Examples:
   # Extract a single field from a compressed file
   zcat data.rec.gz | recawk '{print rec["tmscore"]}'
 
-  # Convert data to compressed SQLite database (automatically outputs to data.db.gz)
+  # Convert data to Parquet database (automatically outputs to data.parquet)
   recawk --todb data.rec
 
-  # Query database seamlessly
-  recawk '{print rec["tmscore"]}' data.db.gz
+  # Query Parquet database seamlessly
+  recawk '{print rec["tmscore"]}' data.parquet
 
-  # Query database with database-level filtering
-  recawk -w "tmscore > 0.8" '{print rec["tmscore"]}' data.db.gz
+  # Query Parquet database with database-level filtering
+  recawk -w "tmscore > 0.8" '{print rec["tmscore"]}' data.parquet
 EOF
 }
 
@@ -473,7 +467,7 @@ if [[ $TODB -eq 1 ]]; then
     fi
     
     if [[ -z $INPUT_FILE || "$INPUT_FILE" == "-" ]]; then
-        DB_FILE="output.db.gz"
+        DB_FILE="output.parquet"
     else
         DIR=$(dirname "$INPUT_FILE")
         BASE=$(basename "$INPUT_FILE")
@@ -483,7 +477,7 @@ if [[ $TODB -eq 1 ]]; then
         elif [[ "$NAME" == *.rec ]]; then
             NAME="${NAME%.rec}"
         fi
-        DB_FILE="$DIR/$NAME.db.gz"
+        DB_FILE="$DIR/$NAME.parquet"
     fi
     python3 "$MYTMP/helper.py" to "$DB_FILE" "$@"
     exit 0
@@ -503,19 +497,11 @@ else
     FILENAMES="${@:2}"
 fi
 
-# Detect if input is a SQLite database
+# Detect if input is a Parquet database
 IS_DB=0
-IS_DB_GZ=0
-QUERY_DB_FILE=""
 if [[ -n $FILENAMES && -f "$FILENAMES" ]]; then
-    if [[ "$FILENAMES" =~ \.db\.gz$ || "$FILENAMES" =~ \.sqlite\.gz$ ]]; then
+    if [[ "$FILENAMES" =~ \.parquet$ ]] || head -c 4 "$FILENAMES" 2>/dev/null | grep -q "PAR1"; then
         IS_DB=1
-        IS_DB_GZ=1
-        QUERY_DB_FILE="$MYTMP/query.db"
-        gzip -dc "$FILENAMES" > "$QUERY_DB_FILE"
-    elif [[ "$FILENAMES" =~ \.(db|sqlite)$ ]] || head -c 15 "$FILENAMES" 2>/dev/null | grep -q "SQLite format 3"; then
-        IS_DB=1
-        QUERY_DB_FILE="$FILENAMES"
     fi
 fi
 
@@ -537,7 +523,7 @@ AWK_BIN="gawk"
 
 if [[ $GETNREC -eq 1 ]]; then
     if [[ $IS_DB -eq 1 ]]; then
-        sqlite3 "$QUERY_DB_FILE" "SELECT count(*) FROM records"
+        python3 -c "import sys, duckdb; print(duckdb.execute(f\"SELECT count(*) FROM '{sys.argv[1]}'\").fetchone()[0])" "$FILENAMES"
     else
         getnrec $FILENAMES
     fi
@@ -547,7 +533,7 @@ fi
 if [[ $ESTNREC -eq 1 ]]; then
     if [[ $IS_DB -eq 1 ]]; then
         local count
-        count=$(sqlite3 "$QUERY_DB_FILE" "SELECT count(*) FROM records")
+        count=$(python3 -c "import sys, duckdb; print(duckdb.execute(f\"SELECT count(*) FROM '{sys.argv[1]}'\").fetchone()[0])" "$FILENAMES")
         echo "Database file: '$FILENAMES'"
         echo "Exact records: $count"
     else
@@ -558,7 +544,7 @@ fi
 
 if [[ $KEYS -eq 1 ]]; then
     if [[ $IS_DB -eq 1 ]]; then
-        sqlite3 "$QUERY_DB_FILE" "PRAGMA table_info(records)" | cut -d'|' -f2 | grep -v "^rowid$"
+        python3 -c "import sys, duckdb; print('\n'.join([r[0] for r in duckdb.execute(f\"DESCRIBE SELECT * FROM '{sys.argv[1]}'\").fetchall() if r[0] != 'rowid']))" "$FILENAMES"
     else
         gawk -F"=" '{
             if (FNR==1){
@@ -582,7 +568,7 @@ fi
 
 if [[ $TOCSV -eq 1 ]]; then
     if [[ $IS_DB -eq 1 ]]; then
-        python3 "$MYTMP/helper.py" from "$QUERY_DB_FILE" "NONE" "" | gawk '
+        python3 "$MYTMP/helper.py" from "$FILENAMES" "NONE" "" | gawk '
         BEGIN {
             first = 1
         }
@@ -906,7 +892,7 @@ if [[ $IS_DB -eq 1 ]]; then
         WHERE_CLAUSE="$WHERE"
     fi
     
-    python3 "$MYTMP/helper.py" from "$QUERY_DB_FILE" "$WHERE_CLAUSE" "$USED_FIELDS_CSV" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+    python3 "$MYTMP/helper.py" from "$FILENAMES" "$WHERE_CLAUSE" "$USED_FIELDS_CSV" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
 else
     if [[ -n $FILTER ]]; then
         if [[ -z $FILENAMES ]]; then
