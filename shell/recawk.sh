@@ -71,9 +71,8 @@ if mode == 'to':
                     total = 0
                     for f in files:
                         if f.endswith('.gz'):
-                            with open(f, 'rb') as gz_file:
-                                gz_file.seek(-4, 2)
-                                total += int.from_bytes(gz_file.read(4), 'little')
+                            # Estimate uncompressed size as 8x the compressed size on disk
+                            total += os.path.getsize(f) * 8
                         else:
                             total += os.path.getsize(f)
                     self.total_bytes = total
@@ -101,7 +100,9 @@ if mode == 'to':
                 return
             sys.stderr.write("\r\033[K")
             if self.use_percentage:
-                pct = min(100.0, (self.processed_bytes / self.total_bytes) * 100)
+                pct = (self.processed_bytes / self.total_bytes) * 100
+                # Cap active display at 99.9% in case estimation is slightly off
+                pct = min(99.9, pct)
                 bar_width = 30
                 filled = int(bar_width * pct / 100)
                 bar = '█' * filled + '░' * (bar_width - filled)
