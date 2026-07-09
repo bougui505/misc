@@ -341,24 +341,28 @@ if mode == 'to':
                 self.total_bytes = 0
                 self.record_count = 0
                 self.last_update_time = 0
-                self.current_fh = None
-                self.processed_bytes_prev_files = 0
+                self.processed_bytes = 0
                 
-                if files and all(f != '-' for f in files) and not any(f.endswith('.gz') for f in files):
+                if files and all(f != '-' for f in files):
                     try:
-                        self.total_bytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+                        total = 0
+                        for f in files:
+                            if f.endswith('.gz'):
+                                with open(f, 'rb') as gz_file:
+                                    gz_file.seek(-4, 2)
+                                    total += int.from_bytes(gz_file.read(4), 'little')
+                            else:
+                                total += os.path.getsize(f)
+                        self.total_bytes = total
                         if self.total_bytes > 0:
                             self.use_percentage = True
                     except Exception:
                         self.use_percentage = False
 
-            def set_fh(self, fh, prev_bytes):
-                self.current_fh = fh
-                self.processed_bytes_prev_files = prev_bytes
-
-            def update(self, is_record=False):
+            def update(self, line_len=0, is_record=False):
                 if is_record:
                     self.record_count += 1
+                self.processed_bytes += line_len
                 
                 now = time.time()
                 if now - self.last_update_time >= 0.2:
@@ -367,23 +371,8 @@ if mode == 'to':
 
             def print_progress(self):
                 sys.stderr.write("\r\033[K")
-                if self.use_percentage and self.current_fh:
-                    offset = 0
-                    fh = self.current_fh
-                    try:
-                        if hasattr(fh, 'buffer'):
-                            buf = fh.buffer
-                            if hasattr(buf, 'fileobj'):
-                                offset = buf.fileobj.tell()
-                            elif hasattr(buf, 'tell'):
-                                offset = buf.tell()
-                        elif hasattr(fh, 'tell'):
-                            offset = fh.tell()
-                    except Exception:
-                        pass
-                    
-                    processed = self.processed_bytes_prev_files + offset
-                    pct = min(100.0, (processed / self.total_bytes) * 100)
+                if self.use_percentage:
+                    pct = min(100.0, (self.processed_bytes / self.total_bytes) * 100)
                     bar_width = 30
                     filled = int(bar_width * pct / 100)
                     bar = '█' * filled + '░' * (bar_width - filled)
@@ -507,10 +496,9 @@ if mode == 'to':
                     else:
                         fh = open(f, 'r', encoding='utf-8', errors='ignore')
                         
-                    reporter.set_fh(fh, prev_bytes)
-                    
                     try:
                         for line in fh:
+                            line_len = len(line)
                             line_clean = line.rstrip('\r\n')
                             if line_clean == "--":
                                 if current_record:
@@ -518,16 +506,16 @@ if mode == 'to':
                                     batch.append(dict(current_record))
                                     current_record.clear()
                                     count += 1
-                                    reporter.update(is_record=True)
+                                    reporter.update(line_len, is_record=True)
                                     if len(batch) >= batch_size:
                                         flush_batch(batch)
                                 else:
-                                    reporter.update(is_record=False)
+                                    reporter.update(line_len, is_record=False)
                             else:
                                 if '=' in line_clean:
                                     parts = line_clean.split('=', 1)
                                     current_record[parts[0]] = parts[1]
-                                reporter.update(is_record=False)
+                                reporter.update(line_len, is_record=False)
                     finally:
                         if not f.endswith('.gz'):
                             fh.close()
