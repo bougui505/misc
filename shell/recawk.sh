@@ -64,6 +64,7 @@ if mode == 'to':
             self.total_records = 0
             self.record_count = 0
             self.last_update_time = 0
+            self.start_time = time.time()
             
             if files and all(f != '-' for f in files):
                 try:
@@ -127,7 +128,28 @@ if mode == 'to':
                 bar_width = 30
                 filled = int(bar_width * pct / 100)
                 bar = '█' * filled + '░' * (bar_width - filled)
-                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,}/{self.total_records:,} records)")
+                
+                # Calculate ETA
+                now = time.time()
+                elapsed = now - self.start_time
+                if elapsed > 0.5 and self.record_count > 0:
+                    rate = self.record_count / elapsed
+                    rem_records = max(0, self.total_records - self.record_count)
+                    eta_sec = int(rem_records / rate)
+                    if eta_sec < 60:
+                        eta_str = f"{eta_sec}s"
+                    elif eta_sec < 3600:
+                        m = eta_sec // 60
+                        s = eta_sec % 60
+                        eta_str = f"{m}m {s:02d}s"
+                    else:
+                        h = eta_sec // 3600
+                        m = (eta_sec % 3600) // 60
+                        eta_str = f"{h}h {m:02d}m"
+                else:
+                    eta_str = "--"
+                    
+                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,}/{self.total_records:,} records) | ETA: {eta_str}")
             else:
                 sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
             sys.stderr.flush()
