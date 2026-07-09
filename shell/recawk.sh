@@ -20,7 +20,7 @@ cat << 'EOF' > "$MYTMP/helper.py"
 import sys
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import json
 
 try:
     import duckdb
@@ -29,56 +29,10 @@ except ImportError:
     sys.stderr.write("Please install it using: pip install duckdb\n")
     sys.exit(1)
 
-def process_single_file_to_parquet(file_path, out_parquet_path):
-    import duckdb
-    import gzip
-    import os
-    
-    temp_db_path = out_parquet_path + ".tmp"
-    if os.path.exists(temp_db_path):
-        try: os.remove(temp_db_path)
-        except: pass
-        
-    conn = duckdb.connect(temp_db_path)
-    conn.execute("CREATE TABLE records (rowid INTEGER)")
-    
-    known_cols = {'rowid'}
-    batch = []
-    batch_size = 20000
-    
-    def flush_batch(batch_data):
-        if not batch_data:
-            return
-        batch_keys = set()
-        for r in batch_data:
-            batch_keys.update(r.keys())
-            
-        new_cols = batch_keys - known_cols
-        for col in new_cols:
-            conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
-            known_cols.add(col)
-            
-        cols_in_order = [c for c in known_cols if c != 'rowid']
-        col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
-        placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
-        
-        insert_data = []
-        for r in batch_data:
-            row_vals = [r.get('rowid')]
-            for c in cols_in_order:
-                row_vals.append(r.get(c))
-            insert_data.append(row_vals)
-            
-        conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
-        batch_data.clear()
-
-    current_record = {}
-    count = 0
-    
-    proc = None
+def open_file_decompressed(file_path):
     if file_path == '-':
         import sys
-        fh = sys.stdin
+        return sys.stdin, None
     elif file_path.endswith('.gz'):
         import subprocess
         has_pigz = False
@@ -88,130 +42,9 @@ def process_single_file_to_parquet(file_path, out_parquet_path):
             pass
         decompressor = 'pigz' if has_pigz else 'gzip'
         proc = subprocess.Popen([decompressor, '-dc', file_path], stdout=subprocess.PIPE, text=True, bufsize=262144, encoding='utf-8', errors='ignore')
-        fh = proc.stdout
+        return proc.stdout, proc
     else:
-        fh = open(file_path, 'r', encoding='utf-8', errors='ignore')
-        
-    try:
-        for line in fh:
-            line_clean = line.rstrip('\r\n')
-            if line_clean == "--":
-                if current_record:
-                    current_record['rowid'] = count + 1
-                    batch.append(dict(current_record))
-                    current_record.clear()
-                    count += 1
-                    if len(batch) >= batch_size:
-                        flush_batch(batch)
-            else:
-                if '=' in line_clean:
-                    parts = line_clean.split('=', 1)
-                    current_record[parts[0]] = parts[1]
-    finally:
-        if file_path != '-':
-            fh.close()
-        if proc:
-            proc.terminate()
-            proc.wait()
-            
-    if current_record:
-        current_record['rowid'] = count + 1
-        batch.append(dict(current_record))
-        
-    flush_batch(batch)
-    
-    if os.path.exists(out_parquet_path):
-        try: os.remove(out_parquet_path)
-        except: pass
-        
-    conn.execute(f"COPY records TO '{out_parquet_path}' (FORMAT 'PARQUET')")
-    conn.close()
-    
-    if os.path.exists(temp_db_path):
-        try: os.remove(temp_db_path)
-        except: pass
-
-def process_chunk_to_parquet(file_path, start_offset, end_offset, out_parquet_path):
-    import duckdb
-    import os
-    
-    temp_db_path = out_parquet_path + ".tmp"
-    if os.path.exists(temp_db_path):
-        try: os.remove(temp_db_path)
-        except: pass
-        
-    conn = duckdb.connect(temp_db_path)
-    conn.execute("CREATE TABLE records (rowid INTEGER)")
-    
-    known_cols = {'rowid'}
-    batch = []
-    batch_size = 20000
-    
-    def flush_batch(batch_data):
-        if not batch_data:
-            return
-        batch_keys = set()
-        for r in batch_data:
-            batch_keys.update(r.keys())
-            
-        new_cols = batch_keys - known_cols
-        for col in new_cols:
-            conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
-            known_cols.add(col)
-            
-        cols_in_order = [c for c in known_cols if c != 'rowid']
-        col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
-        placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
-        
-        insert_data = []
-        for r in batch_data:
-            row_vals = [r.get('rowid')]
-            for c in cols_in_order:
-                row_vals.append(r.get(c))
-            insert_data.append(row_vals)
-            
-        conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
-        batch_data.clear()
-
-    current_record = {}
-    count = start_offset
-    
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as fh:
-        fh.seek(start_offset)
-        while fh.tell() < end_offset:
-            line = fh.readline()
-            if not line:
-                break
-            line_clean = line.rstrip('\r\n')
-            if line_clean == "--":
-                if current_record:
-                    current_record['rowid'] = count + 1
-                    batch.append(dict(current_record))
-                    current_record.clear()
-                    count += 1
-                    if len(batch) >= batch_size:
-                        flush_batch(batch)
-            else:
-                if '=' in line_clean:
-                    parts = line_clean.split('=', 1)
-                    current_record[parts[0]] = parts[1]
-                    
-    if current_record:
-        current_record['rowid'] = count + 1
-        batch.append(dict(current_record))
-        
-    flush_batch(batch)
-    
-    if os.path.exists(out_parquet_path):
-        try: os.remove(out_parquet_path)
-        except: pass
-        
-    conn.execute(f"COPY records TO '{out_parquet_path}' (FORMAT 'PARQUET')")
-    conn.close()
-    
-    if os.path.exists(temp_db_path):
-        try: os.remove(temp_db_path)
-        except: pass
+        return open(file_path, 'r', encoding='utf-8', errors='ignore'), None
 
 mode = sys.argv[1]
 
@@ -224,325 +57,155 @@ if mode == 'to':
         if f == '-' or os.path.exists(f):
             valid_files.append(f)
             
-    num_workers = os.cpu_count() or 1
-    
-    single_file_parallel = False
-    if len(valid_files) == 1 and valid_files[0] != '-' and not valid_files[0].endswith('.gz'):
-        file_path = valid_files[0]
-        file_size = os.path.getsize(file_path)
-        # Parallelize if file is > 5 MB and we have multiple cores
-        if file_size > 5 * 1024 * 1024 and num_workers > 1:
-            single_file_parallel = True
-
-    if (len(valid_files) > 1 and num_workers > 1) or single_file_parallel:
-        temp_parquet_files = []
-        tasks = []
-        
-        if single_file_parallel:
-            file_path = valid_files[0]
+    class ProgressReporter:
+        def __init__(self, files):
+            self.files = files
+            self.use_percentage = False
+            self.total_bytes = 0
+            self.record_count = 0
+            self.last_update_time = 0
+            self.processed_bytes = 0
             
-            def find_chunk_boundaries(path, num_chunks):
-                f_size = os.path.getsize(path)
-                c_size = f_size // num_chunks
-                bounds = [0]
-                with open(path, 'rb') as f:
-                    for idx in range(1, num_chunks):
-                        offset = idx * c_size
-                        f.seek(offset)
-                        found = False
-                        while True:
-                            line = f.readline()
-                            if not line:
-                                break
-                            if line.rstrip(b'\r\n') == b'--':
-                                bounds.append(f.tell())
-                                found = True
-                                break
-                        if not found:
-                            bounds.append(f_size)
-                bounds.append(f_size)
-                unique = []
-                for b in bounds:
-                    if not unique or b > unique[-1]:
-                        unique.append(b)
-                return unique
-                
-            boundaries = find_chunk_boundaries(file_path, num_workers)
-            actual_chunks = len(boundaries) - 1
-            sys.stderr.write(f"Converting single file in parallel using {actual_chunks} workers...\n")
-            sys.stderr.flush()
+            if files and all(f != '-' for f in files):
+                try:
+                    total = 0
+                    for f in files:
+                        if f.endswith('.gz'):
+                            with open(f, 'rb') as gz_file:
+                                gz_file.seek(-4, 2)
+                                total += int.from_bytes(gz_file.read(4), 'little')
+                        else:
+                            total += os.path.getsize(f)
+                    self.total_bytes = total
+                    if self.total_bytes > 0:
+                        self.use_percentage = True
+                except Exception:
+                    self.use_percentage = False
+
+        def update(self, line_len=0, is_record=False):
+            if is_record:
+                self.record_count += 1
+            self.processed_bytes += line_len
             
-            for i in range(actual_chunks):
-                temp_out = f"{db_path}_part_{i}.parquet"
-                temp_parquet_files.append(temp_out)
-                tasks.append((file_path, boundaries[i], boundaries[i+1], temp_out))
-                
-            with ProcessPoolExecutor(max_workers=actual_chunks) as executor:
-                futures = {executor.submit(process_chunk_to_parquet, t[0], t[1], t[2], t[3]): i for i, t in enumerate(tasks)}
-                completed = 0
-                for future in as_completed(futures):
-                    chunk_idx = futures[future]
-                    try:
-                        future.result()
-                        completed += 1
-                        sys.stderr.write(f" -> [{completed}/{actual_chunks}] Finished chunk {chunk_idx + 1}\n")
-                        sys.stderr.flush()
-                    except Exception as e:
-                        sys.stderr.write(f"Error converting chunk {chunk_idx + 1}: {e}\n")
-                        sys.stderr.flush()
-                        sys.exit(1)
-        else:
-            # Multi-file parallelization
-            workers = min(len(valid_files), num_workers)
-            for i, f in enumerate(valid_files):
-                temp_out = f"{db_path}_part_{i}.parquet"
-                temp_parquet_files.append(temp_out)
-                tasks.append((f, temp_out))
-                
-            sys.stderr.write(f"Converting {len(valid_files)} files in parallel using {workers} processes...\n")
-            sys.stderr.flush()
-            
-            with ProcessPoolExecutor(max_workers=workers) as executor:
-                futures = {executor.submit(process_single_file_to_parquet, t[0], t[1]): t[0] for t in tasks}
-                completed = 0
-                for future in as_completed(futures):
-                    f_name = futures[future]
-                    try:
-                        future.result()
-                        completed += 1
-                        sys.stderr.write(f" -> [{completed}/{len(valid_files)}] Finished: {f_name}\n")
-                        sys.stderr.flush()
-                    except Exception as e:
-                        sys.stderr.write(f"Error converting {f_name}: {e}\n")
-                        sys.stderr.flush()
-                        sys.exit(1)
-                        
-        sys.stderr.write("Merging Parquet parts into final database...\n")
-        sys.stderr.flush()
-        
-        conn = duckdb.connect(':memory:')
-        conn.execute(f"COPY (SELECT * FROM read_parquet({temp_parquet_files}, union_by_name=True)) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
-        conn.close()
-        
-        for temp_file in temp_parquet_files:
-            if os.path.exists(temp_file):
-                try: os.remove(temp_file)
-                except: pass
-                
-        sys.stderr.write("Done!\n")
-        sys.stderr.flush()
-        
-    else:
-        # Sequential version with smooth progress bar
-        class ProgressReporter:
-            def __init__(self, files):
-                self.files = files
-                self.use_percentage = False
-                self.total_bytes = 0
-                self.record_count = 0
-                self.last_update_time = 0
-                self.processed_bytes = 0
-                
-                if files and all(f != '-' for f in files):
-                    try:
-                        total = 0
-                        for f in files:
-                            if f.endswith('.gz'):
-                                with open(f, 'rb') as gz_file:
-                                    gz_file.seek(-4, 2)
-                                    total += int.from_bytes(gz_file.read(4), 'little')
-                            else:
-                                total += os.path.getsize(f)
-                        self.total_bytes = total
-                        if self.total_bytes > 0:
-                            self.use_percentage = True
-                    except Exception:
-                        self.use_percentage = False
+            now = time.time()
+            if now - self.last_update_time >= 0.2:
+                self.print_progress()
+                self.last_update_time = now
 
-            def update(self, line_len=0, is_record=False):
-                if is_record:
-                    self.record_count += 1
-                self.processed_bytes += line_len
-                
-                now = time.time()
-                if now - self.last_update_time >= 0.2:
-                    self.print_progress()
-                    self.last_update_time = now
+            if is_record and self.record_count % 50000 == 0:
+                self.print_progress()
+                self.last_update_time = now
 
-            def print_progress(self):
-                sys.stderr.write("\r\033[K")
-                if self.use_percentage:
-                    pct = min(100.0, (self.processed_bytes / self.total_bytes) * 100)
-                    bar_width = 30
-                    filled = int(bar_width * pct / 100)
-                    bar = '█' * filled + '░' * (bar_width - filled)
-                    sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
-                else:
-                    sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
-                sys.stderr.flush()
-
-            def print_final_progress(self):
-                sys.stderr.write("\r\033[K")
-                bar_width = 30
-                bar = '█' * bar_width
-                sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
-                sys.stderr.flush()
-
-            def finish(self):
-                if self.use_percentage:
-                    self.print_final_progress()
-                else:
-                    self.print_progress()
-                sys.stderr.write("\nDone!\n")
-                sys.stderr.flush()
-
-        temp_db_path = db_path + ".tmp"
-        if os.path.exists(temp_db_path):
-            try: os.remove(temp_db_path)
-            except: pass
-
-        conn = duckdb.connect(temp_db_path)
-        conn.execute("CREATE TABLE records (rowid INTEGER)")
-        
-        known_cols = {'rowid'}
-        batch = []
-        batch_size = 20000
-        
-        def flush_batch(batch_data):
-            if not batch_data:
+        def print_progress(self):
+            if '--silent' in sys.argv:
                 return
-            batch_keys = set()
-            for r in batch_data:
-                batch_keys.update(r.keys())
-                
-            new_cols = batch_keys - known_cols
-            for col in new_cols:
-                conn.execute(f'ALTER TABLE records ADD COLUMN "{col}" VARCHAR')
-                known_cols.add(col)
-                
-            cols_in_order = [c for c in known_cols if c != 'rowid']
-            col_names_str = ', '.join(f'"{c}"' for c in ['rowid'] + cols_in_order)
-            placeholders = ', '.join('?' for _ in range(len(cols_in_order) + 1))
-            
-            insert_data = []
-            for r in batch_data:
-                row_vals = [r.get('rowid')]
-                for c in cols_in_order:
-                    row_vals.append(r.get(c))
-                insert_data.append(row_vals)
-                
-            conn.executemany(f'INSERT INTO records ({col_names_str}) VALUES ({placeholders})', insert_data)
-            batch_data.clear()
+            sys.stderr.write("\r\033[K")
+            if self.use_percentage:
+                pct = min(100.0, (self.processed_bytes / self.total_bytes) * 100)
+                bar_width = 30
+                filled = int(bar_width * pct / 100)
+                bar = '█' * filled + '░' * (bar_width - filled)
+                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
+            else:
+                sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
+            sys.stderr.flush()
 
-        current_record = {}
-        count = 0
+        def print_final_progress(self):
+            if '--silent' in sys.argv:
+                return
+            sys.stderr.write("\r\033[K")
+            bar_width = 30
+            bar = '█' * bar_width
+            sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
+            sys.stderr.flush()
+
+        def finish(self):
+            if '--silent' in sys.argv:
+                return
+            if self.use_percentage:
+                self.print_final_progress()
+            else:
+                self.print_progress()
+            sys.stderr.write("\nDone!\n")
+            sys.stderr.flush()
+
+    temp_jsonl_path = db_path + ".tmp.jsonl"
+    if os.path.exists(temp_jsonl_path):
+        try: os.remove(temp_jsonl_path)
+        except: pass
         
-        reporter = ProgressReporter(valid_files)
-        prev_bytes = 0
-        
+    reporter = ProgressReporter(valid_files)
+    current_record = {}
+    count = 0
+    
+    with open(temp_jsonl_path, 'w', encoding='utf-8', errors='ignore') as jsonl_file:
         if not valid_files:
             for line in sys.stdin:
+                line_len = len(line)
                 line_clean = line.rstrip('\r\n')
                 if line_clean == "--":
                     if current_record:
                         current_record['rowid'] = count + 1
-                        batch.append(dict(current_record))
+                        jsonl_file.write(json.dumps(current_record) + '\n')
                         current_record.clear()
                         count += 1
-                        reporter.update(is_record=True)
-                        if len(batch) >= batch_size:
-                            flush_batch(batch)
+                        reporter.update(line_len, is_record=True)
                     else:
-                        reporter.update(is_record=False)
+                        reporter.update(line_len, is_record=False)
                 else:
                     if '=' in line_clean:
                         parts = line_clean.split('=', 1)
                         current_record[parts[0]] = parts[1]
-                    reporter.update(is_record=False)
+                    reporter.update(line_len, is_record=False)
         else:
             for f in valid_files:
-                if f == '-':
-                    for line in sys.stdin:
+                fh, proc = open_file_decompressed(f)
+                try:
+                    for line in fh:
+                        line_len = len(line)
                         line_clean = line.rstrip('\r\n')
                         if line_clean == "--":
                             if current_record:
                                 current_record['rowid'] = count + 1
-                                batch.append(dict(current_record))
+                                jsonl_file.write(json.dumps(current_record) + '\n')
                                 current_record.clear()
                                 count += 1
-                                reporter.update(is_record=True)
-                                if len(batch) >= batch_size:
-                                    flush_batch(batch)
+                                reporter.update(line_len, is_record=True)
                             else:
-                                reporter.update(is_record=False)
+                                reporter.update(line_len, is_record=False)
                         else:
                             if '=' in line_clean:
                                 parts = line_clean.split('=', 1)
                                 current_record[parts[0]] = parts[1]
-                            reporter.update(is_record=False)
-                else:
-                    file_size = os.path.getsize(f) if os.path.exists(f) else 0
-                    proc = None
-                    if f.endswith('.gz'):
-                        import subprocess
-                        has_pigz = False
-                        try:
-                            has_pigz = subprocess.run(['which', 'pigz'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-                        except Exception:
-                            pass
-                        decompressor = 'pigz' if has_pigz else 'gzip'
-                        proc = subprocess.Popen([decompressor, '-dc', f], stdout=subprocess.PIPE, text=True, bufsize=262144, encoding='utf-8', errors='ignore')
-                        fh = proc.stdout
-                    else:
-                        fh = open(f, 'r', encoding='utf-8', errors='ignore')
+                            reporter.update(line_len, is_record=False)
+                finally:
+                    if f != '-':
+                        fh.close()
+                    if proc:
+                        proc.terminate()
+                        proc.wait()
                         
-                    try:
-                        for line in fh:
-                            line_len = len(line)
-                            line_clean = line.rstrip('\r\n')
-                            if line_clean == "--":
-                                if current_record:
-                                    current_record['rowid'] = count + 1
-                                    batch.append(dict(current_record))
-                                    current_record.clear()
-                                    count += 1
-                                    reporter.update(line_len, is_record=True)
-                                    if len(batch) >= batch_size:
-                                        flush_batch(batch)
-                                else:
-                                    reporter.update(line_len, is_record=False)
-                            else:
-                                if '=' in line_clean:
-                                    parts = line_clean.split('=', 1)
-                                    current_record[parts[0]] = parts[1]
-                                reporter.update(line_len, is_record=False)
-                    finally:
-                        if not f.endswith('.gz'):
-                            fh.close()
-                        if proc:
-                            proc.terminate()
-                            proc.wait()
-                    prev_bytes += file_size
-                    
         if current_record:
             current_record['rowid'] = count + 1
-            batch.append(dict(current_record))
-            reporter.update(is_record=True)
+            jsonl_file.write(json.dumps(current_record) + '\n')
+            reporter.update(0, is_record=True)
             
-        flush_batch(batch)
+    if os.path.exists(db_path):
+        try: os.remove(db_path)
+        except: pass
         
-        if os.path.exists(db_path):
-            try: os.remove(db_path)
-            except: pass
-            
-        conn.execute(f"COPY records TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
-        conn.close()
+    sys.stderr.write("\nWriting final Parquet file...\n")
+    sys.stderr.flush()
+    
+    conn = duckdb.connect(':memory:')
+    conn.execute(f"COPY (SELECT * FROM read_json_auto('{temp_jsonl_path}')) TO '{db_path}' (FORMAT 'PARQUET', COMPRESSION 'ZSTD')")
+    conn.close()
+    
+    if os.path.exists(temp_jsonl_path):
+        try: os.remove(temp_jsonl_path)
+        except: pass
         
-        if os.path.exists(temp_db_path):
-            try: os.remove(temp_db_path)
-            except: pass
-            
-        reporter.finish()
+    reporter.finish()
 
 elif mode == 'from':
     db_path = sys.argv[2]
