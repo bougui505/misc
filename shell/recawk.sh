@@ -61,22 +61,45 @@ if mode == 'to':
         def __init__(self, files):
             self.files = files
             self.use_percentage = False
-            self.total_bytes = 0
+            self.total_records = 0
             self.record_count = 0
             self.last_update_time = 0
-            self.processed_bytes = 0
             
             if files and all(f != '-' for f in files):
                 try:
-                    total = 0
+                    total_est_records = 0
                     for f in files:
-                        if f.endswith('.gz'):
-                            # Estimate uncompressed size as 8x the compressed size on disk
-                            total += os.path.getsize(f) * 8
-                        else:
-                            total += os.path.getsize(f)
-                    self.total_bytes = total
-                    if self.total_bytes > 0:
+                        file_size = os.path.getsize(f)
+                        if file_size > 0:
+                            if f.endswith('.gz'):
+                                import subprocess
+                                # Decompress a small sample of the Gzip file to count density
+                                proc = subprocess.Popen(['gzip', '-dc', f], stdout=subprocess.PIPE, text=True, bufsize=262144, errors='ignore')
+                                sample_lines = []
+                                decomp_bytes = 0
+                                for _ in range(5000):
+                                    line = proc.stdout.readline()
+                                    if not line:
+                                        break
+                                    sample_lines.append(line)
+                                    decomp_bytes += len(line)
+                                proc.terminate()
+                                proc.wait()
+                                
+                                sample_records = sum(1 for l in sample_lines if l.rstrip('\r\n') == "--")
+                                if sample_records > 0 and decomp_bytes > 0:
+                                    total_est_records += int((file_size * 8) * (sample_records / decomp_bytes))
+                            else:
+                                # Sample first 500 KB of raw file
+                                sample_size = min(500 * 1024, file_size)
+                                with open(f, 'r', encoding='utf-8', errors='ignore') as sample_file:
+                                    sample_lines = sample_file.readlines(sample_size)
+                                    decomp_bytes = sum(len(l) for l in sample_lines)
+                                    sample_records = sum(1 for l in sample_lines if l.rstrip('\r\n') == "--")
+                                    if sample_records > 0 and decomp_bytes > 0:
+                                        total_est_records += int(file_size * (sample_records / decomp_bytes))
+                    self.total_records = total_est_records
+                    if self.total_records > 0:
                         self.use_percentage = True
                 except Exception:
                     self.use_percentage = False
@@ -84,7 +107,6 @@ if mode == 'to':
         def update(self, line_len=0, is_record=False):
             if is_record:
                 self.record_count += 1
-            self.processed_bytes += line_len
             
             now = time.time()
             if now - self.last_update_time >= 0.2:
@@ -100,13 +122,12 @@ if mode == 'to':
                 return
             sys.stderr.write("\r\033[K")
             if self.use_percentage:
-                pct = (self.processed_bytes / self.total_bytes) * 100
-                # Cap active display at 99.9% in case estimation is slightly off
+                pct = (self.record_count / self.total_records) * 100
                 pct = min(99.9, pct)
                 bar_width = 30
                 filled = int(bar_width * pct / 100)
                 bar = '█' * filled + '░' * (bar_width - filled)
-                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,} records)")
+                sys.stderr.write(f"Converting to DB: [{bar}] {pct:.1f}% ({self.record_count:,}/{self.total_records:,} records)")
             else:
                 sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
             sys.stderr.flush()
@@ -117,7 +138,7 @@ if mode == 'to':
             sys.stderr.write("\r\033[K")
             bar_width = 30
             bar = '█' * bar_width
-            sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,} records)")
+            sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,}/{self.record_count:,} records)")
             sys.stderr.flush()
 
         def finish(self):
