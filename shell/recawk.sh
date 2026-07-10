@@ -446,7 +446,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 getnrec(){
-    gzip -dfc "$1" 2>/dev/null | grep -c "^--$"
+    local file="${1:-}"
+    if [[ -z $file ]]; then
+        gzip -dfc - 2>/dev/null | grep -c "^--$"
+    else
+        gzip -dfc "$file" 2>/dev/null | grep -c "^--$"
+    fi
 }
 
 estnrec(){
@@ -551,7 +556,9 @@ if [[ $TODB -eq 1 ]]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-    usage; exit 0
+    if [[ $GETNREC -eq 0 && $KEYS -eq 0 && $TOCSV -eq 0 && $TODB -eq 0 && $SAMPLE -eq 0 && $TOREC == 0 && $ESTNREC -eq 0 ]]; then
+        usage; exit 0
+    fi
 fi
 
 if [[ $GETNREC -eq 1 || $ESTNREC -eq 1 || $KEYS -eq 1 || $TOCSV -eq 1 || $TODB -eq 1 || $TOREC != 0 || $SAMPLE -gt 0 ]]; then
