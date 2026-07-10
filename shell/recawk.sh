@@ -46,6 +46,14 @@ def open_file_decompressed(file_path):
     else:
         return open(file_path, 'r', encoding='utf-8', errors='ignore'), None
 
+def try_numeric(val):
+    try:
+        if '.' in val:
+            return float(val)
+        return int(val)
+    except ValueError:
+        return val
+
 mode = sys.argv[1]
 
 if mode == 'to':
@@ -104,7 +112,7 @@ if mode == 'to':
                         self.use_percentage = True
                 except Exception:
                     self.use_percentage = False
-
+ 
         def update(self, line_len=0, is_record=False):
             if is_record:
                 self.record_count += 1
@@ -113,11 +121,11 @@ if mode == 'to':
             if now - self.last_update_time >= 0.2:
                 self.print_progress()
                 self.last_update_time = now
-
+ 
             if is_record and self.record_count % 50000 == 0:
                 self.print_progress()
                 self.last_update_time = now
-
+ 
         def print_progress(self):
             if '--silent' in sys.argv:
                 return
@@ -153,7 +161,7 @@ if mode == 'to':
             else:
                 sys.stderr.write(f"Converting to DB: {self.record_count:,} records processed...")
             sys.stderr.flush()
-
+ 
         def print_final_progress(self):
             if '--silent' in sys.argv:
                 return
@@ -162,7 +170,7 @@ if mode == 'to':
             bar = '█' * bar_width
             sys.stderr.write(f"Converting to DB: [{bar}] 100.0% ({self.record_count:,}/{self.record_count:,} records)")
             sys.stderr.flush()
-
+ 
         def finish(self):
             if '--silent' in sys.argv:
                 return
@@ -172,7 +180,7 @@ if mode == 'to':
                 self.print_progress()
             sys.stderr.write("\nDone!\n")
             sys.stderr.flush()
-
+ 
     chunk_size = 100000
     temp_dir = db_path + ".tmp_parts"
     os.makedirs(temp_dir, exist_ok=True)
@@ -204,7 +212,7 @@ if mode == 'to':
             
         records_list.clear()
         part_idx += 1
-
+ 
     reporter = ProgressReporter(valid_files)
     current_record = {}
     
@@ -226,7 +234,7 @@ if mode == 'to':
             else:
                 if '=' in line_clean:
                     parts = line_clean.split('=', 1)
-                    current_record[parts[0]] = parts[1]
+                    current_record[parts[0]] = try_numeric(parts[1])
                 reporter.update(line_len, is_record=False)
     else:
         for f in valid_files:
@@ -249,7 +257,7 @@ if mode == 'to':
                     else:
                         if '=' in line_clean:
                             parts = line_clean.split('=', 1)
-                            current_record[parts[0]] = parts[1]
+                            current_record[parts[0]] = try_numeric(parts[1])
                         reporter.update(line_len, is_record=False)
             finally:
                 if f != '-':
