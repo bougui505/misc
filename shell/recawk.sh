@@ -358,7 +358,7 @@ Options:
   --torec SEP          Convert column-based files (e.g., CSV/TSV) to rec format
   --tocsv              Convert rec format to CSV (first record defines columns)
   -v VAR=VAL           Pass a variable to the AWK script
-  --todb               Convert rec format to Parquet database (uses input file basename)
+  --todb [OUT_DB]      Convert rec format to Parquet database (uses input file basename by default)
   -w, --where CLAUSE   SQL WHERE clause to filter records when querying a Parquet database
 
 Database Selection Syntax (-w / --where):
@@ -413,6 +413,9 @@ Examples:
 
   # Convert data to Parquet database (automatically outputs to data.parquet)
   recawk --todb data.rec
+
+  # Convert data to a custom Parquet database name
+  recawk --todb custom.parquet data.rec
 
   # Query Parquet database seamlessly
   recawk '{print rec["tmscore"]}' data.parquet
@@ -530,29 +533,37 @@ print(f\"Estimated records:     {est_records:,.0f} (average {avg_lines_per_recor
 }
 
 if [[ $TODB -eq 1 ]]; then
-    INPUT_FILE=""
-    for arg in "$@"; do
-        if [[ -f "$arg" ]]; then
-            INPUT_FILE="$arg"
-            break
-        fi
-    done
-    if [[ -z $INPUT_FILE ]]; then
-        INPUT_FILE="$1"
+    DB_FILE=""
+    if [[ $# -gt 1 && "$1" == *.parquet ]]; then
+        DB_FILE="$1"
+        shift
     fi
-    
-    if [[ -z $INPUT_FILE || "$INPUT_FILE" == "-" ]]; then
-        DB_FILE="output.parquet"
-    else
-        DIR=$(dirname "$INPUT_FILE")
-        BASE=$(basename "$INPUT_FILE")
-        NAME="${BASE%.*}"
-        if [[ "$BASE" =~ \.rec\.gz$ ]]; then
-            NAME="${BASE%.rec.gz}"
-        elif [[ "$NAME" == *.rec ]]; then
-            NAME="${NAME%.rec}"
+
+    if [[ -z $DB_FILE ]]; then
+        INPUT_FILE=""
+        for arg in "$@"; do
+            if [[ -f "$arg" ]]; then
+                INPUT_FILE="$arg"
+                break
+            fi
+        done
+        if [[ -z $INPUT_FILE ]]; then
+            INPUT_FILE="$1"
         fi
-        DB_FILE="$DIR/$NAME.parquet"
+        
+        if [[ -z $INPUT_FILE || "$INPUT_FILE" == "-" ]]; then
+            DB_FILE="output.parquet"
+        else
+            DIR=$(dirname "$INPUT_FILE")
+            BASE=$(basename "$INPUT_FILE")
+            NAME="${BASE%.*}"
+            if [[ "$BASE" =~ \.rec\.gz$ ]]; then
+                NAME="${BASE%.rec.gz}"
+            elif [[ "$NAME" == *.rec ]]; then
+                NAME="${NAME%.rec}"
+            fi
+            DB_FILE="$DIR/$NAME.parquet"
+        fi
     fi
     python3 "$MYTMP/helper.py" to "$DB_FILE" "$@"
     exit 0
