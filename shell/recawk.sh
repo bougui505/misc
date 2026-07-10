@@ -361,6 +361,25 @@ Options:
   --todb               Convert rec format to Parquet database (uses input file basename)
   -w, --where CLAUSE   SQL WHERE clause to filter records when querying a Parquet database
 
+Database Selection Syntax (-w / --where):
+  When querying a Parquet database file, you can pass a standard SQL WHERE clause
+  to filter records at the database level.
+  
+  Supported syntax & operators:
+    - Comparison: =, !=, <, >, <=, >=
+    - String literal quotes: 'value' (e.g. name = 'Alice')
+    - Logical: AND, OR, NOT
+    - Pattern matching: LIKE (e.g. name LIKE 'record_%')
+    - List matching: IN (e.g. id IN (1, 2, 3) or name IN ('Alice', 'Bob'))
+    - Null checks: IS NULL, IS NOT NULL
+
+  Examples of -w clauses:
+    -w "tmscore >= 0.8"
+    -w "tmscore > 0.5 AND length <= 200"
+    -w "pdb_id LIKE '1a%'"
+    -w "pdb_id IN ('1a0n', '2b0m') OR resolution < 2.0"
+    -w "tmscore IS NOT NULL"
+
 Record Format:
   Records are separated by '--' on a line by itself.
   Example:
