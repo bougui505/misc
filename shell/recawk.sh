@@ -379,6 +379,9 @@ Database Selection Syntax (-w / --where):
     -w "pdb_id LIKE '1a%'"
     -w "pdb_id IN ('1a0n', '2b0m') OR resolution < 2.0"
     -w "tmscore IS NOT NULL"
+    -w "regexp_matches(pdb_id, '^1[a-z][0-9]{2}$')"   # Regex matching
+    -w "sqrt(pow(x, 2) + pow(y, 2)) < 10.0"            # Math functions
+    -w "random() < 0.05"                               # Random 5% database-level sample
 
 Record Format:
   Records are separated by '--' on a line by itself.
