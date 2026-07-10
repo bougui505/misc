@@ -558,6 +558,10 @@ if [[ $GETNREC -eq 1 || $ESTNREC -eq 1 || $KEYS -eq 1 || $TOCSV -eq 1 || $TODB -
     CMD=""
     ENDCMD=""
     FILENAMES="$@"
+elif [[ -n $WHERE && $# -eq 1 && -f "$1" ]]; then
+    CMD=""
+    ENDCMD=""
+    FILENAMES="$1"
 else
     CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
     ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
@@ -949,14 +953,19 @@ ${ENDCMD}
 }"
 
 if [[ $IS_DB -eq 1 ]]; then
-    USED_FIELDS_CSV=""
-    if [[ -n $USED_FIELDS ]] && ! echo "$1" | grep -qE "printrec|field\s+in\s+rec"; then
-        USED_FIELDS_CSV=$(echo "$USED_FIELDS" | paste -sd, -)
-    fi
-    
     WHERE_CLAUSE="NONE"
     if [[ -n $WHERE ]]; then
         WHERE_CLAUSE="$WHERE"
+    fi
+
+    if [[ -z $CMD && -z $ENDCMD ]]; then
+        python3 "$MYTMP/helper.py" from "$FILENAMES" "$WHERE_CLAUSE" ""
+        exit 0
+    fi
+
+    USED_FIELDS_CSV=""
+    if [[ -n $USED_FIELDS ]] && ! echo "$1" | grep -qE "printrec|field\s+in\s+rec"; then
+        USED_FIELDS_CSV=$(echo "$USED_FIELDS" | paste -sd, -)
     fi
     
     python3 "$MYTMP/helper.py" from "$FILENAMES" "$WHERE_CLAUSE" "$USED_FIELDS_CSV" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
