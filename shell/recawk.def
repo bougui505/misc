@@ -1,0 +1,43 @@
+Bootstrap: docker
+From: debian:bookworm-slim
+
+%files
+    recawk.sh /usr/local/bin/recawk
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        bash \
+        gawk \
+        grep \
+        gzip \
+        pigz \
+        python3 \
+        python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install duckdb Python package (using --break-system-packages for system-wide install in container)
+    pip3 install --break-system-packages duckdb
+
+    # Ensure recawk is executable
+    chmod +x /usr/local/bin/recawk
+
+%runscript
+    exec /usr/local/bin/recawk "$@"
+
+%help
+    This is an Apptainer container for recawk.
+    
+    To build the container image:
+        apptainer build recawk.sif recawk.def
+        
+    To run recawk via the container:
+        apptainer run recawk.sif [options]
+        
+    To install it as a command on any machine:
+        1. Build or copy `recawk.sif` to the target machine.
+        2. Create a wrapper script or alias named `recawk`. For example, save the following as `recawk` in a directory in your PATH (e.g. `/usr/local/bin/recawk` or `~/.local/bin/recawk`):
+           ```bash
+           #!/bin/bash
+           exec apptainer run /path/to/recawk.sif "$@"
+           ```
+        3. Make the wrapper script executable: `chmod +x recawk`
