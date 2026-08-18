@@ -23,8 +23,13 @@ OUTDIR=${2:-outputs/pull_down}
 mkdir -p $OUTDIR
 module load apptainer
 mkdir -p /tmp/bougui
-apptainer exec --env NUMBA_CACHE_DIR=/tmp/bougui/.numba_cache \
+apptainer exec --env HOME=/tmp/bougui \
+               --env NUMBA_CACHE_DIR=/tmp/bougui/.numba_cache \
                --env TRITON_CACHE_DIR=/tmp/bougui/triton_cache \
                --env TORCH_HOME=/tmp/bougui/torch_cache \
+               --env CUEQ_TRITON_CACHE_DIR=/tmp/bougui/cueq_triton_cache \
+               --env CUEQUIVARIANCE_OPS_NVRTC_CACHE_DIR=/tmp/bougui/cueq_nvrtc_cache \
                -B /pasteur/appa/homes \
+               -B /pasteur/appa/scratch \
                --nv boltz.sif boltz predict $YAML --use_msa_server --override --out_dir $OUTDIR
+
