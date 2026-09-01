@@ -17,6 +17,7 @@ let insulationRatesList = [];
 
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
+const currentOutdoorTempEl = document.getElementById('current-outdoor-temp');
 const lastUpdateEl = document.getElementById('last-update');
 const currentHumidityEl = document.getElementById('current-humidity');
 const humidityLastUpdateEl = document.getElementById('humidity-last-update');
@@ -173,11 +174,73 @@ async function fetchCurrentTemp() {
             currentFeelsLikeEl.textContent = '--.-';
         }
         
+        updateOutdoorTempDisplay();
     } catch (error) {
         console.error('Error fetching current temperature and humidity:', error);
         statusDotEl.className = 'status-dot offline';
         statusTextEl.textContent = 'Server Offline';
     }
+}
+
+// Update current outdoor temperature display
+function updateOutdoorTempDisplay() {
+    const rawEl = document.getElementById('current-outdoor-temp');
+    const effEl = document.getElementById('current-outdoor-eff-temp');
+    if (!rawEl) return;
+    
+    if (outdoorForecast) {
+        let temp = null;
+        let cloudCover = 0;
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const currentIsoHour = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+        
+        if (outdoorForecast.current && outdoorForecast.current.temperature_2m !== undefined && outdoorForecast.current.temperature_2m !== null) {
+            temp = outdoorForecast.current.temperature_2m;
+        }
+        
+        if (outdoorForecast.hourly && outdoorForecast.hourly.time && outdoorForecast.hourly.temperature_2m) {
+            const fIdx = outdoorForecast.hourly.time.indexOf(currentIsoHour);
+            if (fIdx !== -1) {
+                if (temp === null) temp = outdoorForecast.hourly.temperature_2m[fIdx];
+                if (outdoorForecast.hourly.cloud_cover) {
+                    cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
+                }
+            } else if (temp === null) {
+                const currentTs = Math.floor(now.getTime() / 1000);
+                let closestIdx = -1;
+                let minDiff = Infinity;
+                outdoorForecast.hourly.time.forEach((tStr, idx) => {
+                    const tTs = Math.floor(new Date(tStr).getTime() / 1000);
+                    const diff = Math.abs(currentTs - tTs);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIdx = idx;
+                    }
+                });
+                if (closestIdx !== -1) {
+                    temp = outdoorForecast.hourly.temperature_2m[closestIdx];
+                    if (outdoorForecast.hourly.cloud_cover) {
+                        cloudCover = outdoorForecast.hourly.cloud_cover[closestIdx];
+                    }
+                }
+            }
+        }
+        
+        if (temp !== null && temp !== undefined && !isNaN(temp)) {
+            const rawVal = parseFloat(temp);
+            rawEl.textContent = `${rawVal.toFixed(1)}°C`;
+            
+            const solarBias = getSolarParameters(now, cloudCover);
+            const effVal = rawVal + solarBias;
+            if (effEl) {
+                effEl.textContent = `${effVal.toFixed(1)}°C`;
+            }
+            return;
+        }
+    }
+    rawEl.textContent = '--.-°C';
+    if (effEl) effEl.textContent = '--.-°C';
 }
 
 // Calculate summary stats for the data points (Temperature stats)
@@ -2044,11 +2107,12 @@ async function loadHistory(period) {
         // Fetch outdoor forecast if not already cached
         if (!outdoorData) {
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
                 const response = await fetch(url);
                 if (response.ok) {
                     outdoorData = await response.json();
                     outdoorForecast = outdoorData;
+                    updateOutdoorTempDisplay();
                 }
             } catch (err) {
                 console.error("Error fetching Open-Meteo outdoor forecast:", err);
@@ -3026,10 +3090,11 @@ async function init() {
     
     // Fetch outdoor forecast immediately on startup for Rue Sarrette to ensure it's available for insights
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
         const response = await fetch(url);
         if (response.ok) {
             outdoorForecast = await response.json();
+            updateOutdoorTempDisplay();
         }
     } catch (err) {
         console.error("Error fetching outdoor forecast on init:", err);

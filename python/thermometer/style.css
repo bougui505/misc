@@ -273,6 +273,45 @@ body {
     transition: color 0.5s ease;
 }
 
+.outdoor-temp-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+    max-width: 100%;
+}
+
+.outdoor-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(245, 158, 11, 0.1);
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.outdoor-pill.eff-pill {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.25);
+}
+
+.outdoor-temp-value {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.outdoor-eff-value {
+    color: #fbbf24;
+    font-weight: 600;
+}
+
 .temp-meta {
     display: flex;
     gap: 0.4rem;
