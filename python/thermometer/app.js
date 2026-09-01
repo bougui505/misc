@@ -3081,14 +3081,8 @@ async function drawInsulationChart(historyData) {
     }
 }
 
-// Initialization
-async function init() {
-    await fetchForecastErrors(); // Initial fetch of forecast errors from database
-    
-    // Initial fetch of status and temperature
-    await fetchCurrentTemp();
-    
-    // Fetch outdoor forecast immediately on startup for Rue Sarrette to ensure it's available for insights
+// Fetch fresh outdoor weather forecast from Open-Meteo
+async function fetchOutdoorForecast() {
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m&hourly=temperature_2m,cloud_cover&timezone=auto&past_days=2`;
         const response = await fetch(url);
@@ -3097,8 +3091,19 @@ async function init() {
             updateOutdoorTempDisplay();
         }
     } catch (err) {
-        console.error("Error fetching outdoor forecast on init:", err);
+        console.error("Error updating outdoor forecast:", err);
     }
+}
+
+// Initialization
+async function init() {
+    await fetchForecastErrors(); // Initial fetch of forecast errors from database
+    
+    // Initial fetch of status and temperature
+    await fetchCurrentTemp();
+    
+    // Fetch outdoor forecast immediately on startup
+    await fetchOutdoorForecast();
     
     await loadHistory(currentPeriod);
     
@@ -3118,6 +3123,9 @@ async function init() {
     
     // Refresh history data less frequently to save server resources
     setInterval(() => loadHistory(currentPeriod), 15000);
+    
+    // Refresh outdoor forecast from Open-Meteo every 10 minutes automatically
+    setInterval(fetchOutdoorForecast, 10 * 60 * 1000);
 }
 
 // Start
