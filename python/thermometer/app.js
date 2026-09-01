@@ -182,63 +182,89 @@ async function fetchCurrentTemp() {
     }
 }
 
+// Calculate real-time outdoor temperature and cloud cover interpolated to current timestamp
+function getOutdoorTempForTimestamp(nowDate) {
+    if (!outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) {
+        return { temp: null, cloudCover: 0 };
+    }
+    
+    const currentTs = Math.floor(nowDate.getTime() / 1000);
+    const times = outdoorForecast.hourly.time;
+    const temps = outdoorForecast.hourly.temperature_2m;
+    const clouds = outdoorForecast.hourly.cloud_cover || [];
+    
+    let prevIdx = -1;
+    let nextIdx = -1;
+    
+    for (let i = 0; i < times.length - 1; i++) {
+        const t1 = Math.floor(new Date(times[i]).getTime() / 1000);
+        const t2 = Math.floor(new Date(times[i + 1]).getTime() / 1000);
+        if (currentTs >= t1 && currentTs <= t2) {
+            prevIdx = i;
+            nextIdx = i + 1;
+            break;
+        }
+    }
+    
+    if (prevIdx !== -1 && nextIdx !== -1) {
+        const t1 = Math.floor(new Date(times[prevIdx]).getTime() / 1000);
+        const t2 = Math.floor(new Date(times[nextIdx]).getTime() / 1000);
+        const factor = (t2 === t1) ? 0 : (currentTs - t1) / (t2 - t1);
+        
+        const temp1 = temps[prevIdx];
+        const temp2 = temps[nextIdx];
+        const temp = temp1 + factor * (temp2 - temp1);
+        
+        const cloud1 = clouds[prevIdx] || 0;
+        const cloud2 = clouds[nextIdx] || 0;
+        const cloudCover = cloud1 + factor * (cloud2 - cloud1);
+        
+        return { temp, cloudCover };
+    }
+    
+    // Fallback to closest timestamp point if outside range
+    let closestIdx = -1;
+    let minDiff = Infinity;
+    times.forEach((tStr, idx) => {
+        const tTs = Math.floor(new Date(tStr).getTime() / 1000);
+        const diff = Math.abs(currentTs - tTs);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = idx;
+        }
+    });
+    
+    if (closestIdx !== -1) {
+        return {
+            temp: temps[closestIdx],
+            cloudCover: clouds[closestIdx] || 0
+        };
+    }
+    
+    return { temp: null, cloudCover: 0 };
+}
+
 // Update current outdoor temperature display
 function updateOutdoorTempDisplay() {
     const rawEl = document.getElementById('current-outdoor-temp');
     const effEl = document.getElementById('current-outdoor-eff-temp');
     if (!rawEl) return;
     
-    if (outdoorForecast) {
-        let temp = null;
-        let cloudCover = 0;
-        const now = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
-        const currentIsoHour = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+    const now = new Date();
+    const { temp, cloudCover } = getOutdoorTempForTimestamp(now);
+    
+    if (temp !== null && temp !== undefined && !isNaN(temp)) {
+        const rawVal = parseFloat(temp);
+        rawEl.textContent = `${rawVal.toFixed(1)}°C`;
         
-        if (outdoorForecast.current && outdoorForecast.current.temperature_2m !== undefined && outdoorForecast.current.temperature_2m !== null) {
-            temp = outdoorForecast.current.temperature_2m;
+        const solarBias = getSolarParameters(now, cloudCover);
+        const effVal = rawVal + solarBias;
+        if (effEl) {
+            effEl.textContent = `${effVal.toFixed(1)}°C`;
         }
-        
-        if (outdoorForecast.hourly && outdoorForecast.hourly.time && outdoorForecast.hourly.temperature_2m) {
-            const fIdx = outdoorForecast.hourly.time.indexOf(currentIsoHour);
-            if (fIdx !== -1) {
-                if (temp === null) temp = outdoorForecast.hourly.temperature_2m[fIdx];
-                if (outdoorForecast.hourly.cloud_cover) {
-                    cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
-                }
-            } else if (temp === null) {
-                const currentTs = Math.floor(now.getTime() / 1000);
-                let closestIdx = -1;
-                let minDiff = Infinity;
-                outdoorForecast.hourly.time.forEach((tStr, idx) => {
-                    const tTs = Math.floor(new Date(tStr).getTime() / 1000);
-                    const diff = Math.abs(currentTs - tTs);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closestIdx = idx;
-                    }
-                });
-                if (closestIdx !== -1) {
-                    temp = outdoorForecast.hourly.temperature_2m[closestIdx];
-                    if (outdoorForecast.hourly.cloud_cover) {
-                        cloudCover = outdoorForecast.hourly.cloud_cover[closestIdx];
-                    }
-                }
-            }
-        }
-        
-        if (temp !== null && temp !== undefined && !isNaN(temp)) {
-            const rawVal = parseFloat(temp);
-            rawEl.textContent = `${rawVal.toFixed(1)}°C`;
-            
-            const solarBias = getSolarParameters(now, cloudCover);
-            const effVal = rawVal + solarBias;
-            if (effEl) {
-                effEl.textContent = `${effVal.toFixed(1)}°C`;
-            }
-            return;
-        }
+        return;
     }
+    
     rawEl.textContent = '--.-°C';
     if (effEl) effEl.textContent = '--.-°C';
 }
