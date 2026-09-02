@@ -323,6 +323,93 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
+.forecast-progression-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+    padding: 0.55rem 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.85rem;
+    width: 100%;
+    max-width: 320px;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+
+.progression-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.progression-icon {
+    font-size: 1.05rem;
+    font-weight: bold;
+}
+
+.progression-icon.rising, .progression-text.rising {
+    color: #ef4444;
+}
+
+.progression-icon.falling, .progression-text.falling {
+    color: #3b82f6;
+}
+
+.progression-icon.steady, .progression-text.steady {
+    color: var(--text-muted);
+}
+
+.forecast-extrema-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+.forecast-extrema-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.forecast-extrema-pill.max-extrema {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+.forecast-extrema-pill.min-extrema {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: #93c5fd;
+}
+
+.extrema-tag {
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.extrema-val {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.extrema-time {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
 .temp-trend {
     display: flex;
     align-items: center;

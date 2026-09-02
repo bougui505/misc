@@ -58,6 +58,25 @@
                         <span class="meta-label">Last updated:</span>
                         <span class="meta-value" id="last-update">Never</span>
                     </div>
+                    <!-- Expected Forecast Progression & Extrema -->
+                    <div class="forecast-progression-container" id="forecast-progression-bar">
+                        <div class="progression-status">
+                            <span class="progression-icon" id="progression-icon">→</span>
+                            <span class="progression-text" id="progression-value">Calculating forecast trend...</span>
+                        </div>
+                        <div class="forecast-extrema-group">
+                            <div class="forecast-extrema-pill max-extrema" title="Expected 24h Peak">
+                                <span class="extrema-tag">▲ High:</span>
+                                <span class="extrema-val" id="extrema-max-val">--.-°C</span>
+                                <span class="extrema-time" id="extrema-max-time">--:--</span>
+                            </div>
+                            <div class="forecast-extrema-pill min-extrema" title="Expected 24h Low">
+                                <span class="extrema-tag">▼ Low:</span>
+                                <span class="extrema-val" id="extrema-min-val">--.-°C</span>
+                                <span class="extrema-time" id="extrema-min-time">--:--</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="temp-trend" id="temp-trend-container" style="display: none;">
                         <span class="meta-label">Trend:</span>
                         <span class="trend-arrow" id="temp-trend-arrow">→</span>

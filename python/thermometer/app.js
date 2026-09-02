@@ -262,11 +262,109 @@ function updateOutdoorTempDisplay() {
         if (effEl) {
             effEl.textContent = `${effVal.toFixed(1)}°C`;
         }
+        updateForecastProgression();
         return;
     }
     
     rawEl.textContent = '--.-°C';
     if (effEl) effEl.textContent = '--.-°C';
+    updateForecastProgression();
+}
+
+// Calculate and display expected outdoor forecast progression and upcoming 24h extrema
+function updateForecastProgression() {
+    const iconEl = document.getElementById('progression-icon');
+    const textEl = document.getElementById('progression-value');
+    const maxValEl = document.getElementById('extrema-max-val');
+    const maxTimeEl = document.getElementById('extrema-max-time');
+    const minValEl = document.getElementById('extrema-min-val');
+    const minTimeEl = document.getElementById('extrema-min-time');
+    
+    if (!textEl || !outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
+    
+    const now = new Date();
+    const currentTs = Math.floor(now.getTime() / 1000);
+    const times = outdoorForecast.hourly.time;
+    const temps = outdoorForecast.hourly.temperature_2m;
+    const clouds = outdoorForecast.hourly.cloud_cover || [];
+    
+    const points = [];
+    for (let i = 0; i < times.length; i++) {
+        const tTs = Math.floor(new Date(times[i]).getTime() / 1000);
+        if (tTs >= currentTs - 1800 && tTs <= currentTs + 86400) {
+            const dateObj = new Date(times[i]);
+            const cloudCover = clouds[i] || 0;
+            const rawTemp = temps[i];
+            const solarBias = getSolarParameters(dateObj, cloudCover);
+            const effTemp = rawTemp + solarBias;
+            
+            points.push({
+                timestamp: tTs,
+                date: dateObj,
+                rawTemp: rawTemp,
+                effTemp: effTemp
+            });
+        }
+    }
+    
+    if (points.length < 2) return;
+    
+    const currentInfo = getOutdoorTempForTimestamp(now);
+    const currentRaw = currentInfo.temp !== null ? currentInfo.temp : points[0].rawTemp;
+    const currentEff = currentRaw + getSolarParameters(now, currentInfo.cloudCover);
+    
+    let maxPt = points[0];
+    let minPt = points[0];
+    points.forEach(pt => {
+        if (pt.effTemp > maxPt.effTemp) maxPt = pt;
+        if (pt.effTemp < minPt.effTemp) minPt = pt;
+    });
+    
+    const formatTime = (date) => {
+        const isToday = date.getDate() === now.getDate();
+        const pad = (n) => String(n).padStart(2, '0');
+        const timeStr = `${pad(date.getHours())}:00`;
+        return isToday ? `@ ${timeStr}` : `Tom. ${timeStr}`;
+    };
+    
+    const nearFuturePt = points.find(pt => pt.timestamp >= currentTs + 3 * 3600) || points[points.length - 1];
+    const delta3h = nearFuturePt.effTemp - currentEff;
+    
+    let arrow = '→';
+    let trendClass = 'steady';
+    let desc = '';
+    
+    if (delta3h > 0.3) {
+        arrow = '↗';
+        trendClass = 'rising';
+        const deltaPeak = maxPt.effTemp - currentEff;
+        const peakText = deltaPeak > 0.1 ? `(+${deltaPeak.toFixed(1)}°C to peak)` : `at peak`;
+        desc = `Forecast: Rising ${peakText}`;
+    } else if (delta3h < -0.3) {
+        arrow = '↘';
+        trendClass = 'falling';
+        const deltaLow = currentEff - minPt.effTemp;
+        const lowText = deltaLow > 0.1 ? `(-${deltaLow.toFixed(1)}°C to low)` : `at low`;
+        desc = `Forecast: Falling ${lowText}`;
+    } else {
+        arrow = '→';
+        trendClass = 'steady';
+        desc = `Forecast: Steady (~${currentEff.toFixed(1)}°C)`;
+    }
+    
+    if (iconEl) {
+        iconEl.textContent = arrow;
+        iconEl.className = `progression-icon ${trendClass}`;
+    }
+    if (textEl) {
+        textEl.textContent = desc;
+        textEl.className = `progression-text ${trendClass}`;
+    }
+    
+    if (maxValEl) maxValEl.textContent = `${maxPt.effTemp.toFixed(1)}°C`;
+    if (maxTimeEl) maxTimeEl.textContent = formatTime(maxPt.date);
+    if (minValEl) minValEl.textContent = `${minPt.effTemp.toFixed(1)}°C`;
+    if (minTimeEl) minTimeEl.textContent = formatTime(minPt.date);
 }
 
 // Calculate summary stats for the data points (Temperature stats)
