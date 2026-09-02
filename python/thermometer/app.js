@@ -271,8 +271,8 @@ function updateOutdoorTempDisplay() {
     updateForecastProgression();
 }
 
-// Calculate and display expected outdoor forecast progression and upcoming 24h extrema
-function updateForecastProgression() {
+// Calculate and display expected forecast progression and upcoming 24h extrema synchronized with chart curve
+function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels, numPastHours) {
     const iconEl = document.getElementById('progression-icon');
     const textEl = document.getElementById('progression-value');
     const maxValEl = document.getElementById('extrema-max-val');
@@ -280,7 +280,83 @@ function updateForecastProgression() {
     const minValEl = document.getElementById('extrema-min-val');
     const minTimeEl = document.getElementById('extrema-min-time');
     
-    if (!textEl || !outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
+    if (!textEl) return;
+    
+    const nowIdx = numPastHours !== undefined ? numPastHours : 24;
+    
+    // Sync directly with chart forecast curve if available
+    if (predictedIndoor && labels && predictedIndoor.length > nowIdx) {
+        const currentIndoor = predictedIndoor[nowIdx];
+        if (currentIndoor !== null && currentIndoor !== undefined) {
+            let maxVal = -Infinity, minVal = Infinity;
+            let maxIdx = -1, minIdx = -1;
+            
+            for (let i = nowIdx; i < predictedIndoor.length; i++) {
+                const val = predictedIndoor[i];
+                if (val !== null && val !== undefined) {
+                    if (val > maxVal) {
+                        maxVal = val;
+                        maxIdx = i;
+                    }
+                    if (val < minVal) {
+                        minVal = val;
+                        minIdx = i;
+                    }
+                }
+            }
+            
+            if (maxIdx !== -1 && minIdx !== -1) {
+                const cleanTime = (idx) => {
+                    const label = labels[idx] || '';
+                    return label.includes(' ') ? label.split(' ').slice(-2).join(' ') : label;
+                };
+                
+                const nearIdx = Math.min(nowIdx + 4, predictedIndoor.length - 1);
+                const nearVal = predictedIndoor[nearIdx] !== null ? predictedIndoor[nearIdx] : currentIndoor;
+                const delta = nearVal - currentIndoor;
+                
+                let arrow = '→';
+                let trendClass = 'steady';
+                let desc = '';
+                
+                if (delta > 0.15) {
+                    arrow = '↗';
+                    trendClass = 'rising';
+                    const deltaPeak = maxVal - currentIndoor;
+                    const peakText = deltaPeak > 0.1 ? `(+${deltaPeak.toFixed(1)}°C to peak)` : `at peak`;
+                    desc = `Indoor Forecast: Rising ${peakText}`;
+                } else if (delta < -0.15) {
+                    arrow = '↘';
+                    trendClass = 'falling';
+                    const deltaLow = currentIndoor - minVal;
+                    const lowText = deltaLow > 0.1 ? `(-${deltaLow.toFixed(1)}°C to low)` : `at low`;
+                    desc = `Indoor Forecast: Falling ${lowText}`;
+                } else {
+                    arrow = '→';
+                    trendClass = 'steady';
+                    desc = `Indoor Forecast: Steady (~${currentIndoor.toFixed(1)}°C)`;
+                }
+                
+                if (iconEl) {
+                    iconEl.textContent = arrow;
+                    iconEl.className = `progression-icon ${trendClass}`;
+                }
+                if (textEl) {
+                    textEl.textContent = desc;
+                    textEl.className = `progression-text ${trendClass}`;
+                }
+                
+                if (maxValEl) maxValEl.textContent = `${maxVal.toFixed(1)}°C`;
+                if (maxTimeEl) maxTimeEl.textContent = `@ ${cleanTime(maxIdx)}`;
+                if (minValEl) minValEl.textContent = `${minVal.toFixed(1)}°C`;
+                if (minTimeEl) minTimeEl.textContent = `@ ${cleanTime(minIdx)}`;
+                return;
+            }
+        }
+    }
+    
+    // Fallback to outdoor forecast curve if indoor chart points not provided
+    if (!outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
     
     const now = new Date();
     const currentTs = Math.floor(now.getTime() / 1000);
@@ -339,17 +415,17 @@ function updateForecastProgression() {
         trendClass = 'rising';
         const deltaPeak = maxPt.effTemp - currentEff;
         const peakText = deltaPeak > 0.1 ? `(+${deltaPeak.toFixed(1)}°C to peak)` : `at peak`;
-        desc = `Forecast: Rising ${peakText}`;
+        desc = `Outdoor Forecast: Rising ${peakText}`;
     } else if (delta3h < -0.3) {
         arrow = '↘';
         trendClass = 'falling';
         const deltaLow = currentEff - minPt.effTemp;
         const lowText = deltaLow > 0.1 ? `(-${deltaLow.toFixed(1)}°C to low)` : `at low`;
-        desc = `Forecast: Falling ${lowText}`;
+        desc = `Outdoor Forecast: Falling ${lowText}`;
     } else {
         arrow = '→';
         trendClass = 'steady';
-        desc = `Forecast: Steady (~${currentEff.toFixed(1)}°C)`;
+        desc = `Outdoor Forecast: Steady (~${currentEff.toFixed(1)}°C)`;
     }
     
     if (iconEl) {
@@ -985,6 +1061,8 @@ function drawChart(historyData) {
                     dataset4Colors[idx] = isOpen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.04)';
                 }
             }
+            
+            updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels, numPastHours);
         }
     } else if (currentPeriod === 'scatter') {
         const validPoints = historyData.filter(d => d.outdoorTemperature !== null && d.temperature !== null);
