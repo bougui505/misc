@@ -355,77 +355,86 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
         }
     }
     
-    // Fallback to outdoor forecast curve if indoor chart points not provided
-    if (!outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
+    // Fallback: Calculate Indoor thermal forecast prediction directly from indoor state + outdoor forecast
+    const currentIndoorText = currentTempEl ? currentTempEl.textContent : null;
+    const currentIndoorVal = parseFloat(currentIndoorText);
+    if (isNaN(currentIndoorVal) || !outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
     
+    const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
+    const biasCorrection = getHistoricalBiasCorrection();
     const now = new Date();
     const currentTs = Math.floor(now.getTime() / 1000);
-    const times = outdoorForecast.hourly.time;
-    const temps = outdoorForecast.hourly.temperature_2m;
-    const clouds = outdoorForecast.hourly.cloud_cover || [];
+    const nowHourTS = Math.round(currentTs / 3600) * 3600;
     
     const points = [];
-    for (let i = 0; i < times.length; i++) {
-        const tTs = Math.floor(new Date(times[i]).getTime() / 1000);
-        if (tTs >= currentTs - 1800 && tTs <= currentTs + 86400) {
-            const dateObj = new Date(times[i]);
-            const cloudCover = clouds[i] || 0;
-            const rawTemp = temps[i];
-            const solarBias = getSolarParameters(dateObj, cloudCover);
-            const effTemp = rawTemp + solarBias;
-            
-            points.push({
-                timestamp: tTs,
-                date: dateObj,
-                rawTemp: rawTemp,
-                effTemp: effTemp
-            });
+    let currentPred = currentIndoorVal;
+    
+    for (let h = 0; h <= 24; h++) {
+        const ts = nowHourTS + h * 3600;
+        const dateObj = new Date(ts * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        const timeStr = `${pad(dateObj.getHours())}:00`;
+        const iso = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${timeStr}`;
+        
+        let outTemp = null;
+        let cloudCover = 0;
+        const fIdx = outdoorForecast.hourly.time.indexOf(iso);
+        if (fIdx !== -1) {
+            outTemp = outdoorForecast.hourly.temperature_2m[fIdx];
+            if (outdoorForecast.hourly.cloud_cover) {
+                cloudCover = outdoorForecast.hourly.cloud_cover[fIdx];
+            }
         }
+        
+        if (h > 0 && outTemp !== null) {
+            const solarBias = getSolarParameters(dateObj, cloudCover);
+            const effectiveOut = outTemp + solarBias;
+            currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05;
+        }
+        
+        const correctedPred = h > 0 ? (currentPred + biasCorrection) : currentPred;
+        const isToday = dateObj.getDate() === now.getDate();
+        const displayTime = isToday ? `@ ${timeStr}` : `Tom. ${timeStr}`;
+        
+        points.push({
+            timestamp: ts,
+            timeLabel: displayTime,
+            temp: parseFloat(correctedPred.toFixed(1))
+        });
     }
     
     if (points.length < 2) return;
     
-    const currentInfo = getOutdoorTempForTimestamp(now);
-    const currentRaw = currentInfo.temp !== null ? currentInfo.temp : points[0].rawTemp;
-    const currentEff = currentRaw + getSolarParameters(now, currentInfo.cloudCover);
-    
     let maxPt = points[0];
     let minPt = points[0];
     points.forEach(pt => {
-        if (pt.effTemp > maxPt.effTemp) maxPt = pt;
-        if (pt.effTemp < minPt.effTemp) minPt = pt;
+        if (pt.temp > maxPt.temp) maxPt = pt;
+        if (pt.temp < minPt.temp) minPt = pt;
     });
     
-    const formatTime = (date) => {
-        const isToday = date.getDate() === now.getDate();
-        const pad = (n) => String(n).padStart(2, '0');
-        const timeStr = `${pad(date.getHours())}:00`;
-        return isToday ? `@ ${timeStr}` : `Tom. ${timeStr}`;
-    };
-    
-    const nearFuturePt = points.find(pt => pt.timestamp >= currentTs + 3 * 3600) || points[points.length - 1];
-    const delta3h = nearFuturePt.effTemp - currentEff;
+    const nearPt = points[Math.min(4, points.length - 1)];
+    const delta = nearPt.temp - points[0].temp;
     
     let arrow = '→';
     let trendClass = 'steady';
     let desc = '';
     
-    if (delta3h > 0.3) {
+    if (delta > 0.15) {
         arrow = '↗';
         trendClass = 'rising';
-        const deltaPeak = maxPt.effTemp - currentEff;
+        const deltaPeak = maxPt.temp - points[0].temp;
         const peakText = deltaPeak > 0.1 ? `(+${deltaPeak.toFixed(1)}°C to peak)` : `at peak`;
-        desc = `Outdoor Forecast: Rising ${peakText}`;
-    } else if (delta3h < -0.3) {
+        desc = `Indoor Forecast: Rising ${peakText}`;
+    } else if (delta < -0.15) {
         arrow = '↘';
         trendClass = 'falling';
-        const deltaLow = currentEff - minPt.effTemp;
+        const deltaLow = points[0].temp - minPt.temp;
         const lowText = deltaLow > 0.1 ? `(-${deltaLow.toFixed(1)}°C to low)` : `at low`;
-        desc = `Outdoor Forecast: Falling ${lowText}`;
+        desc = `Indoor Forecast: Falling ${lowText}`;
     } else {
         arrow = '→';
         trendClass = 'steady';
-        desc = `Outdoor Forecast: Steady (~${currentEff.toFixed(1)}°C)`;
+        desc = `Indoor Forecast: Steady (~${points[0].temp.toFixed(1)}°C)`;
     }
     
     if (iconEl) {
@@ -437,10 +446,10 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
         textEl.className = `progression-text ${trendClass}`;
     }
     
-    if (maxValEl) maxValEl.textContent = `${maxPt.effTemp.toFixed(1)}°C`;
-    if (maxTimeEl) maxTimeEl.textContent = formatTime(maxPt.date);
-    if (minValEl) minValEl.textContent = `${minPt.effTemp.toFixed(1)}°C`;
-    if (minTimeEl) minTimeEl.textContent = formatTime(minPt.date);
+    if (maxValEl) maxValEl.textContent = `${maxPt.temp.toFixed(1)}°C`;
+    if (maxTimeEl) maxTimeEl.textContent = maxPt.timeLabel;
+    if (minValEl) minValEl.textContent = `${minPt.temp.toFixed(1)}°C`;
+    if (minTimeEl) minTimeEl.textContent = minPt.timeLabel;
 }
 
 // Calculate summary stats for the data points (Temperature stats)
