@@ -575,7 +575,7 @@ if [ "$#" -eq 0 ]; then
     fi
 fi
 
-if [[ $GETNREC -eq 1 || $ESTNREC -eq 1 || $KEYS -eq 1 || $TOCSV -eq 1 || $TODB -eq 1 || $TOREC != 0 || $SAMPLE -gt 0 ]]; then
+if [[ $GETNREC -eq 1 || $ESTNREC -eq 1 || $KEYS -eq 1 || $TOCSV -eq 1 || $TODB -eq 1 || $TOREC != 0 ]]; then
     CMD=""
     ENDCMD=""
     FILENAMES="$@"
@@ -583,6 +583,10 @@ elif [[ -n $WHERE && $# -eq 1 && -f "$1" ]]; then
     CMD=""
     ENDCMD=""
     FILENAMES="$1"
+elif [[ $SAMPLE -gt 0 && ( $# -eq 0 || -f "$1" || "$1" == "-" ) ]]; then
+    CMD=""
+    ENDCMD=""
+    FILENAMES="$@"
 else
     CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
     ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
@@ -801,44 +805,39 @@ if [[ $TOREC != 0 ]]; then
 fi
 
 if [[ $SAMPLE -gt 0 ]]; then
-    # We change the CMD to store the record in a reservoir instead of printing immediately.
+    USER_CMD="$CMD"
+    USER_ENDCMD="$ENDCMD"
     V="SAMPLE=$SAMPLE"
-    # We wrap the user's command to run only at the END on the sampled records
     CMD='{
         # Reservoir Sampling Logic
-        if (nr < SAMPLE) {
-            # Fill the reservoir initially
-            for (key in rec) reservoir[nr, key] = rec[key]
-            res_keys[nr] = 1
+        if (nr <= SAMPLE) {
+            idx = nr - 1
+            for (k in rec) reservoir[idx][k] = rec[k]
         } else {
-            # Replace with decreasing probability
-            r = int((nr + 1) * rand())
+            r = int(nr * rand())
             if (r < SAMPLE) {
-                # Clear old record at index r and replace
-                for (key in rec) {
-                    # We use a 2D array simulation to store multiple records
-                    reservoir[r, key] = rec[key]
-                }
+                delete reservoir[r]
+                for (k in rec) reservoir[r][k] = rec[k]
             }
         }
     }'
-    # At the END, we loop through the reservoir and run the user's code
-    ENDCMD='
-        for (i=0; i < SAMPLE; i++) {
-            # Restore the "rec" array for the current sampled record
+    if [[ -n $USER_CMD ]]; then
+        ACTION_CODE="$USER_CMD"
+    else
+        ACTION_CODE='printrec(); print("--")'
+    fi
+    ENDCMD="
+        total_samples = (nr < SAMPLE) ? nr : SAMPLE
+        for (i = 0; i < total_samples; i++) {
             delete rec
-            for (combined_key in reservoir) {
-                split(combined_key, parts, SUBSEP)
-                if (parts[1] == i) {
-                    rec[parts[2]] = reservoir[combined_key]
-                }
+            for (k in reservoir[i]) {
+                rec[k] = reservoir[i][k]
             }
-            printrec();
-            print("--")
-            # Simulate the NR/FNR for the sample and run user command
             nr = i + 1; fnr = i + 1;
+            ${ACTION_CODE}
         }
-    '
+        ${USER_ENDCMD}
+    "
 fi
 
 # Define the AWK script parts to avoid duplication
