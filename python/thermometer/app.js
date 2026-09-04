@@ -271,6 +271,25 @@ function updateOutdoorTempDisplay() {
     updateForecastProgression();
 }
 
+// Helper to format extrema timestamps relative to current day
+function formatExtremaTime(dateObj, now) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const timeStr = `${pad(dateObj.getHours())}:00`;
+    
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    const dayDiff = Math.round((targetDay - nowDay) / 86400000);
+    
+    if (dayDiff === 0) {
+        return `@ ${timeStr}`;
+    } else if (dayDiff === 1) {
+        return `Tom. ${timeStr}`;
+    } else {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[dateObj.getMonth()]} ${dateObj.getDate()} ${timeStr}`;
+    }
+}
+
 // Calculate and display expected forecast progression and upcoming 24h extrema synchronized with chart curve
 function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels, numPastHours) {
     const iconEl = document.getElementById('progression-icon');
@@ -282,6 +301,9 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
     
     if (!textEl) return;
     
+    const now = new Date();
+    const currentTs = Math.floor(now.getTime() / 1000);
+    const nowHourTS = Math.round(currentTs / 3600) * 3600;
     const nowIdx = numPastHours !== undefined ? numPastHours : 24;
     
     // Sync directly with chart forecast curve if available
@@ -306,10 +328,8 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
             }
             
             if (maxIdx !== -1 && minIdx !== -1) {
-                const cleanTime = (idx) => {
-                    const label = labels[idx] || '';
-                    return label.includes(' ') ? label.split(' ').slice(-2).join(' ') : label;
-                };
+                const maxDate = new Date((nowHourTS + (maxIdx - nowIdx) * 3600) * 1000);
+                const minDate = new Date((nowHourTS + (minIdx - nowIdx) * 3600) * 1000);
                 
                 const nearIdx = Math.min(nowIdx + 4, predictedIndoor.length - 1);
                 const nearVal = predictedIndoor[nearIdx] !== null ? predictedIndoor[nearIdx] : currentIndoor;
@@ -347,9 +367,9 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
                 }
                 
                 if (maxValEl) maxValEl.textContent = `${maxVal.toFixed(1)}°C`;
-                if (maxTimeEl) maxTimeEl.textContent = `@ ${cleanTime(maxIdx)}`;
+                if (maxTimeEl) maxTimeEl.textContent = formatExtremaTime(maxDate, now);
                 if (minValEl) minValEl.textContent = `${minVal.toFixed(1)}°C`;
-                if (minTimeEl) minTimeEl.textContent = `@ ${cleanTime(minIdx)}`;
+                if (minTimeEl) minTimeEl.textContent = formatExtremaTime(minDate, now);
                 return;
             }
         }
@@ -362,9 +382,6 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
     
     const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
     const biasCorrection = getHistoricalBiasCorrection();
-    const now = new Date();
-    const currentTs = Math.floor(now.getTime() / 1000);
-    const nowHourTS = Math.round(currentTs / 3600) * 3600;
     
     const points = [];
     let currentPred = currentIndoorVal;
@@ -393,11 +410,11 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
         }
         
         const correctedPred = h > 0 ? (currentPred + biasCorrection) : currentPred;
-        const isToday = dateObj.getDate() === now.getDate();
-        const displayTime = isToday ? `@ ${timeStr}` : `Tom. ${timeStr}`;
+        const displayTime = formatExtremaTime(dateObj, now);
         
         points.push({
             timestamp: ts,
+            dateObj: dateObj,
             timeLabel: displayTime,
             temp: parseFloat(correctedPred.toFixed(1))
         });
