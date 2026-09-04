@@ -31,3 +31,4 @@ test-cuda: bougui.sif
 blast_swissprot.sif: blast_swissprot.def
 	mkdir -p tmp
 	APPTTAINER_TMPDIR=$$(pwd)/tmp apptainer build --force $@ $<
+
