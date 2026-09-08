@@ -417,6 +417,9 @@ Examples:
   # Convert data to a custom Parquet database name
   recawk --todb custom.parquet data.rec
 
+  # Dump Parquet database in rec format
+  recawk data.parquet
+
   # Query Parquet database seamlessly
   recawk '{print rec["tmscore"]}' data.parquet
 
@@ -587,6 +590,10 @@ elif [[ $SAMPLE -gt 0 && ( $# -eq 0 || -f "$1" || "$1" == "-" ) ]]; then
     CMD=""
     ENDCMD=""
     FILENAMES="$@"
+elif [[ $# -eq 1 && -f "$1" ]] && { [[ "$1" =~ \.parquet$ ]] || head -c 4 "$1" 2>/dev/null | grep -q "PAR1"; }; then
+    CMD=""
+    ENDCMD=""
+    FILENAMES="$1"
 else
     CMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $1}' | tr "$" "\n")
     ENDCMD=$(echo "$1" | tr "\n" "$" | gawk -F"END" '{print $2}' | tr "$" "\n")
