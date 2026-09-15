@@ -41,15 +41,18 @@ echo "===SSHARE_ALL==="
 sshare -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,FairShare 2>/dev/null
 echo "===SSHARE_BIS==="
 sshare -A bis -a -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,FairShare 2>/dev/null
-echo "===SQUEUE==="
+echo "===SQUEUE_BIS==="
 squeue -A bis -h -o "%u|%P|%t|%r" 2>/dev/null
+echo "===SQUEUE_ALL==="
+squeue -p common,gpu -h -o "%P|%t|%r" 2>/dev/null
 REMOTE
 )
 
 halflife=$(echo "$raw_dump" | sed -n '1p')
 sshare_all_data=$(echo "$raw_dump" | sed -n '/===SSHARE_ALL===/,/===SSHARE_BIS===/{ /===SSHARE_ALL===/d; /===SSHARE_BIS===/d; p }')
-sshare_data=$(echo "$raw_dump" | sed -n '/===SSHARE_BIS===/,/===SQUEUE===/{ /===SSHARE_BIS===/d; /===SQUEUE===/d; p }')
-squeue_data=$(echo "$raw_dump" | sed -n '/===SQUEUE===/,$ { /===SQUEUE===/d; p }')
+sshare_data=$(echo "$raw_dump" | sed -n '/===SSHARE_BIS===/,/===SQUEUE_BIS===/{ /===SSHARE_BIS===/d; /===SQUEUE_BIS===/d; p }')
+squeue_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_BIS===/,/===SQUEUE_ALL===/{ /===SQUEUE_BIS===/d; /===SQUEUE_ALL===/d; p }')
+squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,$ { /===SQUEUE_ALL===/d; p }')
 
 # 2. Section 1: Overview
 echo -e "${C_BOLD}${C_BLUE}[1] GROUP BIS FAIRSHARE & CONSUMPTION OVERVIEW${C_RESET}"
@@ -146,7 +149,7 @@ if [ -n "$inactive" ]; then
 fi
 echo ""
 
-# 5. Section 4: Live Jobs
+# 5. Section 4: Live Jobs in Group BIS
 echo -e "${C_BOLD}${C_BLUE}[4] LIVE JOBS IN GROUP BIS${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -155,13 +158,59 @@ if [ -z "$squeue_data" ]; then
 else
     (
       echo -e "USER|PARTITION|STATE|COUNT|REASON"
-      echo "$squeue_data" | sort | uniq -c | awk '{ printf "%s|%s|%s|%s|%s\n", $2, $3, $4, $1, $5 }'
+      echo "$squeue_data" | awk -F'|' '
+      NF>=4 {
+          user = $1; gsub(/^[ \t]+|[ \t]+$/, "", user);
+          key = user "|" $2 "|" $3 "|" $4;
+          count[key]++;
+      }
+      END {
+          for (k in count) {
+              split(k, p, "|");
+              printf "%s|%s|%s|%d|%s\n", p[1], p[2], p[3], count[k], p[4];
+          }
+      }' | sort -t'|' -k1,1 -k2,2 -k3,3
     ) | column -t -s '|'
 fi
 echo ""
 
-# 6. Section 5: Summary & Diagnostic
-echo -e "${C_BOLD}${C_BLUE}[5] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
+# 6. Section 5: Live Jobs in Common & GPU Partitions (Global)
+echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN COMMON & GPU PARTITIONS (Global)${C_RESET}"
+echo -e "${C_DIM}${SUBSEP}${C_RESET}"
+
+if [ -z "$squeue_all_data" ]; then
+    echo -e "  ${C_GREEN}No active or pending jobs currently queued in common or gpu partitions.${C_RESET}"
+else
+    (
+      echo -e "PARTITION|STATE|COUNT|REASON"
+      echo "$squeue_all_data" | awk -F'|' '
+      NF>=3 && ($1 == "common" || $1 == "gpu") {
+          key = $1 "|" $2 "|" $3;
+          count[key]++;
+      }
+      END {
+          for (k in count) {
+              split(k, p, "|");
+              printf "%s|%s|%d|%s\n", p[1], p[2], count[k], p[3];
+          }
+      }' | sort -t'|' -k1,1 -k2,2
+    ) | column -t -s '|'
+
+    echo "$squeue_all_data" | awk -F'|' -v C_DIM="$C_DIM" -v C_RESET="$C_RESET" '
+    NF>=2 && ($1 == "common" || $1 == "gpu") {
+        total++;
+        if ($2 == "R") r++;
+        else if ($2 == "PD") pd++;
+        else other++;
+    }
+    END {
+        printf "\n%s• Common & GPU totals: %'"'"'d Running (R), %'"'"'d Pending (PD), %'"'"'d Other (%'"'"'d total jobs)%s\n", C_DIM, r, pd, other, total, C_RESET;
+    }'
+fi
+echo ""
+
+# 7. Section 6: Summary & Diagnostic
+echo -e "${C_BOLD}${C_BLUE}[6] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$sshare_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RED="$C_RED" -v C_GREEN="$C_GREEN" -v C_RESET="$C_RESET" -v curr_user="${USER:-bougui}" '
