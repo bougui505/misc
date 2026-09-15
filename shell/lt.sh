@@ -24,7 +24,7 @@ underline_last_modified () {
 	# last 5 min (300s) -> light red
 	# last 10 min (600s) -> blue
 	# Cluster also by 12 hours (43200s)
-	exa --icons -lh -snew --git --time-style full-iso --links --color=always $@ | awk '{Time=$5" "$6
+	eza --icons -lh -snew --git --time-style full-iso --links --color=always --hyperlink "$@" | sed "s|file://$(hostname)/|file:///|g" | awk '{Time=$5" "$6
 			gsub("\x1B\\[[0-9;]*[a-zA-Z]","",Time)
 			gsub("[-,:]", " ", Time)
 			Time=mktime(Time)
@@ -72,15 +72,10 @@ for i in "$@"; do
 done
 FILENAME=$@
 if [ "$LOWER" = "None" ] && [ "$UPPER" = "None" ]; then
-    if hash exa; then
-        if exa --help | grep -q -- --git; then
-            underline_last_modified $(echo $FILENAME)
-        else
-            # exa exists but does not support --git, fall back to ls
-            ls -rlth --time-style=+"%F %H:%M:%S.%N" --color $(echo $FILENAME)
-        fi
+    if hash eza 2>/dev/null || hash exa 2>/dev/null; then
+        underline_last_modified $(echo $FILENAME)
     else
-        # exa does not exist, fall back to ls
+        # eza/exa does not exist, fall back to ls
         ls -rlth --time-style=+"%F %H:%M:%S.%N" --color $(echo $FILENAME)
     fi
     exit
