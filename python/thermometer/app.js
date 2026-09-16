@@ -799,6 +799,7 @@ function drawChart(historyData) {
     let label1, label2, label3, label5;
     let color1, color2, color3, color5;
     let scatterMin = undefined, scatterMax = undefined;
+    let predictedIndoor = null, aiPredictedIndoor = null, hasAiData = false;
     
     const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--temp-active').trim() || '#10b981';
     const feelsColor = '#a855f7';
@@ -887,7 +888,7 @@ function drawChart(historyData) {
         
         labels = new Array(totalHours);
         const actualIndoor = new Array(totalHours).fill(null);
-        const predictedIndoor = new Array(totalHours).fill(null);
+        predictedIndoor = new Array(totalHours).fill(null);
         const outdoorDataPoints = new Array(totalHours).fill(null);
         const outdoorCloudPoints = new Array(totalHours).fill(0);
         
@@ -1045,9 +1046,9 @@ function drawChart(historyData) {
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
             // Build AI prediction array
-            const aiPredictedIndoor = new Array(totalHours).fill(null);
+            aiPredictedIndoor = new Array(totalHours).fill(null);
             aiPredictedIndoor[numPastHours] = actualIndoor[numPastHours];
-            let hasAiData = false;
+            hasAiData = false;
             if (aiForecastData && aiForecastData.ai_predictions) {
                 for (let h = 1; h <= numFutureHours; h++) {
                     const idx = h + numPastHours;
