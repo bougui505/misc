@@ -209,8 +209,30 @@ else
 fi
 echo ""
 
-# 7. Section 6: Summary & Diagnostic
-echo -e "${C_BOLD}${C_BLUE}[6] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
+# 7. Section 6: Accessible Partitions for Account BIS
+echo -e "${C_BOLD}${C_BLUE}[6] ACCESSIBLE PARTITIONS & CHARACTERISTICS FOR BIS${C_RESET}"
+echo -e "${C_DIM}${SUBSEP}${C_RESET}"
+
+(
+  echo -e "PARTITION|TYPE|NODES|CORES|HARDWARE / MEMORY|ALLOWED_QOS|MAX_WALLTIME|PREEMPT|TIER"
+  echo -e "common|CPU Standard|41|3,936|37 TB RAM (~720 GB/node)|normal, fast, ultrafast|24h (normal) / 2h (fast)|No|1"
+  echo -e "dedicated|CPU Opportunistic|112|10,752|85 TB RAM (up to 2 TB/node)|fast, ultrafast|2h (fast) / 5m (ultrafast)|Yes (Requeue)|5000"
+  echo -e "gpu|GPU Standard|17|1,728|115 GPUs (A100, A40, L40S, RTX6000)|gpu, normal, fast, ultrafast|3d (gpu) / 24h (normal)|No|1000"
+  echo -e "dedicatedgpu|GPU Opportunistic|9|528|45 GPUs (A100, A40, RTX6000)|fast, ultrafast|2h (fast) / 5m (ultrafast)|Yes (Requeue)|5000"
+  echo -e "long|CPU Long Runs|4|384|2.8 TB RAM (~720 GB/node)|long|365d (long)|No|1"
+  echo -e "clcgwb|CPU CLC Workbench|1|96|720 GB RAM|normal, fast, ultrafast|24h (normal) / 2h (fast)|No|10000"
+) | column -t -s '|'
+
+echo -e "\n${C_DIM}• Quick Submission Guide:${C_RESET}"
+echo -e "  • ${C_BOLD}Standard CPU (<= 24h):${C_RESET}     sbatch -p common --qos=normal -t 24:00:00 --cpus-per-task=N --mem=XG ..."
+echo -e "  • ${C_BOLD}Fast / Debug CPU (<= 2h):${C_RESET}    sbatch -p dedicated --qos=fast -t 02:00:00 ... ${C_DIM}(Starts immediately, high priority tier 5000)${C_RESET}"
+echo -e "  • ${C_BOLD}Standard GPU (<= 3 days):${C_RESET}   sbatch -p gpu --qos=gpu --gres=gpu:1 -t 3-00:00:00 ..."
+echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 -t 02:00:00 ... ${C_DIM}(Starts immediately, tier 5000)${C_RESET}"
+echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
+echo ""
+
+# 8. Section 7: Summary & Diagnostic
+echo -e "${C_BOLD}${C_BLUE}[7] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$sshare_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RED="$C_RED" -v C_GREEN="$C_GREEN" -v C_RESET="$C_RESET" -v curr_user="${USER:-bougui}" '
