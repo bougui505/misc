@@ -16,6 +16,7 @@ let forecastErrorsList = [];
 let insulationRatesList = [];
 let currentForecastModel = 'ai'; // 'ai', 'physics', or 'both'
 let aiForecastData = null;
+let latestHistoryData = [];
 
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
@@ -1046,11 +1047,13 @@ function drawChart(historyData) {
             // Build AI prediction array
             const aiPredictedIndoor = new Array(totalHours).fill(null);
             aiPredictedIndoor[numPastHours] = actualIndoor[numPastHours];
+            let hasAiData = false;
             if (aiForecastData && aiForecastData.ai_predictions) {
                 for (let h = 1; h <= numFutureHours; h++) {
                     const idx = h + numPastHours;
                     if (h - 1 < aiForecastData.ai_predictions.length) {
                         aiPredictedIndoor[idx] = aiForecastData.ai_predictions[h - 1];
+                        hasAiData = true;
                     }
                 }
             }
@@ -1061,23 +1064,13 @@ function drawChart(historyData) {
             dataset6 = new Array(totalHours).fill(null);
             dataset7 = new Array(totalHours).fill(null);
 
-            if (currentForecastModel === 'physics') {
-                dataset2 = predictedIndoor;
-                label2 = 'Indoor Temp (Physics Model)';
-                color2 = '#06b6d4'; // Teal
-            } else { // 'ai' or default
-                dataset2 = aiPredictedIndoor[numPastHours + 1] !== null ? aiPredictedIndoor : predictedIndoor;
-                label2 = 'Indoor Temp (AI Hybrid Model)';
-                color2 = '#a855f7'; // Vibrant Purple for AI
-            }
-
-            const activeForecastLine = (currentForecastModel === 'physics') ? predictedIndoor : (aiPredictedIndoor[numPastHours + 1] !== null ? aiPredictedIndoor : predictedIndoor);
+            const activeForecastLine = (currentForecastModel === 'physics' || !hasAiData) ? predictedIndoor : aiPredictedIndoor;
 
             for (let idx = 0; idx < totalHours; idx++) {
                 if (idx >= numPastHours && activeForecastLine[idx] !== null) {
                     const h = idx - numPastHours;
                     const factor = Math.sqrt(h / 24.0);
-                    const rmse = (currentForecastModel === 'ai' && aiForecastData && aiForecastData.metrics) ? aiForecastData.metrics.ai_rmse : avgMinErr;
+                    const rmse = (currentForecastModel !== 'physics' && aiForecastData && aiForecastData.metrics) ? aiForecastData.metrics.ai_rmse : avgMinErr;
                     dataset6[idx] = parseFloat((activeForecastLine[idx] - rmse * factor).toFixed(2));
                     dataset7[idx] = parseFloat((activeForecastLine[idx] + rmse * factor).toFixed(2));
                 }
@@ -1449,20 +1442,67 @@ function drawChart(historyData) {
             order: 1,
             pointStyle: 'line'
         });
-        chartDatasets.push({
-            label: label2,
-            data: dataset2,
-            borderColor: color2,
-            borderWidth: 2.5,
-            borderDash: [5, 5],
-            fill: false,
-            tension: 0.3,
-            yAxisID: 'y',
-            pointRadius: 0,
-            spanGaps: true,
-            order: 1,
-            pointStyle: 'line'
-        });
+        if (currentForecastModel === 'both' && hasAiData) {
+            chartDatasets.push({
+                label: 'Indoor Temp (AI Hybrid Model)',
+                data: aiPredictedIndoor,
+                borderColor: '#a855f7', // Vibrant Purple
+                borderWidth: 2.5,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+            chartDatasets.push({
+                label: 'Indoor Temp (Physics Model)',
+                data: predictedIndoor,
+                borderColor: '#06b6d4', // Cool Teal
+                borderWidth: 2.5,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+        } else if (currentForecastModel === 'physics' || !hasAiData) {
+            chartDatasets.push({
+                label: 'Indoor Temp (Physics Model)',
+                data: predictedIndoor,
+                borderColor: '#06b6d4', // Cool Teal
+                borderWidth: 2.5,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+        } else {
+            chartDatasets.push({
+                label: 'Indoor Temp (AI Hybrid Model)',
+                data: aiPredictedIndoor,
+                borderColor: '#a855f7', // Vibrant Purple
+                borderWidth: 2.5,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y',
+                pointRadius: 0,
+                spanGaps: true,
+                order: 1,
+                pointStyle: 'line'
+            });
+        }
+
         chartDatasets.push({
             label: 'Forecast Lower Bound',
             data: dataset6,
@@ -1476,12 +1516,14 @@ function drawChart(historyData) {
             order: 1,
             pointStyle: 'line'
         });
+
+        const uncertaintyFill = (currentForecastModel === 'physics') ? 'rgba(6, 182, 212, 0.15)' : 'rgba(168, 85, 247, 0.15)';
         chartDatasets.push({
             label: 'Forecast Uncertainty',
             data: dataset7,
             borderColor: 'transparent',
             borderWidth: 0,
-            backgroundColor: 'rgba(6, 182, 212, 0.15)',
+            backgroundColor: uncertaintyFill,
             fill: '-1',
             tension: 0.3,
             yAxisID: 'y',
@@ -2428,6 +2470,7 @@ async function loadHistory(period) {
         const biasCorrection = getHistoricalBiasCorrection();
         updateFormulaUI(alpha, biasCorrection);
         
+        latestHistoryData = historyData;
         drawChart(historyData);
         drawHumidityChart(historyData);
         drawInsulationChart(historyData);
@@ -3357,6 +3400,9 @@ async function fetchAIForecast(outdoorList) {
             aiForecastData = await resp.json();
             if (aiForecastData && aiForecastData.metrics) {
                 updateAIMetricsUI(aiForecastData.metrics);
+            }
+            if (chartInstance && currentPeriod === 'forecast') {
+                drawChart(latestHistoryData);
             }
         }
     } catch (err) {
