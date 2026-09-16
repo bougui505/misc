@@ -30,7 +30,7 @@ const tempCardEl = document.getElementById('temp-card');
 const statMaxEl = document.getElementById('stat-max');
 const statMinEl = document.getElementById('stat-min');
 const statAvgEl = document.getElementById('stat-avg');
-const timeframeButtons = document.querySelectorAll('.btn-timeframe');
+const timeframeButtons = document.querySelectorAll('.timeframe-selector .btn-timeframe');
 const devicePathEl = document.getElementById('device-path');
 
 // Calculate feels-like (Australian Apparent Temperature formula)
@@ -3427,7 +3427,18 @@ async function init() {
             document.querySelectorAll('.btn-model').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentForecastModel = btn.dataset.model || 'ai';
-            if (chartInstance) {
+            
+            if (currentPeriod !== 'forecast') {
+                currentPeriod = 'forecast';
+                document.querySelectorAll('.timeframe-selector .btn-timeframe').forEach(b => {
+                    if (b.getAttribute('data-period') === 'forecast') {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+                loadHistory('forecast');
+            } else if (chartInstance) {
                 drawChart(latestHistoryData);
             }
         });
