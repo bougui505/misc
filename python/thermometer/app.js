@@ -378,13 +378,14 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
         }
     }
     
-    // Fallback: Calculate Indoor thermal forecast prediction directly from indoor state + outdoor forecast
+    // Fallback: Calculate Indoor thermal forecast prediction directly using AI model or physics model + outdoor forecast
     const currentIndoorText = currentTempEl ? currentTempEl.textContent : null;
     const currentIndoorVal = parseFloat(currentIndoorText);
     if (isNaN(currentIndoorVal) || !outdoorForecast || !outdoorForecast.hourly || !outdoorForecast.hourly.time) return;
     
     const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
     const biasCorrection = getHistoricalBiasCorrection();
+    const hasAiPredictions = aiForecastData && aiForecastData.ai_predictions && aiForecastData.ai_predictions.length > 0;
     
     const points = [];
     let currentPred = currentIndoorVal;
@@ -406,15 +407,21 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
             }
         }
         
-        if (h > 0 && outTemp !== null) {
-            const solarBias = getSolarParameters(dateObj, cloudCover);
-            const effectiveOut = outTemp + solarBias;
-            currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05;
+        let correctedPred = currentIndoorVal;
+        if (h > 0) {
+            if (hasAiPredictions && h - 1 < aiForecastData.ai_predictions.length) {
+                correctedPred = parseFloat(aiForecastData.ai_predictions[h - 1]);
+            } else {
+                if (outTemp !== null) {
+                    const solarBias = getSolarParameters(dateObj, cloudCover);
+                    const effectiveOut = outTemp + solarBias;
+                    currentPred = currentPred + alpha * (effectiveOut - currentPred) + 0.05;
+                }
+                correctedPred = currentPred + biasCorrection;
+            }
         }
         
-        const correctedPred = h > 0 ? (currentPred + biasCorrection) : currentPred;
         const displayTime = formatExtremaTime(dateObj, now);
-        
         points.push({
             timestamp: ts,
             dateObj: dateObj,
@@ -1121,7 +1128,8 @@ function drawChart(historyData) {
                 }
             }
             
-            updateForecastProgression(activeForecastLine, effectiveOutdoorData, labels, numPastHours);
+            const progressionLine = (hasAiData && aiPredictedIndoor) ? aiPredictedIndoor : activeForecastLine;
+            updateForecastProgression(progressionLine, effectiveOutdoorData, labels, numPastHours);
         }
     } else if (currentPeriod === 'scatter') {
         const validPoints = historyData.filter(d => d.outdoorTemperature !== null && d.temperature !== null);
