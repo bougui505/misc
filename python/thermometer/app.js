@@ -2585,6 +2585,7 @@ function calculateClimateInsights(history7d) {
             if (idx === 0) {
                 if (statMaxEl) statMaxEl.textContent = `${maxT.toFixed(1)}°C`;
                 if (statMinEl) statMinEl.textContent = `${minT.toFixed(1)}°C`;
+                if (statAvgEl) statAvgEl.textContent = `${avgT.toFixed(1)}°C`;
             }
             
             const tr = document.createElement('tr');
