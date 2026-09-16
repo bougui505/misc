@@ -44,7 +44,7 @@ sshare -A bis -a -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,F
 echo "===SQUEUE_BIS==="
 squeue -A bis -h -o "%u|%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_ALL==="
-squeue -p common,gpu -h -o "%P|%t|%r" 2>/dev/null
+squeue -p common,gpu,dedicatedgpu -h -o "%P|%t|%r" 2>/dev/null
 REMOTE
 )
 
@@ -174,17 +174,17 @@ else
 fi
 echo ""
 
-# 6. Section 5: Live Jobs in Common & GPU Partitions (Global)
-echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN COMMON & GPU PARTITIONS (Global)${C_RESET}"
+# 6. Section 5: Live Jobs in Common, GPU & DedicatedGPU Partitions (Global)
+echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN COMMON, GPU & DEDICATEDGPU PARTITIONS (Global)${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 if [ -z "$squeue_all_data" ]; then
-    echo -e "  ${C_GREEN}No active or pending jobs currently queued in common or gpu partitions.${C_RESET}"
+    echo -e "  ${C_GREEN}No active or pending jobs currently queued in common, gpu, or dedicatedgpu partitions.${C_RESET}"
 else
     (
       echo -e "PARTITION|STATE|COUNT|REASON"
       echo "$squeue_all_data" | awk -F'|' '
-      NF>=3 && ($1 == "common" || $1 == "gpu") {
+      NF>=3 && ($1 == "common" || $1 == "gpu" || $1 == "dedicatedgpu") {
           key = $1 "|" $2 "|" $3;
           count[key]++;
       }
@@ -197,14 +197,14 @@ else
     ) | column -t -s '|'
 
     echo "$squeue_all_data" | awk -F'|' -v C_DIM="$C_DIM" -v C_RESET="$C_RESET" '
-    NF>=2 && ($1 == "common" || $1 == "gpu") {
+    NF>=2 && ($1 == "common" || $1 == "gpu" || $1 == "dedicatedgpu") {
         total++;
         if ($2 == "R") r++;
         else if ($2 == "PD") pd++;
         else other++;
     }
     END {
-        printf "\n%s• Common & GPU totals: %'"'"'d Running (R), %'"'"'d Pending (PD), %'"'"'d Other (%'"'"'d total jobs)%s\n", C_DIM, r, pd, other, total, C_RESET;
+        printf "\n%s• Common, GPU & DedicatedGPU totals: %'"'"'d Running (R), %'"'"'d Pending (PD), %'"'"'d Other (%'"'"'d total jobs)%s\n", C_DIM, r, pd, other, total, C_RESET;
     }'
 fi
 echo ""
