@@ -667,7 +667,7 @@ const forecastExtremaPlugin = {
         
         if (currentPeriod === 'forecast') {
             dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
-            dsPredicted = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Predicted)');
+            dsPredicted = chart.data.datasets.find(ds => ds.label && ds.label.includes('Indoor Temp') && ds.label !== 'Indoor Temp (Actual)');
         } else if (currentPeriod === '24h' || currentPeriod === '7d') {
             dsActual = chart.data.datasets.find(ds => ds.label === "Temperature");
         }
@@ -969,6 +969,13 @@ function drawChart(historyData) {
             }
         }
 
+        // Multi-tier fallback to ensure anchor indoor reading at index 24 (Now) is ALWAYS non-null
+        if (actualIndoor[numPastHours] === null || actualIndoor[numPastHours] === undefined || isNaN(actualIndoor[numPastHours])) {
+            const lastHist = (historyData && historyData.length > 0) ? historyData[historyData.length - 1].temperature : null;
+            const domTemp = parseFloat(currentTempEl ? currentTempEl.textContent : null);
+            actualIndoor[numPastHours] = (lastHist !== null && !isNaN(lastHist)) ? lastHist : (!isNaN(domTemp) ? domTemp : 20.0);
+        }
+
         // 4. Connect predicted line to the last actual reading at index 24 (Now) for future projection
         predictedIndoor[numPastHours] = actualIndoor[numPastHours];
         
@@ -977,9 +984,11 @@ function drawChart(historyData) {
             const idx = offset + numPastHours;
             const prevIdx = idx - 1;
             const prevIndoor = predictedIndoor[prevIdx];
-            const outTemp = effectiveOutdoorData[idx];
+            const outTemp = (effectiveOutdoorData[idx] !== null && effectiveOutdoorData[idx] !== undefined)
+                ? effectiveOutdoorData[idx]
+                : (effectiveOutdoorData[prevIdx] !== null ? effectiveOutdoorData[prevIdx] : (actualIndoor[numPastHours] - 5.0));
             
-            if (prevIndoor !== null && outTemp !== null) {
+            if (prevIndoor !== null && prevIndoor !== undefined) {
                 predictedIndoor[idx] = parseFloat((prevIndoor + alpha * (outTemp - prevIndoor) + 0.05).toFixed(2));
             }
         }
@@ -1045,15 +1054,21 @@ function drawChart(historyData) {
             }
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
-            // Build AI prediction array
+            // Build AI prediction array & fill past hours so model lines connect to measured history
             aiPredictedIndoor = new Array(totalHours).fill(null);
-            aiPredictedIndoor[numPastHours] = actualIndoor[numPastHours];
+            for (let i = 0; i <= numPastHours; i++) {
+                if (predictedIndoor[i] === null) {
+                    predictedIndoor[i] = actualIndoor[i];
+                }
+                aiPredictedIndoor[i] = actualIndoor[i];
+            }
+            
             hasAiData = false;
-            if (aiForecastData && aiForecastData.ai_predictions) {
+            if (aiForecastData && aiForecastData.ai_predictions && aiForecastData.ai_predictions.length > 0) {
                 for (let h = 1; h <= numFutureHours; h++) {
                     const idx = h + numPastHours;
                     if (h - 1 < aiForecastData.ai_predictions.length) {
-                        aiPredictedIndoor[idx] = aiForecastData.ai_predictions[h - 1];
+                        aiPredictedIndoor[idx] = parseFloat(aiForecastData.ai_predictions[h - 1]);
                         hasAiData = true;
                     }
                 }
@@ -1610,103 +1625,17 @@ function drawChart(historyData) {
         });
     }
 
-    if (chartInstance) {
-        // Update the existing chart smoothly in-place without blinking
+    if (chartInstance && activeChartPeriod === currentPeriod) {
+        // Update the existing chart smoothly in-place with freshly generated datasets
         chartInstance.data.labels = labels;
-        
-        if (currentPeriod === 'anomaly' || currentPeriod === 'forecast_deviation') {
-            const numPastHours = 24;
-            const borderColors = dataset1.map((v, idx) => {
-                if (v === null) return 'transparent';
-                if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
-                    return v >= 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(59, 130, 246, 0.45)';
-                }
-                return v >= 0 ? '#ef4444' : '#3b82f6';
-            });
-            const backgroundColors = dataset1.map((v, idx) => {
-                if (v === null) return 'rgba(0,0,0,0)';
-                if (currentPeriod === 'forecast_deviation' && idx > numPastHours) {
-                    return v >= 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)';
-                }
-                return v >= 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.35)';
-            });
-            
-            chartInstance.data.datasets[0].data = dataset1;
-            chartInstance.data.datasets[0].label = label1;
-            chartInstance.data.datasets[0].borderColor = borderColors;
-            chartInstance.data.datasets[0].backgroundColor = backgroundColors;
-            
-            if (currentPeriod === 'forecast_deviation') {
-                chartInstance.data.datasets[1].data = dataset6;
-                chartInstance.data.datasets[2].data = dataset7;
-            }
-        } else if (currentPeriod === 'forecast') {
-            chartInstance.data.datasets[0].data = dataset4;
-            chartInstance.data.datasets[0].backgroundColor = dataset4Colors;
-            
-            chartInstance.data.datasets[1].data = dataset1;
-            chartInstance.data.datasets[1].label = label1;
-            
-            chartInstance.data.datasets[2].data = dataset2;
-            chartInstance.data.datasets[2].label = label2;
-            
-            chartInstance.data.datasets[3].data = dataset6;
-            
-            chartInstance.data.datasets[4].data = dataset7;
-            
-            chartInstance.data.datasets[5].data = dataset3;
-            chartInstance.data.datasets[5].label = label3;
-            
-            chartInstance.data.datasets[6].data = dataset5;
-            chartInstance.data.datasets[6].label = label5;
-        } else if (currentPeriod === 'scatter') {
-            const numPoints = dataset1.length;
-            const pointRadii = new Array(numPoints).fill(4.5);
-            const pointHoverRadii = new Array(numPoints).fill(7);
-            const pointBorderWidths = new Array(numPoints).fill(1);
-            const pointBorderColors = new Array(numPoints).fill('#ffffff');
-            
-            if (numPoints > 0) {
-                pointRadii[numPoints - 1] = 8;
-                pointHoverRadii[numPoints - 1] = 10;
-                pointBorderWidths[numPoints - 1] = 2.5;
-                pointBorderColors[numPoints - 1] = '#ef4444';
-            }
-            
-            // Update the scatter points (index 5), trend line (index 6), diagonal line (index 7), and daily cycle (index 8)
-            chartInstance.data.datasets[5].data = dataset1;
-            chartInstance.data.datasets[5].backgroundColor = dataset3;
-            chartInstance.data.datasets[5].pointBackgroundColor = dataset3;
-            chartInstance.data.datasets[5].pointRadius = pointRadii;
-            chartInstance.data.datasets[5].pointHoverRadius = pointHoverRadii;
-            chartInstance.data.datasets[5].pointBorderColor = pointBorderColors;
-            chartInstance.data.datasets[5].pointBorderWidth = pointBorderWidths;
-            
-            chartInstance.data.datasets[6].data = dataset5;
-            chartInstance.data.datasets[6].label = label1;
-            
-            chartInstance.data.datasets[7].data = dataset6;
-            
-            chartInstance.data.datasets[8].data = dataset7;
-        } else {
-            chartInstance.data.datasets[0].data = dataset1;
-            chartInstance.data.datasets[0].label = label1;
-            chartInstance.data.datasets[0].borderColor = color1;
-            chartInstance.data.datasets[0].backgroundColor = tempGradient;
-            chartInstance.data.datasets[0].pointBackgroundColor = color1;
-            chartInstance.data.datasets[0].pointHoverBackgroundColor = color1;
-            
-            chartInstance.data.datasets[1].data = dataset2;
-            chartInstance.data.datasets[1].label = label2;
-            chartInstance.data.datasets[1].borderColor = color2;
-            chartInstance.data.datasets[1].backgroundColor = feelsGradient;
-            chartInstance.data.datasets[1].pointBackgroundColor = color2;
-            chartInstance.data.datasets[1].pointHoverBackgroundColor = color2;
-        }
-        
+        chartInstance.data.datasets = chartDatasets;
         chartInstance.solarBiases = solarBiases;
         chartInstance.update('none'); // Update without animation during ticks to prevent blinking
     } else {
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
         activeChartPeriod = currentPeriod;
         // Create chart configuration
         chartInstance = new Chart(ctx, {
@@ -1748,7 +1677,7 @@ function drawChart(historyData) {
                         const datasetStrings = [];
                         
                         if (currentPeriod === 'scatter') {
-                            const point = chart.data.datasets[5].data[index];
+                            const point = chart.data.datasets[5]?.data[index];
                             if (point && point.timestamp) {
                                 const labelStr = formatTimestamp(point.timestamp, '7d');
                                 details = `<span style="font-weight: 500; color: #f3f4f6;">${labelStr}</span> — `;
@@ -1767,16 +1696,16 @@ function drawChart(historyData) {
                                 }
                                 if (val !== null && val !== undefined) {
                                     if (name === 'Forecast Uncertainty') {
-                                        const low = chart.data.datasets[3].data[index];
-                                        const high = chart.data.datasets[4].data[index];
-                                        if (low !== null && high !== null) {
-                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(6,182,212,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                        const lowDs = chart.data.datasets.find(ds => ds.label === 'Forecast Lower Bound');
+                                        const low = lowDs && lowDs.data ? lowDs.data[index] : null;
+                                        if (low !== null && low !== undefined) {
+                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(6,182,212,0.4)"></span>Range: <strong>${low.toFixed(1)}-${val.toFixed(1)}°C</strong></span>`);
                                         }
                                     } else if (name === 'Deviation Uncertainty') {
-                                        const low = chart.data.datasets[1].data[index];
-                                        const high = chart.data.datasets[2].data[index];
-                                        if (low !== null && high !== null) {
-                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(156,163,175,0.4)"></span>Range: <strong>${low.toFixed(1)}-${high.toFixed(1)}°C</strong></span>`);
+                                        const lowDs = chart.data.datasets.find(ds => ds.label === 'Deviation Lower Bound');
+                                        const low = lowDs && lowDs.data ? lowDs.data[index] : null;
+                                        if (low !== null && low !== undefined) {
+                                            datasetStrings.push(`<span class="hover-item"><span class="hover-dot" style="background-color:rgba(156,163,175,0.4)"></span>Range: <strong>${low.toFixed(1)}-${val.toFixed(1)}°C</strong></span>`);
                                         }
                                     } else {
                                         const color = dataset.borderColor;

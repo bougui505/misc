@@ -367,22 +367,22 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_error(400, f"Invalid request body: {e}")
         elif path == '/api/log-insulation-rate':
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
             try:
-                data = json.loads(post_data.decode('utf-8'))
-                timestamp = int(data.get('timestamp'))
-                rate = float(data.get('insulationRate'))
+                data = json.loads(post_data.decode('utf-8')) if post_data else {}
+                timestamp = int(data.get('timestamp', 0))
+                rate = float(data.get('insulationRate', 0.05))
                 
                 log_insulation_rate(timestamp, rate)
                 self.send_json({"status": "success"})
             except Exception as e:
                 self.send_error(400, f"Invalid request body: {e}")
         elif path == '/api/ai-forecast':
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
             try:
-                data = json.loads(post_data.decode('utf-8'))
+                data = json.loads(post_data.decode('utf-8')) if post_data else {}
                 current_temp = float(data.get('currentTemp')) if data.get('currentTemp') is not None else None
                 current_hum = float(data.get('currentHumidity')) if data.get('currentHumidity') is not None else None
                 outdoor_forecast = data.get('outdoorForecast', [])

@@ -232,7 +232,20 @@ class IndoorAIModel:
         outdoor_forecast_list: list of dicts [{'timestamp': ts, 'temperature': temp, 'cloud_cover': cloud}]
         """
         if current_temp is None or isNaN(current_temp):
-            return None
+            try:
+                conn = sqlite3.connect(self.db_path)
+                cur = conn.cursor()
+                cur.execute("SELECT temperature, humidity FROM readings WHERE temperature IS NOT NULL ORDER BY timestamp DESC LIMIT 1")
+                row = cur.fetchone()
+                conn.close()
+                if row:
+                    current_temp = row[0]
+                    if current_humidity is None or isNaN(current_humidity):
+                        current_humidity = row[1]
+            except Exception:
+                pass
+        if current_temp is None or isNaN(current_temp):
+            current_temp = 20.0
 
         hum = current_humidity if (current_humidity is not None and not isNaN(current_humidity)) else 50.0
 
