@@ -410,6 +410,28 @@ body {
     opacity: 0.8;
 }
 
+.btn-model {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    color: #e9d5ff;
+    padding: 0.25rem 0.65rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-model:hover {
+    background: rgba(168, 85, 247, 0.25);
+}
+
+.btn-model.active {
+    background: #a855f7 !important;
+    border-color: #a855f7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
 .temp-trend {
     display: flex;
     align-items: center;

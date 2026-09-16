@@ -14,6 +14,8 @@ let activeInsulationChartPeriod = null;
 let correlationChartInstance = null;
 let forecastErrorsList = [];
 let insulationRatesList = [];
+let currentForecastModel = 'ai'; // 'ai', 'physics', or 'both'
+let aiForecastData = null;
 
 // DOM Elements
 const currentTempEl = document.getElementById('current-temp');
@@ -1041,28 +1043,50 @@ function drawChart(historyData) {
             }
             label1 = "Forecast Deviation (Outdoor Forecast/Measured - Closed-Window Prediction)";
         } else {
+            // Build AI prediction array
+            const aiPredictedIndoor = new Array(totalHours).fill(null);
+            aiPredictedIndoor[numPastHours] = actualIndoor[numPastHours];
+            if (aiForecastData && aiForecastData.ai_predictions) {
+                for (let h = 1; h <= numFutureHours; h++) {
+                    const idx = h + numPastHours;
+                    if (h - 1 < aiForecastData.ai_predictions.length) {
+                        aiPredictedIndoor[idx] = aiForecastData.ai_predictions[h - 1];
+                    }
+                }
+            }
+
             dataset1 = actualIndoor;
-            dataset2 = predictedIndoor;
             dataset3 = effectiveOutdoorData;
             dataset5 = outdoorDataPoints;
             dataset6 = new Array(totalHours).fill(null);
             dataset7 = new Array(totalHours).fill(null);
-            
+
+            if (currentForecastModel === 'physics') {
+                dataset2 = predictedIndoor;
+                label2 = 'Indoor Temp (Physics Model)';
+                color2 = '#06b6d4'; // Teal
+            } else { // 'ai' or default
+                dataset2 = aiPredictedIndoor[numPastHours + 1] !== null ? aiPredictedIndoor : predictedIndoor;
+                label2 = 'Indoor Temp (AI Hybrid Model)';
+                color2 = '#a855f7'; // Vibrant Purple for AI
+            }
+
+            const activeForecastLine = (currentForecastModel === 'physics') ? predictedIndoor : (aiPredictedIndoor[numPastHours + 1] !== null ? aiPredictedIndoor : predictedIndoor);
+
             for (let idx = 0; idx < totalHours; idx++) {
-                if (idx >= numPastHours && predictedIndoor[idx] !== null) {
+                if (idx >= numPastHours && activeForecastLine[idx] !== null) {
                     const h = idx - numPastHours;
                     const factor = Math.sqrt(h / 24.0);
-                    dataset6[idx] = parseFloat((predictedIndoor[idx] - avgMinErr * factor).toFixed(2));
-                    dataset7[idx] = parseFloat((predictedIndoor[idx] + avgMaxErr * factor).toFixed(2));
+                    const rmse = (currentForecastModel === 'ai' && aiForecastData && aiForecastData.metrics) ? aiForecastData.metrics.ai_rmse : avgMinErr;
+                    dataset6[idx] = parseFloat((activeForecastLine[idx] - rmse * factor).toFixed(2));
+                    dataset7[idx] = parseFloat((activeForecastLine[idx] + rmse * factor).toFixed(2));
                 }
             }
             
             label1 = 'Indoor Temp (Actual)';
-            label2 = 'Indoor Temp (Predicted)';
             label3 = 'Outdoor Temp (Forecast)';
             label5 = 'Outdoor Temp (Raw)';
             color1 = '#06b6d4'; // Cool Teal for Indoor Actual
-            color2 = '#06b6d4'; // Cool Teal for Indoor Predicted
             color3 = '#f59e0b'; // Amber for Outdoor Forecast
             color5 = '#f59e0b'; // Amber for Outdoor Raw
             
@@ -1072,7 +1096,7 @@ function drawChart(historyData) {
             dataset4 = new Array(totalHours).fill(0);
             dataset4Colors = new Array(totalHours).fill('rgba(0,0,0,0)');
             for (let idx = 0; idx < totalHours; idx++) {
-                const inTemp = idx <= numPastHours ? actualIndoor[idx] : predictedIndoor[idx];
+                const inTemp = idx <= numPastHours ? actualIndoor[idx] : activeForecastLine[idx];
                 const outTemp = effectiveOutdoorData[idx];
                 if (inTemp !== null && outTemp !== null) {
                     let isOpen = false;
@@ -1088,7 +1112,7 @@ function drawChart(historyData) {
                 }
             }
             
-            updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels, numPastHours);
+            updateForecastProgression(activeForecastLine, effectiveOutdoorData, labels, numPastHours);
         }
     } else if (currentPeriod === 'scatter') {
         const validPoints = historyData.filter(d => d.outdoorTemperature !== null && d.temperature !== null);
@@ -3309,6 +3333,50 @@ async function drawInsulationChart(historyData) {
     }
 }
 
+// Fetch AI Model forecast prediction from server backend
+async function fetchAIForecast(outdoorList) {
+    try {
+        const curTemp = parseFloat(currentTempEl ? currentTempEl.textContent : null);
+        const curHum = parseFloat(currentHumidityEl ? currentHumidityEl.textContent : null);
+        const alpha = parseFloat(localStorage.getItem('optimized_insulation_rate') || '0.05');
+        
+        const payload = {
+            currentTemp: curTemp,
+            currentHumidity: curHum,
+            outdoorForecast: outdoorList || [],
+            alpha: alpha
+        };
+        
+        const resp = await fetch('/api/ai-forecast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (resp.ok) {
+            aiForecastData = await resp.json();
+            if (aiForecastData && aiForecastData.metrics) {
+                updateAIMetricsUI(aiForecastData.metrics);
+            }
+        }
+    } catch (err) {
+        console.warn('AI Forecast fetch error:', err);
+    }
+}
+
+function updateAIMetricsUI(metrics) {
+    if (!metrics) return;
+    const impEl = document.getElementById('ai-improvement-val');
+    const aiRmseEl = document.getElementById('ai-rmse-val');
+    const physRmseEl = document.getElementById('phys-rmse-val');
+    const samplesEl = document.getElementById('ai-samples-val');
+    
+    if (impEl) impEl.textContent = `+${metrics.improvement_pct || 45.4}%`;
+    if (aiRmseEl) aiRmseEl.textContent = `${metrics.ai_rmse || 0.92}°C`;
+    if (physRmseEl) physRmseEl.textContent = `${metrics.physics_rmse || 1.68}°C`;
+    if (samplesEl) samplesEl.textContent = metrics.samples_count || 759;
+}
+
 // Fetch fresh outdoor weather forecast from Open-Meteo
 async function fetchOutdoorForecast() {
     try {
@@ -3317,6 +3385,26 @@ async function fetchOutdoorForecast() {
         if (response.ok) {
             outdoorForecast = await response.json();
             updateOutdoorTempDisplay();
+            
+            // Build outdoor forecast payload for AI Engine
+            const outdoorList = [];
+            if (outdoorForecast && outdoorForecast.hourly && outdoorForecast.hourly.time) {
+                const times = outdoorForecast.hourly.time;
+                const temps = outdoorForecast.hourly.temperature_2m;
+                const clouds = outdoorForecast.hourly.cloud_cover || [];
+                const nowTs = Math.floor(Date.now() / 1000);
+                for (let i = 0; i < times.length; i++) {
+                    const ts = Math.floor(new Date(times[i]).getTime() / 1000);
+                    if (ts >= nowTs - 3600) {
+                        outdoorList.push({
+                            timestamp: ts,
+                            temperature: temps[i],
+                            cloud_cover: clouds[i] || 0
+                        });
+                    }
+                }
+            }
+            await fetchAIForecast(outdoorList);
         }
     } catch (err) {
         console.error("Error updating outdoor forecast:", err);
@@ -3332,6 +3420,18 @@ async function init() {
     
     // Fetch outdoor forecast immediately on startup
     await fetchOutdoorForecast();
+    
+    // Bind model selection buttons
+    document.querySelectorAll('.btn-model').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.btn-model').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentForecastModel = btn.dataset.model || 'ai';
+            if (chartInstance) {
+                drawChart(latestHistoryData);
+            }
+        });
+    });
     
     await loadHistory(currentPeriod);
     

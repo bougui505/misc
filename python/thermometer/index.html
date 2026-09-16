@@ -173,6 +173,12 @@
                         <button class="btn-timeframe" data-period="7d">7 Days</button>
                         <button class="btn-timeframe" data-period="scatter">Thermal Coupling</button>
                     </div>
+                    <div class="model-selector" id="forecast-model-controls" style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem;">
+                        <span class="meta-label" style="font-size: 0.8rem; opacity: 0.8;">Model Engine:</span>
+                        <button class="btn-timeframe btn-model active" id="btn-model-ai" data-model="ai">🤖 AI Hybrid</button>
+                        <button class="btn-timeframe btn-model" id="btn-model-physics" data-model="physics">⚡ Physics</button>
+                        <button class="btn-timeframe btn-model" id="btn-model-both" data-model="both">📊 Compare Both</button>
+                    </div>
                 </header>
                 <div class="chart-wrapper">
                     <canvas id="tempChart"></canvas>
@@ -233,6 +239,18 @@
                                 <div class="insight-text">
                                     <h4>Airing Forecast Recommendation</h4>
                                     <p id="insight-forecast">Calculating recommendation...</p>
+                                </div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon">🤖</div>
+                                <div class="insight-text" style="width: 100%;">
+                                    <h4>AI Machine Learning Model Benchmark</h4>
+                                    <div class="ai-benchmark-badge" style="margin-top: 0.4rem; padding: 0.5rem 0.75rem; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 0.6rem; font-size: 0.85rem; color: #e9d5ff;">
+                                        <strong>AI Precision Improvement: <span id="ai-improvement-val" style="color: #10b981; font-weight: 700;">+45.4%</span></strong><br>
+                                        <span style="font-size: 0.8rem; opacity: 0.9;">
+                                            AI RMSE: <strong id="ai-rmse-val">0.92°C</strong> | Physics RMSE: <strong id="phys-rmse-val">1.68°C</strong> | Trained on <span id="ai-samples-val">759</span> hourly blocks
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="insight-item">

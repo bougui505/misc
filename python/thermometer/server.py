@@ -13,6 +13,8 @@ import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 import urllib.parse
 
+from ai_model import ai_engine
+
 # Configuration
 PORT = 8080
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temperature.db')
@@ -333,6 +335,8 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_json(get_forecast_errors())
         elif path == '/api/insulation-rates':
             self.send_json(get_insulation_rates())
+        elif path == '/api/ai-metrics':
+            self.send_json(ai_engine.metrics)
         # Route static files
         elif path in ('/', '/index.html'):
             self.serve_file('index.html', 'text/html')
@@ -374,6 +378,26 @@ class ThermometerHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_json({"status": "success"})
             except Exception as e:
                 self.send_error(400, f"Invalid request body: {e}")
+        elif path == '/api/ai-forecast':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                current_temp = float(data.get('currentTemp')) if data.get('currentTemp') is not None else None
+                current_hum = float(data.get('currentHumidity')) if data.get('currentHumidity') is not None else None
+                outdoor_forecast = data.get('outdoorForecast', [])
+                alpha = float(data.get('alpha', 0.05))
+                
+                result = ai_engine.predict_24h(current_temp, current_hum, outdoor_forecast, alpha)
+                self.send_json(result or {"error": "Prediction failed"})
+            except Exception as e:
+                self.send_error(400, f"AI Forecast error: {e}")
+        elif path == '/api/train-ai':
+            try:
+                success = ai_engine.train(force=True)
+                self.send_json({"status": "success" if success else "failed", "metrics": ai_engine.metrics})
+            except Exception as e:
+                self.send_error(500, f"Training error: {e}")
         else:
             self.send_error(404, "Not found")
 
