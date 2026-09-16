@@ -662,124 +662,8 @@ const verticalLinePlugin = {
 const forecastExtremaPlugin = {
     id: 'forecastExtrema',
     afterDatasetsDraw: (chart) => {
-        if (currentPeriod !== 'forecast' && currentPeriod !== '24h' && currentPeriod !== '7d') return;
-        const ctx = chart.ctx;
-        const xAxis = chart.scales.x;
-        const yAxis = chart.scales.y;
-        if (!yAxis || !xAxis) return;
-        
-        // Find datasets representing indoor temperatures
-        let dsActual = null;
-        let dsPredicted = null;
-        
-        if (currentPeriod === 'forecast') {
-            dsActual = chart.data.datasets.find(ds => ds.label === 'Indoor Temp (Actual)');
-            dsPredicted = chart.data.datasets.find(ds => ds.label && ds.label.includes('Indoor Temp') && ds.label !== 'Indoor Temp (Actual)');
-        } else if (currentPeriod === '24h' || currentPeriod === '7d') {
-            dsActual = chart.data.datasets.find(ds => ds.label === "Temperature");
-        }
-        
-        if (!dsActual) return;
-        
-        // Construct combined internal temperatures
-        const dataLength = chart.data.labels.length;
-        let maxVal = -Infinity, minVal = Infinity;
-        let maxIdx = -1, minIdx = -1;
-        
-        for (let i = 0; i < dataLength; i++) {
-            const act = dsActual.data[i];
-            const pred = dsPredicted ? dsPredicted.data[i] : null;
-            const val = (act !== null && act !== undefined) ? act : pred;
-            
-            if (val !== null && val !== undefined) {
-                if (val > maxVal) {
-                    maxVal = val;
-                    maxIdx = i;
-                }
-                if (val < minVal) {
-                    minVal = val;
-                    minIdx = i;
-                }
-            }
-        }
-        
-        if (maxIdx === -1 || minIdx === -1) return;
-        
-        // Draw highlights
-        ctx.save();
-        ctx.font = 'bold 10px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        
-        const drawIndicator = (idx, val, label, color) => {
-            let targetDs = dsActual;
-            if (currentPeriod === 'forecast' && idx > 24 && dsPredicted) {
-                targetDs = dsPredicted;
-            }
-            
-            const dsIndex = chart.data.datasets.indexOf(targetDs);
-            if (dsIndex === -1) return;
-            
-            const meta = chart.getDatasetMeta(dsIndex);
-            if (!meta || !meta.data || !meta.data[idx]) return;
-            
-            const x = meta.data[idx].x;
-            const y = yAxis.getPixelForValue(val);
-            
-            // Draw glowing background dot
-            ctx.beginPath();
-            ctx.arc(x, y, 7, 0, 2 * Math.PI);
-            ctx.fillStyle = color + '22'; // 13% opacity
-            ctx.fill();
-            
-            // Draw outer ring
-            ctx.beginPath();
-            ctx.arc(x, y, 5, 0, 2 * Math.PI);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            
-            // Draw center dot
-            ctx.beginPath();
-            ctx.arc(x, y, 2, 0, 2 * Math.PI);
-            ctx.fillStyle = '#ffffff';
-            ctx.fill();
-            
-            // Draw a pill text badge above the point
-            const timeLabel = chart.data.labels[idx];
-            const displayTime = (currentPeriod === '7d') ? timeLabel : timeLabel.split(' ').pop();
-            const text = `${label}: ${val.toFixed(1)}°C @ ${displayTime}`;
-            ctx.font = 'bold 9px Outfit, sans-serif';
-            const textWidth = ctx.measureText(text).width;
-            const padX = 4;
-            const padY = 2;
-            const badgeW = textWidth + padX * 2;
-            const badgeH = 12;
-            const badgeX = x - badgeW / 2;
-            const badgeY = y - badgeH - 5;
-            
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
-            } else {
-                ctx.rect(badgeX, badgeY, badgeW, badgeH);
-            }
-            ctx.fillStyle = 'rgba(17, 24, 39, 0.85)';
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1;
-            ctx.fill();
-            ctx.stroke();
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, x, badgeY + badgeH / 2 + 0.5);
-        };
-        
-        // Highlight MAX and MIN
-        drawIndicator(maxIdx, maxVal, 'MAX', '#ef4444');
-        drawIndicator(minIdx, minVal, 'MIN', '#3b82f6');
-        
-        ctx.restore();
+        // Disabled overlay drawing to keep all graph plots clean and uncluttered
+        return;
     }
 };
 
@@ -1439,7 +1323,7 @@ function drawChart(historyData) {
             });
         }
     } else if (currentPeriod === 'forecast') {
-        // Shaded background bar chart to highlight action recommendation regions
+        // Soft background bar chart to highlight action recommendation regions
         chartDatasets.push({
             type: 'bar',
             label: 'Action Suggestion',
@@ -1453,8 +1337,9 @@ function drawChart(historyData) {
             order: 2
         });
         
+        // Indoor Actual measured curve
         chartDatasets.push({
-            label: label1,
+            label: 'Indoor (Actual)',
             data: dataset1,
             borderColor: color1,
             borderWidth: 2.5,
@@ -1466,13 +1351,13 @@ function drawChart(historyData) {
             order: 1,
             pointStyle: 'line'
         });
+
         if (currentForecastModel === 'both' && hasAiData) {
             chartDatasets.push({
-                label: 'Indoor Temp (AI Hybrid Model)',
+                label: 'AI Hybrid Model',
                 data: aiPredictedIndoor,
                 borderColor: '#a855f7', // Vibrant Purple
-                borderWidth: 2.5,
-                borderDash: [5, 5],
+                borderWidth: 2.8,
                 fill: false,
                 tension: 0.3,
                 yAxisID: 'y',
@@ -1482,11 +1367,11 @@ function drawChart(historyData) {
                 pointStyle: 'line'
             });
             chartDatasets.push({
-                label: 'Indoor Temp (Physics Model)',
+                label: 'Physics Model',
                 data: predictedIndoor,
-                borderColor: '#06b6d4', // Cool Teal
-                borderWidth: 2.5,
-                borderDash: [5, 5],
+                borderColor: '#38bdf8', // Cool Cyan
+                borderWidth: 1.8,
+                borderDash: [4, 4],
                 fill: false,
                 tension: 0.3,
                 yAxisID: 'y',
@@ -1497,11 +1382,11 @@ function drawChart(historyData) {
             });
         } else if (currentForecastModel === 'physics' || !hasAiData) {
             chartDatasets.push({
-                label: 'Indoor Temp (Physics Model)',
+                label: 'Physics Model',
                 data: predictedIndoor,
-                borderColor: '#06b6d4', // Cool Teal
+                borderColor: '#38bdf8', // Cool Cyan
                 borderWidth: 2.5,
-                borderDash: [5, 5],
+                borderDash: [4, 4],
                 fill: false,
                 tension: 0.3,
                 yAxisID: 'y',
@@ -1512,11 +1397,10 @@ function drawChart(historyData) {
             });
         } else {
             chartDatasets.push({
-                label: 'Indoor Temp (AI Hybrid Model)',
+                label: 'AI Hybrid Model',
                 data: aiPredictedIndoor,
                 borderColor: '#a855f7', // Vibrant Purple
-                borderWidth: 2.5,
-                borderDash: [5, 5],
+                borderWidth: 2.8,
                 fill: false,
                 tension: 0.3,
                 yAxisID: 'y',
@@ -1541,12 +1425,14 @@ function drawChart(historyData) {
             pointStyle: 'line'
         });
 
-        const uncertaintyFill = (currentForecastModel === 'physics') ? 'rgba(6, 182, 212, 0.15)' : 'rgba(168, 85, 247, 0.15)';
+        const uncertaintyFill = (currentForecastModel === 'physics') ? 'rgba(56, 189, 248, 0.14)' : 'rgba(168, 85, 247, 0.14)';
+        const uncertaintyBorder = (currentForecastModel === 'physics') ? 'rgba(56, 189, 248, 0.35)' : 'rgba(168, 85, 247, 0.35)';
         chartDatasets.push({
-            label: 'Forecast Uncertainty',
+            label: 'Uncertainty Range',
             data: dataset7,
-            borderColor: 'transparent',
-            borderWidth: 0,
+            borderColor: uncertaintyBorder,
+            borderWidth: 1,
+            borderDash: [3, 3],
             backgroundColor: uncertaintyFill,
             fill: '-1',
             tension: 0.3,
@@ -1556,11 +1442,13 @@ function drawChart(historyData) {
             order: 1,
             pointStyle: 'line'
         });
+
+        // Smooth Outdoor Forecast line
         chartDatasets.push({
-            label: label3,
+            label: 'Outdoor Forecast',
             data: dataset3,
             borderColor: color3,
-            borderWidth: 2.5,
+            borderWidth: 2.0,
             fill: false,
             tension: 0.3,
             yAxisID: 'y',
@@ -1568,20 +1456,6 @@ function drawChart(historyData) {
             spanGaps: true,
             order: 1,
             pointStyle: 'line'
-        });
-        chartDatasets.push({
-            label: label5,
-            data: dataset5,
-            borderColor: color5,
-            borderWidth: 1.5,
-            borderDash: [3, 4],
-            fill: false,
-            tension: 0.3,
-            yAxisID: 'y',
-            pointRadius: 2,
-            spanGaps: true,
-            order: 1,
-            pointStyle: 'circle'
         });
     } else {
         chartDatasets.push({
@@ -1662,7 +1536,7 @@ function drawChart(historyData) {
                     intersect: false
                 },
                 onHover: (event, activeElements, chart) => {
-                    const hoverEl = document.getElementById('temp-hover-details');
+                    const hoverEl = document.getElementById('chart-hover-details') || document.getElementById('temp-hover-details');
                     if (!hoverEl) return;
                     
                     if (activeElements.length > 0) {
@@ -1703,7 +1577,7 @@ function drawChart(historyData) {
                                     return;
                                 }
                                 if (val !== null && val !== undefined) {
-                                    if (name === 'Forecast Uncertainty') {
+                                    if (name === 'Forecast Uncertainty' || name === 'Uncertainty Range') {
                                         const lowDs = chart.data.datasets.find(ds => ds.label === 'Forecast Lower Bound');
                                         const low = lowDs && lowDs.data ? lowDs.data[index] : null;
                                         if (low !== null && low !== undefined) {
@@ -1736,9 +1610,13 @@ function drawChart(historyData) {
                 plugins: {
                     legend: {
                         display: true,
+                        position: 'top',
                         labels: {
                             color: '#9ca3af',
-                            font: { family: 'Outfit', size: 12 },
+                            font: { family: 'Outfit', size: 10.5 },
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            padding: 10,
                             usePointStyle: true,
                             filter: function(item, chartData) {
                                  return item.text !== 'Action Suggestion' && 
@@ -2143,7 +2021,7 @@ function drawHumidityChart(historyData) {
                     intersect: false
                 },
                 onHover: (event, activeElements, chart) => {
-                    const hoverEl = document.getElementById('humidity-hover-details');
+                    const hoverEl = document.getElementById('chart-hover-details') || document.getElementById('humidity-hover-details');
                     if (!hoverEl) return;
                     
                     if (activeElements.length > 0) {
@@ -2419,14 +2297,87 @@ async function loadHistory(period) {
     }
 }
 
+// Helper to toggle Model Engine controls visibility based on forecast mode
+function updateModelControlsVisibility() {
+    const modelControls = document.getElementById('forecast-model-controls');
+    if (modelControls) {
+        modelControls.style.display = (currentPeriod === 'forecast') ? 'flex' : 'none';
+    }
+}
+
+// Sync timeframe buttons with mobile dropdown select & add horizontal drag-to-scroll support
+const mobileTimeframeSelect = document.getElementById('mobile-timeframe-select');
+if (mobileTimeframeSelect) {
+    mobileTimeframeSelect.addEventListener('change', (e) => {
+        currentPeriod = e.target.value;
+        timeframeButtons.forEach(b => {
+            if (b.getAttribute('data-period') === currentPeriod) {
+                b.classList.add('active');
+                b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            } else {
+                b.classList.remove('active');
+            }
+        });
+        updateModelControlsVisibility();
+        loadHistory(currentPeriod);
+    });
+}
+
 // Event Listeners for Period Button Switches
 timeframeButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
         timeframeButtons.forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
+        btn.classList.add('active');
         
-        currentPeriod = e.target.getAttribute('data-period');
+        currentPeriod = btn.getAttribute('data-period');
+        if (mobileTimeframeSelect) mobileTimeframeSelect.value = currentPeriod;
+        updateModelControlsVisibility();
         loadHistory(currentPeriod);
+    });
+});
+
+// Drag-to-scroll & mousewheel horizontal scrolling support for timeframe selector bar
+const tfSelector = document.querySelector('.timeframe-selector');
+if (tfSelector) {
+    let isDown = false;
+    let startX, scrollLeft;
+    
+    tfSelector.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.pageX - tfSelector.offsetLeft;
+        scrollLeft = tfSelector.scrollLeft;
+    });
+    tfSelector.addEventListener('mouseleave', () => { isDown = false; });
+    tfSelector.addEventListener('mouseup', () => { isDown = false; });
+    tfSelector.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - tfSelector.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        tfSelector.scrollLeft = scrollLeft - walk;
+    });
+    tfSelector.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            tfSelector.scrollLeft += e.deltaY;
+        }
+    }, { passive: false });
+}
+
+// Event Listeners for Chart Tab Switches (Temperature, Humidity, Insulation)
+document.querySelectorAll('.btn-chart-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.btn-chart-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const targetChart = tab.getAttribute('data-chart');
+        
+        const wrapperTemp = document.getElementById('wrapper-temp');
+        const wrapperHum = document.getElementById('wrapper-humidity');
+        const wrapperIns = document.getElementById('wrapper-insulation');
+        
+        if (wrapperTemp) wrapperTemp.style.display = (targetChart === 'temp') ? 'block' : 'none';
+        if (wrapperHum) wrapperHum.style.display = (targetChart === 'humidity') ? 'block' : 'none';
+        if (wrapperIns) wrapperIns.style.display = (targetChart === 'insulation') ? 'block' : 'none';
     });
 });
 
@@ -3257,7 +3208,7 @@ async function drawInsulationChart(historyData) {
                         intersect: false
                     },
                     onHover: (event, activeElements, chart) => {
-                        const hoverEl = document.getElementById('insulation-hover-details');
+                        const hoverEl = document.getElementById('chart-hover-details') || document.getElementById('insulation-hover-details');
                         if (!hoverEl) return;
                         
                         if (activeElements.length > 0) {
@@ -3421,6 +3372,7 @@ async function init() {
                         b.classList.remove('active');
                     }
                 });
+                updateModelControlsVisibility();
                 loadHistory('forecast');
             } else if (chartInstance) {
                 drawChart(latestHistoryData);
@@ -3428,6 +3380,7 @@ async function init() {
         });
     });
     
+    updateModelControlsVisibility();
     await loadHistory(currentPeriod);
     
     // Fetch 7d history once to populate the insights table

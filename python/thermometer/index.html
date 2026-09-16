@@ -35,181 +35,164 @@
         <!-- Main Dashboard -->
         <main class="dashboard-grid">
             
-            <!-- Temperature Gauge Card -->
-            <section class="card temp-hero-card" id="temp-card">
+            <!-- Consolidated Hero Summary Card -->
+            <section class="card hero-summary-card" id="temp-card">
                 <div class="card-bg-glow"></div>
                 <div class="card-content">
-                    <h2 class="card-title">Current Temperature</h2>
-                    <div class="temp-display">
-                        <span class="temp-value" id="current-temp">--.-</span>
-                        <span class="temp-unit">°C</span>
-                    </div>
-                    <div class="outdoor-temp-container" id="outdoor-temp-badge">
-                        <div class="outdoor-pill">
-                            <span class="meta-label">Outdoor:</span>
-                            <span class="outdoor-temp-value" id="current-outdoor-temp">--.-°C</span>
+                    <div class="hero-top-row">
+                        <!-- Primary Indoor Temp -->
+                        <div class="hero-primary">
+                            <span class="hero-label">Indoor Temperature</span>
+                            <div class="temp-display">
+                                <span class="temp-value" id="current-temp">--.-</span>
+                                <span class="temp-unit">°C</span>
+                            </div>
+                            <div class="outdoor-temp-container" id="outdoor-temp-badge">
+                                <div class="outdoor-pill">
+                                    <span class="meta-label">Outdoor:</span>
+                                    <span class="outdoor-temp-value" id="current-outdoor-temp">--.-°C</span>
+                                </div>
+                                <div class="outdoor-pill eff-pill" id="outdoor-eff-group">
+                                    <span class="meta-label">Solar-Corrected:</span>
+                                    <span class="outdoor-eff-value" id="current-outdoor-eff-temp">--.-°C</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="outdoor-pill eff-pill" id="outdoor-eff-group">
-                            <span class="meta-label">Corrected:</span>
-                            <span class="outdoor-eff-value" id="current-outdoor-eff-temp">--.-°C</span>
+
+                        <!-- Secondary Metrics Grid (2x2) -->
+                        <div class="hero-secondary-grid">
+                            <div class="hero-metric-tile">
+                                <span class="tile-label">Humidity</span>
+                                <div class="tile-value-group">
+                                    <span class="tile-value" id="current-humidity">--.-</span><span class="tile-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="hero-metric-tile">
+                                <span class="tile-label">Feels Like</span>
+                                <div class="tile-value-group">
+                                    <span class="tile-value" id="current-feels-like">--.-</span><span class="tile-unit">°C</span>
+                                </div>
+                            </div>
+                            <div class="hero-metric-tile">
+                                <span class="tile-label">24h High / Low</span>
+                                <div class="tile-value-group">
+                                    <span class="tile-value" id="stat-max">--.-°C</span> / <span class="tile-value" id="stat-min">--.-°C</span>
+                                </div>
+                            </div>
+                            <div class="hero-metric-tile">
+                                <span class="tile-label">24h Average</span>
+                                <div class="tile-value-group">
+                                    <span class="tile-value" id="stat-avg">--.-°C</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="temp-meta">
-                        <span class="meta-label">Last updated:</span>
-                        <span class="meta-value" id="last-update">Never</span>
+
+                    <!-- Hidden Meta Elements for JS Compatibility -->
+                    <div style="display:none;">
+                        <span id="last-update">Never</span>
+                        <span id="humidity-last-update">Never</span>
+                        <span id="feels-like-type">Apparent Temp</span>
+                        <div id="temp-trend-container">
+                            <span id="temp-trend-arrow">→</span>
+                            <span id="temp-trend-value">0.0°C/h</span>
+                        </div>
                     </div>
-                    <!-- Expected Forecast Progression & Extrema -->
+
+                    <!-- Forecast Progression & Extrema Bar -->
                     <div class="forecast-progression-container" id="forecast-progression-bar">
                         <div class="progression-status">
                             <span class="progression-icon" id="progression-icon">→</span>
                             <span class="progression-text" id="progression-value">Calculating forecast trend...</span>
                         </div>
                         <div class="forecast-extrema-group">
-                            <div class="forecast-extrema-pill max-extrema" title="Expected 24h Peak">
+                            <div class="forecast-extrema-pill max-extrema" title="Expected 24h Peak (AI Model)">
                                 <span class="extrema-tag">▲ High:</span>
                                 <span class="extrema-val" id="extrema-max-val">--.-°C</span>
                                 <span class="extrema-time" id="extrema-max-time">--:--</span>
                             </div>
-                            <div class="forecast-extrema-pill min-extrema" title="Expected 24h Low">
+                            <div class="forecast-extrema-pill min-extrema" title="Expected 24h Low (AI Model)">
                                 <span class="extrema-tag">▼ Low:</span>
                                 <span class="extrema-val" id="extrema-min-val">--.-°C</span>
                                 <span class="extrema-time" id="extrema-min-time">--:--</span>
                             </div>
                         </div>
                     </div>
-                    <div class="temp-trend" id="temp-trend-container" style="display: none;">
-                        <span class="meta-label">Trend:</span>
-                        <span class="trend-arrow" id="temp-trend-arrow">→</span>
-                        <span class="meta-value" id="temp-trend-value">0.0°C/h</span>
-                    </div>
                 </div>
             </section>
 
-            <!-- Humidity Gauge Card -->
-            <section class="card humidity-hero-card" id="humidity-card">
-                <div class="card-bg-glow"></div>
-                <div class="card-content">
-                    <h2 class="card-title">Current Humidity</h2>
-                    <div class="humidity-display">
-                        <span class="humidity-value" id="current-humidity">--.-</span>
-                        <span class="humidity-unit">%</span>
-                    </div>
-                    <div class="humidity-meta">
-                        <span class="meta-label">Last updated:</span>
-                        <span class="meta-value" id="humidity-last-update">Never</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Feels Like Temperature Card -->
-            <section class="card feels-like-card" id="feels-like-card">
-                <div class="card-bg-glow"></div>
-                <div class="card-content">
-                    <h2 class="card-title">Feels Like</h2>
-                    <div class="feels-like-display">
-                        <span class="feels-like-value" id="current-feels-like">--.-</span>
-                        <span class="feels-like-unit">°C</span>
-                    </div>
-                    <div class="feels-like-meta">
-                        <span class="meta-label">Calculated:</span>
-                        <span class="meta-value" id="feels-like-type">Apparent Temp</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Stats Column -->
-            <section class="stats-panel">
-                <!-- Max Card -->
-                <div class="card stat-card max-card">
-                    <div class="stat-icon-wrapper">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 4V20M12 4L6 10M12 4L18 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-label">Maximum Temp</span>
-                        <span class="stat-value" id="stat-max">--.-°C</span>
-                    </div>
-                </div>
-                
-                <!-- Average Card -->
-                <div class="card stat-card avg-card">
-                    <div class="stat-icon-wrapper">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 12H20M12 4V20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-label">Average Temp</span>
-                        <span class="stat-value" id="stat-avg">--.-°C</span>
-                    </div>
-                </div>
-                
-                <!-- Min Card -->
-                <div class="card stat-card min-card">
-                    <div class="stat-icon-wrapper">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 4V20M12 20L6 14M12 20L18 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-label">Minimum Temp</span>
-                        <span class="stat-value" id="stat-min">--.-°C</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Chart Card -->
+            <!-- Consolidated Tabbed Chart Card -->
             <section class="card chart-card">
                 <header class="chart-header">
-                    <h2 class="card-title">Temperature & Feels Like Trends <span id="temp-hover-details" class="hover-details"></span></h2>
-                    <div class="timeframe-selector">
-                        <button class="btn-timeframe" data-period="1h">1 Hour</button>
-                        <button class="btn-timeframe active" data-period="24h">24 Hours</button>
-                        <button class="btn-timeframe" data-period="compare">Yesterday vs Today</button>
-                        <button class="btn-timeframe" data-period="anomaly">Today vs. Yesterday Deviation</button>
-                        <button class="btn-timeframe" data-period="forecast">Forecast</button>
-                        <button class="btn-timeframe" data-period="forecast_deviation">Forecast Deviation</button>
-                        <button class="btn-timeframe" data-period="7d">7 Days</button>
-                        <button class="btn-timeframe" data-period="scatter">Thermal Coupling</button>
+                    <div class="chart-header-top">
+                        <!-- Chart View Tabs -->
+                        <div class="chart-tabs">
+                            <button class="btn-chart-tab active" data-chart="temp">🌡️ Temperature</button>
+                            <button class="btn-chart-tab" data-chart="humidity">💧 Humidity</button>
+                            <button class="btn-chart-tab" data-chart="insulation">🧱 Insulation</button>
+                        </div>
+                        <span id="chart-hover-details" class="hover-details"></span>
                     </div>
-                    <div class="model-selector" id="forecast-model-controls" style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem;">
-                        <span class="meta-label" style="font-size: 0.8rem; opacity: 0.8;">Model Engine:</span>
-                        <button class="btn-model active" id="btn-model-ai" data-model="ai">🤖 AI Hybrid</button>
-                        <button class="btn-model" id="btn-model-physics" data-model="physics">⚡ Physics</button>
-                        <button class="btn-model" id="btn-model-both" data-model="both">📊 Compare Both</button>
+
+                    <!-- Timeframe Controls (Scrollable Pills + Mobile Dropdown) -->
+                    <div class="timeframe-controls-row">
+                        <select id="mobile-timeframe-select" class="mobile-timeframe-dropdown" aria-label="Select Timeframe">
+                            <option value="1h">1 Hour</option>
+                            <option value="24h" selected>24 Hours</option>
+                            <option value="compare">Yesterday vs Today</option>
+                            <option value="anomaly">Today vs Yesterday Deviation</option>
+                            <option value="forecast">Forecast</option>
+                            <option value="forecast_deviation">Forecast Deviation</option>
+                            <option value="7d">7 Days</option>
+                            <option value="scatter">Thermal Coupling</option>
+                        </select>
+                        <div class="timeframe-selector">
+                            <button class="btn-timeframe" data-period="1h">1h</button>
+                            <button class="btn-timeframe active" data-period="24h">24h</button>
+                            <button class="btn-timeframe" data-period="compare">Yesterday vs Today</button>
+                            <button class="btn-timeframe" data-period="anomaly">Deviation</button>
+                            <button class="btn-timeframe" data-period="forecast">Forecast</button>
+                            <button class="btn-timeframe" data-period="forecast_deviation">Forecast Dev.</button>
+                            <button class="btn-timeframe" data-period="7d">7 Days</button>
+                            <button class="btn-timeframe" data-period="scatter">Coupling</button>
+                        </div>
+                        
+                        <!-- Model Engine Selector (Visible only when Forecast active) -->
+                        <div class="model-selector" id="forecast-model-controls" style="display: none;">
+                            <span class="meta-label">Engine:</span>
+                            <button class="btn-model active" id="btn-model-ai" data-model="ai">🤖 AI Hybrid</button>
+                            <button class="btn-model" id="btn-model-physics" data-model="physics">⚡ Physics</button>
+                            <button class="btn-model" id="btn-model-both" data-model="both">📊 Both</button>
+                        </div>
                     </div>
                 </header>
-                <div class="chart-wrapper">
-                    <canvas id="tempChart"></canvas>
+
+                <div class="chart-views-container">
+                    <div class="chart-wrapper active" id="wrapper-temp">
+                        <span id="temp-hover-details" class="hover-details-hidden" style="display:none;"></span>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper" id="wrapper-humidity" style="display:none;">
+                        <span id="humidity-hover-details" class="hover-details-hidden" style="display:none;"></span>
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper" id="wrapper-insulation" style="display:none;">
+                        <div class="insulation-header-badge" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; color: #9ca3af;">
+                            Status: <span id="insulation-status" style="font-weight: 500; color: #10b981;">Calibrating...</span>
+                        </div>
+                        <span id="insulation-hover-details" class="hover-details-hidden" style="display:none;"></span>
+                        <canvas id="insulationChart"></canvas>
+                    </div>
                 </div>
             </section>
 
-            <!-- Humidity Chart Card -->
-            <section class="card chart-card">
-                <header class="chart-header">
-                    <h2 class="card-title">Relative Humidity Trends <span id="humidity-hover-details" class="hover-details"></span></h2>
-                </header>
-                <div class="chart-wrapper">
-                    <canvas id="humidityChart"></canvas>
-                </div>
-            </section>
-
-            <!-- Insulation Rate Chart Card -->
-            <section class="card chart-card">
-                <header class="chart-header">
-                    <h2 class="card-title">Insulation Rate Trend <span id="insulation-hover-details" class="hover-details"></span> (<span id="insulation-status" style="font-weight: 500; color: #10b981;">Calibrating...</span>)</h2>
-                </header>
-                <div class="chart-wrapper">
-                    <canvas id="insulationChart"></canvas>
-                </div>
-            </section>
-
-            <!-- Analytics & Insights Card -->
-            <section class="card analytics-card">
-                <div class="card-bg-glow"></div>
-                <div class="card-content">
+            <!-- Collapsible Analytics & Insights Accordion -->
+            <details class="card accordion-card analytics-accordion" open>
+                <summary class="accordion-header">
                     <h2 class="card-title">Climate Insights & Daily Summaries</h2>
+                    <span class="accordion-icon">▼</span>
+                </summary>
+                <div class="card-content">
                     <div class="analytics-layout">
                         <!-- Table Column -->
                         <div class="analytics-table-wrapper">
@@ -218,10 +201,10 @@
                                 <thead>
                                     <tr>
                                         <th>Date</th>
-                                        <th>Min Temp</th>
-                                        <th>Max Temp</th>
-                                        <th>Avg Temp</th>
-                                        <th>Avg Hum</th>
+                                        <th>Min</th>
+                                        <th>Max</th>
+                                        <th>Avg</th>
+                                        <th>Hum</th>
                                     </tr>
                                 </thead>
                                 <tbody id="analytics-table-body">
@@ -248,7 +231,7 @@
                                     <div class="ai-benchmark-badge" style="margin-top: 0.4rem; padding: 0.5rem 0.75rem; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 0.6rem; font-size: 0.85rem; color: #e9d5ff;">
                                         <strong>AI Precision Improvement: <span id="ai-improvement-val" style="color: #10b981; font-weight: 700;">+45.4%</span></strong><br>
                                         <span style="font-size: 0.8rem; opacity: 0.9;">
-                                            AI RMSE: <strong id="ai-rmse-val">0.92°C</strong> | Physics RMSE: <strong id="phys-rmse-val">1.68°C</strong> | Trained on <span id="ai-samples-val">759</span> hourly blocks
+                                            AI RMSE: <strong id="ai-rmse-val">0.92°C</strong> | Physics RMSE: <strong id="phys-rmse-val">1.68°C</strong> | Samples: <span id="ai-samples-val">759</span>
                                         </span>
                                     </div>
                                 </div>
@@ -267,8 +250,8 @@
                                         <ul class="formula-legend">
                                             <li><strong>T<sub>in</sub>(t):</strong> Predicted Indoor Temp</li>
                                             <li><strong>T<sub>out</sub>(t):</strong> Effective Outdoor Temp (with solar-gain bias)</li>
-                                            <li id="formula-param-alpha"><strong>0.05:</strong> Convective transfer insulation rate (lower = better insulation, higher = drafts)</li>
-                                            <li id="formula-param-bias"><strong>bias:</strong> Dynamic offset correction (derived from error logs)</li>
+                                            <li id="formula-param-alpha"><strong>0.05:</strong> Convective transfer rate</li>
+                                            <li id="formula-param-bias"><strong>bias:</strong> Dynamic offset correction</li>
                                             <li id="formula-param-benchmark"><strong>Model Fit:</strong> Comparing model to linear baseline...</li>
                                         </ul>
                                     </details>
@@ -276,13 +259,16 @@
                             </div>
                         </div>
                     </div>
-            </section>
+                </div>
+            </details>
 
-            <!-- Forecast Schedule Card -->
-            <section class="card forecast-schedule-card">
-                <div class="card-bg-glow"></div>
+            <!-- Collapsible Forecast Schedule Accordion -->
+            <details class="card accordion-card forecast-schedule-accordion">
+                <summary class="accordion-header">
+                    <h2 class="card-title">Forecast Action Schedule (Next 8 Hours) • Target: 19°C - 21°C</h2>
+                    <span class="accordion-icon">▼</span>
+                </summary>
                 <div class="card-content">
-                    <h2 class="card-title">Forecast Action Schedule (Next 8 Hours) • Target Comfort: 19°C - 21°C</h2>
                     <div class="analytics-table-wrapper">
                         <table class="analytics-table">
                             <thead>
@@ -300,22 +286,25 @@
                         </table>
                     </div>
                 </div>
-            </section>
+            </details>
+
+            <!-- Collapsible Network Info Box -->
+            <details class="card accordion-card info-accordion">
+                <summary class="accordion-header">
+                    <div class="info-title-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="info-icon" style="width: 20px; height: 20px; color: #60a5fa;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h4 style="margin:0; font-size: 0.95rem; font-weight: 600;">Local Phone & Network Connection</h4>
+                    </div>
+                    <span class="accordion-icon">▼</span>
+                </summary>
+                <div class="card-content">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">To view this dashboard on your phone, connect it to the same Wi-Fi network and open the URL displayed in your computer terminal when starting this server.</p>
+                </div>
+            </details>
 
         </main>
-
-        <!-- Network Info Box -->
-        <section class="card info-box">
-            <div class="info-content">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <div>
-                    <h4>Local Phone Connection</h4>
-                    <p>To view this graph on your phone, connect it to the same Wi-Fi network and open the URL displayed in your computer terminal when starting this server.</p>
-                </div>
-            </div>
-        </section>
 
         <!-- Footer -->
         <footer class="app-footer">
