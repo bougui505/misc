@@ -45,6 +45,8 @@ echo "===SQUEUE_BIS==="
 squeue -A bis -h -o "%u|%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_ALL==="
 squeue -p common,gpu,dedicatedgpu -h -o "%P|%t|%r" 2>/dev/null
+echo "===SQUEUE_USER==="
+squeue -u ${USER:-bougui} -h -o "%i|%j|%P|%t|%M|%N" 2>/dev/null
 REMOTE
 )
 
@@ -52,7 +54,8 @@ halflife=$(echo "$raw_dump" | sed -n '1p')
 sshare_all_data=$(echo "$raw_dump" | sed -n '/===SSHARE_ALL===/,/===SSHARE_BIS===/{ /===SSHARE_ALL===/d; /===SSHARE_BIS===/d; p }')
 sshare_data=$(echo "$raw_dump" | sed -n '/===SSHARE_BIS===/,/===SQUEUE_BIS===/{ /===SSHARE_BIS===/d; /===SQUEUE_BIS===/d; p }')
 squeue_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_BIS===/,/===SQUEUE_ALL===/{ /===SQUEUE_BIS===/d; /===SQUEUE_ALL===/d; p }')
-squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,$ { /===SQUEUE_ALL===/d; p }')
+squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,/===SQUEUE_USER===/{ /===SQUEUE_ALL===/d; /===SQUEUE_USER===/d; p }')
+squeue_user_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_USER===/,$ { /===SQUEUE_USER===/d; p }')
 
 # 2. Section 1: Overview
 echo -e "${C_BOLD}${C_BLUE}[1] GROUP BIS FAIRSHARE & CONSUMPTION OVERVIEW${C_RESET}"
@@ -149,8 +152,102 @@ if [ -n "$inactive" ]; then
 fi
 echo ""
 
-# 5. Section 4: Live Jobs in Group BIS
-echo -e "${C_BOLD}${C_BLUE}[4] LIVE JOBS IN GROUP BIS${C_RESET}"
+# 5. Section 4: Your Running Jobs & Task Timing Statistics
+echo -e "${C_BOLD}${C_BLUE}[4] YOUR RUNNING JOBS & TASK TIMING STATISTICS (${USER:-bougui})${C_RESET}"
+echo -e "${C_DIM}${SUBSEP}${C_RESET}"
+
+echo "$squeue_user_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" '
+function time_to_sec(t,   days, parts, n, d_split) {
+    days = 0;
+    if (index(t, "-") > 0) {
+        split(t, d_split, "-");
+        days = d_split[1] + 0;
+        t = d_split[2];
+    }
+    n = split(t, parts, ":");
+    if (n == 2) {
+        return (days * 86400) + (parts[1] * 60) + parts[2];
+    } else if (n == 3) {
+        return (days * 86400) + (parts[1] * 3600) + (parts[2] * 60) + parts[3];
+    }
+    return 0;
+}
+
+function sec_to_time(s,   days, hours, mins, secs) {
+    s = int(s + 0.5);
+    days = int(s / 86400);
+    s = s % 86400;
+    hours = int(s / 3600);
+    s = s % 3600;
+    mins = int(s / 60);
+    secs = s % 60;
+    if (days > 0) {
+        return sprintf("%d-%02d:%02d:%02d", days, hours, mins, secs);
+    } else if (hours > 0) {
+        return sprintf("%02d:%02d:%02d", hours, mins, secs);
+    } else {
+        return sprintf("%02d:%02d", mins, secs);
+    }
+}
+
+NF>=5 {
+    jobid = $1;
+    name = $2;
+    part = $3;
+    st = $4;
+    timestr = $5;
+    node = $6;
+    sec = time_to_sec(timestr);
+    
+    if (st == "R") {
+        r_tasks++;
+        r_sec_total += sec;
+        
+        task_list[r_tasks] = sprintf("%s|%s|%s|%s|%s", jobid, name, part, timestr, node);
+        
+        if (r_tasks == 1 || sec > max_sec) {
+            max_sec = sec;
+            max_task = jobid;
+            max_name = name;
+            max_node = node;
+        }
+        if (r_tasks == 1 || sec < min_sec) {
+            min_sec = sec;
+            min_task = jobid;
+        }
+    } else if (st == "PD") {
+        pd_tasks++;
+    }
+}
+
+END {
+    if (r_tasks == 0 && pd_tasks == 0) {
+        printf "  %sNo active or pending jobs found for user.%s\n\n", C_GREEN, C_RESET;
+        exit;
+    }
+    
+    if (r_tasks == 0) {
+        printf "  • Currently Running Tasks : %s0%s (%d pending jobs queued)\n\n", C_BOLD, C_RESET, pd_tasks;
+        exit;
+    }
+    
+    avg_sec = r_sec_total / r_tasks;
+    
+    printf "  • Currently Running Tasks : %s%s%d task(s)%s (plus %d pending jobs queued)\n", C_BOLD, C_GREEN, r_tasks, C_RESET, pd_tasks;
+    printf "  • Average Task Runtime    : %s%s%s (%d sec)\n", C_BOLD, sec_to_time(avg_sec), C_RESET, int(avg_sec);
+    printf "  • Max Observed Runtime    : %s%s%s%s (Task: %s, Name: %s, Node: %s)\n", C_BOLD, C_YELLOW, sec_to_time(max_sec), C_RESET, max_task, max_name, max_node;
+    printf "  • Min Observed Runtime    : %s%s%s (Task: %s)\n\n", C_BOLD, sec_to_time(min_sec), C_RESET, min_task;
+    
+    print "TASK_ID|JOB_NAME|PARTITION|RUNTIME|NODE";
+    for (i = 1; i <= r_tasks; i++) {
+        print task_list[i];
+    }
+}
+' | column -t -s '|'
+echo ""
+
+# 6. Section 5: Live Jobs in Group BIS
+echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN GROUP BIS${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 if [ -z "$squeue_data" ]; then
@@ -174,8 +271,8 @@ else
 fi
 echo ""
 
-# 6. Section 5: Live Jobs in Common, GPU & DedicatedGPU Partitions (Global)
-echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN COMMON, GPU & DEDICATEDGPU PARTITIONS (Global)${C_RESET}"
+# 7. Section 6: Live Jobs in Common, GPU & DedicatedGPU Partitions (Global)
+echo -e "${C_BOLD}${C_BLUE}[6] LIVE JOBS IN COMMON, GPU & DEDICATEDGPU PARTITIONS (Global)${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 if [ -z "$squeue_all_data" ]; then
@@ -209,8 +306,8 @@ else
 fi
 echo ""
 
-# 7. Section 6: Accessible Partitions for Account BIS
-echo -e "${C_BOLD}${C_BLUE}[6] ACCESSIBLE PARTITIONS & CHARACTERISTICS FOR BIS${C_RESET}"
+# 8. Section 7: Accessible Partitions for Account BIS
+echo -e "${C_BOLD}${C_BLUE}[7] ACCESSIBLE PARTITIONS & CHARACTERISTICS FOR BIS${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 (
@@ -231,8 +328,8 @@ echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicate
 echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
 echo ""
 
-# 8. Section 7: Summary & Diagnostic
-echo -e "${C_BOLD}${C_BLUE}[7] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
+# 9. Section 8: Summary & Diagnostic
+echo -e "${C_BOLD}${C_BLUE}[8] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$sshare_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RED="$C_RED" -v C_GREEN="$C_GREEN" -v C_RESET="$C_RESET" -v curr_user="${USER:-bougui}" '
