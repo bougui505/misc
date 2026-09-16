@@ -479,7 +479,7 @@ function updateForecastProgression(predictedIndoor, effectiveOutdoorData, labels
     if (minTimeEl) minTimeEl.textContent = minPt.timeLabel;
 }
 
-// Calculate summary stats for the data points (Temperature stats)
+// Calculate summary stats for the data points (Temperature stats for today's calendar day)
 function updateSummaryStats(data) {
     if (!data || data.length === 0) {
         statMaxEl.textContent = '--.-°C';
@@ -488,10 +488,17 @@ function updateSummaryStats(data) {
         return;
     }
     
-    // For comparison view, filter stats to only represent the last 24 hours (Today)
-    const refTime = data[data.length - 1].timestamp;
-    const statsData = data.filter(d => refTime - d.timestamp < 86400);
+    // Filter stats to represent today's calendar day (matching the first row of Daily History)
+    const refDate = new Date(data[data.length - 1].timestamp * 1000);
+    const todayKey = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}-${String(refDate.getDate()).padStart(2, '0')}`;
     
+    const todayData = data.filter(d => {
+        const date = new Date(d.timestamp * 1000);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return key === todayKey;
+    });
+    
+    const statsData = (todayData && todayData.length > 0) ? todayData : data;
     const temps = statsData.map(d => d.temperature);
     if (temps.length === 0) return;
     
@@ -2565,7 +2572,7 @@ function calculateClimateInsights(history7d) {
         
         // Get sorted list of days in reverse chronological order
         const days = Object.keys(dailyData).reverse().slice(0, 5); // last 5 days
-        days.forEach(day => {
+        days.forEach((day, idx) => {
             const temps = dailyData[day].temps;
             const hums = dailyData[day].hums;
             
@@ -2573,6 +2580,12 @@ function calculateClimateInsights(history7d) {
             const maxT = Math.max(...temps);
             const avgT = temps.reduce((a, b) => a + b, 0) / temps.length;
             const avgH = hums.length > 0 ? (hums.reduce((a, b) => a + b, 0) / hums.length) : null;
+            
+            // Sync top hero badge directly with the first row (Today's record)
+            if (idx === 0) {
+                if (statMaxEl) statMaxEl.textContent = `${maxT.toFixed(1)}°C`;
+                if (statMinEl) statMinEl.textContent = `${minT.toFixed(1)}°C`;
+            }
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
