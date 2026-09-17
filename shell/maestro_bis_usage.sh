@@ -44,7 +44,7 @@ sshare -A bis -a -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,F
 echo "===SQUEUE_BIS==="
 squeue -A bis -h -o "%u|%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_ALL==="
-squeue -p common,gpu,dedicatedgpu -h -o "%P|%t|%r" 2>/dev/null
+squeue -p common,dedicated,gpu,dedicatedgpu,long -h -o "%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_USER==="
 squeue -u ${USER:-bougui} -h -o "%i|%j|%P|%t|%M|%N" 2>/dev/null
 REMOTE
@@ -328,8 +328,64 @@ echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicate
 echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
 echo ""
 
-# 9. Section 8: Summary & Diagnostic
-echo -e "${C_BOLD}${C_BLUE}[8] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
+# 9. Section 8: Real-Time Partition Selection Advice
+echo -e "${C_BOLD}${C_BLUE}[8] REAL-TIME PARTITION SELECTION ADVICE${C_RESET}"
+echo -e "${C_DIM}${SUBSEP}${C_RESET}"
+
+echo "$squeue_all_data" | awk -F'|' -v sshare="$sshare_data" -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" -v C_CYAN="$C_CYAN" -v C_DIM="$C_DIM" '
+BEGIN {
+    split(sshare, srows, "\n");
+    for (i in srows) {
+        split(srows[i], cols, "|");
+        if (cols[1] == "bis" && (cols[2] == "" || cols[2] ~ /^[ \t]*$/)) {
+            target = cols[3] + 0;
+            usage = cols[5] + 0;
+            fs_ratio = (target > 0 ? usage / target : 0);
+        }
+    }
+}
+NF>=3 {
+    part = $1;
+    st = $2;
+    if (st == "R") r[part]++;
+    else if (st == "PD") pd[part]++;
+}
+END {
+    printf "  %s1. Ultra-Short GPU Workloads (<= 5 min)%s %s[Single inference / Quick tests / Array batches]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=ultrafast -t 00:05:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sWhy:%s Grants a massive %s+500 points QoS priority boost%s, jumping to the front of the queue.\n\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
+
+    printf "  %s2. Short GPU Workloads (<= 2 hours)%s %s[Preprocessing / Fast fine-tuning / Debugging]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=fast -t 02:00:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sWhy:%s PriorityTier is %s5000%s (vs 1000 on standard gpu). Starts much faster on dedicated GPU pool.\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
+    printf "     • %sCurrent Load:%s %d running, %d pending on dedicatedgpu.\n\n", C_DIM, C_RESET, r["dedicatedgpu"]+0, pd["dedicatedgpu"]+0;
+
+    printf "  %s3. Long GPU Workloads (> 2 hours, up to 3 days)%s %s[Large model training / Long simulations]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=gpu --qos=gpu -t 3-00:00:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    if (fs_ratio > 2) {
+        printf "     • %sNotice:%s Group bis usage is %s%.1fx over target%s; standard gpu jobs will have lower FairShare priority.\n", C_YELLOW, C_RESET, C_YELLOW, fs_ratio, C_RESET;
+        printf "       Current \"gpu\" queue has %s%d running, %d pending%s. Expect queue time before dispatch.\n\n", C_BOLD, r["gpu"]+0, pd["gpu"]+0, C_RESET;
+    } else {
+        printf "     • %sCurrent Load:%s %d running, %d pending on gpu partition.\n\n", C_DIM, C_RESET, r["gpu"]+0, pd["gpu"]+0;
+    }
+
+    printf "  %s4. Short CPU Workloads (<= 2 hours)%s %s[Compilation / Array tasks / Data parsing]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=dedicated --qos=fast -t 02:00:00%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sWhy:%s PriorityTier %s5000%s on 112 opportunistic nodes (10,752 cores), avoiding common queue penalties.\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
+    printf "     • %sCurrent Load:%s %d running on dedicated pool.\n\n", C_DIM, C_RESET, r["dedicated"]+0;
+
+    printf "  %s5. Standard CPU Workloads (2h - 24h)%s %s[Standard batch jobs]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=common --qos=normal -t 24:00:00%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sCurrent Load:%s %d running, %d pending on common.\n\n", C_DIM, C_RESET, r["common"]+0, pd["common"]+0;
+
+    printf "  %s6. Long CPU Workloads (> 24h, up to 365 days)%s:\n", C_BOLD, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=long --qos=long -t 14-00:00:00%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+}
+'
+echo ""
+
+# 10. Section 9: Summary & Diagnostic
+echo -e "${C_BOLD}${C_BLUE}[9] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$sshare_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RED="$C_RED" -v C_GREEN="$C_GREEN" -v C_RESET="$C_RESET" -v curr_user="${USER:-bougui}" '
