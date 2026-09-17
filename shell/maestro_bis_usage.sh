@@ -123,7 +123,7 @@ sshare -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,FairShare 2
 echo "===SSHARE_BIS==="
 sshare -A bis -a -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,FairShare 2>/dev/null
 echo "===SQUEUE_BIS==="
-squeue -A bis -h -o "%u|%P|%t|%r" 2>/dev/null
+squeue -A bis -h -r -o "%u|%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_ALL==="
 squeue -p common,dedicated,gpu,dedicatedgpu,long -h -o "%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_USER==="
@@ -348,7 +348,10 @@ else
       echo "$squeue_data" | awk -F'|' '
       NF>=4 {
           user = $1; gsub(/^[ \t]+|[ \t]+$/, "", user);
-          key = user "|" $2 "|" $3 "|" $4;
+          part = $2; gsub(/^[ \t]+|[ \t]+$/, "", part);
+          state = $3; gsub(/^[ \t]+|[ \t]+$/, "", state);
+          reason = $4; gsub(/^[ \t]+|[ \t]+$/, "", reason);
+          key = user "|" part "|" state "|" reason;
           count[key]++;
       }
       END {
