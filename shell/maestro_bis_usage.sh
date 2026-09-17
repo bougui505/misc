@@ -12,6 +12,87 @@
 set -e
 set -o pipefail
 
+usage() {
+    cat << "EOF"
+Usage: maestro_bis_usage.sh [OPTIONS] [SECTION...]
+
+Options:
+  -s, --section SEC    Output only specified section(s) (comma or space-separated)
+  -h, --help           Show this help message and exit
+
+Available Sections:
+  1, overview          Group BIS FairShare & consumption overview
+  2, top10, groups     Top 10 groups cluster consumption ranking
+  3, users             Per-user consumption in group BIS
+  4, timing, myjobs    Your running jobs & task timing statistics
+  5, livebis           Live jobs queued in group BIS
+  6, globaljobs        Live jobs in common, gpu, dedicatedgpu (Cluster-wide)
+  7, partitions        Accessible partitions & hardware characteristics
+  8, advice            Real-time partition selection advice
+  9, diagnostic        Diagnostic & priority summary
+  all (default)        Show all sections
+
+Examples:
+  maestro_bis_usage.sh                 # Show full dashboard (default)
+  maestro_bis_usage.sh 4               # Show only your running jobs & timing
+  maestro_bis_usage.sh advice          # Show real-time partition selection advice
+  maestro_bis_usage.sh -s 1,4,8        # Show sections 1, 4, and 8
+EOF
+}
+
+normalize_section() {
+    local val=$(echo "$1" | tr "[:upper:]" "[:lower:]" | tr "," " ")
+    local result=""
+    for item in $val; do
+        case $item in
+            1|overview|group|fs)           result="$result 1" ;;
+            2|top|top10|groups)            result="$result 2" ;;
+            3|users|members)               result="$result 3" ;;
+            4|timing|userjobs|myjobs|tasks) result="$result 4" ;;
+            5|livebis|bisjobs)             result="$result 5" ;;
+            6|globaljobs|clusterjobs|queue) result="$result 6" ;;
+            7|partitions|specs|hardware)   result="$result 7" ;;
+            8|advice|recommendations)      result="$result 8" ;;
+            9|summary|diag|diagnostic)     result="$result 9" ;;
+            all)                           result="all"; break ;;
+            *) echo "Error: Unknown section '$item'" >&2; usage; exit 1 ;;
+        esac
+    done
+    echo "$result"
+}
+
+SECTIONS=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage; exit 0
+            ;;
+        -s|--section)
+            if [[ -z "$2" ]]; then
+                echo "Error: -s/--section requires an argument." >&2; exit 1
+            fi
+            parsed=$(normalize_section "$2")
+            SECTIONS="$SECTIONS $parsed"
+            shift 2
+            ;;
+        *)
+            parsed=$(normalize_section "$1")
+            SECTIONS="$SECTIONS $parsed"
+            shift
+            ;;
+    esac
+done
+
+# Default to all if no section was specified
+SECTIONS=$(echo "$SECTIONS" | xargs)
+if [[ -z "$SECTIONS" ]]; then
+    SECTIONS="all"
+fi
+
+show_sec() {
+    [[ "$SECTIONS" == "all" || " $SECTIONS " =~ " $1 " ]]
+}
+
 # ANSI color codes when connected to a terminal
 if [ -t 1 ]; then
     C_RESET="\033[0m"
@@ -58,6 +139,7 @@ squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,/===SQUEUE_USER=
 squeue_user_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_USER===/,$ { /===SQUEUE_USER===/d; p }')
 
 # 2. Section 1: Overview
+if show_sec 1; then
 echo -e "${C_BOLD}${C_BLUE}[1] GROUP BIS FAIRSHARE & CONSUMPTION OVERVIEW${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 echo -e "  • Account Name                    : ${C_BOLD}bis${C_RESET}"
@@ -72,8 +154,10 @@ NR==2 {
 }
 '
 echo ""
+fi
 
 # 3. Section 2: Top 10 groups table
+if show_sec 2; then
 echo -e "${C_BOLD}${C_BLUE}[2] TOP 10 GROUPS CLUSTER CONSUMPTION (Sorted by recent usage)${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -129,8 +213,10 @@ NR>2 && $1!="" && ($2 == "" || $2 ~ /^[ \t]*$/) {
 END { print count+0 }')
 echo -e "\n${C_DIM}• Showing top 10 of ${active_groups} active groups (${inactive_groups} groups have 0% recent usage).${C_RESET}"
 echo ""
+fi
 
 # 4. Section 3: Per-user table for group bis
+if show_sec 3; then
 echo -e "${C_BOLD}${C_BLUE}[3] PER-USER CONSUMPTION IN GROUP BIS (Sorted by recent usage)${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -151,8 +237,10 @@ if [ -n "$inactive" ]; then
     echo -e "\n${C_DIM}• Inactive users (0 recent usage, FairShare ~0.048): $inactive${C_RESET}"
 fi
 echo ""
+fi
 
 # 5. Section 4: Your Running Jobs & Task Timing Statistics
+if show_sec 4; then
 echo -e "${C_BOLD}${C_BLUE}[4] YOUR RUNNING JOBS & TASK TIMING STATISTICS (${USER:-bougui})${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -245,8 +333,10 @@ END {
 }
 ' | column -t -s '|'
 echo ""
+fi
 
 # 6. Section 5: Live Jobs in Group BIS
+if show_sec 5; then
 echo -e "${C_BOLD}${C_BLUE}[5] LIVE JOBS IN GROUP BIS${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -270,8 +360,10 @@ else
     ) | column -t -s '|'
 fi
 echo ""
+fi
 
 # 7. Section 6: Live Jobs in Common, GPU & DedicatedGPU Partitions (Global)
+if show_sec 6; then
 echo -e "${C_BOLD}${C_BLUE}[6] LIVE JOBS IN COMMON, GPU & DEDICATEDGPU PARTITIONS (Global)${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -305,8 +397,10 @@ else
     }'
 fi
 echo ""
+fi
 
 # 8. Section 7: Accessible Partitions for Account BIS
+if show_sec 7; then
 echo -e "${C_BOLD}${C_BLUE}[7] ACCESSIBLE PARTITIONS & CHARACTERISTICS FOR BIS${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -327,8 +421,10 @@ echo -e "  • ${C_BOLD}Standard GPU (<= 3 days):${C_RESET}   sbatch -p gpu --qo
 echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 -t 02:00:00 ... ${C_DIM}(Starts immediately, tier 5000)${C_RESET}"
 echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
 echo ""
+fi
 
 # 9. Section 8: Real-Time Partition Selection Advice
+if show_sec 8; then
 echo -e "${C_BOLD}${C_BLUE}[8] REAL-TIME PARTITION SELECTION ADVICE${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -383,8 +479,10 @@ END {
 }
 '
 echo ""
+fi
 
 # 10. Section 9: Summary & Diagnostic
+if show_sec 9; then
 echo -e "${C_BOLD}${C_BLUE}[9] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
@@ -432,4 +530,7 @@ END {
     }
 }
 '
+echo ""
+fi
 echo -e "${C_BOLD}${C_CYAN}${SEP}${C_RESET}\n"
+
