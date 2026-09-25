@@ -14,7 +14,6 @@ Sync Google Tasks to Remind syntax (.rem format).
 
 import argparse
 import datetime
-import os
 import sys
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/tasks.readonly"]
 
@@ -74,31 +74,41 @@ def get_authenticated_service(credentials_path, token_path):
     return build("tasks", "v1", credentials=creds)
 
 
+def escape_remind(text: str) -> str:
+    """Escape characters that have special meaning in Remind MSG expressions."""
+    if not text:
+        return ""
+    # In Remind, [expr] denotes expression evaluation; escape [ and ] as [""]
+    return text.replace("[", '["["]').replace("]", '["]"]')
+
+
 def format_remind_line(task, label="TASK", list_title=""):
-    title = (task.get("title") or "Untitled Task").strip().replace("\n", " ")
-    notes = (task.get("notes") or "").strip().replace("\r\n", "\n").replace("\r", "\n")
+    raw_title = (task.get("title") or "Untitled Task").strip().replace("\n", " ")
+    title = escape_remind(raw_title)
+
+    raw_notes = (task.get("notes") or "").strip().replace("\r\n", "\n").replace("\r", "\n")
+    notes = escape_remind(raw_notes)
+
     due_str = task.get("due")
 
-    prefix = f"{label}: " if label else ""
-    summary = f'{prefix}{title}'
-    if list_title and list_title != "My Tasks":
-        summary += f" [{list_title}]"
+    prefix = f"{label} " if label else ""
+    summary = f"{prefix}{title}"
+    if list_title and list_title not in ("My Tasks", "Mes tâches"):
+        escaped_list = escape_remind(list_title)
+        summary += f" ({escaped_list})"
 
-    msg_part = f'%"TAG: {summary}%"'
     if notes:
-        # Remind uses %_ to separate body / additional notes
         clean_notes = notes.replace("\n", "%_")
-        msg_part += f"%_{clean_notes}"
+        msg_part = f'%"{summary}%"%_{clean_notes}'
+    else:
+        msg_part = summary
 
     if due_str:
         try:
             dt = date_parser.isoparse(due_str)
-            # Google Tasks due date is UTC date-time
-            # Check if it has a non-zero time component in local time or specific time
             local_dt = dt.astimezone()
             date_str = f"{local_dt.year:04d}-{local_dt.month:02d}-{local_dt.day:02d}"
 
-            # Only add AT HH:MM if time is explicitly non-midnight UTC or if time is present
             if not (dt.hour == 0 and dt.minute == 0 and dt.second == 0):
                 time_str = f" AT {local_dt.strftime('%H:%M')}"
             else:
@@ -131,8 +141,6 @@ def main():
     except Exception as e:
         print(f"Authentication error: {e}", file=sys.stderr)
         sys.exit(1)
-
-    from googleapiclient.errors import HttpError
 
     try:
         tasklists_result = service.tasklists().list().execute()
