@@ -562,7 +562,7 @@ END {
     tot_sm120 = p_tot_sm120_gpu["dedicatedgpu"] + 0;
     pd_dgpu = p_pd_jobs["dedicatedgpu"] + 0;
     
-    res_str = sprintf("%d/%d free A100/A40 | %d/%d free RTX6000", free_std, tot_std, free_sm120, tot_sm120);
+    res_str = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std, tot_std, free_sm120, tot_sm120);
     if (free_std > 0) {
         est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
         comment = "Free A100/A40 & RTX6000 slots available now";
@@ -600,7 +600,7 @@ END {
     tot_sm120_g = p_tot_sm120_gpu["gpu"] + 0;
     pd_gpu = p_pd_jobs["gpu"] + 0;
     
-    res_str = sprintf("%d/%d free A100/A40 | %d/%d free RTX6000", free_std_g, tot_std_g, free_sm120_g, tot_sm120_g);
+    res_str = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std_g, tot_std_g, free_sm120_g, tot_sm120_g);
     if (free_std_g >= 2 && pd_gpu == 0) {
         est = sprintf("%sShort (~5-15 min)%s", C_GREEN, C_RESET);
         comment = "Free standard GPU slots available";
