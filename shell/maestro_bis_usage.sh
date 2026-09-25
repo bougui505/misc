@@ -540,7 +540,15 @@ END {
     # dedicated (CPU)
     free_cpu = p_idle_cpu["dedicated"] + 0;
     pd_cnt = p_pd_jobs["dedicated"] + 0;
-    res_str = sprintf("%'"'"'d idle cores (%d nodes)", free_cpu, p_idle_nodes["dedicated"]+0);
+    res_raw = sprintf("%'"'"'d idle cores (%d nodes)", free_cpu, p_idle_nodes["dedicated"]+0);
+    if (free_cpu == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else if (free_cpu < 16) {
+        res_str = sprintf("%s%s%s", C_YELLOW, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
+
     if (free_cpu >= 8 && pd_cnt == 0) {
         est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
         comment = "Plentiful opportunistic CPU slots (Tier 5000)";
@@ -562,7 +570,15 @@ END {
     tot_sm120 = p_tot_sm120_gpu["dedicatedgpu"] + 0;
     pd_dgpu = p_pd_jobs["dedicatedgpu"] + 0;
     
-    res_str = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std, tot_std, free_sm120, tot_sm120);
+    res_raw = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std, tot_std, free_sm120, tot_sm120);
+    if (free_std + free_sm120 == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else if (free_std == 0) {
+        res_str = sprintf("%s%s%s", C_YELLOW, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
+
     if (free_std > 0) {
         est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
         comment = "Free A100/A40 & RTX6000 slots available now";
@@ -578,7 +594,15 @@ END {
     # common (CPU)
     free_comm = p_idle_cpu["common"] + 0;
     pd_comm = p_pd_jobs["common"] + 0;
-    res_str = sprintf("%'"'"'d idle cores (%d nodes)", free_comm, p_idle_nodes["common"]+0);
+    res_raw = sprintf("%'"'"'d idle cores (%d nodes)", free_comm, p_idle_nodes["common"]+0);
+    if (free_comm == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else if (free_comm < 32) {
+        res_str = sprintf("%s%s%s", C_YELLOW, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
+
     if (free_comm >= 8 && pd_comm <= 5) {
         est = sprintf("%sShort (< 5 min)%s", C_GREEN, C_RESET);
         comment = "Standard cluster CPU pool has idle cores";
@@ -600,7 +624,15 @@ END {
     tot_sm120_g = p_tot_sm120_gpu["gpu"] + 0;
     pd_gpu = p_pd_jobs["gpu"] + 0;
     
-    res_str = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std_g, tot_std_g, free_sm120_g, tot_sm120_g);
+    res_raw = sprintf("%d/%d free A100/A40, %d/%d free RTX6000", free_std_g, tot_std_g, free_sm120_g, tot_sm120_g);
+    if (free_std_g + free_sm120_g == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else if (free_std_g == 0 || free_std_g < 4) {
+        res_str = sprintf("%s%s%s", C_YELLOW, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
+
     if (free_std_g >= 2 && pd_gpu == 0) {
         est = sprintf("%sShort (~5-15 min)%s", C_GREEN, C_RESET);
         comment = "Free standard GPU slots available";
@@ -620,7 +652,15 @@ END {
     # long (Long CPU runs)
     free_long = p_idle_cpu["long"] + 0;
     pd_long = p_pd_jobs["long"] + 0;
-    res_str = sprintf("%d idle cores (%d nodes)", free_long, p_idle_nodes["long"]+0);
+    res_raw = sprintf("%d idle cores (%d nodes)", free_long, p_idle_nodes["long"]+0);
+    if (free_long == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else if (free_long < 32) {
+        res_str = sprintf("%s%s%s", C_YELLOW, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
+
     if (free_long > 0) {
         est = sprintf("%sShort (~5-30 min)%s", C_GREEN, C_RESET);
         comment = "Slots available on dedicated 4 long nodes";
@@ -632,7 +672,12 @@ END {
 
     # clcgwb
     free_clc = p_idle_cpu["clcgwb"] + 0;
-    res_str = sprintf("%d idle cores", free_clc);
+    res_raw = sprintf("%d idle cores", free_clc);
+    if (free_clc == 0) {
+        res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
+    } else {
+        res_str = sprintf("%s%s%s", C_GREEN, res_raw, C_RESET);
+    }
     printf "clcgwb|normal|%s|%d PD|%sImmediate (< 1 min)%s|Specialized CLC Workbench node (Tier 10000)\n", res_str, p_pd_jobs["clcgwb"]+0, C_GREEN, C_RESET;
 }
 ' | column -t -s '|'
