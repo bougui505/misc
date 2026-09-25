@@ -78,8 +78,11 @@ def escape_remind(text: str) -> str:
     """Escape characters that have special meaning in Remind MSG expressions."""
     if not text:
         return ""
+    # In Remind, '%' starts substitution sequences (%a, %2, etc.); escape '%' as '%%'
+    text = text.replace("%", "%%")
     # In Remind, [expr] denotes expression evaluation; escape [ and ] as [""]
-    return text.replace("[", '["["]').replace("]", '["]"]')
+    text = text.replace("[", '["["]').replace("]", '["]"]')
+    return text
 
 
 def format_remind_line(task, label="TASK", list_title=""):
@@ -163,6 +166,8 @@ def main():
 
             for task in tasks:
                 if task.get("status") == "completed" and not args.include_completed:
+                    continue
+                if not (task.get("title") or "").strip() and not (task.get("notes") or "").strip():
                     continue
                 rem_line, has_due = format_remind_line(task, label=args.label, list_title=tl_title)
                 if has_due:
