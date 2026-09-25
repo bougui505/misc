@@ -428,9 +428,10 @@ echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 echo -e "\n${C_DIM}• Quick Submission Guide:${C_RESET}"
 echo -e "  • ${C_BOLD}Standard CPU (<= 24h):${C_RESET}     sbatch -p common --qos=normal -t 24:00:00 --cpus-per-task=N --mem=XG ..."
 echo -e "  • ${C_BOLD}Fast / Debug CPU (<= 2h):${C_RESET}    sbatch -p dedicated --qos=fast -t 02:00:00 ... ${C_DIM}(Starts immediately, high priority tier 5000)${C_RESET}"
-echo -e "  • ${C_BOLD}Standard GPU (<= 3 days):${C_RESET}   sbatch -p gpu --qos=gpu --gres=gpu:1 -t 3-00:00:00 ..."
-echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 -t 02:00:00 ... ${C_DIM}(Starts immediately, tier 5000)${C_RESET}"
+echo -e "  • ${C_BOLD}Standard GPU (<= 3 days):${C_RESET}   sbatch -p gpu --qos=gpu --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\" -t 3-00:00:00 ..."
+echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\" -t 02:00:00 ..."
 echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
+echo -e "  • ${C_BOLD}Update Pending Job GPU:${C_RESET}   scontrol update JobId=<JOBID> Features=\"sm_80|sm_86|sm_89|sm_120\""
 echo ""
 fi
 
@@ -567,7 +568,7 @@ END {
         comment = "Free A100/A40 & RTX6000 slots available now";
     } else if (free_sm120 > 0) {
         est = sprintf("%sImmediate with -C sm_120%s", C_GREEN, C_RESET);
-        comment = sprintf("A100/A40 full; %d free RTX6000 Ada (req: -C sm_120)", free_sm120);
+        comment = sprintf("A100/A40 full; %d free RTX6000 Ada (see tip below to update)", free_sm120);
     } else {
         est = sprintf("%sShort (~5-25 min)%s", C_YELLOW, C_RESET);
         comment = sprintf("All 9 dedicated nodes busy (%d PD ahead, Tier 5000)", pd_dgpu);
@@ -635,6 +636,9 @@ END {
     printf "clcgwb|normal|%s|%d PD|%sImmediate (< 1 min)%s|Specialized CLC Workbench node (Tier 10000)\n", res_str, p_pd_jobs["clcgwb"]+0, C_GREEN, C_RESET;
 }
 ' | column -t -s '|'
+
+echo -e "\n${C_DIM}• Tip: If pending on dedicatedgpu with free RTX6000 available, update via:${C_RESET}"
+echo -e "  ${C_BOLD}scontrol update JobId=<JOBID> Features=\"sm_80|sm_86|sm_89|sm_120\"${C_RESET}"
 echo ""
 fi
 
