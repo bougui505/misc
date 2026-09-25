@@ -439,88 +439,83 @@ if show_sec 8; then
 echo -e "${C_BOLD}${C_BLUE}[8] EXPECTED QUEUE WAIT TIME & RESOURCE AVAILABILITY (${USER:-bougui})${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
-awk -v sinfo="$sinfo_nodes_data" -v sctrl="$scontrol_nodes_data" -v squeue="$squeue_all_data" -v sshare="$sshare_data" \
-    -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" -v C_RED="$C_RED" -v C_CYAN="$C_CYAN" '
+{
+  echo "===SSHARE==="
+  echo "$sshare_data"
+  echo "===SCTRL==="
+  echo "$scontrol_nodes_data"
+  echo "===SINFO==="
+  echo "$sinfo_nodes_data"
+  echo "===SQUEUE==="
+  echo "$squeue_all_data"
+} | awk -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" -v C_RED="$C_RED" -v C_CYAN="$C_CYAN" '
 BEGIN {
-    # 1. Parse scontrol node GPU info
-    split(sctrl, sc_rows, "\n");
-    for (i in sc_rows) {
-        if (sc_rows[i] == "") continue;
-        split(sc_rows[i], p, "|");
-        node = p[1]; gres = p[2]; alloc = p[3];
-        
-        # total gpus
-        n = split(gres, gitems, ",");
-        for (j=1; j<=n; j++) {
-            if (gitems[j] ~ /gpu:/) {
-                split(gitems[j], gp, ":");
-                c = gp[length(gp)]; gsub(/[^0-9]/, "", c);
-                node_tot_gpu[node] += c;
-            }
-        }
-        # allocated gpus
-        n = split(alloc, aitems, ",");
-        for (j=1; j<=n; j++) {
-            if (aitems[j] ~ /gres\/gpu=/) {
-                split(aitems[j], ap, "=");
-                c = ap[2]; gsub(/[^0-9]/, "", c);
-                node_alloc_gpu[node] += c;
-            }
+    mode = "";
+}
+/^===SSHARE===$/ { mode="sshare"; next }
+/^===SINFO===$/ { mode="sinfo"; next }
+/^===SCTRL===$/ { mode="sctrl"; next }
+/^===SQUEUE===$/ { mode="squeue"; next }
+
+mode == "sctrl" && NF {
+    split($0, p, "|");
+    node = p[1]; gres = p[2]; alloc = p[3];
+    n = split(gres, gitems, ",");
+    for (j=1; j<=n; j++) {
+        if (gitems[j] ~ /gpu:/) {
+            split(gitems[j], gp, ":");
+            c = gp[length(gp)]; gsub(/[^0-9]/, "", c);
+            node_tot_gpu[node] += c;
         }
     }
-
-    # 2. Parse sinfo per-node data (Partitions & CPUs)
-    split(sinfo, si_rows, "\n");
-    for (i in si_rows) {
-        if (si_rows[i] == "") continue;
-        split(si_rows[i], p, "|");
-        part = p[1]; gsub(/\*/, "", part);
-        node = p[2]; state = p[3]; cpus = p[4];
-        
-        split(cpus, cp, "/"); # A/I/O/T
-        p_tot_cpu[part] += cp[4];
-        p_idle_cpu[part] += cp[2];
-        p_tot_nodes[part]++;
-        if (state ~ /idle/) p_idle_nodes[part]++;
-        
-        # GPUs for this partition
-        if (node in node_tot_gpu) {
-            # Avoid double counting if node is in multiple lines for same partition
-            if (!seen_node[part, node]) {
-                seen_node[part, node] = 1;
-                p_tot_gpu[part] += node_tot_gpu[node];
-                p_alloc_gpu[part] += node_alloc_gpu[node];
-            }
+    n = split(alloc, aitems, ",");
+    for (j=1; j<=n; j++) {
+        if (aitems[j] ~ /gres\/gpu=/) {
+            split(aitems[j], ap, "=");
+            c = ap[2]; gsub(/[^0-9]/, "", c);
+            node_alloc_gpu[node] += c;
         }
     }
+    next;
+}
 
-    # 3. Parse squeue pending and running jobs
-    split(squeue, sq_rows, "\n");
-    for (i in sq_rows) {
-        if (sq_rows[i] == "") continue;
-        split(sq_rows[i], p, "|");
-        part = p[1]; state = p[2]; reason = p[3]; qos = p[4];
-        if (state == "PD") {
-            p_pd_jobs[part]++;
-            if (reason ~ /Priority/) p_pd_priority[part]++;
-            else if (reason ~ /Resources/) p_pd_resources[part]++;
-        } else if (state == "R") {
-            p_r_jobs[part]++;
-        }
+mode == "sinfo" && NF {
+    split($0, p, "|");
+    part = p[1]; gsub(/\*/, "", part);
+    node = p[2]; state = p[3]; cpus = p[4];
+    split(cpus, cp, "/");
+    p_tot_cpu[part] += cp[4];
+    p_idle_cpu[part] += cp[2];
+    p_tot_nodes[part]++;
+    if (state ~ /idle/) p_idle_nodes[part]++;
+    if (node in node_tot_gpu && !seen_node[part, node]) {
+        seen_node[part, node] = 1;
+        p_tot_gpu[part] += node_tot_gpu[node];
+        p_alloc_gpu[part] += node_alloc_gpu[node];
     }
+    next;
+}
 
-    # 4. FairShare ratio for bis
-    split(sshare, ss_rows, "\n");
-    for (i in ss_rows) {
-        split(ss_rows[i], cols, "|");
-        if (cols[1] == "bis" && (cols[2] == "" || cols[2] ~ /^[ \t]*$/)) {
-            target = cols[3] + 0;
-            usage = cols[5] + 0;
-            fs_ratio = (target > 0 ? usage / target : 0);
-        }
+mode == "squeue" && NF {
+    split($0, p, "|");
+    part = p[1]; state = p[2]; reason = p[3]; qos = p[4];
+    if (state == "PD") p_pd_jobs[part]++;
+    else if (state == "R") p_r_jobs[part]++;
+    next;
+}
+
+mode == "sshare" && NF {
+    split($0, cols, "|");
+    if (cols[1] == "bis" && (cols[2] == "" || cols[2] ~ /^[ \t]*$/)) {
+        target = cols[3] + 0;
+        usage = cols[5] + 0;
+        fs_ratio = (target > 0 ? usage / target : 0);
     }
+    next;
+}
 
-    # 5. Output Table
+END {
+    # Output Table
     print "PARTITION|BEST_QOS|FREE_RESOURCE|QUEUE_DEPTH|ESTIMATED_DISPATCH|COMMENTS";
 
     # dedicated (CPU)
