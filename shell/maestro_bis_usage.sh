@@ -540,7 +540,12 @@ END {
     # dedicated (CPU)
     free_cpu = p_idle_cpu["dedicated"] + 0;
     pd_cnt = p_pd_jobs["dedicated"] + 0;
-    res_raw = sprintf("%'"'"'d idle cores (%d nodes)", free_cpu, p_idle_nodes["dedicated"]+0);
+    nodes_cnt = p_idle_nodes["dedicated"] + 0;
+    if (nodes_cnt > 0) {
+        res_raw = sprintf("%'"'"'d idle cores (%d fully empty nodes)", free_cpu, nodes_cnt);
+    } else {
+        res_raw = sprintf("%'"'"'d idle cores", free_cpu);
+    }
     if (free_cpu == 0) {
         res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
     } else if (free_cpu < 16) {
@@ -594,7 +599,12 @@ END {
     # common (CPU)
     free_comm = p_idle_cpu["common"] + 0;
     pd_comm = p_pd_jobs["common"] + 0;
-    res_raw = sprintf("%'"'"'d idle cores (%d nodes)", free_comm, p_idle_nodes["common"]+0);
+    nodes_comm = p_idle_nodes["common"] + 0;
+    if (nodes_comm > 0) {
+        res_raw = sprintf("%'"'"'d idle cores (%d fully empty nodes)", free_comm, nodes_comm);
+    } else {
+        res_raw = sprintf("%'"'"'d idle cores", free_comm);
+    }
     if (free_comm == 0) {
         res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
     } else if (free_comm < 32) {
@@ -652,7 +662,12 @@ END {
     # long (Long CPU runs)
     free_long = p_idle_cpu["long"] + 0;
     pd_long = p_pd_jobs["long"] + 0;
-    res_raw = sprintf("%d idle cores (%d nodes)", free_long, p_idle_nodes["long"]+0);
+    nodes_long = p_idle_nodes["long"] + 0;
+    if (nodes_long > 0) {
+        res_raw = sprintf("%d idle cores (%d fully empty nodes)", free_long, nodes_long);
+    } else {
+        res_raw = sprintf("%d idle cores", free_long);
+    }
     if (free_long == 0) {
         res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
     } else if (free_long < 32) {
@@ -672,7 +687,12 @@ END {
 
     # clcgwb
     free_clc = p_idle_cpu["clcgwb"] + 0;
-    res_raw = sprintf("%d idle cores", free_clc);
+    nodes_clc = p_idle_nodes["clcgwb"] + 0;
+    if (nodes_clc > 0) {
+        res_raw = sprintf("%d idle cores (%d fully empty nodes)", free_clc, nodes_clc);
+    } else {
+        res_raw = sprintf("%d idle cores", free_clc);
+    }
     if (free_clc == 0) {
         res_str = sprintf("%s%s%s", C_RED, res_raw, C_RESET);
     } else {
