@@ -35,5 +35,9 @@ curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l
 URL=$(cat $DIRSCRIPT/gcal_ical_url_pasteur.txt)
 curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l PASTEUR > $REMINDIR/gcal_pasteur.rem
 
+if command -v uv >/dev/null 2>&1; then
+    uv run "$DIRSCRIPT/gtasks_to_rem.py" > $REMINDIR/gcal_tasks.rem
+fi
+
 git commit -a -m "Update" || echo "Nothing to commit..."
 git push
