@@ -133,7 +133,7 @@ squeue -u ${USER:-bougui} -h -o "%i|%j|%P|%t|%M|%N" 2>/dev/null
 echo "===SINFO_NODES==="
 sinfo -p common,dedicated,gpu,dedicatedgpu,long,clcgwb -h -N -o "%P|%N|%T|%C|%G" 2>/dev/null
 echo "===SCONTROL_NODES==="
-scontrol show nodes maestro-[3002-3009,3010-3020,3444-3451] 2>/dev/null | awk '/NodeName=/ {split($1, np, "="); node=np[2]} /Gres=/ {gres=$0} /AllocTRES=/ {alloc=$0; print node "|" gres "|" alloc}'
+scontrol show nodes maestro-[3002-3009,3010-3020,3444-3451] 2>/dev/null | awk '/NodeName=/ {split($1, np, "="); node=np[2]} /AvailableFeatures=/ {feat=$0} /Gres=/ {gres=$0} /AllocTRES=/ {alloc=$0; print node "|" feat "|" gres "|" alloc}'
 REMOTE
 )
 
@@ -459,7 +459,11 @@ BEGIN {
 
 mode == "sctrl" && NF {
     split($0, p, "|");
-    node = p[1]; gres = p[2]; alloc = p[3];
+    node = p[1]; feat = p[2]; gres = p[3]; alloc = p[4];
+    
+    is_sm120 = (feat ~ /sm_120/ || feat ~ /RTX6000/);
+    node_is_sm120[node] = is_sm120;
+    
     n = split(gres, gitems, ",");
     for (j=1; j<=n; j++) {
         if (gitems[j] ~ /gpu:/) {
@@ -488,10 +492,24 @@ mode == "sinfo" && NF {
     p_idle_cpu[part] += cp[2];
     p_tot_nodes[part]++;
     if (state ~ /idle/) p_idle_nodes[part]++;
+    
     if (node in node_tot_gpu && !seen_node[part, node]) {
         seen_node[part, node] = 1;
-        p_tot_gpu[part] += node_tot_gpu[node];
-        p_alloc_gpu[part] += node_alloc_gpu[node];
+        tot_g = node_tot_gpu[node];
+        alloc_g = node_alloc_gpu[node];
+        free_g = tot_g - alloc_g;
+        if (free_g < 0) free_g = 0;
+        
+        p_tot_gpu[part] += tot_g;
+        p_alloc_gpu[part] += alloc_g;
+        
+        if (node_is_sm120[node]) {
+            p_free_sm120_gpu[part] += free_g;
+            p_tot_sm120_gpu[part] += tot_g;
+        } else {
+            p_free_std_gpu[part] += free_g;
+            p_tot_std_gpu[part] += tot_g;
+        }
     }
     next;
 }
@@ -537,16 +555,22 @@ END {
     # dedicatedgpu (GPU)
     tot_dgpu = p_tot_gpu["dedicatedgpu"] + 0;
     alloc_dgpu = p_alloc_gpu["dedicatedgpu"] + 0;
-    free_dgpu = tot_dgpu - alloc_dgpu;
-    if (free_dgpu < 0) free_dgpu = 0;
+    free_std = p_free_std_gpu["dedicatedgpu"] + 0;
+    tot_std = p_tot_std_gpu["dedicatedgpu"] + 0;
+    free_sm120 = p_free_sm120_gpu["dedicatedgpu"] + 0;
+    tot_sm120 = p_tot_sm120_gpu["dedicatedgpu"] + 0;
     pd_dgpu = p_pd_jobs["dedicatedgpu"] + 0;
-    res_str = sprintf("%d / %d free GPUs", free_dgpu, tot_dgpu);
-    if (free_dgpu > 0) {
+    
+    res_str = sprintf("%d/%d free A100/A40 | %d/%d free RTX6000", free_std, tot_std, free_sm120, tot_sm120);
+    if (free_std > 0) {
         est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
-        comment = "Free opportunistic GPU slots available now";
+        comment = "Free A100/A40 & RTX6000 slots available now";
+    } else if (free_sm120 > 0) {
+        est = sprintf("%sImmediate with -C sm_120%s", C_GREEN, C_RESET);
+        comment = sprintf("A100/A40 full; %d free RTX6000 Ada (req: -C sm_120)", free_sm120);
     } else {
         est = sprintf("%sShort (~5-25 min)%s", C_YELLOW, C_RESET);
-        comment = sprintf("All 9 dedicated nodes busy (%d PD ahead, high priority Tier 5000)", pd_dgpu);
+        comment = sprintf("All 9 dedicated nodes busy (%d PD ahead, Tier 5000)", pd_dgpu);
     }
     printf "dedicatedgpu|fast / ultrafast|%s|%d PD|%s|%s\n", res_str, pd_dgpu, est, comment;
 
@@ -569,14 +593,17 @@ END {
     # gpu (Standard GPU pool)
     tot_gpu = p_tot_gpu["gpu"] + 0;
     alloc_gpu = p_alloc_gpu["gpu"] + 0;
-    free_gpu = tot_gpu - alloc_gpu;
-    if (free_gpu < 0) free_gpu = 0;
+    free_std_g = p_free_std_gpu["gpu"] + 0;
+    tot_std_g = p_tot_std_gpu["gpu"] + 0;
+    free_sm120_g = p_free_sm120_gpu["gpu"] + 0;
+    tot_sm120_g = p_tot_sm120_gpu["gpu"] + 0;
     pd_gpu = p_pd_jobs["gpu"] + 0;
-    res_str = sprintf("%d / %d free GPUs", free_gpu, tot_gpu);
-    if (free_gpu >= 2 && pd_gpu == 0) {
+    
+    res_str = sprintf("%d/%d free A100/A40 | %d/%d free RTX6000", free_std_g, tot_std_g, free_sm120_g, tot_sm120_g);
+    if (free_std_g >= 2 && pd_gpu == 0) {
         est = sprintf("%sShort (~5-15 min)%s", C_GREEN, C_RESET);
         comment = "Free standard GPU slots available";
-    } else if (free_gpu > 0) {
+    } else if (free_std_g > 0 || free_sm120_g > 0) {
         est = sprintf("%sModerate (~15m-1h)%s", C_YELLOW, C_RESET);
         comment = sprintf("%d pending GPU jobs competing on priority", pd_gpu);
     } else {
@@ -636,16 +663,16 @@ NF>=3 {
 }
 END {
     printf "  %s1. Ultra-Short GPU Workloads (<= 5 min)%s %s[Single inference / Quick tests / Array batches]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
-    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=ultrafast -t 00:05:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
-    printf "     • %sWhy:%s Grants a massive %s+500 points QoS priority boost%s, jumping to the front of the queue.\n\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=ultrafast -t 00:05:00 --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\"%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sWhy:%s Tier 5000 + %s+500 points QoS priority boost%s. Adding %ssm_120%s allows dispatching to idle RTX6000 Ada nodes.\n\n", C_BOLD, C_RESET, C_CYAN, C_RESET, C_CYAN, C_RESET;
 
     printf "  %s2. Short GPU Workloads (<= 2 hours)%s %s[Preprocessing / Fast fine-tuning / Debugging]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
-    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=fast -t 02:00:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
-    printf "     • %sWhy:%s PriorityTier is %s5000%s (vs 1000 on standard gpu). Starts much faster on dedicated GPU pool.\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=dedicatedgpu --qos=fast -t 02:00:00 --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\"%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sWhy:%s PriorityTier is %s5000%s. Starts much faster on dedicated GPU pool.\n", C_BOLD, C_RESET, C_CYAN, C_RESET;
     printf "     • %sCurrent Load:%s %d running, %d pending on dedicatedgpu.\n\n", C_DIM, C_RESET, r["dedicatedgpu"]+0, pd["dedicatedgpu"]+0;
 
     printf "  %s3. Long GPU Workloads (> 2 hours, up to 3 days)%s %s[Large model training / Long simulations]:%s\n", C_BOLD, C_RESET, C_DIM, C_RESET;
-    printf "     • %sBest Choice:%s %s--partition=gpu --qos=gpu -t 3-00:00:00 --gres=gpu:1%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
+    printf "     • %sBest Choice:%s %s--partition=gpu --qos=gpu -t 3-00:00:00 --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\"%s\n", C_BOLD, C_RESET, C_GREEN, C_RESET;
     if (fs_ratio > 2) {
         printf "     • %sNotice:%s Group bis usage is %s%.1fx over target%s; standard gpu jobs will have lower FairShare priority.\n", C_YELLOW, C_RESET, C_YELLOW, fs_ratio, C_RESET;
         printf "       Current \"gpu\" queue has %s%d running, %d pending%s. Expect queue time before dispatch.\n\n", C_BOLD, r["gpu"]+0, pd["gpu"]+0, C_RESET;
