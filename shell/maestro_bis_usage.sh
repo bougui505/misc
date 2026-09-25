@@ -28,14 +28,15 @@ Available Sections:
   5, livebis           Live jobs queued in group BIS
   6, globaljobs        Live jobs in common, gpu, dedicatedgpu (Cluster-wide)
   7, partitions        Accessible partitions & hardware characteristics
-  8, advice            Real-time partition selection advice
-  9, diagnostic        Diagnostic & priority summary
+  8, waittime, queue   Expected queue wait time & live resource availability
+  9, advice            Real-time partition selection advice
+  10, diagnostic       Diagnostic & priority summary
   all (default)        Show all sections
 
 Examples:
   maestro_bis_usage.sh                 # Show full dashboard (default)
-  maestro_bis_usage.sh 4               # Show only your running jobs & timing
-  maestro_bis_usage.sh advice          # Show real-time partition selection advice
+  maestro_bis_usage.sh 8               # Show expected queue wait times
+  maestro_bis_usage.sh waittime        # Show expected wait times by alias
   maestro_bis_usage.sh -s 1,4,8        # Show sections 1, 4, and 8
 EOF
 }
@@ -50,10 +51,11 @@ normalize_section() {
             3|users|members)               result="$result 3" ;;
             4|timing|userjobs|myjobs|tasks) result="$result 4" ;;
             5|livebis|bisjobs)             result="$result 5" ;;
-            6|globaljobs|clusterjobs|queue) result="$result 6" ;;
+            6|globaljobs|clusterjobs)      result="$result 6" ;;
             7|partitions|specs|hardware)   result="$result 7" ;;
-            8|advice|recommendations)      result="$result 8" ;;
-            9|summary|diag|diagnostic)     result="$result 9" ;;
+            8|waittime|wait|queue|avail)   result="$result 8" ;;
+            9|advice|recommendations)      result="$result 9" ;;
+            10|summary|diag|diagnostic)    result="$result 10" ;;
             all)                           result="all"; break ;;
             *) echo "Error: Unknown section '$item'" >&2; usage; exit 1 ;;
         esac
@@ -125,9 +127,13 @@ sshare -A bis -a -P -o Account,User,NormShares,RawUsage,NormUsage,EffectvUsage,F
 echo "===SQUEUE_BIS==="
 squeue -A bis -h -r -o "%u|%P|%t|%r" 2>/dev/null
 echo "===SQUEUE_ALL==="
-squeue -p common,dedicated,gpu,dedicatedgpu,long -h -o "%P|%t|%r" 2>/dev/null
+squeue -p common,dedicated,gpu,dedicatedgpu,long,clcgwb -h -o "%P|%t|%r|%q|%u|%b" 2>/dev/null
 echo "===SQUEUE_USER==="
 squeue -u ${USER:-bougui} -h -o "%i|%j|%P|%t|%M|%N" 2>/dev/null
+echo "===SINFO_NODES==="
+sinfo -p common,dedicated,gpu,dedicatedgpu,long,clcgwb -h -N -o "%P|%N|%T|%C|%G" 2>/dev/null
+echo "===SCONTROL_NODES==="
+scontrol show nodes maestro-[3002-3009,3010-3020,3444-3451] 2>/dev/null | awk '/NodeName=/ {split($1, np, "="); node=np[2]} /Gres=/ {gres=$0} /AllocTRES=/ {alloc=$0; print node "|" gres "|" alloc}'
 REMOTE
 )
 
@@ -136,7 +142,9 @@ sshare_all_data=$(echo "$raw_dump" | sed -n '/===SSHARE_ALL===/,/===SSHARE_BIS==
 sshare_data=$(echo "$raw_dump" | sed -n '/===SSHARE_BIS===/,/===SQUEUE_BIS===/{ /===SSHARE_BIS===/d; /===SQUEUE_BIS===/d; p }')
 squeue_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_BIS===/,/===SQUEUE_ALL===/{ /===SQUEUE_BIS===/d; /===SQUEUE_ALL===/d; p }')
 squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,/===SQUEUE_USER===/{ /===SQUEUE_ALL===/d; /===SQUEUE_USER===/d; p }')
-squeue_user_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_USER===/,$ { /===SQUEUE_USER===/d; p }')
+squeue_user_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_USER===/,/===SINFO_NODES===/{ /===SQUEUE_USER===/d; /===SINFO_NODES===/d; p }')
+sinfo_nodes_data=$(echo "$raw_dump" | sed -n '/===SINFO_NODES===/,/===SCONTROL_NODES===/{ /===SINFO_NODES===/d; /===SCONTROL_NODES===/d; p }')
+scontrol_nodes_data=$(echo "$raw_dump" | sed -n '/===SCONTROL_NODES===/,$ { /===SCONTROL_NODES===/d; p }')
 
 # 2. Section 1: Overview
 if show_sec 1; then
@@ -426,9 +434,191 @@ echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --q
 echo ""
 fi
 
-# 9. Section 8: Real-Time Partition Selection Advice
+# 9. Section 8: Expected Queue Wait Time & Live Availability
 if show_sec 8; then
-echo -e "${C_BOLD}${C_BLUE}[8] REAL-TIME PARTITION SELECTION ADVICE${C_RESET}"
+echo -e "${C_BOLD}${C_BLUE}[8] EXPECTED QUEUE WAIT TIME & RESOURCE AVAILABILITY (${USER:-bougui})${C_RESET}"
+echo -e "${C_DIM}${SUBSEP}${C_RESET}"
+
+awk -v sinfo="$sinfo_nodes_data" -v sctrl="$scontrol_nodes_data" -v squeue="$squeue_all_data" -v sshare="$sshare_data" \
+    -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" -v C_RED="$C_RED" -v C_CYAN="$C_CYAN" '
+BEGIN {
+    # 1. Parse scontrol node GPU info
+    split(sctrl, sc_rows, "\n");
+    for (i in sc_rows) {
+        if (sc_rows[i] == "") continue;
+        split(sc_rows[i], p, "|");
+        node = p[1]; gres = p[2]; alloc = p[3];
+        
+        # total gpus
+        n = split(gres, gitems, ",");
+        for (j=1; j<=n; j++) {
+            if (gitems[j] ~ /gpu:/) {
+                split(gitems[j], gp, ":");
+                c = gp[length(gp)]; gsub(/[^0-9]/, "", c);
+                node_tot_gpu[node] += c;
+            }
+        }
+        # allocated gpus
+        n = split(alloc, aitems, ",");
+        for (j=1; j<=n; j++) {
+            if (aitems[j] ~ /gres\/gpu=/) {
+                split(aitems[j], ap, "=");
+                c = ap[2]; gsub(/[^0-9]/, "", c);
+                node_alloc_gpu[node] += c;
+            }
+        }
+    }
+
+    # 2. Parse sinfo per-node data (Partitions & CPUs)
+    split(sinfo, si_rows, "\n");
+    for (i in si_rows) {
+        if (si_rows[i] == "") continue;
+        split(si_rows[i], p, "|");
+        part = p[1]; gsub(/\*/, "", part);
+        node = p[2]; state = p[3]; cpus = p[4];
+        
+        split(cpus, cp, "/"); # A/I/O/T
+        p_tot_cpu[part] += cp[4];
+        p_idle_cpu[part] += cp[2];
+        p_tot_nodes[part]++;
+        if (state ~ /idle/) p_idle_nodes[part]++;
+        
+        # GPUs for this partition
+        if (node in node_tot_gpu) {
+            # Avoid double counting if node is in multiple lines for same partition
+            if (!seen_node[part, node]) {
+                seen_node[part, node] = 1;
+                p_tot_gpu[part] += node_tot_gpu[node];
+                p_alloc_gpu[part] += node_alloc_gpu[node];
+            }
+        }
+    }
+
+    # 3. Parse squeue pending and running jobs
+    split(squeue, sq_rows, "\n");
+    for (i in sq_rows) {
+        if (sq_rows[i] == "") continue;
+        split(sq_rows[i], p, "|");
+        part = p[1]; state = p[2]; reason = p[3]; qos = p[4];
+        if (state == "PD") {
+            p_pd_jobs[part]++;
+            if (reason ~ /Priority/) p_pd_priority[part]++;
+            else if (reason ~ /Resources/) p_pd_resources[part]++;
+        } else if (state == "R") {
+            p_r_jobs[part]++;
+        }
+    }
+
+    # 4. FairShare ratio for bis
+    split(sshare, ss_rows, "\n");
+    for (i in ss_rows) {
+        split(ss_rows[i], cols, "|");
+        if (cols[1] == "bis" && (cols[2] == "" || cols[2] ~ /^[ \t]*$/)) {
+            target = cols[3] + 0;
+            usage = cols[5] + 0;
+            fs_ratio = (target > 0 ? usage / target : 0);
+        }
+    }
+
+    # 5. Output Table
+    print "PARTITION|BEST_QOS|FREE_RESOURCE|QUEUE_DEPTH|ESTIMATED_DISPATCH|COMMENTS";
+
+    # dedicated (CPU)
+    free_cpu = p_idle_cpu["dedicated"] + 0;
+    pd_cnt = p_pd_jobs["dedicated"] + 0;
+    res_str = sprintf("%'"'"'d idle cores (%d nodes)", free_cpu, p_idle_nodes["dedicated"]+0);
+    if (free_cpu >= 8 && pd_cnt == 0) {
+        est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
+        comment = "Plentiful opportunistic CPU slots (Tier 5000)";
+    } else if (free_cpu >= 8) {
+        est = sprintf("%sFast (~1-3 min)%s", C_GREEN, C_RESET);
+        comment = sprintf("Tier 5000 bypasses %d lower tier pending jobs", pd_cnt);
+    } else {
+        est = sprintf("%sShort (~5-15 min)%s", C_YELLOW, C_RESET);
+        comment = "Waiting for short running task completions";
+    }
+    printf "dedicated|fast / ultrafast|%s|%d PD|%s|%s\n", res_str, pd_cnt, est, comment;
+
+    # dedicatedgpu (GPU)
+    tot_dgpu = p_tot_gpu["dedicatedgpu"] + 0;
+    alloc_dgpu = p_alloc_gpu["dedicatedgpu"] + 0;
+    free_dgpu = tot_dgpu - alloc_dgpu;
+    if (free_dgpu < 0) free_dgpu = 0;
+    pd_dgpu = p_pd_jobs["dedicatedgpu"] + 0;
+    res_str = sprintf("%d / %d free GPUs", free_dgpu, tot_dgpu);
+    if (free_dgpu > 0) {
+        est = sprintf("%sImmediate (< 1 min)%s", C_GREEN, C_RESET);
+        comment = "Free opportunistic GPU slots available now";
+    } else {
+        est = sprintf("%sShort (~5-25 min)%s", C_YELLOW, C_RESET);
+        comment = sprintf("All 9 dedicated nodes busy (%d PD ahead, high priority Tier 5000)", pd_dgpu);
+    }
+    printf "dedicatedgpu|fast / ultrafast|%s|%d PD|%s|%s\n", res_str, pd_dgpu, est, comment;
+
+    # common (CPU)
+    free_comm = p_idle_cpu["common"] + 0;
+    pd_comm = p_pd_jobs["common"] + 0;
+    res_str = sprintf("%'"'"'d idle cores (%d nodes)", free_comm, p_idle_nodes["common"]+0);
+    if (free_comm >= 8 && pd_comm <= 5) {
+        est = sprintf("%sShort (< 5 min)%s", C_GREEN, C_RESET);
+        comment = "Standard cluster CPU pool has idle cores";
+    } else if (free_comm >= 8) {
+        est = sprintf("%sModerate (~5-20 min)%s", C_YELLOW, C_RESET);
+        comment = sprintf("%d pending jobs in common queue", pd_comm);
+    } else {
+        est = sprintf("%sDelayed (~30m-2h)%s", C_RED, C_RESET);
+        comment = "Common CPU pool congested; FairShare evaluated";
+    }
+    printf "common|normal (<=24h)|%s|%d PD|%s|%s\n", res_str, pd_comm, est, comment;
+
+    # gpu (Standard GPU pool)
+    tot_gpu = p_tot_gpu["gpu"] + 0;
+    alloc_gpu = p_alloc_gpu["gpu"] + 0;
+    free_gpu = tot_gpu - alloc_gpu;
+    if (free_gpu < 0) free_gpu = 0;
+    pd_gpu = p_pd_jobs["gpu"] + 0;
+    res_str = sprintf("%d / %d free GPUs", free_gpu, tot_gpu);
+    if (free_gpu >= 2 && pd_gpu == 0) {
+        est = sprintf("%sShort (~5-15 min)%s", C_GREEN, C_RESET);
+        comment = "Free standard GPU slots available";
+    } else if (free_gpu > 0) {
+        est = sprintf("%sModerate (~15m-1h)%s", C_YELLOW, C_RESET);
+        comment = sprintf("%d pending GPU jobs competing on priority", pd_gpu);
+    } else {
+        est = sprintf("%sHigh Wait (Hours - Days)%s", C_RED, C_RESET);
+        if (fs_ratio > 2) {
+            comment = sprintf("Saturated pool + %d PD + bis %.1fx over FairShare target", pd_gpu, fs_ratio);
+        } else {
+            comment = sprintf("Saturated pool + %d pending jobs in queue", pd_gpu);
+        }
+    }
+    printf "gpu|gpu (<=3 days)|%s|%d PD|%s|%s\n", res_str, pd_gpu, est, comment;
+
+    # long (Long CPU runs)
+    free_long = p_idle_cpu["long"] + 0;
+    pd_long = p_pd_jobs["long"] + 0;
+    res_str = sprintf("%d idle cores (%d nodes)", free_long, p_idle_nodes["long"]+0);
+    if (free_long > 0) {
+        est = sprintf("%sShort (~5-30 min)%s", C_GREEN, C_RESET);
+        comment = "Slots available on dedicated 4 long nodes";
+    } else {
+        est = sprintf("%sVariable / Long%s", C_RED, C_RESET);
+        comment = "All 4 long nodes fully allocated (up to 365d walltime)";
+    }
+    printf "long|long (>24h)|%s|%d PD|%s|%s\n", res_str, pd_long, est, comment;
+
+    # clcgwb
+    free_clc = p_idle_cpu["clcgwb"] + 0;
+    res_str = sprintf("%d idle cores", free_clc);
+    printf "clcgwb|normal|%s|%d PD|%sImmediate (< 1 min)%s|Specialized CLC Workbench node (Tier 10000)\n", res_str, p_pd_jobs["clcgwb"]+0, C_GREEN, C_RESET;
+}
+' | column -t -s '|'
+echo ""
+fi
+
+# 10. Section 9: Real-Time Partition Selection Advice
+if show_sec 9; then
+echo -e "${C_BOLD}${C_BLUE}[9] REAL-TIME PARTITION SELECTION ADVICE${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$squeue_all_data" | awk -F'|' -v sshare="$sshare_data" -v C_BOLD="$C_BOLD" -v C_RESET="$C_RESET" -v C_GREEN="$C_GREEN" -v C_YELLOW="$C_YELLOW" -v C_CYAN="$C_CYAN" -v C_DIM="$C_DIM" '
@@ -484,9 +674,9 @@ END {
 echo ""
 fi
 
-# 10. Section 9: Summary & Diagnostic
-if show_sec 9; then
-echo -e "${C_BOLD}${C_BLUE}[9] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
+# 11. Section 10: Summary & Diagnostic
+if show_sec 10; then
+echo -e "${C_BOLD}${C_BLUE}[10] DIAGNOSTIC & PRIORITY SUMMARY${C_RESET}"
 echo -e "${C_DIM}${SUBSEP}${C_RESET}"
 
 echo "$sshare_data" | awk -F'|' -v C_BOLD="$C_BOLD" -v C_RED="$C_RED" -v C_GREEN="$C_GREEN" -v C_RESET="$C_RESET" -v curr_user="${USER:-bougui}" '
