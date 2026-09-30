@@ -451,16 +451,23 @@ if [ -n "$sinfo_gpu_feat_data" ]; then
 
     echo -e "\n${C_DIM}• GPU Feature Flags Column Explanations (used with -C / --constraint):${C_RESET}"
     (
-      echo -e "COLUMN|DESCRIPTION|EXAMPLE VALUES / SLURM USAGE"
-      echo -e "TYPE|Generic resource classification|gpu"
-      echo -e "MODEL|GPU hardware model|A100, A40, l40s, RTX6000 (-C \"A100|RTX6000\")"
-      echo -e "VRAM|Video memory capacity per card/node|40G, 48G, 80G (-C \"80G\")"
-      echo -e "CPU_ARCH|Host CPU processor architecture|amd"
-      echo -e "EXT_ISA|Host CPU SIMD instruction set extension|avx2, avx512"
-      echo -e "RACK/BAY|Physical rack / bay location in datacenter|a2, b6, b7, b8, b9, b10, b13, b14, b15, b16"
-      echo -e "VENDOR|Hardware server integrator / vendor|bechtle, arcitek"
-      echo -e "CUDA_ARCH|NVIDIA CUDA Compute Capability architecture|sm_80 (Ampere: A100), sm_86 (Ampere: A40), sm_89 (Ada: L40S), sm_120 (Ada: RTX6000)"
-    ) | column -t -s '|'
+      echo -e "COLUMN\tDESCRIPTION\tEXAMPLE VALUES / SLURM USAGE"
+      echo -e "TYPE\tGeneric resource classification\tgpu"
+      echo -e "MODEL\tGPU hardware model\tA100, A40, l40s, RTX6000 (-C \"A100|RTX6000\")"
+      echo -e "VRAM\tVideo memory capacity per card/node\t40G, 48G, 80G (-C \"80G\")"
+      echo -e "CPU_ARCH\tHost CPU processor architecture\tamd"
+      echo -e "EXT_ISA\tHost CPU SIMD instruction set extension\tavx2, avx512"
+      echo -e "RACK/BAY\tPhysical rack / bay location in datacenter\ta2, b6, b7, b8, b9, b10, b13, b14, b15, b16"
+      echo -e "VENDOR\tHardware server integrator / vendor\tbechtle, arcitek"
+      echo -e "CUDA_ARCH\tNVIDIA CUDA Compute Capability architecture\tsm_80 (Ampere: A100), sm_86 (Ampere: A40), sm_89 (Ada: L40S), sm_120 (Ada: RTX6000)"
+    ) | column -t -s $'\t'
+
+    echo -e "\n${C_DIM}• GPU Targeting Examples (using -C / --constraint or --gres):${C_RESET}"
+    echo -e "  • ${C_BOLD}Target any A100 GPU (40G or 80G):${C_RESET}       sbatch -p gpu --qos=gpu --gres=gpu:1 ${C_CYAN}-C A100${C_RESET} ..."
+    echo -e "  • ${C_BOLD}Target specifically 80GB VRAM (A100/RTX):${C_RESET} sbatch -p gpu --qos=gpu --gres=gpu:1 ${C_CYAN}-C 80G${C_RESET} ..."
+    echo -e "  • ${C_BOLD}Target Ada Lovelace GPUs (L40S or RTX):${C_RESET}   sbatch -p gpu --qos=gpu --gres=gpu:1 ${C_CYAN}-C \"l40s|RTX6000\"${C_RESET} ..."
+    echo -e "  • ${C_BOLD}Target via GRES model name directly:${C_RESET}     sbatch -p gpu --qos=gpu ${C_CYAN}--gres=gpu:A100:1${C_RESET} ..."
+    echo -e "  • ${C_BOLD}Target RTX 6000 Ada with 48G+ VRAM:${C_RESET}      sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 ${C_CYAN}-C \"RTX6000&sm_120\"${C_RESET} -t 02:00:00 ..."
 fi
 echo ""
 fi
