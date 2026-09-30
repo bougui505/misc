@@ -132,6 +132,8 @@ echo "===SQUEUE_USER==="
 squeue -u ${USER:-bougui} -h -o "%i|%j|%P|%t|%M|%N" 2>/dev/null
 echo "===SINFO_NODES==="
 sinfo -p common,dedicated,gpu,dedicatedgpu,long,clcgwb -h -N -o "%P|%N|%T|%C|%G" 2>/dev/null
+echo "===SINFO_GPU_FEAT==="
+sinfo -N -o "%N %G %f" 2>/dev/null | grep -i 'gpu' | awk '{print $3}' | sort | uniq -c | sort -nr
 echo "===SCONTROL_NODES==="
 scontrol show nodes maestro-[3002-3009,3010-3020,3444-3451] 2>/dev/null | awk '/NodeName=/ {split($1, np, "="); node=np[2]} /AvailableFeatures=/ {feat=$0} /Gres=/ {gres=$0} /AllocTRES=/ {alloc=$0; print node "|" feat "|" gres "|" alloc}'
 REMOTE
@@ -143,7 +145,8 @@ sshare_data=$(echo "$raw_dump" | sed -n '/===SSHARE_BIS===/,/===SQUEUE_BIS===/{ 
 squeue_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_BIS===/,/===SQUEUE_ALL===/{ /===SQUEUE_BIS===/d; /===SQUEUE_ALL===/d; p }')
 squeue_all_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_ALL===/,/===SQUEUE_USER===/{ /===SQUEUE_ALL===/d; /===SQUEUE_USER===/d; p }')
 squeue_user_data=$(echo "$raw_dump" | sed -n '/===SQUEUE_USER===/,/===SINFO_NODES===/{ /===SQUEUE_USER===/d; /===SINFO_NODES===/d; p }')
-sinfo_nodes_data=$(echo "$raw_dump" | sed -n '/===SINFO_NODES===/,/===SCONTROL_NODES===/{ /===SINFO_NODES===/d; /===SCONTROL_NODES===/d; p }')
+sinfo_nodes_data=$(echo "$raw_dump" | sed -n '/===SINFO_NODES===/,/===SINFO_GPU_FEAT===/{ /===SINFO_NODES===/d; /===SINFO_GPU_FEAT===/d; p }')
+sinfo_gpu_feat_data=$(echo "$raw_dump" | sed -n '/===SINFO_GPU_FEAT===/,/===SCONTROL_NODES===/{ /===SINFO_GPU_FEAT===/d; /===SCONTROL_NODES===/d; p }')
 scontrol_nodes_data=$(echo "$raw_dump" | sed -n '/===SCONTROL_NODES===/,$ { /===SCONTROL_NODES===/d; p }')
 
 # 2. Section 1: Overview
@@ -432,6 +435,33 @@ echo -e "  • ${C_BOLD}Standard GPU (<= 3 days):${C_RESET}   sbatch -p gpu --qo
 echo -e "  • ${C_BOLD}Fast / Debug GPU (<= 2h):${C_RESET}   sbatch -p dedicatedgpu --qos=fast --gres=gpu:1 -C \"sm_80|sm_86|sm_89|sm_120\" -t 02:00:00 ..."
 echo -e "  • ${C_BOLD}Long CPU (> 24h):${C_RESET}           sbatch -p long --qos=long -t 14-00:00:00 ... ${C_DIM}(Low priority, up to 365 days)${C_RESET}"
 echo -e "  • ${C_BOLD}Update Pending Job GPU:${C_RESET}   scontrol update JobId=<JOBID> Features=\"sm_80|sm_86|sm_89|sm_120\""
+
+if [ -n "$sinfo_gpu_feat_data" ]; then
+    echo -e "\n${C_DIM}• GPU Hardware Features Breakdown:${C_RESET}"
+    (
+      echo -e "COUNT|TYPE|MODEL|VRAM|CPU_ARCH|EXT_ISA|RACK/BAY|VENDOR|CUDA_ARCH"
+      echo "$sinfo_gpu_feat_data" | awk '
+      NF>=2 {
+          count = $1;
+          flags = $2;
+          n = split(flags, f, ",");
+          printf "%s|%s|%s|%s|%s|%s|%s|%s|%s\n", count, f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8];
+      }'
+    ) | column -t -s '|'
+
+    echo -e "\n${C_DIM}• GPU Feature Flags Column Explanations (used with -C / --constraint):${C_RESET}"
+    (
+      echo -e "COLUMN|DESCRIPTION|EXAMPLE VALUES / SLURM USAGE"
+      echo -e "TYPE|Generic resource classification|gpu"
+      echo -e "MODEL|GPU hardware model|A100, A40, l40s, RTX6000 (-C \"A100|RTX6000\")"
+      echo -e "VRAM|Video memory capacity per card/node|40G, 48G, 80G (-C \"80G\")"
+      echo -e "CPU_ARCH|Host CPU processor architecture|amd"
+      echo -e "EXT_ISA|Host CPU SIMD instruction set extension|avx2, avx512"
+      echo -e "RACK/BAY|Physical rack / bay location in datacenter|a2, b6, b7, b8, b9, b10, b13, b14, b15, b16"
+      echo -e "VENDOR|Hardware server integrator / vendor|bechtle, arcitek"
+      echo -e "CUDA_ARCH|NVIDIA CUDA Compute Capability architecture|sm_80 (Ampere: A100), sm_86 (Ampere: A40), sm_89 (Ada: L40S), sm_120 (Ada: RTX6000)"
+    ) | column -t -s '|'
+fi
 echo ""
 fi
 
