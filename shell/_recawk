@@ -41,6 +41,7 @@ _recawk_keys() {
     if [[ "$PREFIX" =~ "rec\[([${sq}${dq}])([^${sq}${dq}]*)$" ]]; then
         local quote="${match[1]}"
         local partial_key="${match[2]}"
+        local prefix_to_ignore="${PREFIX%${partial_key}}"
         local -a keys
         
         if [[ ${#existing_files} -gt 0 ]]; then
@@ -57,8 +58,24 @@ _recawk_keys() {
             )"})
         fi
         
-        # Complete the key and add the matching closing quote and bracket
-        compadd -S "${quote}]" -P "${PREFIX%${partial_key}}" -- $keys
+        # Determine the suffix to add depending on what already exists after the cursor
+        local sfx="${quote}]"
+        if [[ "$SUFFIX" == "${quote}]"* ]]; then
+            sfx=""
+        elif [[ "$SUFFIX" == "${quote}"* ]]; then
+            sfx="]"
+        elif [[ "$SUFFIX" == "]"* ]]; then
+            sfx="${quote}"
+        fi
+
+        # Move the prefix up to rec[" into IPREFIX and set PREFIX to just the partial key.
+        # Also move SUFFIX to ISUFFIX so trailing text (e.g. '| head', ']}', etc.) doesn't block matching.
+        IPREFIX="${IPREFIX}${prefix_to_ignore}"
+        PREFIX="${partial_key}"
+        ISUFFIX="${SUFFIX}${ISUFFIX}"
+        SUFFIX=""
+
+        compadd -S "$sfx" -- $keys
     fi
 }
 
