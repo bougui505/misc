@@ -15,6 +15,8 @@ set -o pipefail  # exit when a process in the pipe fails
 # Full path to the directory of the current script
 DIRSCRIPT="$(dirname "$(readlink -f "$0")")"
 
+export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:$PATH"
+
 REMINDIR=$HOME/reminders
 
 cd $REMINDIR
@@ -37,6 +39,8 @@ curl "$URL" | singularity run $DIRSCRIPT/../../singularity/bougui.sif ics2rem -l
 
 if command -v uv >/dev/null 2>&1; then
     uv run "$DIRSCRIPT/gtasks_to_rem.py" > $REMINDIR/gcal_tasks.rem
+else
+    echo "Warning: uv not found in PATH ($PATH), skipping Google Tasks sync." >&2
 fi
 
 git commit -a -m "Update" || echo "Nothing to commit..."
