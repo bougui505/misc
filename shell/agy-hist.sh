@@ -18,15 +18,75 @@ Usage: $(basename "$0") [OPTIONS]
 Interactive fuzzy navigator for Antigravity (agy) conversation history.
 
 Options:
-    -l, --list        List conversations without opening fzf
-    -n <N>            Limit list to N conversations (default: all)
-    -h, --help        Show this help message
+    -p, --preview <id> Show transcript preview for a conversation ID
+    -l, --list         List conversations without opening fzf
+    -n <N>             Limit list to N conversations (default: all)
+    -h, --help         Show this help message
 
 In fzf:
     Select a conversation and press Enter to resume it with 'agy --conversation <id>'.
+    Press Tab to toggle the preview window.
+    Press Shift-Up/Down or Ctrl-U/Ctrl-D to scroll the preview window.
     Press Esc or Ctrl-C to cancel.
 EOF
     exit 0
+}
+
+preview_conversation() {
+    local conv_id="$1"
+    python3 - "$conv_id" <<'PY'
+import os
+import json
+import re
+import sys
+
+conv_id = sys.argv[1] if len(sys.argv) > 1 else ""
+if not conv_id:
+    sys.exit(0)
+
+brain_dir = os.path.expanduser("~/.gemini/antigravity-cli/brain")
+log_file = os.path.join(brain_dir, conv_id, ".system_generated", "logs", "transcript.jsonl")
+
+if not os.path.isfile(log_file):
+    print(f"No transcript found for conversation {conv_id}")
+    sys.exit(0)
+
+BLUE = "\033[1;34m"
+GREEN = "\033[1;32m"
+YELLOW = "\033[1;33m"
+GRAY = "\033[90m"
+RESET = "\033[0m"
+
+print(f"{YELLOW}=== Conversation: {conv_id} ==={RESET}\n")
+
+try:
+    with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            try:
+                data = json.loads(line)
+            except Exception:
+                continue
+
+            msg_type = data.get("type")
+            content = data.get("content") or ""
+
+            if msg_type == "USER_INPUT" and content:
+                # Strip user request wrappers and internal metadata tags
+                clean = re.sub(r"<USER_REQUEST>\s*", "", content)
+                clean = re.sub(r"</USER_REQUEST>.*", "", clean, flags=re.DOTALL)
+                clean = re.sub(r"<[^>]+>", "", clean).strip()
+                if clean:
+                    print(f"{BLUE}▶ User:{RESET}")
+                    print(clean)
+                    print()
+            elif msg_type == "PLANNER_RESPONSE" and content.strip():
+                clean = content.strip()
+                print(f"{GREEN}▶ Antigravity:{RESET}")
+                print(clean)
+                print(f"{GRAY}{'─' * 40}{RESET}\n")
+except Exception as e:
+    print(f"Error reading transcript: {e}")
+PY
 }
 
 LIST_ONLY=0
@@ -34,6 +94,10 @@ LIMIT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -p|--preview)
+            preview_conversation "$2"
+            exit 0
+            ;;
         -l|--list)
             LIST_ONLY=1
             shift
@@ -120,11 +184,19 @@ if ! command -v fzf >/dev/null 2>&1; then
     exit 0
 fi
 
+SCRIPT_PATH=$(readlink -f "$0")
+
 SELECTED=$(generate_list | fzf \
+    --ansi \
     --prompt="Select agy conversation > " \
-    --header="ENTER: resume conversation | ESC: quit" \
+    --header="ENTER: resume | TAB: toggle | Shift-Up/Down or Ctrl-U/D: scroll | ESC: quit" \
     --reverse \
-    --no-mouse)
+    --no-mouse \
+    --preview="\"$SCRIPT_PATH\" --preview {3}" \
+    --preview-window="right:60%:wrap" \
+    --bind="tab:toggle-preview" \
+    --bind="shift-up:preview-up,shift-down:preview-down" \
+    --bind="ctrl-u:preview-page-up,ctrl-d:preview-page-down")
 
 if [[ -n "$SELECTED" ]]; then
     CONV_ID=$(echo "$SELECTED" | awk '{print $3}')
