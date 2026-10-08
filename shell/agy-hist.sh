@@ -39,6 +39,8 @@ import os
 import json
 import re
 import sys
+import shutil
+import subprocess
 
 conv_id = sys.argv[1] if len(sys.argv) > 1 else ""
 if not conv_id:
@@ -51,13 +53,88 @@ if not os.path.isfile(log_file):
     print(f"No transcript found for conversation {conv_id}")
     sys.exit(0)
 
-BLUE = "\033[1;34m"
-GREEN = "\033[1;32m"
-YELLOW = "\033[1;33m"
-GRAY = "\033[90m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+ITALIC = "\033[3m"
+BLUE = "\033[1;38;5;75m"
+GREEN = "\033[1;38;5;78m"
+YELLOW = "\033[1;38;5;221m"
+CYAN = "\033[38;5;80m"
+GRAY = "\033[38;5;242m"
+CODE_COLOR = "\033[38;5;222m"
 RESET = "\033[0m"
 
-print(f"{YELLOW}=== Conversation: {conv_id} ==={RESET}\n")
+bat_cmd = shutil.which("bat") or shutil.which("batcat")
+
+def render_md(text):
+    if bat_cmd:
+        try:
+            res = subprocess.run(
+                [bat_cmd, "-l", "md", "--color=always", "--style=plain", "--paging=never", "--theme=ansi"],
+                input=text,
+                text=True,
+                capture_output=True,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                return res.stdout
+        except Exception:
+            pass
+
+    # Built-in fallback renderer
+    lines = text.splitlines()
+    in_code_block = False
+    rendered = []
+
+    for line in lines:
+        if line.startswith("```"):
+            in_code_block = not in_code_block
+            lang = line[3:].strip()
+            if in_code_block:
+                rendered.append(f"{GRAY}┌─── {lang or 'code'} ───{RESET}")
+            else:
+                rendered.append(f"{GRAY}└───{RESET}")
+            continue
+
+        if in_code_block:
+            rendered.append(f"{GRAY}│{RESET} {CODE_COLOR}{line}{RESET}")
+            continue
+
+        # Headers
+        m = re.match(r"^(#{1,6})\s+(.*)", line)
+        if m:
+            level = len(m.group(1))
+            h_text = m.group(2)
+            rendered.append(f"{YELLOW}{BOLD}{'#' * level} {h_text}{RESET}")
+            continue
+
+        # Blockquotes
+        if line.startswith("> "):
+            rendered.append(f"{GRAY}│{RESET} {ITALIC}{line[2:]}{RESET}")
+            continue
+
+        # Bullet points and numbers
+        line = re.sub(r"^(\s*)[-*]\s+", rf"\1{CYAN}•{RESET} ", line)
+        line = re.sub(r"^(\s*\d+\.)\s+", rf"{CYAN}\1{RESET} ", line)
+
+        # Bold & Italic
+        line = re.sub(r"\*\*\*(.*?)\*\*\*", rf"{BOLD}{ITALIC}\1{RESET}", line)
+        line = re.sub(r"\*\*(.*?)\*\*", rf"{BOLD}\1{RESET}", line)
+        line = re.sub(r"\*(.*?)\*", rf"{ITALIC}\1{RESET}", line)
+
+        # Inline code
+        line = re.sub(r"`([^`]+)`", rf"{CODE_COLOR}`\1`{RESET}", line)
+
+        # Markdown links: [text](url) -> text (url)
+        line = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", rf"{CYAN}\1{RESET} {GRAY}(\2){RESET}", line)
+
+        rendered.append(line)
+
+    return "\n".join(rendered)
+
+print(f"{YELLOW}══════════════════════════════════════════════════════════════{RESET}")
+print(f"{YELLOW} Conversation: {BOLD}{conv_id}{RESET}")
+print(f"{YELLOW}══════════════════════════════════════════════════════════════{RESET}\n")
 
 try:
     with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
@@ -77,13 +154,13 @@ try:
                 clean = re.sub(r"<[^>]+>", "", clean).strip()
                 if clean:
                     print(f"{BLUE}▶ User:{RESET}")
-                    print(clean)
+                    print(render_md(clean))
                     print()
             elif msg_type == "PLANNER_RESPONSE" and content.strip():
                 clean = content.strip()
                 print(f"{GREEN}▶ Antigravity:{RESET}")
-                print(clean)
-                print(f"{GRAY}{'─' * 40}{RESET}\n")
+                print(render_md(clean))
+                print(f"{GRAY}{'─' * 50}{RESET}\n")
 except Exception as e:
     print(f"Error reading transcript: {e}")
 PY
