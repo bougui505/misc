@@ -34,7 +34,8 @@ EOF
 
 preview_conversation() {
     local conv_id="$1"
-    python3 - "$conv_id" <<'PY'
+    local query="${2:-}"
+    python3 - "$conv_id" "$query" <<'PY'
 import os
 import json
 import re
@@ -43,6 +44,7 @@ import shutil
 import subprocess
 
 conv_arg = sys.argv[1] if len(sys.argv) > 1 else ""
+query_arg = sys.argv[2] if len(sys.argv) > 2 else ""
 if not conv_arg:
     sys.exit(0)
 
@@ -136,8 +138,23 @@ def render_md(text):
 
     return "\n".join(rendered)
 
+HIGHLIGHT = "\033[1;43;30m"
+query_words = [re.escape(w.strip("'\"")) for w in query_arg.split() if len(w.strip("'\"")) > 1]
+pattern = re.compile(rf"({'|'.join(query_words)})", re.IGNORECASE) if query_words else None
+ansi_regex = re.compile(r"(\x1b\[[0-9;]*[a-zA-Z])")
+
+def highlight_matches(text):
+    if not pattern:
+        return text
+    parts = ansi_regex.split(text)
+    for i in range(0, len(parts), 2):
+        parts[i] = pattern.sub(rf"{HIGHLIGHT}\1{RESET}", parts[i])
+    return "".join(parts)
+
 print(f"{YELLOW}══════════════════════════════════════════════════════════════{RESET}")
 print(f"{YELLOW} Conversation: {BOLD}{conv_id}{RESET}")
+if query_arg.strip():
+    print(f"{GRAY} Matching query: {HIGHLIGHT}{query_arg.strip()}{RESET}")
 print(f"{YELLOW}══════════════════════════════════════════════════════════════{RESET}\n")
 
 try:
@@ -158,12 +175,12 @@ try:
                 clean = re.sub(r"<[^>]+>", "", clean).strip()
                 if clean:
                     print(f"{BLUE}▶ User:{RESET}")
-                    print(render_md(clean))
+                    print(highlight_matches(render_md(clean)))
                     print()
             elif msg_type == "PLANNER_RESPONSE" and content.strip():
                 clean = content.strip()
                 print(f"{GREEN}▶ Antigravity:{RESET}")
-                print(render_md(clean))
+                print(highlight_matches(render_md(clean)))
                 print(f"{GRAY}{'─' * 50}{RESET}\n")
 except Exception as e:
     print(f"Error reading transcript: {e}")
@@ -176,7 +193,7 @@ LIMIT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -p|--preview)
-            preview_conversation "$2"
+            preview_conversation "$2" "${3:-}"
             exit 0
             ;;
         -l|--list)
@@ -285,7 +302,7 @@ SELECTED=$(generate_list | fzf \
     --header="ENTER: resume | TAB: toggle | Shift-Up/Down or Ctrl-U/D: scroll | ESC: quit" \
     --reverse \
     --no-mouse \
-    --preview="\"$SCRIPT_PATH\" --preview {3}" \
+    --preview="\"$SCRIPT_PATH\" --preview {3} {q}" \
     --preview-window="right:60%:wrap" \
     --bind="tab:toggle-preview" \
     --bind="shift-up:preview-up,shift-down:preview-down" \
