@@ -245,29 +245,35 @@ for entry in os.scandir(brain_dir):
             except Exception:
                 pass
 
-            first_prompt = prompts[0][:100] if prompts else ""
-            all_text = " ".join(prompts) if prompts else ""
-            convs.append((mtime, entry.name, first_prompt, all_text))
+            first_prompt = prompts[0][:80] if prompts else ""
+            remaining = " │ ".join(prompts[1:]) if len(prompts) > 1 else ""
+            convs.append((mtime, entry.name, first_prompt, remaining))
 
 convs.sort(key=lambda x: x[0], reverse=True)
 
 if limit is not None:
     convs = convs[:limit]
 
-for mtime, cid, first_p, all_p in convs:
+GRAY = "\033[90m"
+RESET = "\033[0m"
+
+for mtime, cid, first_p, rem in convs:
     dt = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-    print(f"{dt}  {cid}  {first_p}\t{all_p}")
+    if rem:
+        print(f"{dt}  {cid}  {first_p} {GRAY}│ {rem}{RESET}")
+    else:
+        print(f"{dt}  {cid}  {first_p}")
 PY
 }
 
 if [[ "$LIST_ONLY" -eq 1 ]]; then
-    generate_list | cut -f1
+    generate_list
     exit 0
 fi
 
 if ! command -v fzf >/dev/null 2>&1; then
     echo "Warning: fzf is not installed, falling back to listing mode." >&2
-    generate_list | cut -f1
+    generate_list
     exit 0
 fi
 
@@ -275,20 +281,18 @@ SCRIPT_PATH=$(readlink -f "$0")
 
 SELECTED=$(generate_list | fzf \
     --ansi \
-    --delimiter=$'\t' \
-    --with-nth=1 \
     --prompt="Select agy conversation > " \
     --header="ENTER: resume | TAB: toggle | Shift-Up/Down or Ctrl-U/D: scroll | ESC: quit" \
     --reverse \
     --no-mouse \
-    --preview="\"$SCRIPT_PATH\" --preview {1}" \
+    --preview="\"$SCRIPT_PATH\" --preview {3}" \
     --preview-window="right:60%:wrap" \
     --bind="tab:toggle-preview" \
     --bind="shift-up:preview-up,shift-down:preview-down" \
     --bind="ctrl-u:preview-page-up,ctrl-d:preview-page-down")
 
 if [[ -n "$SELECTED" ]]; then
-    CONV_ID=$(echo "$SELECTED" | cut -f1 | awk '{print $3}')
+    CONV_ID=$(echo "$SELECTED" | awk '{print $3}')
     if [[ -n "$CONV_ID" ]]; then
         echo "Resuming conversation: $CONV_ID"
         exec agy --conversation "$CONV_ID"
