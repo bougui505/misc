@@ -42,9 +42,13 @@ import sys
 import shutil
 import subprocess
 
-conv_id = sys.argv[1] if len(sys.argv) > 1 else ""
-if not conv_id:
+conv_arg = sys.argv[1] if len(sys.argv) > 1 else ""
+if not conv_arg:
     sys.exit(0)
+
+# Extract uuid if a full line was passed (e.g. "2026-10-09 13:38  <uuid>  <prompt>")
+uuid_match = re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", conv_arg, re.IGNORECASE)
+conv_id = uuid_match.group(0) if uuid_match else conv_arg.strip()
 
 brain_dir = os.path.expanduser("~/.gemini/antigravity-cli/brain")
 log_file = os.path.join(brain_dir, conv_id, ".system_generated", "logs", "transcript.jsonl")
@@ -222,42 +226,48 @@ for entry in os.scandir(brain_dir):
             except OSError:
                 continue
 
-            first_prompt = ""
+            prompts = []
             try:
                 with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                     for line in f:
+                        if '"USER_INPUT"' not in line:
+                            continue
                         try:
                             data = json.loads(line)
                             if data.get("type") == "USER_INPUT" and data.get("content"):
-                                clean = re.sub(r"<[^>]+>", "", data["content"])
-                                first_prompt = clean.strip().replace("\n", " ")[:100]
-                                break
+                                clean = re.sub(r"<USER_REQUEST>\s*", "", data["content"])
+                                clean = re.sub(r"</USER_REQUEST>.*", "", clean, flags=re.DOTALL)
+                                clean = re.sub(r"<[^>]+>", "", clean).strip()
+                                if clean:
+                                    prompts.append(clean.replace("\t", " ").replace("\n", " "))
                         except Exception:
                             continue
             except Exception:
                 pass
 
-            convs.append((mtime, entry.name, first_prompt))
+            first_prompt = prompts[0][:100] if prompts else ""
+            all_text = " ".join(prompts) if prompts else ""
+            convs.append((mtime, entry.name, first_prompt, all_text))
 
 convs.sort(key=lambda x: x[0], reverse=True)
 
 if limit is not None:
     convs = convs[:limit]
 
-for mtime, cid, prompt in convs:
+for mtime, cid, first_p, all_p in convs:
     dt = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-    print(f"{dt}  {cid}  {prompt}")
+    print(f"{dt}  {cid}  {first_p}\t{all_p}")
 PY
 }
 
 if [[ "$LIST_ONLY" -eq 1 ]]; then
-    generate_list
+    generate_list | cut -f1
     exit 0
 fi
 
 if ! command -v fzf >/dev/null 2>&1; then
     echo "Warning: fzf is not installed, falling back to listing mode." >&2
-    generate_list
+    generate_list | cut -f1
     exit 0
 fi
 
@@ -265,18 +275,20 @@ SCRIPT_PATH=$(readlink -f "$0")
 
 SELECTED=$(generate_list | fzf \
     --ansi \
+    --delimiter=$'\t' \
+    --with-nth=1 \
     --prompt="Select agy conversation > " \
     --header="ENTER: resume | TAB: toggle | Shift-Up/Down or Ctrl-U/D: scroll | ESC: quit" \
     --reverse \
     --no-mouse \
-    --preview="\"$SCRIPT_PATH\" --preview {3}" \
+    --preview="\"$SCRIPT_PATH\" --preview {1}" \
     --preview-window="right:60%:wrap" \
     --bind="tab:toggle-preview" \
     --bind="shift-up:preview-up,shift-down:preview-down" \
     --bind="ctrl-u:preview-page-up,ctrl-d:preview-page-down")
 
 if [[ -n "$SELECTED" ]]; then
-    CONV_ID=$(echo "$SELECTED" | awk '{print $3}')
+    CONV_ID=$(echo "$SELECTED" | cut -f1 | awk '{print $3}')
     if [[ -n "$CONV_ID" ]]; then
         echo "Resuming conversation: $CONV_ID"
         exec agy --conversation "$CONV_ID"
