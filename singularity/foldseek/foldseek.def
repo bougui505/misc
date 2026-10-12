@@ -1,9 +1,9 @@
 BOOTSTRAP: docker
-FROM: debian:11.5
+FROM: debian:13
 
 %post
 apt-get update
-apt-get install -y wget
+apt-get install -y wget libgomp1
 apt-get clean
 
 # Install conda in a directory already in path
@@ -15,8 +15,11 @@ conda update conda
 
 # Install python packages with conda
 conda install -c conda-forge -c bioconda foldseek
-foldseek databases PDB pdb tmp
-foldseek databases Alphafold/Proteome afdb tmp
+# foldseek databases PDB pdb tmp
+# foldseek databases Alphafold/Proteome afdb tmp
 
 #List installed packages
 # conda list
+
+%runscript
+    exec foldseek "$@"

@@ -53,12 +53,14 @@ From: nvidia/cuda:12.4.1-devel-ubuntu22.04
 
     # Pre-download ESMFold2 weights to make container run-capable offline
     python -c '
-from transformers import AutoModel, AutoTokenizer
+from huggingface_hub import snapshot_download
+from transformers import AutoConfig
+
 model_name = "biohub/ESMFold2"
-print(f"Pre-downloading tokenizer for {model_name}...")
-AutoTokenizer.from_pretrained(model_name)
-print(f"Pre-downloading model weights for {model_name} (this will take a while)...")
-AutoModel.from_pretrained(model_name)
+print(f"Pre-downloading model repository for {model_name} (this will take a while)...")
+snapshot_download(repo_id=model_name)
+print(f"Pre-caching remote code for {model_name}...")
+AutoConfig.from_pretrained(model_name, trust_remote_code=True)
 '
 
     # Make cached models readable by all users
