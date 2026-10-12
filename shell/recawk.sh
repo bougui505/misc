@@ -215,6 +215,7 @@ if mode == 'to':
  
     reporter = ProgressReporter(valid_files)
     current_record = {}
+    last_key = None
     
     if not valid_files:
         for line in sys.stdin:
@@ -231,10 +232,17 @@ if mode == 'to':
                         flush_chunk_to_parquet(current_records)
                 else:
                     reporter.update(line_len, is_record=False)
+                last_key = None
+            elif (line_clean.startswith('+') or line_clean.startswith('\\')) and last_key is not None:
+                current_record[last_key] = str(current_record[last_key]) + "\n" + line_clean[1:]
+                reporter.update(line_len, is_record=False)
             else:
                 if '=' in line_clean:
                     parts = line_clean.split('=', 1)
-                    current_record[parts[0]] = try_numeric(parts[1])
+                    last_key = parts[0]
+                    current_record[last_key] = try_numeric(parts[1])
+                else:
+                    last_key = None
                 reporter.update(line_len, is_record=False)
     else:
         for f in valid_files:
@@ -254,10 +262,17 @@ if mode == 'to':
                                 flush_chunk_to_parquet(current_records)
                         else:
                             reporter.update(line_len, is_record=False)
+                        last_key = None
+                    elif (line_clean.startswith('+') or line_clean.startswith('\\')) and last_key is not None:
+                        current_record[last_key] = str(current_record[last_key]) + "\n" + line_clean[1:]
+                        reporter.update(line_len, is_record=False)
                     else:
                         if '=' in line_clean:
                             parts = line_clean.split('=', 1)
-                            current_record[parts[0]] = try_numeric(parts[1])
+                            last_key = parts[0]
+                            current_record[last_key] = try_numeric(parts[1])
+                        else:
+                            last_key = None
                         reporter.update(line_len, is_record=False)
             finally:
                 if f != '-':
@@ -335,7 +350,11 @@ elif mode == 'from':
             for row in rows:
                 for col_name, val in zip(cols, row):
                     if val is not None:
-                        sys.stdout.write(f"{col_name}={val}\n")
+                        val_str = str(val)
+                        lines = val_str.split("\n")
+                        sys.stdout.write(f"{col_name}={lines[0]}\n")
+                        for extra_line in lines[1:]:
+                            sys.stdout.write(f"+{extra_line}\n")
                 sys.stdout.write("--\n")
     except BrokenPipeError:
         pass
@@ -385,9 +404,12 @@ Database Selection Syntax (-w / --where):
 
 Record Format:
   Records are separated by '--' on a line by itself.
+  Multiline values can be continued across subsequent lines starting with '+' or '\'.
   Example:
     key1=val1
-    key2=val2
+    key2=line 1
+    +line 2
+    +line 3
     --
     key1=val3
     key2=val4
@@ -609,16 +631,13 @@ if [[ -n $FILENAMES && -f "$FILENAMES" ]]; then
 fi
 
 # Smart field filtering
-FILTER=""
+FILTER_FIELDS=""
 if [[ $TOREC == 0 && $KEYS == 0 && $TOCSV == 0 ]]; then
     # Detect fields used in the script: rec["field"] or rec['field']
     USED_FIELDS=$(echo "$1" | grep -oP "rec\[\s*['\"]\K[^'\"]+(?=['\"]\s*\])" | sort -u || true)
     # If the script iterates over all fields or uses printrec, we can't filter
     if [[ -n $USED_FIELDS ]] && ! echo "$1" | grep -qE "printrec|field\s+in\s+rec"; then
-        FILTER="^--$"
-        for f in $USED_FIELDS; do
-            FILTER="$FILTER|^$f="
-        done
+        FILTER_FIELDS=$(echo "$USED_FIELDS" | paste -sd '|' -)
     fi
 fi
 
@@ -656,7 +675,10 @@ if [[ $KEYS -eq 1 ]]; then
             if ($0=="--"){
                 fnr+=1
             }
-            else{
+            else if ($0 ~ /^[+\\]/) {
+                # Multiline continuation: not a new key
+            }
+            else if (index($0, "=") > 0){
                 keys[$1]=1
             }
         }
@@ -670,100 +692,73 @@ if [[ $KEYS -eq 1 ]]; then
 fi
 
 if [[ $TOCSV -eq 1 ]]; then
+    CSV_AWK_SCRIPT='
+    BEGIN {
+        first = 1
+        _last_key = ""
+    }
+    function print_csv_cell(str) {
+        if (str ~ /[",\n\r]/) {
+            gsub(/"/, "\"\"", str)
+            printf "\"%s\"", str
+        } else {
+            printf "%s", str
+        }
+    }
+    {
+        if (FNR == 1) {
+            fnr = 0
+        }
+        if ($0 == "--") {
+            if (first) {
+                # Print header
+                for (i = 1; i <= nkeys; i++) {
+                    print_csv_cell(keys[i])
+                    if (i < nkeys) printf ","
+                }
+                printf "\n"
+                first = 0
+            }
+            # Print values for current record
+            for (i = 1; i <= nkeys; i++) {
+                key = keys[i]
+                print_csv_cell(rec[key])
+                if (i < nkeys) printf ","
+            }
+            printf "\n"
+            delete rec
+            _last_key = ""
+        } else if ((substr($0, 1, 1) == "+" || substr($0, 1, 1) == "\\") && _last_key != "") {
+            rec[_last_key] = rec[_last_key] "\n" substr($0, 2)
+        } else {
+            # Store key-value pairs
+            idx = index($0, "=")
+            if (idx > 0) {
+                key = substr($0, 1, idx - 1)
+                value = substr($0, idx + 1)
+                _last_key = key
+                rec[key] = value
+                # Add key to keys array if not already present
+                found = 0
+                for (i = 1; i <= nkeys; i++) {
+                    if (keys[i] == key) {
+                        found = 1
+                        break
+                    }
+                }
+                if (!found) {
+                    keys[++nkeys] = key
+                }
+            } else {
+                _last_key = ""
+            }
+        }
+    }
+    '
     if [[ $IS_DB -eq 1 ]]; then
-        python3 "$MYTMP/helper.py" from "$FILENAMES" "NONE" "" | gawk '
-        BEGIN {
-            first = 1
-        }
-        {
-            if (FNR == 1) {
-                fnr = 0
-            }
-            if ($0 == "--") {
-                if (first) {
-                    # Print header
-                    for (i = 1; i <= nkeys; i++) {
-                        printf "%s", keys[i]
-                        if (i < nkeys) printf ","
-                    }
-                    printf "\n"
-                    first = 0
-                }
-                # Print values for current record
-                for (i = 1; i <= nkeys; i++) {
-                    key = keys[i]
-                    printf "%s", rec[key]
-                    if (i < nkeys) printf ","
-                }
-                printf "\n"
-                delete rec
-            } else {
-                # Store key-value pairs
-                idx = index($0, "=")
-                key = substr($0, 1, idx - 1)
-                value = substr($0, idx + 1)
-                rec[key] = value
-                # Add key to keys array if not already present
-                found = 0
-                for (i = 1; i <= nkeys; i++) {
-                    if (keys[i] == key) {
-                        found = 1
-                        break
-                    }
-                }
-                if (!found) {
-                    keys[++nkeys] = key
-                }
-            }
-        }
-        '
+        python3 "$MYTMP/helper.py" from "$FILENAMES" "NONE" "" | gawk "$CSV_AWK_SCRIPT"
     else
-        gawk '
-        BEGIN {
-            first = 1
-        }
-        {
-            if (FNR == 1) {
-                fnr = 0
-            }
-            if ($0 == "--") {
-                if (first) {
-                    # Print header
-                    for (i = 1; i <= nkeys; i++) {
-                        printf "%s", keys[i]
-                        if (i < nkeys) printf ","
-                    }
-                    printf "\n"
-                    first = 0
-                }
-                # Print values for current record
-                for (i = 1; i <= nkeys; i++) {
-                    key = keys[i]
-                    printf "%s", rec[key]
-                    if (i < nkeys) printf ","
-                }
-                printf "\n"
-                delete rec
-            } else {
-                # Store key-value pairs
-                idx = index($0, "=")
-                key = substr($0, 1, idx - 1)
-                value = substr($0, idx + 1)
-                rec[key] = value
-                # Add key to keys array if not already present
-                found = 0
-                for (i = 1; i <= nkeys; i++) {
-                    if (keys[i] == key) {
-                        found = 1
-                        break
-                    }
-                }
-                if (!found) {
-                    keys[++nkeys] = key
-                }
-            }
-        }
-        ' "$FILENAMES"
+        gawk "$CSV_AWK_SCRIPT" "$FILENAMES"
     fi
     exit 0
 fi
@@ -851,7 +846,12 @@ fi
 AWK_FUNCTIONS=$(cat << 'EOF'
 function printrec(){
     for (field in rec){
-        print field"="rec[field]
+        val = rec[field]
+        nlines = split(val, lines, "\n")
+        print field "=" lines[1]
+        for (i = 2; i <= nlines; i++) {
+            print "+" lines[i]
+        }
     }
 }
 
@@ -950,6 +950,7 @@ AWK_MAIN_LOOP_BEGIN=$(cat << 'EOF'
 BEGIN{
 srand(seed)
 nr=0
+_last_key=""
 }
 {
 if (FNR==1){
@@ -963,9 +964,17 @@ EOF
 
 AWK_MAIN_LOOP_END=$(cat << 'EOF'
     delete rec
+    _last_key=""
+}
+else if ((substr($0, 1, 1) == "+" || substr($0, 1, 1) == "\\") && _last_key != ""){
+    rec[_last_key] = rec[_last_key] "\n" substr($0, 2)
+}
+else if (index($0, "=") > 0){
+    _last_key = $1
+    rec[_last_key] = substr($0, length(_last_key) + 2)
 }
 else{
-    rec[$1]=substr($0,length($1)+2)
+    _last_key=""
 }
 }
 END{
@@ -997,11 +1006,12 @@ if [[ $IS_DB -eq 1 ]]; then
     
     python3 "$MYTMP/helper.py" from "$FILENAMES" "$WHERE_CLAUSE" "$USED_FIELDS_CSV" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
 else
-    if [[ -n $FILTER ]]; then
+    if [[ -n $FILTER_FIELDS ]]; then
+        FILTER_PROG='$0 == "--" { print; m = 0; next } /^[+\\]/ { if (m) print; next } { if ($0 ~ pat) { m = 1; print } else { m = 0 } }'
         if [[ -z $FILENAMES ]]; then
-            grep -E "$FILTER" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+            gawk -v pat="^($FILTER_FIELDS)=" "$FILTER_PROG" | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
         else
-            grep -E "$FILTER" $FILENAMES | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
+            gawk -v pat="^($FILTER_FIELDS)=" "$FILTER_PROG" $FILENAMES | $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT"
         fi
     else
         $AWK_BIN -v seed=$RANDOM -v SAMPLE=$SAMPLE -v $V -F"=" "$FULL_AWK_SCRIPT" $FILENAMES
