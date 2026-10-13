@@ -1,0 +1,7 @@
+*.env
+!config.env.example
+*.ics
+.venv/
+__pycache__/
+tokens.json
+credentials.json
