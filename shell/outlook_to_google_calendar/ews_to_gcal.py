@@ -8,6 +8,7 @@
 # creation_date: 2026-06-02
 
 import datetime
+import fcntl
 import os
 import json
 import sys
@@ -107,6 +108,7 @@ TOKEN_CACHE_PATH = config_data["token_cache_path"]
 EWS_SERVER = config_data.get("ews_server") 
 SYNC_DAYS = config_data.get("sync_days", 30)
 GOOGLE_CALENDAR_NAME = config_data.get("google_calendar_name", "primary")
+GOOGLE_CALENDAR_ID = config_data.get("google_calendar_id")
 GOOGLE_TOKEN_PATH = config_data.get("google_token_path", "~/.config/outlook_to_google_calendar/google_token.json")
 GOOGLE_CREDENTIALS_PATH = config_data.get("google_credentials_path", "~/.config/outlook_to_google_calendar/google_credentials.json")
 TIMEZONE = config_data.get("timezone", "Europe/Paris")
@@ -177,10 +179,11 @@ def get_outlook_events():
         
     tz = account.default_timezone
     now = datetime.datetime.now(tz)
-    end_date = now + datetime.timedelta(days=SYNC_DAYS)
+    start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = start_date + datetime.timedelta(days=SYNC_DAYS)
     
-    print(f"Fetching Outlook events from {now.date()} to {end_date.date()}...")
-    return account.calendar.view(start=now, end=end_date)
+    print(f"Fetching Outlook events from {start_date.date()} to {end_date.date()}...")
+    return account.calendar.view(start=start_date, end=end_date)
 
 def parse_gcal_datetime(dt_dict):
     dt_str = dt_dict.get('dateTime') or dt_dict.get('date')
@@ -196,12 +199,31 @@ def parse_gcal_datetime(dt_dict):
 
 def get_or_create_calendar(gcal_service, name):
     """Retrieves the ID of a Google Calendar by name, creating it if it doesn't exist."""
+    if GOOGLE_CALENDAR_ID:
+        return GOOGLE_CALENDAR_ID
+
     print(f"Checking Google Calendar list for '{name}'...")
-    calendar_list = gcal_service.calendarList().list().execute()
-    for entry in calendar_list.get('items', []):
-        if entry.get('summary') == name:
-            return entry['id']
-            
+    matches = []
+    page_token = None
+    while True:
+        calendar_list = gcal_service.calendarList().list(pageToken=page_token).execute()
+        for entry in calendar_list.get('items', []):
+            if entry.get('summary') == name:
+                matches.append(entry)
+        page_token = calendar_list.get('nextPageToken')
+        if not page_token:
+            break
+
+    if matches:
+        if len(matches) > 1:
+            ids = ", ".join(m['id'] for m in matches)
+            print(
+                f"WARNING: Found {len(matches)} Google Calendars named '{name}' ({ids}). "
+                f"Using '{matches[0]['id']}'. Delete the duplicate(s) in Google Calendar "
+                f"or set 'google_calendar_id' in {CONFIG_PATH}."
+            )
+        return matches[0]['id']
+
     print(f"Calendar '{name}' not found. Creating a new one...")
     new_calendar = {
         'summary': name,
@@ -210,7 +232,39 @@ def get_or_create_calendar(gcal_service, name):
     created_calendar = gcal_service.calendars().insert(body=new_calendar).execute()
     return created_calendar['id']
 
+def _build_gcal_times(item):
+    """Convert an exchangelib CalendarItem's start/end into Google Calendar dicts and comparison keys."""
+    is_all_day = getattr(item, 'is_all_day', False) or not isinstance(item.start, datetime.datetime)
+    if is_all_day:
+        start_str = item.start.strftime('%Y-%m-%d')
+        end_str = item.end.strftime('%Y-%m-%d')
+        return {'date': start_str}, {'date': end_str}, (start_str, end_str), start_str
+    start_utc = datetime.datetime.fromtimestamp(item.start.timestamp(), tz=datetime.timezone.utc)
+    end_utc = datetime.datetime.fromtimestamp(item.end.timestamp(), tz=datetime.timezone.utc)
+    return (
+        {'dateTime': start_utc.isoformat()},
+        {'dateTime': end_utc.isoformat()},
+        (start_utc, end_utc),
+        str(start_utc.date()),
+    )
+
 def sync_calendars():
+    lock_path = os.path.join(os.path.dirname(CONFIG_PATH), 'sync.lock')
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    lock_file = open(lock_path, 'w')
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("Another sync instance is already running. Exiting.")
+        return
+
+    try:
+        _run_sync()
+    finally:
+        fcntl.flock(lock_file, fcntl.LOCK_UN)
+        lock_file.close()
+
+def _run_sync():
     gcal_service = get_gcal_service()
     outlook_events = get_outlook_events()
     
@@ -227,14 +281,20 @@ def sync_calendars():
     time_min = (now_utc - datetime.timedelta(days=1)).isoformat()
     
     print(f"Fetching existing Google Calendar events since {time_min}...")
-    events_result = gcal_service.events().list(
-        calendarId=calendar_id,
-        timeMin=time_min,
-        singleEvents=True,
-        maxResults=2500
-    ).execute()
-    
-    gcal_events = events_result.get('items', [])
+    gcal_events = []
+    page_token = None
+    while True:
+        events_result = gcal_service.events().list(
+            calendarId=calendar_id,
+            timeMin=time_min,
+            singleEvents=True,
+            maxResults=2500,
+            pageToken=page_token
+        ).execute()
+        gcal_events.extend(events_result.get('items', []))
+        page_token = events_result.get('nextPageToken')
+        if not page_token:
+            break
     
     # Map outlook_id to the Google Calendar event
     gcal_by_outlook_id = {}
@@ -247,56 +307,60 @@ def sync_calendars():
 
     for item in outlook_events:
         title = item.subject if item.subject else "Busy"
-        
-        # Convert EWSDateTime to standard python UTC datetime
-        start_utc = datetime.datetime.fromtimestamp(item.start.timestamp(), tz=datetime.timezone.utc)
-        end_utc = datetime.datetime.fromtimestamp(item.end.timestamp(), tz=datetime.timezone.utc)
-        
-        start_iso = start_utc.isoformat()
-        end_iso = end_utc.isoformat()
-        
-        location = item.location if item.location else ''
-        
-        gcal_event_body = {
-            'summary': title,
-            'location': location,
-            'description': 'Synced from corporate Outlook via Linux EWS Script',
-            'start': {'dateTime': start_iso},
-            'end': {'dateTime': end_iso},
-            'extendedProperties': {
-                'private': {
-                    'outlook_id': item.id
+        try:
+            gcal_start, gcal_end, time_key, date_label = _build_gcal_times(item)
+            location = item.location if item.location else ''
+            
+            gcal_event_body = {
+                'summary': title,
+                'location': location,
+                'description': 'Synced from corporate Outlook via Linux EWS Script',
+                'start': gcal_start,
+                'end': gcal_end,
+                'extendedProperties': {
+                    'private': {
+                        'outlook_id': item.id
+                    }
                 }
             }
-        }
-        
-        if item.id in gcal_by_outlook_id:
-            existing_event = gcal_by_outlook_id[item.id]
             
-            # Compare fields to check if an update is needed
-            existing_title = existing_event.get('summary', '')
-            existing_location = existing_event.get('location', '')
-            
-            existing_start = parse_gcal_datetime(existing_event['start'])
-            existing_end = parse_gcal_datetime(existing_event['end'])
-            
-            title_changed = (title != existing_title)
-            location_changed = (location != existing_location)
-            time_changed = (start_utc != existing_start or end_utc != existing_end)
-            
-            if title_changed or location_changed or time_changed:
-                print(f"Updating event in Google: '{title}' ({start_utc.date()})")
-                gcal_service.events().patch(
+            if item.id in gcal_by_outlook_id:
+                existing_event = gcal_by_outlook_id[item.id]
+                
+                # Compare fields to check if an update is needed
+                existing_title = existing_event.get('summary', '')
+                existing_location = existing_event.get('location', '')
+                
+                if 'date' in gcal_start:
+                    existing_key = (
+                        existing_event['start'].get('date'),
+                        existing_event['end'].get('date'),
+                    )
+                else:
+                    existing_key = (
+                        parse_gcal_datetime(existing_event['start']),
+                        parse_gcal_datetime(existing_event['end']),
+                    )
+                
+                title_changed = (title != existing_title)
+                location_changed = (location != existing_location)
+                time_changed = (time_key != existing_key)
+                
+                if title_changed or location_changed or time_changed:
+                    print(f"Updating event in Google: '{title}' ({date_label})")
+                    gcal_service.events().patch(
+                        calendarId=calendar_id,
+                        eventId=existing_event['id'],
+                        body=gcal_event_body
+                    ).execute()
+            else:
+                print(f"Syncing to Google (New): '{title}' ({date_label})")
+                gcal_service.events().insert(
                     calendarId=calendar_id,
-                    eventId=existing_event['id'],
                     body=gcal_event_body
                 ).execute()
-        else:
-            print(f"Syncing to Google (New): '{title}' ({start_utc.date()})")
-            gcal_service.events().insert(
-                calendarId=calendar_id,
-                body=gcal_event_body
-            ).execute()
+        except Exception as e:
+            print(f"ERROR syncing event '{title}': {e}", file=sys.stderr)
 
 if __name__ == '__main__':
     sync_calendars()
