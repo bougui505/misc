@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bluetooth Multiroom Audio</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #181c26;
+      --card-border: #282e3e;
+      --text: #e6e9f0;
+      --muted: #939bb0;
+      --accent: #4f8cff;
+      --accent-hover: #3b76e6;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --amber: #f39c12;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 18px 16px 48px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    h1 {
+      font-size: 1.35rem;
+      margin: 0;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #252b3b;
+      color: var(--muted);
+    }
+    .badge.active { background: rgba(46, 204, 113, 0.18); color: var(--green); }
+    .badge.bt { background: rgba(79, 140, 255, 0.18); color: var(--accent); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 1px solid var(--card-border);
+      background: #232938;
+      color: var(--text);
+      padding: 7px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #2d3548; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.danger { background: rgba(231, 76, 60, 0.16); border-color: rgba(231, 76, 60, 0.45); color: #ff7b6e; }
+    .btn.danger:hover { background: rgba(231, 76, 60, 0.28); }
+    .btn.small { padding: 4px 9px; font-size: 0.8rem; }
+    .sink-item, .bt-item, .preset-item {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #141821;
+    }
+    .sink-item:last-child, .bt-item:last-child, .preset-item:last-child { margin-bottom: 0; }
+    .sink-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .sink-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .controls {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slider-label {
+      width: 92px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .val {
+      width: 56px;
+      text-align: right;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    input[type="text"] {
+      background: #12151d;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      flex: 1;
+      min-width: 160px;
+    }
+    #toast {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      background: #232938;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      display: none;
+      max-width: 340px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 99;
+    }
+    #toast.error { border-color: var(--red); color: #ff8e83; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bluetooth Multiroom Audio</h1>
+      <span id="statusBadge" class="badge">Checking...</span>
+    </header>
+
+    <section class="card" id="multiroomBanner">
+      <div class="row">
+        <div>
+          <h2 style="margin-bottom:4px;">Multiroom Output</h2>
+          <div id="selectedSummary" class="sink-sub">Select 2 or more sinks below to combine.</div>
+        </div>
+        <div class="row" style="gap:8px;">
+          <button class="btn primary" onclick="enableMultiroom()">Enable / Update</button>
+          <button class="btn danger" id="disableBtn" onclick="disableMultiroom()" style="display:none;">Disable</button>
+        </div>
+      </div>
+      <div id="masterControls" class="controls" style="display:none; margin-top:14px;"></div>
+    </section>
+
+    <section class="card">
+      <h2>Audio Sinks (Rooms)</h2>
+      <div id="sinksList">Loading...</div>
+    </section>
+
+    <section class="card">
+      <h2>Bluetooth Devices</h2>
+      <div id="btList">Loading...</div>
+    </section>
+
+    <section class="card">
+      <h2>Presets</h2>
+      <div class="row" style="margin-bottom:12px;">
+        <input type="text" id="presetName" placeholder="Preset name (e.g. Living + Kitchen)" />
+        <button class="btn primary" onclick="savePreset()">Save Current</button>
+      </div>
+      <div id="presetsList"></div>
+    </section>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let state = { sinks: [], bluetooth_devices: [], multiroom_active: false, presets: {} };
+    let selectedSinks = new Set();
+    let isDragging = false;
+
+    function showToast(msg, isError = false) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = isError ? "error" : "";
+      el.style.display = "block";
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.style.display = "none"; }, 3200);
+    }
+
+    async function api(path, body = null) {
+      const opts = body !== null
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+        : { method: "GET" };
+      const res = await fetch(path, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    async function refreshState() {
+      if (isDragging) return;
+      try {
+        state = await api("/api/state");
+        if (selectedSinks.size === 0) {
+          state.sinks.filter(s => s.is_bluetooth && !s.is_combined).forEach(s => selectedSinks.add(s.name));
+        }
+        render();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function toggleSinkSelection(name, checked) {
+      if (checked) selectedSinks.add(name);
+      else selectedSinks.delete(name);
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const count = selectedSinks.size;
+      document.getElementById("selectedSummary").textContent =
+        count >= 2 ? `${count} sinks selected for multiroom` : `Select at least 2 sinks (${count} selected)`;
+    }
+
+    function render() {
+      const badge = document.getElementById("statusBadge");
+      badge.textContent = state.multiroom_active ? "Multiroom Active" : "Multiroom Inactive";
+      badge.className = state.multiroom_active ? "badge active" : "badge";
+      document.getElementById("disableBtn").style.display = state.multiroom_active ? "inline-block" : "none";
+
+      const masterSink = state.sinks.find(s => s.is_combined);
+      const masterDiv = document.getElementById("masterControls");
+      if (masterSink) {
+        masterDiv.style.display = "grid";
+        masterDiv.innerHTML = `
+          <div class="slider-row">
+            <span class="slider-label">Master Vol</span>
+            <input type="range" min="0" max="150" value="${masterSink.volume}"
+              onmousedown="isDragging=true" ontouchstart="isDragging=true"
+              oninput="this.nextElementSibling.textContent=this.value+'%'"
+              onchange="isDragging=false; setVolume('${masterSink.name}', this.value)" />
+            <span class="val">${masterSink.volume}%</span>
+            <button class="btn small" onclick="setMute('${masterSink.name}', ${!masterSink.mute})">
+              ${masterSink.mute ? "Unmute" : "Mute"}
+            </button>
+          </div>`;
+      } else {
+        masterDiv.style.display = "none";
+        masterDiv.innerHTML = "";
+      }
+
+      renderSummary();
+
+      const sinksDiv = document.getElementById("sinksList");
+      const roomSinks = state.sinks.filter(s => !s.is_combined);
+      if (roomSinks.length === 0) {
+        sinksDiv.innerHTML = '<div class="sink-sub">No audio sinks found.</div>';
+      } else {
+        sinksDiv.innerHTML = roomSinks.map(s => {
+          const checked = selectedSinks.has(s.name) ? "checked" : "";
+          const btBadge = s.is_bluetooth ? '<span class="badge bt">Bluetooth</span>' : "";
+          const latencyRow = (s.card_name && s.active_port) ? `
+            <div class="slider-row">
+              <span class="slider-label">Sync Delay</span>
+              <input type="range" min="-200" max="500" step="5" value="${s.latency_offset_ms}"
+                onmousedown="isDragging=true" ontouchstart="isDragging=true"
+                oninput="this.nextElementSibling.textContent=this.value+' ms'"
+                onchange="isDragging=false; setLatency('${s.card_name}', '${s.active_port}', this.value)" />
+              <span class="val">${s.latency_offset_ms} ms</span>
+              <button class="btn small" onclick="setLatency('${s.card_name}', '${s.active_port}', 0)">0ms</button>
+            </div>` : "";
+          return `
+            <div class="sink-item">
+              <div class="row">
+                <label class="sink-title" style="cursor:pointer;">
+                  <input type="checkbox" ${checked} onchange="toggleSinkSelection('${s.name}', this.checked)" />
+                  <span>${s.description}</span>
+                  ${btBadge}
+                </label>
+                <button class="btn small" onclick="setMute('${s.name}', ${!s.mute})">
+                  ${s.mute ? "Unmute" : "Mute"}
+                </button>
+              </div>
+              <div class="sink-sub">${s.name}</div>
+              <div class="controls">
+                <div class="slider-row">
+                  <span class="slider-label">Volume</span>
+                  <input type="range" min="0" max="150" value="${s.volume}"
+                    onmousedown="isDragging=true" ontouchstart="isDragging=true"
+                    oninput="this.nextElementSibling.textContent=this.value+'%'"
+                    onchange="isDragging=false; setVolume('${s.name}', this.value)" />
+                  <span class="val">${s.volume}%</span>
+                </div>
+                ${latencyRow}
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      const btDiv = document.getElementById("btList");
+      const audioBt = state.bluetooth_devices.filter(d => d.is_audio);
+      const listBt = audioBt.length ? audioBt : state.bluetooth_devices;
+      if (listBt.length === 0) {
+        btDiv.innerHTML = '<div class="sink-sub">No paired Bluetooth devices found.</div>';
+      } else {
+        btDiv.innerHTML = listBt.map(d => `
+          <div class="bt-item row">
+            <div>
+              <div class="sink-title">
+                <span>${d.name}</span>
+                <span class="badge ${d.connected ? "active" : ""}">${d.connected ? "Connected" : "Disconnected"}</span>
+              </div>
+              <div class="sink-sub">${d.mac}</div>
+            </div>
+            <button class="btn small ${d.connected ? "danger" : "primary"}"
+              onclick="toggleBt('${d.mac}', ${d.connected})">
+              ${d.connected ? "Disconnect" : "Connect"}
+            </button>
+          </div>`).join("");
+      }
+
+      const presetsDiv = document.getElementById("presetsList");
+      const entries = Object.entries(state.presets || {});
+      if (entries.length === 0) {
+        presetsDiv.innerHTML = '<div class="sink-sub">No presets saved yet.</div>';
+      } else {
+        presetsDiv.innerHTML = entries.map(([name, p]) => `
+          <div class="preset-item row">
+            <div>
+              <div class="sink-title">${name}</div>
+              <div class="sink-sub">${(p.sinks || []).length} sinks</div>
+            </div>
+            <div class="row" style="gap:6px;">
+              <button class="btn small primary" onclick="applyPreset('${name.replace(/'/g, "\\'")}')">Apply</button>
+              <button class="btn small danger" onclick="deletePreset('${name.replace(/'/g, "\\'")}')">Delete</button>
+            </div>
+          </div>`).join("");
+      }
+    }
+
+    async function enableMultiroom() {
+      try {
+        await api("/api/multiroom/enable", { sinks: Array.from(selectedSinks), set_default: true });
+        showToast("Multiroom enabled");
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function disableMultiroom() {
+      try {
+        await api("/api/multiroom/disable", {});
+        showToast("Multiroom disabled");
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function setVolume(sink, volume) {
+      try { await api("/api/sink/volume", { sink, volume: Number(volume) }); }
+      catch (err) { showToast(err.message, true); }
+    }
+
+    async function setMute(sink, mute) {
+      try {
+        await api("/api/sink/mute", { sink, mute });
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function setLatency(card, port, offset_ms) {
+      try {
+        await api("/api/sink/latency", { card, port, offset_ms: Number(offset_ms) });
+        showToast(`Sync delay set to ${offset_ms} ms`);
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function toggleBt(mac, connected) {
+      try {
+        showToast(connected ? "Disconnecting..." : "Connecting...");
+        await api(connected ? "/api/bt/disconnect" : "/api/bt/connect", { mac });
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function savePreset() {
+      const name = document.getElementById("presetName").value.trim();
+      if (!name) return showToast("Enter a preset name", true);
+      const volumes = {};
+      const offsets = {};
+      for (const s of state.sinks) {
+        if (selectedSinks.has(s.name)) {
+          volumes[s.name] = s.volume;
+          offsets[s.name] = s.latency_offset_ms;
+        }
+      }
+      try {
+        await api("/api/presets/save", { name, sinks: Array.from(selectedSinks), volumes, offsets });
+        document.getElementById("presetName").value = "";
+        showToast(`Saved preset "${name}"`);
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function applyPreset(name) {
+      try {
+        await api("/api/presets/apply", { name });
+        showToast(`Applied "${name}"`);
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function deletePreset(name) {
+      try {
+        await api("/api/presets/delete", { name });
+        showToast(`Deleted "${name}"`);
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    refreshState();
+    setInterval(refreshState, 3000);
+  </script>
+</body>
+</html>
