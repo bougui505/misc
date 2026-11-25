@@ -141,13 +141,15 @@
       font-variant-numeric: tabular-nums;
       color: var(--text);
     }
-    input[type="text"] {
+    input[type="text"], select {
       background: #12151d;
       border: 1px solid var(--card-border);
       color: var(--text);
-      padding: 7px 10px;
+      padding: 6px 9px;
       border-radius: 8px;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
+    }
+    input[type="text"] {
       flex: 1;
       min-width: 160px;
     }
@@ -197,6 +199,7 @@
 
     <section class="card">
       <h2>Bluetooth Devices</h2>
+      <div id="btControllers" class="row" style="margin-bottom:12px; justify-content:flex-start; gap:8px;"></div>
       <div id="btList">Loading...</div>
     </section>
 
@@ -213,8 +216,9 @@
   <div id="toast"></div>
 
   <script>
-    let state = { sinks: [], bluetooth_devices: [], multiroom_active: false, presets: {} };
+    let state = { sinks: [], bluetooth_controllers: [], bluetooth_devices: [], multiroom_active: false, presets: {} };
     let selectedSinks = new Set();
+    let selectedAdapterByMac = {};
     let isDragging = false;
 
     function showToast(msg, isError = false) {
@@ -232,7 +236,7 @@
         : { method: "GET" };
       const res = await fetch(path, opts);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      if (!res.ok) throw new Error(data.error || data.output || "Request failed");
       return data;
     }
 
@@ -336,13 +340,34 @@
         }).join("");
       }
 
+      const ctrlDiv = document.getElementById("btControllers");
+      const ctrls = state.bluetooth_controllers || [];
+      ctrlDiv.innerHTML = ctrls.map(c =>
+        `<span class="badge ${c.is_default ? "active" : "bt"}">${c.name} (${c.mac})${c.is_default ? " [default]" : ""}</span>`
+      ).join("");
+
       const btDiv = document.getElementById("btList");
       const audioBt = state.bluetooth_devices.filter(d => d.is_audio);
       const listBt = audioBt.length ? audioBt : state.bluetooth_devices;
       if (listBt.length === 0) {
         btDiv.innerHTML = '<div class="sink-sub">No paired Bluetooth devices found.</div>';
       } else {
-        btDiv.innerHTML = listBt.map(d => `
+        btDiv.innerHTML = listBt.map(d => {
+          const chosenCtrl = selectedAdapterByMac[d.mac] || d.controller_mac || "";
+          const isPairedOnSelected = (d.paired_controllers || []).includes(chosenCtrl);
+          const isConnectedOnSelected = d.connected && d.controller_mac === chosenCtrl;
+          const ctrlOptions = ctrls.map(c =>
+            `<option value="${c.mac}" ${c.mac === chosenCtrl ? "selected" : ""}>${c.name}</option>`
+          ).join("");
+          let actionBtn = "";
+          if (isConnectedOnSelected) {
+            actionBtn = `<button class="btn small danger" onclick="toggleBt('${d.mac}', true, '${chosenCtrl}')">Disconnect</button>`;
+          } else if (isPairedOnSelected) {
+            actionBtn = `<button class="btn small primary" onclick="toggleBt('${d.mac}', false, '${chosenCtrl}')">Connect</button>`;
+          } else {
+            actionBtn = `<button class="btn small primary" onclick="pairAndConnectBt('${d.mac}', '${chosenCtrl}')">Pair & Connect</button>`;
+          }
+          return `
           <div class="bt-item row">
             <div>
               <div class="sink-title">
@@ -351,11 +376,12 @@
               </div>
               <div class="sink-sub">${d.mac}</div>
             </div>
-            <button class="btn small ${d.connected ? "danger" : "primary"}"
-              onclick="toggleBt('${d.mac}', ${d.connected})">
-              ${d.connected ? "Disconnect" : "Connect"}
-            </button>
-          </div>`).join("");
+            <div class="row" style="gap:8px;">
+              ${ctrls.length ? `<select onchange="selectedAdapterByMac['${d.mac}']=this.value; render();">${ctrlOptions}</select>` : ""}
+              ${actionBtn}
+            </div>
+          </div>`;
+        }).join("");
       }
 
       const presetsDiv = document.getElementById("presetsList");
@@ -412,10 +438,19 @@
       } catch (err) { showToast(err.message, true); }
     }
 
-    async function toggleBt(mac, connected) {
+    async function toggleBt(mac, connected, controller_mac = "") {
       try {
         showToast(connected ? "Disconnecting..." : "Connecting...");
-        await api(connected ? "/api/bt/disconnect" : "/api/bt/connect", { mac });
+        await api(connected ? "/api/bt/disconnect" : "/api/bt/connect", { mac, controller_mac });
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function pairAndConnectBt(mac, controller_mac) {
+      try {
+        showToast("Scanning & pairing (put speaker in pairing mode)...");
+        await api("/api/bt/pair", { mac, controller_mac });
+        showToast("Paired & connected!");
         await refreshState();
       } catch (err) { showToast(err.message, true); }
     }

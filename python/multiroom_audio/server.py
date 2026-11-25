@@ -56,6 +56,7 @@ class MultiroomHandler(BaseHTTPRequestHandler):
                 html = INDEX_HTML.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
                 self.send_header("Content-Length", str(len(html)))
                 self.end_headers()
                 self.wfile.write(html)
@@ -66,6 +67,7 @@ class MultiroomHandler(BaseHTTPRequestHandler):
         if self.path == "/api/state":
             try:
                 sinks = audio_backend.list_sinks()
+                bt_controllers = audio_backend.list_bluetooth_controllers()
                 bt_devices = audio_backend.list_bluetooth_devices()
                 multiroom_active = any(s["is_combined"] for s in sinks)
                 presets = audio_backend.load_presets()
@@ -73,6 +75,7 @@ class MultiroomHandler(BaseHTTPRequestHandler):
                     200,
                     {
                         "sinks": sinks,
+                        "bluetooth_controllers": bt_controllers,
                         "bluetooth_devices": bt_devices,
                         "multiroom_active": multiroom_active,
                         "presets": presets,
@@ -94,17 +97,28 @@ class MultiroomHandler(BaseHTTPRequestHandler):
         try:
             if self.path == "/api/bt/connect":
                 mac = str(body.get("mac", "")).strip()
+                controller_mac = str(body.get("controller_mac", "")).strip()
                 if not mac:
                     raise ValueError("Missing mac")
-                res = audio_backend.connect_bt(mac)
+                res = audio_backend.connect_bt(mac, controller_mac)
                 self._send_json(200 if res["ok"] else 500, res)
                 return
 
             if self.path == "/api/bt/disconnect":
                 mac = str(body.get("mac", "")).strip()
+                controller_mac = str(body.get("controller_mac", "")).strip()
                 if not mac:
                     raise ValueError("Missing mac")
-                res = audio_backend.disconnect_bt(mac)
+                res = audio_backend.disconnect_bt(mac, controller_mac)
+                self._send_json(200 if res["ok"] else 500, res)
+                return
+
+            if self.path == "/api/bt/pair":
+                mac = str(body.get("mac", "")).strip()
+                controller_mac = str(body.get("controller_mac", "")).strip()
+                if not mac or not controller_mac:
+                    raise ValueError("Missing mac or controller_mac")
+                res = audio_backend.pair_and_connect_bt(mac, controller_mac)
                 self._send_json(200 if res["ok"] else 500, res)
                 return
 

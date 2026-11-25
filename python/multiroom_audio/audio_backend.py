@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -99,61 +100,177 @@ def list_sinks() -> list[dict[str, Any]]:
     return result
 
 
-def list_bluetooth_devices() -> list[dict[str, Any]]:
-    """Return paired Bluetooth devices, marking audio sinks."""
-    proc = _run(["bluetoothctl", "devices"], timeout=5)
+def _run_bt_script(commands: list[str], timeout: int = 10) -> subprocess.CompletedProcess[str]:
+    """Run a sequence of bluetoothctl commands via stdin."""
+    return subprocess.run(
+        ["bluetoothctl"],
+        input="\n".join(commands) + "\n",
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from bluetoothctl output."""
+    return re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text)
+
+
+def list_bluetooth_controllers() -> list[dict[str, Any]]:
+    """Return all Bluetooth controllers known to bluetoothctl."""
+    proc = _run(["bluetoothctl", "list"], timeout=5)
     if proc.returncode != 0:
         return []
+    controllers: list[dict[str, Any]] = []
+    for line in _strip_ansi(proc.stdout).splitlines():
+        m = re.match(r"^Controller\s+([0-9A-Fa-f:]{17})\s+(.+?)(?:\s+\[default\])?$", line.strip())
+        if m:
+            controllers.append(
+                {
+                    "mac": m.group(1),
+                    "name": m.group(2).strip(),
+                    "is_default": "[default]" in line,
+                }
+            )
+    return controllers
 
-    devices: list[dict[str, Any]] = []
-    for line in proc.stdout.splitlines():
-        m = re.match(r"^Device\s+([0-9A-Fa-f:]{17})\s+(.+)$", line.strip())
-        if not m:
+
+def list_bluetooth_devices() -> list[dict[str, Any]]:
+    """Return paired Bluetooth devices deduplicated by MAC across all controllers."""
+    controllers = list_bluetooth_controllers()
+    if not controllers:
+        controllers = [{"mac": "", "name": "default", "is_default": True}]
+
+    by_mac: dict[str, dict[str, Any]] = {}
+    for ctrl in controllers:
+        if ctrl["mac"]:
+            dev_proc = _run_bt_script([f"select {ctrl['mac']}", "devices", "quit"], timeout=5)
+        else:
+            dev_proc = _run(["bluetoothctl", "devices"], timeout=5)
+        if dev_proc.returncode != 0:
             continue
-        mac, raw_name = m.group(1), m.group(2).strip()
-        info_proc = _run(["bluetoothctl", "info", mac], timeout=5)
-        info_text = info_proc.stdout if info_proc.returncode == 0 else ""
 
-        name_match = re.search(r"^\s*Name:\s*(.+)$", info_text, re.MULTILINE)
-        conn_match = re.search(r"^\s*Connected:\s*(yes|no)", info_text, re.MULTILINE | re.IGNORECASE)
-        paired_match = re.search(r"^\s*Paired:\s*(yes|no)", info_text, re.MULTILINE | re.IGNORECASE)
-        icon_match = re.search(r"^\s*Icon:\s*(.+)$", info_text, re.MULTILINE)
+        for line in _strip_ansi(dev_proc.stdout).splitlines():
+            m = re.match(r"^Device\s+([0-9A-Fa-f:]{17})\s+(.+)$", line.strip())
+            if not m:
+                continue
+            mac, raw_name = m.group(1), m.group(2).strip()
+            if ctrl["mac"]:
+                info_proc = _run_bt_script([f"select {ctrl['mac']}", f"info {mac}", "quit"], timeout=5)
+            else:
+                info_proc = _run(["bluetoothctl", "info", mac], timeout=5)
+            info_text = _strip_ansi(info_proc.stdout) if info_proc.returncode == 0 else ""
 
-        icon = icon_match.group(1).strip() if icon_match else ""
-        is_audio = (
-            AUDIO_SINK_UUID in info_text.lower()
-            or "audio" in icon.lower()
-            or "headset" in icon.lower()
-            or "headphone" in icon.lower()
-            or "speaker" in icon.lower()
-        )
+            name_match = re.search(r"^\s*Name:\s*(.+)$", info_text, re.MULTILINE)
+            conn_match = re.search(r"^\s*Connected:\s*(yes|no)", info_text, re.MULTILINE | re.IGNORECASE)
+            icon_match = re.search(r"^\s*Icon:\s*(.+)$", info_text, re.MULTILINE)
 
-        devices.append(
-            {
-                "mac": mac,
-                "name": name_match.group(1).strip() if name_match else raw_name,
-                "connected": (conn_match.group(1).lower() == "yes") if conn_match else False,
-                "paired": (paired_match.group(1).lower() == "yes") if paired_match else True,
-                "icon": icon,
-                "is_audio": is_audio,
-            }
-        )
+            icon = icon_match.group(1).strip() if icon_match else ""
+            is_audio = (
+                AUDIO_SINK_UUID in info_text.lower()
+                or "audio" in icon.lower()
+                or "headset" in icon.lower()
+                or "headphone" in icon.lower()
+                or "speaker" in icon.lower()
+            )
+            connected = (conn_match.group(1).lower() == "yes") if conn_match else False
+            name = name_match.group(1).strip() if name_match else raw_name
 
-    devices.sort(key=lambda d: (not d["is_audio"], not d["connected"], d["name"].lower()))
+            if mac not in by_mac:
+                by_mac[mac] = {
+                    "mac": mac,
+                    "name": name,
+                    "connected": connected,
+                    "icon": icon,
+                    "is_audio": is_audio,
+                    "controller_mac": ctrl["mac"],
+                    "controller_name": ctrl["name"],
+                    "paired_controllers": [ctrl["mac"]] if ctrl["mac"] else [],
+                }
+            else:
+                entry = by_mac[mac]
+                if ctrl["mac"] and ctrl["mac"] not in entry["paired_controllers"]:
+                    entry["paired_controllers"].append(ctrl["mac"])
+                if connected:
+                    entry["connected"] = True
+                    entry["controller_mac"] = ctrl["mac"]
+                    entry["controller_name"] = ctrl["name"]
+                entry["is_audio"] = entry["is_audio"] or is_audio
+
+    devices = list(by_mac.values())
+    devices.sort(
+        key=lambda d: (not d["is_audio"], not d["connected"], d["controller_name"].lower(), d["name"].lower())
+    )
     return devices
 
 
-def connect_bt(mac: str) -> dict[str, Any]:
-    """Connect to a Bluetooth device by MAC address."""
+def _disconnect_other_controllers(mac: str, keep_controller_mac: str) -> None:
+    """Disconnect a device from any controller other than keep_controller_mac."""
+    for ctrl in list_bluetooth_controllers():
+        if ctrl["mac"] and ctrl["mac"] != keep_controller_mac:
+            _run_bt_script([f"select {ctrl['mac']}", f"disconnect {mac}", "quit"], timeout=5)
+
+
+def connect_bt(mac: str, controller_mac: str = "") -> dict[str, Any]:
+    """Connect to a Bluetooth device by MAC address, optionally selecting a controller."""
+    if controller_mac:
+        _disconnect_other_controllers(mac, controller_mac)
+        proc = _run_bt_script([f"select {controller_mac}", f"connect {mac}", "quit"], timeout=15)
+        output = _strip_ansi(proc.stdout + "\n" + proc.stderr).strip()
+        ok = proc.returncode == 0 and "Failed" not in output and "not available" not in output
+        return {"ok": ok, "output": output}
     proc = _run(["bluetoothctl", "connect", mac], timeout=15)
-    output = (proc.stdout + "\n" + proc.stderr).strip()
+    output = _strip_ansi(proc.stdout + "\n" + proc.stderr).strip()
     return {"ok": proc.returncode == 0, "output": output}
 
 
-def disconnect_bt(mac: str) -> dict[str, Any]:
-    """Disconnect a Bluetooth device by MAC address."""
+def pair_and_connect_bt(mac: str, controller_mac: str) -> dict[str, Any]:
+    """Scan, pair, trust, and connect a device on the specified controller."""
+    _disconnect_other_controllers(mac, controller_mac)
+    proc = subprocess.Popen(
+        ["bluetoothctl"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdin is not None
+    proc.stdin.write(f"select {controller_mac}\npower on\nagent NoInputNoOutput\ndefault-agent\nscan on\n")
+    proc.stdin.flush()
+    time.sleep(6)
+
+    proc.stdin.write(f"scan off\npair {mac}\n")
+    proc.stdin.flush()
+    time.sleep(5)
+
+    proc.stdin.write(f"trust {mac}\nconnect {mac}\n")
+    proc.stdin.flush()
+    time.sleep(4)
+
+    stdout, stderr = proc.communicate(input="quit\n", timeout=10)
+    output = _strip_ansi(stdout + "\n" + stderr).strip()
+
+    info_proc = _run_bt_script([f"select {controller_mac}", f"info {mac}", "quit"], timeout=5)
+    info_out = _strip_ansi(info_proc.stdout)
+    ok = "Connected: yes" in info_out or "Connection successful" in output
+
+    res: dict[str, Any] = {"ok": ok, "output": output}
+    if not ok:
+        lines = [ln.strip() for ln in output.splitlines() if ln.strip()]
+        res["error"] = " | ".join(lines[-3:]) if lines else "Pairing/connection failed"
+    return res
+
+
+def disconnect_bt(mac: str, controller_mac: str = "") -> dict[str, Any]:
+    """Disconnect a Bluetooth device by MAC address, optionally selecting a controller."""
+    if controller_mac:
+        proc = _run_bt_script([f"select {controller_mac}", f"disconnect {mac}", "quit"], timeout=15)
+        output = _strip_ansi(proc.stdout + "\n" + proc.stderr).strip()
+        ok = proc.returncode == 0 and "Failed" not in output and "not available" not in output
+        return {"ok": ok, "output": output}
     proc = _run(["bluetoothctl", "disconnect", mac], timeout=15)
-    output = (proc.stdout + "\n" + proc.stderr).strip()
+    output = _strip_ansi(proc.stdout + "\n" + proc.stderr).strip()
     return {"ok": proc.returncode == 0, "output": output}
 
 
