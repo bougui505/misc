@@ -52,11 +52,15 @@ def list_sinks() -> list[dict[str, Any]]:
     sinks_raw = _pactl_json(["list", "sinks"])
     cards_raw = _pactl_json(["list", "cards"])
 
-    cards_by_index: dict[int, dict[str, Any]] = {}
+    cards_by_obj_id: dict[str, dict[str, Any]] = {}
+    cards_by_name: dict[str, dict[str, Any]] = {}
     for card in cards_raw:
-        idx = card.get("index")
-        if idx is not None:
-            cards_by_index[int(idx)] = card
+        obj_id = str((card.get("properties") or {}).get("object.id", ""))
+        if obj_id:
+            cards_by_obj_id[obj_id] = card
+        cname = card.get("name") or ""
+        if cname:
+            cards_by_name[cname] = card
 
     result: list[dict[str, Any]] = []
     for sink in sinks_raw:
@@ -65,17 +69,21 @@ def list_sinks() -> list[dict[str, Any]]:
         if not desc or desc == "(null)":
             desc = name
         active_port = sink.get("active_port") or ""
-        card_idx = sink.get("card")
+        props = sink.get("properties") or {}
+        card = cards_by_obj_id.get(str(props.get("device.id", ""))) or cards_by_name.get(
+            str(props.get("device.name", ""))
+        )
         card_name = ""
         latency_offset_ms = 0
 
-        if card_idx is not None and int(card_idx) in cards_by_index:
-            card = cards_by_index[int(card_idx)]
-            card_name = card.get("name") or ""
+        if card is not None:
+            card_name = str(card["index"]) if card.get("index") is not None else (card.get("name") or "")
             ports = card.get("ports") or {}
             if isinstance(ports, dict) and active_port in ports:
-                offset_us = ports[active_port].get("latency_offset", 0) or 0
-                latency_offset_ms = round(int(offset_us) / 1000)
+                offset_raw = str(ports[active_port].get("latency_offset", "0") or "0")
+                m_off = re.search(r"-?\d+", offset_raw)
+                offset_us = int(m_off.group(0)) if m_off else 0
+                latency_offset_ms = round(offset_us / 1000)
 
         driver = sink.get("driver") or ""
         is_combined = name == MULTIROOM_SINK_NAME or driver == "module-combine-sink"
@@ -324,6 +332,25 @@ def enable_multiroom(sink_names: list[str], set_default: bool = True) -> dict[st
             pass
 
     return {"ok": True, "module_index": proc.stdout.strip(), "slaves": clean_sinks}
+
+
+def hard_resync(sink_names: list[str]) -> dict[str, Any]:
+    """Suspend sinks to flush speaker A2DP buffers, then recreate multiroom_bt."""
+    clean_sinks = [s.strip() for s in sink_names if s and s.strip() and s.strip() != MULTIROOM_SINK_NAME]
+    if len(clean_sinks) < 2:
+        raise ValueError("Select at least 2 audio sinks to resync.")
+
+    disable_multiroom()
+    for sink in clean_sinks:
+        _run(["pactl", "suspend-sink", sink, "1"], timeout=5)
+    time.sleep(1.5)
+    for sink in clean_sinks:
+        _run(["pactl", "suspend-sink", sink, "0"], timeout=5)
+    time.sleep(0.5)
+
+    res = enable_multiroom(clean_sinks, set_default=True)
+    res["resynced"] = clean_sinks
+    return res
 
 
 def set_volume(sink_name: str, volume: int) -> dict[str, Any]:

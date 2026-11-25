@@ -24,6 +24,7 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.45;
+      overflow-x: hidden;
     }
     .container {
       max-width: 920px;
@@ -51,6 +52,8 @@
       font-weight: 600;
       background: #252b3b;
       color: var(--muted);
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
     .badge.active { background: rgba(46, 204, 113, 0.18); color: var(--green); }
     .badge.bt { background: rgba(79, 140, 255, 0.18); color: var(--accent); }
@@ -102,6 +105,7 @@
     .sink-title {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       font-weight: 600;
       font-size: 0.95rem;
@@ -131,6 +135,7 @@
     }
     input[type="range"] {
       flex: 1;
+      min-width: 0;
       accent-color: var(--accent);
       cursor: pointer;
     }
@@ -169,6 +174,13 @@
       z-index: 99;
     }
     #toast.error { border-color: var(--red); color: #ff8e83; }
+    @media (max-width: 600px) {
+      .container { padding: 12px 10px 36px; }
+      .card { padding: 12px; }
+      .slider-row { flex-wrap: wrap; gap: 6px; }
+      .slider-label { width: 100%; }
+      .btn { flex: 1 1 auto; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -186,7 +198,10 @@
         </div>
         <div class="row" style="gap:8px;">
           <button class="btn primary" onclick="enableMultiroom()">Enable / Update</button>
+          <button class="btn" onclick="hardResync()">Hard Resync</button>
           <button class="btn danger" id="disableBtn" onclick="disableMultiroom()" style="display:none;">Disable</button>
+          <button class="btn" id="syncTestBtn" onclick="toggleSyncTest()">Play Sync Click</button>
+          <button class="btn" onclick="autoCalibrate()">Auto-Calibrate (Mic)</button>
         </div>
       </div>
       <div id="masterControls" class="controls" style="display:none; margin-top:14px;"></div>
@@ -270,6 +285,9 @@
       badge.textContent = state.multiroom_active ? "Multiroom Active" : "Multiroom Inactive";
       badge.className = state.multiroom_active ? "badge active" : "badge";
       document.getElementById("disableBtn").style.display = state.multiroom_active ? "inline-block" : "none";
+      const syncBtn = document.getElementById("syncTestBtn");
+      syncBtn.textContent = state.sync_test_running ? "Stop Sync Click" : "Play Sync Click";
+      syncBtn.className = state.sync_test_running ? "btn danger" : "btn";
 
       const masterSink = state.sinks.find(s => s.is_combined);
       const masterDiv = document.getElementById("masterControls");
@@ -415,6 +433,43 @@
       try {
         await api("/api/multiroom/disable", {});
         showToast("Multiroom disabled");
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function hardResync() {
+      try {
+        showToast("Flushing speaker buffers & resyncing (~2s)...");
+        await api("/api/multiroom/resync", { sinks: Array.from(selectedSinks) });
+        showToast("Hard resync complete");
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function toggleSyncTest() {
+      try {
+        if (state.sync_test_running) {
+          await api("/api/sync/test/stop", {});
+          showToast("Sync click stopped");
+        } else {
+          await api("/api/sync/test/start", { sink: "multiroom_bt" });
+          showToast("Playing 1Hz sync click on multiroom_bt");
+        }
+        await refreshState();
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    async function autoCalibrate() {
+      const sinks = Array.from(selectedSinks);
+      if (sinks.length < 2) return showToast("Select 2 sinks first", true);
+      try {
+        showToast("Calibrating via mic (~2s, stay quiet)...");
+        const res = await api("/api/sync/calibrate", { sinks: sinks.slice(0, 2), apply: true });
+        if (res.applied_to) {
+          showToast(`Calibrated: applied +${res.offset_ms}ms to ${res.applied_to}`);
+        } else {
+          showToast(`Already in sync (diff: ${res.diff_ms}ms)`);
+        }
         await refreshState();
       } catch (err) { showToast(err.message, true); }
     }

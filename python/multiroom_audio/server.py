@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import audio_backend
+import sync_calibrate
+from qr_terminal import render_qr_terminal
 
 INDEX_HTML = Path(__file__).resolve().parent / "index.html"
 
@@ -78,6 +80,7 @@ class MultiroomHandler(BaseHTTPRequestHandler):
                         "bluetooth_controllers": bt_controllers,
                         "bluetooth_devices": bt_devices,
                         "multiroom_active": multiroom_active,
+                        "sync_test_running": sync_calibrate.is_sync_test_running(),
                         "presets": presets,
                     },
                 )
@@ -131,6 +134,12 @@ class MultiroomHandler(BaseHTTPRequestHandler):
 
             if self.path == "/api/multiroom/disable":
                 res = audio_backend.disable_multiroom()
+                self._send_json(200, res)
+                return
+
+            if self.path == "/api/multiroom/resync":
+                sinks = body.get("sinks") or []
+                res = audio_backend.hard_resync(sinks)
                 self._send_json(200, res)
                 return
 
@@ -201,6 +210,26 @@ class MultiroomHandler(BaseHTTPRequestHandler):
                 self._send_json(200, res)
                 return
 
+            if self.path == "/api/sync/test/start":
+                sink = str(body.get("sink", audio_backend.MULTIROOM_SINK_NAME)).strip()
+                res = sync_calibrate.start_sync_test(sink)
+                self._send_json(200, res)
+                return
+
+            if self.path == "/api/sync/test/stop":
+                res = sync_calibrate.stop_sync_test()
+                self._send_json(200, res)
+                return
+
+            if self.path == "/api/sync/calibrate":
+                sinks = body.get("sinks") or []
+                if len(sinks) < 2:
+                    raise ValueError("Select at least 2 sinks to calibrate.")
+                apply = bool(body.get("apply", True))
+                res = sync_calibrate.auto_calibrate(str(sinks[0]), str(sinks[1]), apply=apply)
+                self._send_json(200, res)
+                return
+
             self._send_json(404, {"error": "Not found"})
         except ValueError as exc:
             self._send_json(400, {"error": str(exc)})
@@ -216,9 +245,11 @@ def main() -> None:
 
     server = ThreadingHTTPServer((args.host, args.port), MultiroomHandler)
     lan_ip = _get_lan_ip()
+    net_url = f"http://{lan_ip}:{args.port}"
     print(f"Multiroom Audio Web UI running:")
     print(f"  Local:   http://localhost:{args.port}")
-    print(f"  Network: http://{lan_ip}:{args.port}")
+    print(f"  Network: {net_url}")
+    print(f"\nScan to open on your phone:\n{render_qr_terminal(net_url)}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
