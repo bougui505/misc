@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#121417" />
+  <title>DrawGrid — Notebook Photo Grid</title>
+  <style>
+    :root {
+      --bg: #121417;
+      --surface: #1b1f24;
+      --surface-2: #242930;
+      --border: #323842;
+      --text: #eef1f5;
+      --muted: #9aa4b2;
+      --accent: #4f8cff;
+      --accent-hover: #3b78eb;
+      --danger: #e5534b;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 10px 12px 36px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 1.15rem;
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .file-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      font-size: 0.92rem;
+      min-height: 42px;
+    }
+
+    .file-btn:active {
+      background: var(--accent-hover);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .preview-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg);
+      padding-bottom: 8px;
+    }
+
+    .canvas-box {
+      position: relative;
+      background: #0b0d0f;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      max-height: 52vh;
+      touch-action: none;
+    }
+
+    #previewCanvas {
+      display: block;
+      max-width: 100%;
+      max-height: 52vh;
+      width: auto;
+      height: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .info-banner {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .info-banner strong {
+      color: var(--text);
+    }
+
+    .action-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:active:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-small {
+      padding: 6px 10px;
+      min-height: 34px;
+      font-size: 0.82rem;
+    }
+
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 13px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      content: "▾";
+      color: var(--muted);
+      transition: transform 0.15s ease;
+    }
+
+    details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .panel {
+      padding: 4px 14px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field input[type="number"],
+    .field select {
+      width: 100%;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.95rem;
+      min-height: 40px;
+    }
+
+    .field input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 28px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      gap: 10px;
+    }
+
+    .toggle-row span {
+      font-size: 0.92rem;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .swatches {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .swatch {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .swatch.active {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    .zoom-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zoom-row input[type="range"] {
+      flex: 1;
+    }
+
+    /* Fullscreen overlay */
+    .fullscreen-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .fullscreen-overlay.open {
+      display: flex;
+    }
+
+    .fullscreen-overlay canvas {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .fs-close {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 101;
+      background: rgba(20, 22, 26, 0.85);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>DrawGrid</h1>
+      <label class="file-btn" for="fileInput">📷 Open Photo</label>
+      <input id="fileInput" type="file" accept="image/*" />
+    </header>
+
+    <div class="preview-wrap">
+      <div class="canvas-box" id="canvasBox">
+        <div class="empty-state" id="emptyState">
+          <strong>No photo loaded</strong>
+          Tap "Open Photo" to pick an image from your gallery or camera.
+        </div>
+        <canvas id="previewCanvas" style="display:none;"></canvas>
+      </div>
+
+      <div class="info-banner" id="infoBanner">
+        <span>Usable: <strong id="usableInfo">80×130 mm</strong></span>
+        <span>Grid: <strong id="gridInfo">8×13 major (16×26 × 5mm)</strong></span>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn" id="fullscreenBtn" disabled>⛶ Fullscreen</button>
+        <button class="btn btn-primary" id="saveBtn" disabled>💾 Save Image</button>
+      </div>
+    </div>
+
+    <details open>
+      <summary>Notebook &amp; Quadrillage</summary>
+      <div class="panel">
+        <div class="grid-2">
+          <div class="field">
+            <label for="nbWidth">Notebook width (mm)</label>
+            <input id="nbWidth" type="number" min="10" max="1000" step="1" value="90" />
+          </div>
+          <div class="field">
+            <label for="nbHeight">Notebook height (mm)</label>
+            <input id="nbHeight" type="number" min="10" max="1000" step="1" value="140" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="squareMm">Quadrillage (mm)</label>
+            <input id="squareMm" type="number" min="1" max="50" step="0.5" value="5" />
+          </div>
+          <div class="field">
+            <label for="marginMm">Margin (mm)</label>
+            <input id="marginMm" type="number" min="0" max="100" step="1" value="5" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="groupSize">Squares per cell</label>
+            <input id="groupSize" type="number" min="1" max="10" step="1" value="2" />
+          </div>
+          <div class="field">
+            <label for="orientation">Orientation</label>
+            <select id="orientation">
+              <option value="auto">Auto (match photo)</option>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fitMode">Fit mode</label>
+          <select id="fitMode">
+            <option value="crop">Crop to notebook (pan &amp; zoom)</option>
+            <option value="fit">Fit whole photo</option>
+          </select>
+        </div>
+
+        <div class="field" id="zoomControl">
+          <label>
+            <span>Zoom (Crop mode)</span>
+            <span id="zoomVal">1.00×</span>
+          </label>
+          <div class="zoom-row">
+            <input id="zoomSlider" type="range" min="1" max="4" step="0.05" value="1" />
+            <button class="btn btn-small" id="resetCropBtn" type="button">Reset</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>
+            <span>Straighten / Rotate</span>
+            <span id="rotateVal">0.0°</span>
+          </label>
+          <input id="straightenSlider" type="range" min="-45" max="45" step="0.5" value="0" />
+          <div class="zoom-row">
+            <button class="btn btn-small" id="rotLeftBtn" type="button" style="flex:1;">↺ 90°</button>
+            <button class="btn btn-small" id="rotResetBtn" type="button" style="flex:1;">0°</button>
+            <button class="btn btn-small" id="rotRightBtn" type="button" style="flex:1;">↻ 90°</button>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Grid Style &amp; Labels</summary>
+      <div class="panel">
+        <div class="field">
+          <label>Grid color</label>
+          <div class="swatches" id="swatches">
+            <button type="button" class="swatch active" data-color="#ff0000" style="background:#ff0000;" aria-label="Red"></button>
+            <button type="button" class="swatch" data-color="#00e5ff" style="background:#00e5ff;" aria-label="Cyan"></button>
+            <button type="button" class="swatch" data-color="#ffd600" style="background:#ffd600;" aria-label="Yellow"></button>
+            <button type="button" class="swatch" data-color="#00e676" style="background:#00e676;" aria-label="Green"></button>
+            <button type="button" class="swatch" data-color="#000000" style="background:#000000;" aria-label="Black"></button>
+            <button type="button" class="swatch" data-color="#ffffff" style="background:#ffffff;" aria-label="White"></button>
+            <input id="colorPicker" type="color" value="#ff0000" aria-label="Custom color" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="thickness">Line thickness <span id="thicknessVal">2 px</span></label>
+          <input id="thickness" type="range" min="1" max="10" step="1" value="2" />
+        </div>
+
+        <div class="field">
+          <label for="opacity">Opacity <span id="opacityVal">75%</span></label>
+          <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.75" />
+        </div>
+
+        <label class="toggle-row">
+          <span>Show quadrillage subdivisions</span>
+          <input id="subdivisions" type="checkbox" checked />
+        </label>
+
+        <label class="toggle-row">
+          <span>Dashed lines</span>
+          <input id="dashed" type="checkbox" />
+        </label>
+
+        <label class="toggle-row">
+          <span>Diagonals (X-guides)</span>
+          <input id="diagonals" type="checkbox" />
+        </label>
+
+        <label class="toggle-row">
+          <span>Outer border</span>
+          <input id="border" type="checkbox" checked />
+        </label>
+
+        <label class="toggle-row">
+          <span>Coordinate labels (A, B… / 1, 2…)</span>
+          <input id="labels" type="checkbox" checked />
+        </label>
+
+        <div class="field" id="labelPosField">
+          <label for="labelPosition">Label position</label>
+          <select id="labelPosition">
+            <option value="margin">Margin (outside photo)</option>
+            <option value="inside">Inside top/left cells</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Image Adjustments</summary>
+      <div class="panel">
+        <label class="toggle-row">
+          <span>Grayscale</span>
+          <input id="grayscale" type="checkbox" />
+        </label>
+
+        <div class="field">
+          <label for="contrast">Contrast <span id="contrastVal">1.00</span></label>
+          <input id="contrast" type="range" min="0.5" max="2" step="0.05" value="1" />
+        </div>
+
+        <div class="field">
+          <label for="brightness">Brightness <span id="brightnessVal">1.00</span></label>
+          <input id="brightness" type="range" min="0.5" max="2" step="0.05" value="1" />
+        </div>
+
+        <div class="field">
+          <label for="blur">Blur <span id="blurVal">0.0 px</span></label>
+          <input id="blur" type="range" min="0" max="5" step="0.5" value="0" />
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="fullscreen-overlay" id="fsOverlay">
+    <button class="fs-close" id="fsCloseBtn" type="button">✕ Close</button>
+    <canvas id="fsCanvas"></canvas>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "drawgrid_settings_v1";
+
+      const els = {
+        fileInput: document.getElementById("fileInput"),
+        canvasBox: document.getElementById("canvasBox"),
+        emptyState: document.getElementById("emptyState"),
+        previewCanvas: document.getElementById("previewCanvas"),
+        usableInfo: document.getElementById("usableInfo"),
+        gridInfo: document.getElementById("gridInfo"),
+        fullscreenBtn: document.getElementById("fullscreenBtn"),
+        saveBtn: document.getElementById("saveBtn"),
+        fsOverlay: document.getElementById("fsOverlay"),
+        fsCloseBtn: document.getElementById("fsCloseBtn"),
+        fsCanvas: document.getElementById("fsCanvas"),
+
+        nbWidth: document.getElementById("nbWidth"),
+        nbHeight: document.getElementById("nbHeight"),
+        squareMm: document.getElementById("squareMm"),
+        marginMm: document.getElementById("marginMm"),
+        groupSize: document.getElementById("groupSize"),
+        orientation: document.getElementById("orientation"),
+        fitMode: document.getElementById("fitMode"),
+        zoomControl: document.getElementById("zoomControl"),
+        zoomSlider: document.getElementById("zoomSlider"),
+        zoomVal: document.getElementById("zoomVal"),
+        resetCropBtn: document.getElementById("resetCropBtn"),
+        straightenSlider: document.getElementById("straightenSlider"),
+        rotateVal: document.getElementById("rotateVal"),
+        rotLeftBtn: document.getElementById("rotLeftBtn"),
+        rotResetBtn: document.getElementById("rotResetBtn"),
+        rotRightBtn: document.getElementById("rotRightBtn"),
+
+        swatches: document.getElementById("swatches"),
+        colorPicker: document.getElementById("colorPicker"),
+        thickness: document.getElementById("thickness"),
+        thicknessVal: document.getElementById("thicknessVal"),
+        opacity: document.getElementById("opacity"),
+        opacityVal: document.getElementById("opacityVal"),
+        subdivisions: document.getElementById("subdivisions"),
+        dashed: document.getElementById("dashed"),
+        diagonals: document.getElementById("diagonals"),
+        border: document.getElementById("border"),
+        labels: document.getElementById("labels"),
+        labelPosition: document.getElementById("labelPosition"),
+        labelPosField: document.getElementById("labelPosField"),
+
+        grayscale: document.getElementById("grayscale"),
+        contrast: document.getElementById("contrast"),
+        contrastVal: document.getElementById("contrastVal"),
+        brightness: document.getElementById("brightness"),
+        brightnessVal: document.getElementById("brightnessVal"),
+        blur: document.getElementById("blur"),
+        blurVal: document.getElementById("blurVal"),
+      };
+
+      const state = {
+        img: null,
+        imgName: "photo",
+        zoom: 1,
+        panX: 0, // normalized -0.5..0.5
+        panY: 0,
+        rot90: 0,
+        straighten: 0,
+      };
+
+      function readSettings() {
+        return {
+          nbWidth: Math.max(10, Number(els.nbWidth.value) || 90),
+          nbHeight: Math.max(10, Number(els.nbHeight.value) || 140),
+          squareMm: Math.max(1, Number(els.squareMm.value) || 5),
+          marginMm: Math.max(0, Number(els.marginMm.value) || 0),
+          groupSize: Math.max(1, Math.round(Number(els.groupSize.value) || 2)),
+          orientation: els.orientation.value,
+          fitMode: els.fitMode.value,
+          color: els.colorPicker.value,
+          thickness: Number(els.thickness.value) || 2,
+          opacity: Number(els.opacity.value) || 0.75,
+          subdivisions: els.subdivisions.checked,
+          dashed: els.dashed.checked,
+          diagonals: els.diagonals.checked,
+          border: els.border.checked,
+          labels: els.labels.checked,
+          labelPosition: els.labelPosition.value,
+          grayscale: els.grayscale.checked,
+          contrast: Number(els.contrast.value) || 1,
+          brightness: Number(els.brightness.value) || 1,
+          blur: Number(els.blur.value) || 0,
+        };
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(readSettings()));
+        } catch (_) {
+          // Ignore storage errors on restricted file:// contexts
+        }
+      }
+
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const s = JSON.parse(raw);
+          if (s.nbWidth != null) els.nbWidth.value = s.nbWidth;
+          if (s.nbHeight != null) els.nbHeight.value = s.nbHeight;
+          if (s.squareMm != null) els.squareMm.value = s.squareMm;
+          if (s.marginMm != null) els.marginMm.value = s.marginMm;
+          if (s.groupSize != null) els.groupSize.value = s.groupSize;
+          if (s.orientation) els.orientation.value = s.orientation;
+          if (s.fitMode) els.fitMode.value = s.fitMode;
+          if (s.color) setColor(s.color, false);
+          if (s.thickness != null) els.thickness.value = s.thickness;
+          if (s.opacity != null) els.opacity.value = s.opacity;
+          if (s.subdivisions != null) els.subdivisions.checked = s.subdivisions;
+          if (s.dashed != null) els.dashed.checked = s.dashed;
+          if (s.diagonals != null) els.diagonals.checked = s.diagonals;
+          if (s.border != null) els.border.checked = s.border;
+          if (s.labels != null) els.labels.checked = s.labels;
+          if (s.labelPosition) els.labelPosition.value = s.labelPosition;
+          if (s.grayscale != null) els.grayscale.checked = s.grayscale;
+          if (s.contrast != null) els.contrast.value = s.contrast;
+          if (s.brightness != null) els.brightness.value = s.brightness;
+          if (s.blur != null) els.blur.value = s.blur;
+        } catch (_) {
+          // Ignore invalid or inaccessible storage
+        }
+      }
+
+      function setColor(hex, shouldRender = true) {
+        els.colorPicker.value = hex;
+        els.swatches.querySelectorAll(".swatch").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.color.toLowerCase() === hex.toLowerCase());
+        });
+        if (shouldRender) {
+          saveSettings();
+          render();
+        }
+      }
+
+      function colLabel(index) {
+        let label = "";
+        let n = index;
+        while (n >= 0) {
+          label = String.fromCharCode(65 + (n % 26)) + label;
+          n = Math.floor(n / 26) - 1;
+        }
+        return label;
+      }
+
+      function hexToRgba(hex, alpha) {
+        const clean = hex.replace("#", "");
+        const r = parseInt(clean.slice(0, 2), 16) || 0;
+        const g = parseInt(clean.slice(2, 4), 16) || 0;
+        const b = parseInt(clean.slice(4, 6), 16) || 0;
+        return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
+      }
+
+      function computeNotebookGrid(s, imgW, imgH) {
+        let pageW = Math.min(s.nbWidth, s.nbHeight);
+        let pageH = Math.max(s.nbWidth, s.nbHeight);
+
+        const useLandscape =
+          s.orientation === "landscape" ||
+          (s.orientation === "auto" && imgW > imgH);
+
+        if (useLandscape) {
+          [pageW, pageH] = [pageH, pageW];
+        }
+
+        const usableW = Math.max(s.squareMm, pageW - 2 * s.marginMm);
+        const usableH = Math.max(s.squareMm, pageH - 2 * s.marginMm);
+
+        const maxSmallCols = Math.max(1, Math.floor(usableW / s.squareMm));
+        const maxSmallRows = Math.max(1, Math.floor(usableH / s.squareMm));
+
+        const maxMajorCols = Math.max(1, Math.floor(maxSmallCols / s.groupSize));
+        const maxMajorRows = Math.max(1, Math.floor(maxSmallRows / s.groupSize));
+
+        if (s.fitMode === "crop") {
+          const smallCols = maxMajorCols * s.groupSize;
+          const smallRows = maxMajorRows * s.groupSize;
+          return {
+            usableW: smallCols * s.squareMm,
+            usableH: smallRows * s.squareMm,
+            majorCols: maxMajorCols,
+            majorRows: maxMajorRows,
+            smallCols,
+            smallRows,
+            exactCols: maxMajorCols,
+            exactRows: maxMajorRows,
+          };
+        }
+
+        // Fit whole photo inside usable notebook area
+        const imgAspect = imgW / imgH;
+        const maxAspect = maxMajorCols / maxMajorRows;
+        let exactCols, exactRows;
+        if (imgAspect >= maxAspect) {
+          exactCols = maxMajorCols;
+          exactRows = maxMajorCols / imgAspect;
+        } else {
+          exactRows = maxMajorRows;
+          exactCols = maxMajorRows * imgAspect;
+        }
+        return {
+          usableW: maxMajorCols * s.groupSize * s.squareMm,
+          usableH: maxMajorRows * s.groupSize * s.squareMm,
+          majorCols: Math.ceil(exactCols),
+          majorRows: Math.ceil(exactRows),
+          smallCols: Math.round(exactCols * s.groupSize * 10) / 10,
+          smallRows: Math.round(exactRows * s.groupSize * 10) / 10,
+          exactCols,
+          exactRows,
+        };
+      }
+
+      function updateUIValues() {
+        const s = readSettings();
+        els.thicknessVal.textContent = `${s.thickness} px`;
+        els.opacityVal.textContent = `${Math.round(s.opacity * 100)}%`;
+        els.contrastVal.textContent = s.contrast.toFixed(2);
+        els.brightnessVal.textContent = s.brightness.toFixed(2);
+        els.blurVal.textContent = `${s.blur.toFixed(1)} px`;
+        els.zoomVal.textContent = `${state.zoom.toFixed(2)}×`;
+        els.rotateVal.textContent = `${(state.rot90 + state.straighten).toFixed(1)}°`;
+        els.zoomControl.style.display = s.fitMode === "crop" ? "flex" : "none";
+        els.labelPosField.style.display = s.labels ? "flex" : "none";
+      }
+
+      function renderToCanvas(targetCanvas, maxDim) {
+        const s = readSettings();
+        const img = state.img;
+
+        const swapped = state.rot90 % 180 !== 0;
+        const imgW = img ? (swapped ? img.height : img.width) : 900;
+        const imgH = img ? (swapped ? img.width : img.height) : 1400;
+        const grid = computeNotebookGrid(s, imgW, imgH);
+
+        els.usableInfo.textContent = `${Math.round(grid.usableW)}×${Math.round(grid.usableH)} mm`;
+        els.gridInfo.textContent = `${grid.exactCols.toFixed(s.fitMode === "fit" ? 1 : 0).replace(/\.0$/, "")}×${grid.exactRows.toFixed(s.fitMode === "fit" ? 1 : 0).replace(/\.0$/, "")} major (${grid.smallCols}×${grid.smallRows} × ${s.squareMm}mm)`;
+
+        if (!img) return;
+
+        let srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+        let outW, outH;
+
+        if (s.fitMode === "crop") {
+          const targetAspect = grid.majorCols / grid.majorRows;
+          const imgAspect = imgW / imgH;
+
+          let baseW, baseH;
+          if (imgAspect > targetAspect) {
+            baseH = imgH;
+            baseW = imgH * targetAspect;
+          } else {
+            baseW = imgW;
+            baseH = imgW / targetAspect;
+          }
+
+          srcW = baseW / state.zoom;
+          srcH = baseH / state.zoom;
+
+          const maxPanX = Math.max(0, (imgW - srcW) / 2);
+          const maxPanY = Math.max(0, (imgH - srcH) / 2);
+
+          const centerX = imgW / 2 + state.panX * imgW;
+          const centerY = imgH / 2 + state.panY * imgH;
+
+          const clampedCX = Math.max(srcW / 2, Math.min(imgW - srcW / 2, centerX));
+          const clampedCY = Math.max(srcH / 2, Math.min(imgH - srcH / 2, centerY));
+
+          if (maxPanX > 0) state.panX = (clampedCX - imgW / 2) / imgW;
+          if (maxPanY > 0) state.panY = (clampedCY - imgH / 2) / imgH;
+
+          srcX = clampedCX - srcW / 2;
+          srcY = clampedCY - srcH / 2;
+
+          outW = Math.round(srcW);
+          outH = Math.round(srcH);
+        } else {
+          outW = imgW;
+          outH = imgH;
+        }
+
+        if (maxDim && Math.max(outW, outH) > maxDim) {
+          const scale = maxDim / Math.max(outW, outH);
+          outW = Math.round(outW * scale);
+          outH = Math.round(outH * scale);
+        }
+
+        const cellSize = outW / grid.exactCols;
+        const fontSize = Math.max(12, Math.min(48, Math.round(cellSize * 0.25)));
+        const margin = s.labels && s.labelPosition === "margin"
+          ? Math.max(fontSize + 14, Math.round(fontSize * 1.7))
+          : 0;
+
+        targetCanvas.width = outW + margin;
+        targetCanvas.height = outH + margin;
+        const ctx = targetCanvas.getContext("2d");
+
+        ctx.save();
+        if (margin > 0) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
+        }
+
+        // Image adjustments
+        const filters = [];
+        if (s.grayscale) filters.push("grayscale(100%)");
+        if (s.contrast !== 1) filters.push(`contrast(${s.contrast})`);
+        if (s.brightness !== 1) filters.push(`brightness(${s.brightness})`);
+        if (s.blur > 0) {
+          const blurScale = outW / 800;
+          filters.push(`blur(${(s.blur * Math.max(0.5, blurScale)).toFixed(2)}px)`);
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(margin, margin, outW, outH);
+        ctx.clip();
+        ctx.fillStyle = "#0b0d0f";
+        ctx.fillRect(margin, margin, outW, outH);
+        ctx.filter = filters.length ? filters.join(" ") : "none";
+        ctx.translate(margin + outW / 2, margin + outH / 2);
+        ctx.scale(outW / srcW, outH / srcH);
+        ctx.translate(-(srcX + srcW / 2 - imgW / 2), -(srcY + srcH / 2 - imgH / 2));
+        ctx.rotate(((state.rot90 + state.straighten) * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        ctx.restore();
+
+        // Clip grid drawing to image area
+        ctx.beginPath();
+        ctx.rect(margin, margin, outW, outH);
+        ctx.clip();
+
+        const thicknessScale = Math.max(1, outW / 900);
+        const mainWidth = Math.max(1, s.thickness * thicknessScale);
+        const subWidth = Math.max(1, mainWidth * 0.5);
+        const mainColor = hexToRgba(s.color, s.opacity);
+        const subColor = hexToRgba(s.color, s.opacity * 0.5);
+
+        if (s.dashed) {
+          const dashLen = Math.max(6, Math.round(10 * thicknessScale));
+          ctx.setLineDash([dashLen, dashLen]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        const xLines = [];
+        for (let i = 0; i <= grid.majorCols; i++) {
+          xLines.push(margin + i * cellSize);
+        }
+        const yLines = [];
+        for (let j = 0; j <= grid.majorRows; j++) {
+          yLines.push(margin + j * cellSize);
+        }
+
+        // Subdivisions
+        if (s.subdivisions && s.groupSize > 1) {
+          ctx.strokeStyle = subColor;
+          ctx.lineWidth = subWidth;
+          ctx.beginPath();
+          for (let i = 0; i < xLines.length - 1; i++) {
+            for (let k = 1; k < s.groupSize; k++) {
+              const x = xLines[i] + (cellSize * k) / s.groupSize;
+              ctx.moveTo(x, margin);
+              ctx.lineTo(x, margin + outH);
+            }
+          }
+          for (let j = 0; j < yLines.length - 1; j++) {
+            for (let k = 1; k < s.groupSize; k++) {
+              const y = yLines[j] + (cellSize * k) / s.groupSize;
+              ctx.moveTo(margin, y);
+              ctx.lineTo(margin + outW, y);
+            }
+          }
+          ctx.stroke();
+        }
+
+        // Diagonals
+        if (s.diagonals) {
+          ctx.strokeStyle = subColor;
+          ctx.lineWidth = subWidth;
+          ctx.beginPath();
+          for (let i = 0; i < xLines.length - 1; i++) {
+            for (let j = 0; j < yLines.length - 1; j++) {
+              const x0 = xLines[i], x1 = xLines[i + 1];
+              const y0 = yLines[j], y1 = yLines[j + 1];
+              ctx.moveTo(x0, y0);
+              ctx.lineTo(x1, y1);
+              ctx.moveTo(x1, y0);
+              ctx.lineTo(x0, y1);
+            }
+          }
+          ctx.stroke();
+        }
+
+        // Main grid lines
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = mainWidth;
+        ctx.beginPath();
+        for (const x of xLines) {
+          ctx.moveTo(x, margin);
+          ctx.lineTo(x, margin + outH);
+        }
+        for (const y of yLines) {
+          ctx.moveTo(margin, y);
+          ctx.lineTo(margin + outW, y);
+        }
+        ctx.stroke();
+
+        // Outer border
+        if (s.border) {
+          ctx.setLineDash([]);
+          ctx.strokeStyle = mainColor;
+          ctx.lineWidth = mainWidth;
+          ctx.strokeRect(
+            margin + mainWidth / 2,
+            margin + mainWidth / 2,
+            outW - mainWidth,
+            outH - mainWidth
+          );
+        }
+
+        ctx.restore();
+
+        // Labels
+        if (s.labels) {
+          ctx.save();
+          ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          if (s.labelPosition === "margin") {
+            ctx.fillStyle = "#111111";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            for (let i = 0; i < grid.majorCols; i++) {
+              const cx = margin + (i + 0.5) * cellSize;
+              if (cx < targetCanvas.width) {
+                ctx.fillText(colLabel(i), cx, margin / 2);
+              }
+            }
+            for (let j = 0; j < grid.majorRows; j++) {
+              const cy = margin + (j + 0.5) * cellSize;
+              if (cy < targetCanvas.height) {
+                ctx.fillText(String(j + 1), margin / 2, cy);
+              }
+            }
+          } else {
+            ctx.fillStyle = hexToRgba(s.color, Math.min(1, s.opacity + 0.2));
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            const pad = Math.max(4, Math.round(fontSize * 0.25));
+            for (let i = 0; i < grid.majorCols; i++) {
+              const lx = xLines[i] + pad;
+              if (lx < outW) ctx.fillText(colLabel(i), lx, pad);
+            }
+            for (let j = 1; j < grid.majorRows; j++) {
+              const ly = yLines[j] + pad;
+              if (ly < outH) ctx.fillText(String(j + 1), pad, ly);
+            }
+          }
+          ctx.restore();
+        }
+      }
+
+      function render() {
+        updateUIValues();
+        renderToCanvas(els.previewCanvas, 1200);
+        if (els.fsOverlay.classList.contains("open")) {
+          renderToCanvas(els.fsCanvas, 1800);
+        }
+      }
+
+      async function loadImageFile(file) {
+        if (!file) return;
+        state.imgName = file.name.replace(/\.[^.]+$/, "") || "photo";
+        try {
+          if (typeof createImageBitmap === "function") {
+            state.img = await createImageBitmap(file);
+          } else {
+            throw new Error("createImageBitmap unavailable");
+          }
+        } catch (_) {
+          const url = URL.createObjectURL(file);
+          state.img = await new Promise((resolve, reject) => {
+            const im = new Image();
+            im.onload = () => {
+              URL.revokeObjectURL(url);
+              resolve(im);
+            };
+            im.onerror = reject;
+            im.src = url;
+          });
+        }
+
+        state.zoom = 1;
+        state.panX = 0;
+        state.panY = 0;
+        state.rot90 = 0;
+        state.straighten = 0;
+        els.zoomSlider.value = "1";
+        els.straightenSlider.value = "0";
+        els.emptyState.style.display = "none";
+        els.previewCanvas.style.display = "block";
+        els.fullscreenBtn.disabled = false;
+        els.saveBtn.disabled = false;
+        render();
+      }
+
+      // Pointer pan & pinch-to-zoom on preview canvas
+      const pointers = new Map();
+      let lastPinchDist = 0;
+      let lastPanPoint = null;
+
+      els.canvasBox.addEventListener("pointerdown", (e) => {
+        if (!state.img || els.fitMode.value !== "crop") return;
+        els.canvasBox.setPointerCapture(e.pointerId);
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+          lastPanPoint = { x: e.clientX, y: e.clientY };
+        } else if (pointers.size === 2) {
+          const pts = Array.from(pointers.values());
+          lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        }
+      });
+
+      els.canvasBox.addEventListener("pointermove", (e) => {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pointers.size === 1 && lastPanPoint) {
+          const dx = e.clientX - lastPanPoint.x;
+          const dy = e.clientY - lastPanPoint.y;
+          lastPanPoint = { x: e.clientX, y: e.clientY };
+          const rect = els.previewCanvas.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            state.panX -= (dx / rect.width) / state.zoom;
+            state.panY -= (dy / rect.height) / state.zoom;
+            render();
+          }
+        } else if (pointers.size === 2) {
+          const pts = Array.from(pointers.values());
+          const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+          if (lastPinchDist > 0) {
+            const factor = dist / lastPinchDist;
+            state.zoom = Math.max(1, Math.min(4, state.zoom * factor));
+            els.zoomSlider.value = state.zoom.toFixed(2);
+            render();
+          }
+          lastPinchDist = dist;
+        }
+      });
+
+      function endPointer(e) {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) lastPinchDist = 0;
+        if (pointers.size === 1) {
+          const pt = Array.from(pointers.values())[0];
+          lastPanPoint = { x: pt.x, y: pt.y };
+        } else if (pointers.size === 0) {
+          lastPanPoint = null;
+        }
+      }
+
+      els.canvasBox.addEventListener("pointerup", endPointer);
+      els.canvasBox.addEventListener("pointercancel", endPointer);
+
+      // Event listeners
+      els.fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadImageFile(e.target.files[0]);
+        }
+      });
+
+      els.swatches.addEventListener("click", (e) => {
+        const btn = e.target.closest(".swatch");
+        if (btn) setColor(btn.dataset.color);
+      });
+
+      els.colorPicker.addEventListener("input", () => setColor(els.colorPicker.value));
+
+      els.zoomSlider.addEventListener("input", () => {
+        state.zoom = Number(els.zoomSlider.value) || 1;
+        render();
+      });
+
+      els.resetCropBtn.addEventListener("click", () => {
+        state.zoom = 1;
+        state.panX = 0;
+        state.panY = 0;
+        state.rot90 = 0;
+        state.straighten = 0;
+        els.zoomSlider.value = "1";
+        els.straightenSlider.value = "0";
+        render();
+      });
+
+      els.straightenSlider.addEventListener("input", () => {
+        state.straighten = Number(els.straightenSlider.value) || 0;
+        render();
+      });
+
+      els.rotLeftBtn.addEventListener("click", () => {
+        state.rot90 = (state.rot90 + 270) % 360;
+        render();
+      });
+
+      els.rotRightBtn.addEventListener("click", () => {
+        state.rot90 = (state.rot90 + 90) % 360;
+        render();
+      });
+
+      els.rotResetBtn.addEventListener("click", () => {
+        state.rot90 = 0;
+        state.straighten = 0;
+        els.straightenSlider.value = "0";
+        render();
+      });
+
+      els.fullscreenBtn.addEventListener("click", () => {
+        if (!state.img) return;
+        els.fsOverlay.classList.add("open");
+        renderToCanvas(els.fsCanvas, 1800);
+      });
+
+      els.fsCloseBtn.addEventListener("click", () => {
+        els.fsOverlay.classList.remove("open");
+      });
+
+      els.saveBtn.addEventListener("click", () => {
+        if (!state.img) return;
+        const exportCanvas = document.createElement("canvas");
+        renderToCanvas(exportCanvas, 0);
+        exportCanvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${state.imgName}_grid.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          },
+          "image/jpeg",
+          0.95
+        );
+      });
+
+      [
+        els.nbWidth,
+        els.nbHeight,
+        els.squareMm,
+        els.marginMm,
+        els.groupSize,
+        els.orientation,
+        els.fitMode,
+        els.thickness,
+        els.opacity,
+        els.subdivisions,
+        els.dashed,
+        els.diagonals,
+        els.border,
+        els.labels,
+        els.labelPosition,
+        els.grayscale,
+        els.contrast,
+        els.brightness,
+        els.blur,
+      ].forEach((el) => {
+        el.addEventListener("input", () => {
+          saveSettings();
+          render();
+        });
+        el.addEventListener("change", () => {
+          saveSettings();
+          render();
+        });
+      });
+
+      loadSettings();
+      render();
+    })();
+  </script>
+</body>
+</html>
